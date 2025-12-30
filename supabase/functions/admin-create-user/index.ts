@@ -68,14 +68,13 @@ serve(async (req) => {
                 name,
                 phone,
                 role: role || 'user',
-                tenant_id: tenantId
-            });
-
-        if (profileError) {
-            // Rollback auth user if profile fails (Manual rollback for now)
-            await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-            throw profileError;
-        }
+                tenant_id: tenantId,
+                permissions: permissions
+            }); if (profileError) {
+                // Rollback auth user if profile fails (Manual rollback for now)
+                await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+                throw profileError;
+            }
 
         return new Response(
             JSON.stringify(newUser),
