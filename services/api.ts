@@ -17,6 +17,9 @@ const getCurrentTenantId = () => {
     return localStorage.getItem('ecoflow-tenant-id');
 };
 
+// Helper: Convert empty strings to null for UUID fields to prevent Postgres errors
+const uuidOrNull = (val: any) => (val === '' || val === undefined) ? null : val;
+
 // ==========================================
 // REAL SUPABASE API IMPLEMENTATION
 // ==========================================
@@ -49,9 +52,9 @@ export const api = {
             description: task.description,
             status: task.status,
             priority: task.priority,
-            assignee_id: task.assigneeId,
-            project_id: task.projectId,
-            team_id: task.teamId,
+            assignee_id: uuidOrNull(task.assigneeId),
+            project_id: uuidOrNull(task.projectId),
+            team_id: uuidOrNull(task.teamId),
             due_date: task.dueDate,
             tags: task.tags,
             links: task.links,
@@ -85,9 +88,9 @@ export const api = {
             description: task.description,
             status: task.status,
             priority: task.priority,
-            assignee_id: task.assigneeId,
-            project_id: task.projectId,
-            team_id: task.teamId,
+            assignee_id: uuidOrNull(task.assigneeId),
+            project_id: uuidOrNull(task.projectId),
+            team_id: uuidOrNull(task.teamId),
             due_date: task.dueDate,
             tags: task.tags,
             links: task.links
@@ -326,14 +329,14 @@ export const api = {
             type: t.type,
             date: t.date,
             is_paid: t.isPaid,
-            account_id: t.accountId,
-            to_account_id: t.toAccountId,
-            category_id: t.categoryId,
-            credit_card_id: t.creditCardId,
-            contact_id: t.contactId,
+            account_id: uuidOrNull(t.accountId),
+            to_account_id: uuidOrNull(t.toAccountId),
+            category_id: uuidOrNull(t.categoryId),
+            credit_card_id: uuidOrNull(t.creditCardId),
+            contact_id: uuidOrNull(t.contactId),
             origin_type: t.originType,
-            origin_id: t.originId,
-            recurrence_id: t.recurrenceId,
+            origin_id: uuidOrNull(t.originId),
+            recurrence_id: uuidOrNull(t.recurrenceId),
             installment_index: t.installmentIndex,
             total_installments: t.totalInstallments,
             links: t.links,
@@ -349,14 +352,14 @@ export const api = {
             type: t.type,
             date: t.date,
             is_paid: t.isPaid,
-            account_id: t.accountId,
-            to_account_id: t.toAccountId,
-            category_id: t.categoryId,
-            credit_card_id: t.creditCardId,
-            contact_id: t.contactId,
+            account_id: uuidOrNull(t.accountId),
+            to_account_id: uuidOrNull(t.toAccountId),
+            category_id: uuidOrNull(t.categoryId),
+            credit_card_id: uuidOrNull(t.creditCardId),
+            contact_id: uuidOrNull(t.contactId),
             origin_type: t.originType,
-            origin_id: t.originId,
-            recurrence_id: t.recurrenceId,
+            origin_id: uuidOrNull(t.originId),
+            recurrence_id: uuidOrNull(t.recurrenceId),
             installment_index: t.installmentIndex,
             total_installments: t.totalInstallments,
             links: t.links
@@ -523,7 +526,7 @@ export const api = {
             price: i.price,
             description: i.description,
             active: i.active,
-            financial_category_id: i.financialCategoryId,
+            financial_category_id: uuidOrNull(i.financialCategoryId),
             tenant_id: tenantId
         }]);
         if (error) throw error;
@@ -535,7 +538,7 @@ export const api = {
             price: i.price,
             description: i.description,
             active: i.active,
-            financial_category_id: i.financialCategoryId
+            financial_category_id: uuidOrNull(i.financialCategoryId)
         }).eq('id', i.id);
         if (error) throw error;
     },
@@ -568,7 +571,7 @@ export const api = {
         const tenantId = getCurrentTenantId();
         // 1. Insert Quote
         const { data: quote, error: qError } = await supabase.from('quotes').insert([{
-            contact_id: q.contactId,
+            contact_id: uuidOrNull(q.contactId),
             customer_name: q.customerName,
             customer_phone: q.customerPhone,
             status: q.status || 'draft',
@@ -598,6 +601,7 @@ export const api = {
     updateQuote: async (q: Partial<Quote>, items: any[]) => {
         // Update quote fields
         const { error } = await supabase.from('quotes').update({
+            contact_id: uuidOrNull(q.contactId),
             status: q.status,
             total_value: q.totalValue,
             valid_until: q.validUntil,
@@ -643,7 +647,7 @@ export const api = {
     addRecurringService: async (data: Partial<RecurringService>) => {
         const tenantId = getCurrentTenantId();
         const { data: rec, error } = await supabase.from('recurring_services').insert([{
-            contact_id: data.contactId,
+            contact_id: uuidOrNull(data.contactId),
             setup_fee: data.setupFee,
             recurring_amount: data.recurringAmount,
             start_date: data.startDate,
