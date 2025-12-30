@@ -33,28 +33,69 @@ export const api = {
     getTasks: async () => {
         const { data, error } = await supabase.from('tasks').select('*');
         if (error) throw error;
-        return data as Task[];
+        return data.map((t: any) => ({
+            ...t,
+            assigneeId: t.assignee_id,
+            projectId: t.project_id,
+            teamId: t.team_id,
+            tenantId: t.tenant_id,
+            dueDate: t.due_date,
+        })) as Task[];
     },
     addTask: async (task: Partial<Task>) => {
         const tenantId = getCurrentTenantId();
-        const cleanTask = { ...task, tenant_id: tenantId };
+        const dbTask = {
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            priority: task.priority,
+            assignee_id: task.assigneeId,
+            project_id: task.projectId,
+            team_id: task.teamId,
+            due_date: task.dueDate,
+            tags: task.tags,
+            links: task.links,
+            tenant_id: tenantId
+        };
+
         // Remove undefined fields to let DB defaults work
-        if (!cleanTask.status) delete cleanTask.status;
-        if (!cleanTask.priority) delete cleanTask.priority;
+        if (!dbTask.status) delete dbTask.status;
+        if (!dbTask.priority) delete dbTask.priority;
 
         const { data, error } = await supabase
             .from('tasks')
-            .insert([cleanTask])
+            .insert([dbTask])
             .select()
             .single();
 
         if (error) throw error;
-        return data as Task;
+        // Map back to camelCase for the UI
+        return {
+            ...data,
+            assigneeId: data.assignee_id,
+            projectId: data.project_id,
+            teamId: data.team_id,
+            tenantId: data.tenant_id,
+            dueDate: data.due_date,
+        } as Task;
     },
     updateTask: async (task: Task) => {
+        const dbTask = {
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            priority: task.priority,
+            assignee_id: task.assigneeId,
+            project_id: task.projectId,
+            team_id: task.teamId,
+            due_date: task.dueDate,
+            tags: task.tags,
+            links: task.links
+        };
+
         const { error } = await supabase
             .from('tasks')
-            .update(task)
+            .update(dbTask)
             .eq('id', task.id);
         if (error) throw error;
     },
@@ -71,15 +112,42 @@ export const api = {
     getProjects: async () => {
         const { data, error } = await supabase.from('projects').select('*');
         if (error) throw error;
-        return data as Project[];
+        return data.map((p: any) => ({
+            ...p,
+            dueDate: p.due_date,
+            tenantId: p.tenant_id,
+            teamIds: p.team_ids,
+            members: p.member_ids,
+        })) as Project[];
     },
     addProject: async (project: Partial<Project>) => {
         const tenantId = getCurrentTenantId();
-        const { error } = await supabase.from('projects').insert([{ ...project, tenant_id: tenantId }]);
+        const dbProject = {
+            name: project.name,
+            description: project.description,
+            status: project.status,
+            progress: project.progress,
+            due_date: project.dueDate,
+            tenant_id: tenantId,
+            team_ids: project.teamIds,
+            member_ids: project.members,
+            links: project.links
+        };
+        const { error } = await supabase.from('projects').insert([dbProject]);
         if (error) throw error;
     },
     updateProject: async (project: Project) => {
-        const { error } = await supabase.from('projects').update(project).eq('id', project.id);
+        const dbProject = {
+            name: project.name,
+            description: project.description,
+            status: project.status,
+            progress: project.progress,
+            due_date: project.dueDate,
+            team_ids: project.teamIds,
+            member_ids: project.members,
+            links: project.links
+        };
+        const { error } = await supabase.from('projects').update(dbProject).eq('id', project.id);
         if (error) throw error;
     },
 
@@ -87,15 +155,35 @@ export const api = {
     getTeams: async () => {
         const { data, error } = await supabase.from('teams').select('*');
         if (error) throw error;
-        return data as Team[];
+        return data.map((t: any) => ({
+            ...t,
+            leadId: t.lead_id,
+            tenantId: t.tenant_id,
+            memberIds: t.member_ids,
+        })) as Team[];
     },
     addTeam: async (team: Partial<Team>) => {
         const tenantId = getCurrentTenantId();
-        const { error } = await supabase.from('teams').insert([{ ...team, tenant_id: tenantId }]);
+        const dbTeam = {
+            name: team.name,
+            description: team.description,
+            lead_id: team.leadId,
+            tenant_id: tenantId,
+            member_ids: team.memberIds,
+            links: team.links
+        };
+        const { error } = await supabase.from('teams').insert([dbTeam]);
         if (error) throw error;
     },
     updateTeam: async (team: Team) => {
-        const { error } = await supabase.from('teams').update(team).eq('id', team.id);
+        const dbTeam = {
+            name: team.name,
+            description: team.description,
+            lead_id: team.leadId,
+            member_ids: team.memberIds,
+            links: team.links
+        };
+        const { error } = await supabase.from('teams').update(dbTeam).eq('id', team.id);
         if (error) throw error;
     },
 
@@ -239,9 +327,15 @@ export const api = {
             date: t.date,
             is_paid: t.isPaid,
             account_id: t.accountId,
+            to_account_id: t.toAccountId,
             category_id: t.categoryId,
             credit_card_id: t.creditCardId,
             contact_id: t.contactId,
+            origin_type: t.originType,
+            origin_id: t.originId,
+            recurrence_id: t.recurrenceId,
+            installment_index: t.installmentIndex,
+            total_installments: t.totalInstallments,
             links: t.links,
             tenant_id: tenantId
         };
@@ -256,9 +350,15 @@ export const api = {
             date: t.date,
             is_paid: t.isPaid,
             account_id: t.accountId,
+            to_account_id: t.toAccountId,
             category_id: t.categoryId,
             credit_card_id: t.creditCardId,
             contact_id: t.contactId,
+            origin_type: t.originType,
+            origin_id: t.originId,
+            recurrence_id: t.recurrenceId,
+            installment_index: t.installmentIndex,
+            total_installments: t.totalInstallments,
             links: t.links
         };
         const { error } = await supabase.from('financial_transactions').update(dbTrans).eq('id', t.id);
@@ -564,15 +664,38 @@ export const api = {
         console.log("Future: Implement server-side generation of invoices");
     },
     ensureSetupCategory: async () => {
-        // Check if 'Setup' category exists
-        // For now, return a placeholder or create one
-        return 'cat_placeholder';
+        const tenantId = getCurrentTenantId();
+        const { data: existing } = await supabase
+            .from('financial_categories')
+            .select('id')
+            .eq('name', 'Setup')
+            .eq('tenant_id', tenantId)
+            .single();
+
+        if (existing) return existing.id;
+
+        const { data: created, error } = await supabase
+            .from('financial_categories')
+            .insert([{ name: 'Setup', type: 'income', color: '#4f46e5', tenant_id: tenantId }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return created.id;
     },
 
     // --- DELEGATIONS ---
-    getMyDelegations: async () => [],
-    addDelegation: async () => { },
-    deleteDelegation: async () => { },
+    getMyDelegations: async () => {
+        const { data, error } = await supabase.from('delegations').select('*');
+        if (error) return [];
+        return data as Delegation[];
+    },
+    addDelegation: async (d: Partial<Delegation>) => {
+        await supabase.from('delegations').insert([d]);
+    },
+    deleteDelegation: async (id: string) => {
+        await supabase.from('delegations').delete().eq('id', id);
+    },
 
     // --- TENANTS & SUPER ADMIN ---
     getTenantById: async (id: string) => {
@@ -587,9 +710,15 @@ export const api = {
         } as Tenant;
     },
     adminListTenants: async () => {
-        const { data, error } = await supabase.from('tenants').select('*');
+        const { data, error } = await supabase.from('tenants').select('*, saas_plans(name)');
         if (error) throw error;
-        return data as Tenant[]; // mapping roughly
+        return data.map((t: any) => ({
+            ...t,
+            planName: t.saas_plans?.name,
+            ownerEmail: t.owner_email,
+            adminName: t.admin_name,
+            createdAt: t.created_at
+        })) as Tenant[];
     },
     createTenant: async (data: any) => {
         const { data: t, error } = await supabase.from('tenants').insert([{
@@ -599,40 +728,107 @@ export const api = {
             cnpj: data.cnpj,
             phone: data.phone,
             contracted_modules: data.modules,
+            plan_id: data.planId,
             status: 'active'
         }]).select().single();
         if (error) throw error;
         return t.id;
     },
     updateTenant: async (id: string, data: any) => {
-        await supabase.from('tenants').update(data).eq('id', id);
+        const dbData = {
+            name: data.name,
+            owner_email: data.ownerEmail,
+            admin_name: data.adminName,
+            cnpj: data.cnpj,
+            phone: data.phone,
+            contracted_modules: data.modules,
+            plan_id: data.planId,
+            status: data.status
+        };
+        await supabase.from('tenants').update(dbData).eq('id', id);
     },
     getSaasPlans: async () => {
         const { data } = await supabase.from('saas_plans').select('*');
-        return data as SaasPlan[] || [];
+        return data?.map((p: any) => ({
+            ...p,
+            billingCycle: p.billing_cycle,
+            allowedModules: p.allowed_modules,
+            maxUsers: p.max_users
+        })) as SaasPlan[] || [];
     },
     createSaasPlan: async (data: any) => {
-        await supabase.from('saas_plans').insert([data]);
+        const dbData = {
+            ...data,
+            billing_cycle: data.billingCycle,
+            allowed_modules: data.allowedModules,
+            max_users: data.maxUsers
+        };
+        await supabase.from('saas_plans').insert([dbData]);
     },
     updateSaasPlan: async (data: any) => {
-        await supabase.from('saas_plans').update(data).eq('id', data.id);
+        const dbData = {
+            ...data,
+            billing_cycle: data.billingCycle,
+            allowed_modules: data.allowedModules,
+            max_users: data.maxUsers
+        };
+        await supabase.from('saas_plans').update(dbData).eq('id', data.id);
     },
     getGlobalStats: async (): Promise<GlobalStats> => {
-        // Aggregate queries (requires specific permissons or RPC)
-        return { totalTenants: 0, activeTenants: 0, totalUsers: 0, activePlans: 0 };
+        const { count: tenantCount } = await supabase.from('tenants').select('*', { count: 'exact', head: true });
+        const { count: activeTenants } = await supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active');
+        const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        const { count: planCount } = await supabase.from('saas_plans').select('*', { count: 'exact', head: true }).eq('active', true);
+
+        return {
+            totalTenants: tenantCount || 0,
+            activeTenants: activeTenants || 0,
+            totalUsers: userCount || 0,
+            activePlans: planCount || 0
+        };
     },
 
     // --- DASHBOARD METRICS ---
     getDashboardMetrics: async (): Promise<DashboardMetrics> => {
-        // In a real scenario, we'd use 'count' queries instead of fetching all rows.
-        // For simplicity reusing fetch methods or basic counts.
-        const { count: taskCount } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
+        // Fetch real counts from Supabase
+        const { count: totalTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
+        const { count: pendingTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'todo');
+        const { count: completedTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'done');
+        const { count: urgentTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('priority', 'urgent');
+
+        const { count: totalQuotes } = await supabase.from('quotes').select('*', { count: 'exact', head: true });
+        const { count: pendingQuotes } = await supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('status', 'sent');
+        const { count: approvedQuotes } = await supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('status', 'approved');
+
+        // Sum of financial balance (simplified: income - expense)
+        const { data: txs } = await supabase.from('financial_transactions').select('amount, type');
+        let balance = 0;
+        if (txs) {
+            balance = txs.reduce((acc, curr) => curr.type === 'income' ? acc + Number(curr.amount) : acc - Number(curr.amount), 0);
+        }
 
         return {
-            tasks: { total: taskCount || 0, pending: 0, completed: 0, urgent: 0 },
+            tasks: {
+                total: totalTasks || 0,
+                pending: pendingTasks || 0,
+                completed: completedTasks || 0,
+                urgent: urgentTasks || 0
+            },
             agenda: { today: 0, next7Days: 0, overdue: 0 },
-            commercial: { totalQuotes: 0, pendingQuotes: 0, approvedQuotes: 0, convertedValue: 0 },
-            financial: { balance: 0, overdueBills: 0, dueIn7Days: 0, receivables: 0, receivablesIn7Days: 0, overdueReceivables: 0 }
+            commercial: {
+                totalQuotes: totalQuotes || 0,
+                pendingQuotes: pendingQuotes || 0,
+                approvedQuotes: approvedQuotes || 0,
+                convertedValue: 0
+            },
+            financial: {
+                balance,
+                overdueBills: 0,
+                dueIn7Days: 0,
+                receivables: 0,
+                receivablesIn7Days: 0,
+                overdueReceivables: 0
+            }
         };
     }
 };
