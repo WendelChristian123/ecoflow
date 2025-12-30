@@ -1,0 +1,5 @@
+{
+  "name": "EcoFlow SaaS",
+  "description": "Um frontend de alta fidelidade para um SaaS de gestão de Projetos e Tarefas construído com React, TypeScript e Tailwind.",
+  "requestFramePermissions": []
+}
