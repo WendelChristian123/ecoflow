@@ -13,6 +13,8 @@ interface AuthContextType {
   refreshSession: () => Promise<void>;
 }
 
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -23,6 +25,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const mapSupabaseUser = async (sbUser: any): Promise<AppUser | null> => {
     if (!sbUser) return null;
 
+    // Purge legacy hardcoded tenant string if exists
+    if (localStorage.getItem('ecoflow-tenant-id') === 'tenant-1') {
+      localStorage.removeItem('ecoflow-tenant-id');
+    }
+
     // Default user structure from token only (Offline-safe)
     // Try to recover stored role to prevent flickering to 'user' on slow connections
     const storedRole = localStorage.getItem('ecoflow-user-role') as any;
@@ -32,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'User',
       email: sbUser.email || '',
       role: storedRole || 'user', // Use stored role if available, otherwise default
-      tenantId: 'tenant-1', // Default
+      tenantId: localStorage.getItem('ecoflow-tenant-id') || undefined,
       avatarUrl: '',
       permissions: undefined
     };
@@ -58,13 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         appUser.tenantId = profile.tenant_id || appUser.tenantId;
         appUser.avatarUrl = profile.avatar_url || appUser.avatarUrl;
 
-        // Store tenant choice persistence
-        const storedTenant = localStorage.getItem('ecoflow-tenant-id');
-        if (!storedTenant && profile.tenant_id) {
+        // Force update persistence from DB (Source of Truth)
+        if (profile.tenant_id) {
           localStorage.setItem('ecoflow-tenant-id', profile.tenant_id);
         }
-
-        // Store role persistence for next load
         if (profile.role) {
           localStorage.setItem('ecoflow-user-role', profile.role);
         }
@@ -128,8 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       id: stored.user.id,
                       name: stored.user.user_metadata?.name || '',
                       email: stored.user.email,
-                      role: 'user',
-                      tenantId: 'tenant-1',
+                      role: localStorage.getItem('ecoflow-user-role') as any || 'user',
+                      tenantId: localStorage.getItem('ecoflow-tenant-id') || DEFAULT_TENANT_ID,
                       avatarUrl: '',
                       permissions: undefined
                     });

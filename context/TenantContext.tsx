@@ -26,7 +26,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     useEffect(() => {
         mounted.current = true;
-        
+
         if (authLoading) return;
 
         if (!user) {
@@ -39,14 +39,14 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const initTenant = async () => {
             try {
                 let targetId = localStorage.getItem('ecoflow-mock-tenant-id');
-                
+
                 // Se não tiver seleção salva OU não for super admin, usa o tenant real do usuário
                 if (!targetId || !isSuperAdmin) {
                     targetId = (user as any).tenantId;
                 }
-                
+
                 // Fallback para Super Admin se nada estiver selecionado
-                if (!targetId && isSuperAdmin) targetId = 'tenant-1'; 
+                if (!targetId && isSuperAdmin) targetId = '00000000-0000-0000-0000-000000000001';
 
                 // GARANTIA: Sincroniza o ID usado pela API
                 if (targetId) localStorage.setItem('ecoflow-tenant-id', targetId);
@@ -64,8 +64,8 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     } catch (e) {
                         console.warn("Tenant load failed", e);
                     }
-                } 
-                
+                }
+
                 // Super Admin carrega TODAS as empresas em background
                 if (isSuperAdmin) {
                     api.adminListTenants().then(all => {
@@ -89,9 +89,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const switchTenant = async (tenantId: string) => {
         if (!isSuperAdmin) return;
-        
+
         setLoading(true); // Exibe loading visual durante a troca
-        
+
         try {
             // 1. Atualiza persistência
             localStorage.setItem('ecoflow-mock-tenant-id', tenantId);
@@ -99,7 +99,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             // 2. Busca dados da nova empresa
             const tenant = await api.getTenantById(tenantId);
-            
+
             if (tenant) {
                 setCurrentTenant(tenant);
                 // Não precisamos recarregar a página (SPA), o React atualizará os componentes dependentes
@@ -128,10 +128,10 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     return (
-        <TenantContext.Provider value={{ 
-            currentTenant, 
-            availableTenants, 
-            loading, 
+        <TenantContext.Provider value={{
+            currentTenant,
+            availableTenants,
+            loading,
             switchTenant,
             refreshTenants,
             isMultiTenant: isSuperAdmin
