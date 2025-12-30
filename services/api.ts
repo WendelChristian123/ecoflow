@@ -805,45 +805,11 @@ export const api = {
 
     // --- DASHBOARD METRICS ---
     getDashboardMetrics: async (): Promise<DashboardMetrics> => {
-        // Fetch real counts from Supabase
-        const { count: totalTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
-        const { count: pendingTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'todo');
-        const { count: completedTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'done');
-        const { count: urgentTasks } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('priority', 'urgent');
-
-        const { count: totalQuotes } = await supabase.from('quotes').select('*', { count: 'exact', head: true });
-        const { count: pendingQuotes } = await supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('status', 'sent');
-        const { count: approvedQuotes } = await supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('status', 'approved');
-
-        // Sum of financial balance (simplified: income - expense)
-        const { data: txs } = await supabase.from('financial_transactions').select('amount, type');
-        let balance = 0;
-        if (txs) {
-            balance = txs.reduce((acc, curr) => curr.type === 'income' ? acc + Number(curr.amount) : acc - Number(curr.amount), 0);
+        const { data, error } = await supabase.rpc('get_dashboard_stats');
+        if (error) {
+            console.error('Error fetching dashboard stats via RPC:', error);
+            throw error;
         }
-
-        return {
-            tasks: {
-                total: totalTasks || 0,
-                pending: pendingTasks || 0,
-                completed: completedTasks || 0,
-                urgent: urgentTasks || 0
-            },
-            agenda: { today: 0, next7Days: 0, overdue: 0 },
-            commercial: {
-                totalQuotes: totalQuotes || 0,
-                pendingQuotes: pendingQuotes || 0,
-                approvedQuotes: approvedQuotes || 0,
-                convertedValue: 0
-            },
-            financial: {
-                balance,
-                overdueBills: 0,
-                dueIn7Days: 0,
-                receivables: 0,
-                receivablesIn7Days: 0,
-                overdueReceivables: 0
-            }
-        };
+        return data as DashboardMetrics;
     }
 };

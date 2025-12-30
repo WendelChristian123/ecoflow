@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, getErrorMessage } from '../../services/api';
 import { Tenant } from '../../types';
+import { maskCNPJ, maskPhone } from '../../utils/masks';
 import { useRBAC } from '../../context/RBACContext';
 import { useTenant } from '../../context/TenantContext';
 import { useAuth } from '../../context/AuthContext';
@@ -313,8 +314,8 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <div className="space-y-4">
                                     <Input label="Nome da Empresa" placeholder="Ex: Acme Corp" value={newTenant.name} onChange={e => setNewTenant({ ...newTenant, name: e.target.value })} required />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <Input label="CNPJ" placeholder="00.000.000/0001-00" value={newTenant.document} onChange={e => setNewTenant({ ...newTenant, document: e.target.value })} required />
-                                        <Input label="Telefone" placeholder="(00) 0000-0000" value={newTenant.phone} onChange={e => setNewTenant({ ...newTenant, phone: e.target.value })} required />
+                                        <Input label="CNPJ" placeholder="00.000.000/0001-00" value={newTenant.document} onChange={e => setNewTenant({ ...newTenant, document: maskCNPJ(e.target.value) })} required />
+                                        <Input label="Telefone" placeholder="(00) 00000-0000" value={newTenant.phone} onChange={e => setNewTenant({ ...newTenant, phone: maskPhone(e.target.value) })} required />
                                     </div>
                                     <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 mt-2">
                                         <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Lock size={14} /> Dados do Administrador Inicial</h4>
