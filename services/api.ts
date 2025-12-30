@@ -226,14 +226,21 @@ export const api = {
         } as User;
     },
     createUser: async (userData: any, tenantId?: string) => {
-        // This interacts with Auth API usually. 
-        // For "Adding a user to the system" without them signing up themselves, 
-        // we'd typically use Supabase Admin API (server side) or just Invite usage.
-        // For this demo, we might rely on the `signUp` method in AuthContext.
-        // If this method is used by SuperAdmin to simple create a record, it might fail without Admin rights.
-        // Let's Warn.
-        console.warn("Manual user creation via API is limited. Use Invite.");
-        return null;
+        const { data, error } = await supabase.functions.invoke('admin-create-user', {
+            body: userData
+        });
+
+        if (error) {
+            console.error('Edge Function Invoke Error:', error);
+            throw error;
+        }
+
+        // Edge Function might return { error: "message" }
+        if (data && data.error) {
+            throw new Error(data.error);
+        }
+
+        return data;
     },
     updateProfile: async (id: string, data: { name: string, phone: string }) => {
         const { error } = await supabase.from('profiles').update(data).eq('id', id);
