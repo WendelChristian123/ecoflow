@@ -4,7 +4,7 @@ import { api, getErrorMessage } from '../../services/api';
 import { Tenant } from '../../types';
 import { useRBAC } from '../../context/RBACContext';
 import { useTenant } from '../../context/TenantContext';
-import { useAuth } from '../../context/AuthContext'; 
+import { useAuth } from '../../context/AuthContext';
 import { Loader, Button, Input, Card, Badge, Modal, Select } from '../../components/Shared';
 import { Building2, Plus, Search, Globe, Lock, CheckCircle2, Edit2, Package, AlertTriangle, Terminal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +18,7 @@ export const SuperAdminDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [stats, setStats] = useState({ totalTenants: 0, activeTenants: 0, totalUsers: 0, activePlans: 0 });
-    
+
     // Create/Edit Tenant Form State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [createTab, setCreateTab] = useState<'data' | 'modules'>('data');
@@ -62,18 +62,18 @@ export const SuperAdminDashboard: React.FC = () => {
 
     const handleOpenEdit = (tenant: Tenant) => {
         setEditingId(tenant.id);
-        setNewTenant({ 
-            name: tenant.name, 
-            ownerEmail: tenant.ownerEmail || '', 
-            phone: tenant.phone || '', 
-            document: tenant.cnpj || '', 
-            adminName: tenant.adminName || '', 
-            password: '', 
+        setNewTenant({
+            name: tenant.name,
+            ownerEmail: tenant.ownerEmail || '',
+            phone: tenant.phone || '',
+            document: tenant.cnpj || '',
+            adminName: tenant.adminName || '',
+            password: '',
             status: tenant.status
         });
-        
+
         let modules: string[] = ['mod_tasks'];
-        if (Array.isArray(tenant.contractedModules)) modules = [...tenant.contractedModules]; 
+        if (Array.isArray(tenant.contractedModules)) modules = [...tenant.contractedModules];
         if (!modules.includes('mod_tasks')) modules.push('mod_tasks');
         setDraftModules(modules);
         setCreateTab('data');
@@ -95,14 +95,14 @@ export const SuperAdminDashboard: React.FC = () => {
             if (editingId) {
                 await api.updateTenant(editingId, {
                     name: newTenant.name, phone: newTenant.phone, cnpj: newTenant.document, adminName: newTenant.adminName,
-                    status: newTenant.status as any, contractedModules: draftModules 
+                    status: newTenant.status as any, modules: draftModules
                 });
                 alert('Empresa atualizada com sucesso!');
                 setIsModalOpen(false);
             } else {
                 // 1. Create Tenant
                 const tenantId = await api.createTenant({
-                    name: newTenant.name, ownerEmail: newTenant.ownerEmail, cnpj: newTenant.document, phone: newTenant.phone, adminName: newTenant.adminName, modules: draftModules 
+                    name: newTenant.name, ownerEmail: newTenant.ownerEmail, cnpj: newTenant.document, phone: newTenant.phone, adminName: newTenant.adminName, modules: draftModules
                 });
 
                 // 2. Refresh lists immediately so the company appears
@@ -111,17 +111,17 @@ export const SuperAdminDashboard: React.FC = () => {
 
                 // 3. Try Create User
                 try {
-                    await api.createUser({ 
-                        name: newTenant.adminName, 
-                        email: newTenant.ownerEmail, 
-                        password: newTenant.password, 
-                        phone: newTenant.phone, 
-                        role: 'admin' 
+                    await api.createUser({
+                        name: newTenant.adminName,
+                        email: newTenant.ownerEmail,
+                        password: newTenant.password,
+                        phone: newTenant.phone,
+                        role: 'admin'
                     }, tenantId);
                     setTempPassword(newTenant.password);
                 } catch (userError: any) {
                     console.error("User creation failed:", userError);
-                    
+
                     // Tratamento específico para erro 23505 (Duplicate Key)
                     // Se der esse erro, significa que o usuário/perfil foi criado (provavelmente por trigger), então é sucesso.
                     if (userError?.code === '23505' || userError?.message?.includes('duplicate key')) {
@@ -133,9 +133,9 @@ export const SuperAdminDashboard: React.FC = () => {
                     }
                 }
             }
-            
+
             if (editingId) closeAndReset();
-            
+
         } catch (error: any) {
             console.error("Create Tenant Failed:", error);
             alert("Erro crítico ao salvar: " + (error.message || JSON.stringify(error)));
@@ -170,7 +170,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
-            
+
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/20 p-6 rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none"><Globe size={120} /></div>
                 <div className="z-10">
@@ -247,7 +247,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <td className="px-6 py-4">
                                     <div className="flex gap-1 flex-wrap max-w-[200px]">
                                         {(tenant.contractedModules || []).map((m: string, i: number) => (
-                                            <span key={i} className="text-[10px] bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">{m.replace('mod_','')}</span>
+                                            <span key={i} className="text-[10px] bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">{m.replace('mod_', '')}</span>
                                         ))}
                                     </div>
                                 </td>
@@ -275,11 +275,11 @@ export const SuperAdminDashboard: React.FC = () => {
                         ) : (
                             <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle2 size={32} /></div>
                         )}
-                        
+
                         <h3 className="text-xl font-bold text-white">
                             {userCreationError ? 'Empresa Criada, mas Atenção!' : 'Empresa Cadastrada!'}
                         </h3>
-                        
+
                         {userCreationError ? (
                             <div className="text-left bg-amber-500/10 border border-amber-500/20 p-4 rounded-lg">
                                 <p className="text-amber-200 text-sm mb-2">{userCreationError}</p>
@@ -311,23 +311,23 @@ export const SuperAdminDashboard: React.FC = () => {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {createTab === 'data' ? (
                                 <div className="space-y-4">
-                                    <Input label="Nome da Empresa" placeholder="Ex: Acme Corp" value={newTenant.name} onChange={e => setNewTenant({...newTenant, name: e.target.value})} required />
+                                    <Input label="Nome da Empresa" placeholder="Ex: Acme Corp" value={newTenant.name} onChange={e => setNewTenant({ ...newTenant, name: e.target.value })} required />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <Input label="CNPJ" placeholder="00.000.000/0001-00" value={newTenant.document} onChange={e => setNewTenant({...newTenant, document: e.target.value})} required />
-                                        <Input label="Telefone" placeholder="(00) 0000-0000" value={newTenant.phone} onChange={e => setNewTenant({...newTenant, phone: e.target.value})} required />
+                                        <Input label="CNPJ" placeholder="00.000.000/0001-00" value={newTenant.document} onChange={e => setNewTenant({ ...newTenant, document: e.target.value })} required />
+                                        <Input label="Telefone" placeholder="(00) 0000-0000" value={newTenant.phone} onChange={e => setNewTenant({ ...newTenant, phone: e.target.value })} required />
                                     </div>
                                     <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 mt-2">
-                                        <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Lock size={14}/> Dados do Administrador Inicial</h4>
+                                        <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Lock size={14} /> Dados do Administrador Inicial</h4>
                                         <div className="space-y-3">
-                                            <Input label="Nome do Admin" placeholder="Nome completo" value={newTenant.adminName} onChange={e => setNewTenant({...newTenant, adminName: e.target.value})} required />
-                                            <Input label="Email de Acesso (Login)" type="email" placeholder="admin@empresa.com" value={newTenant.ownerEmail} onChange={e => setNewTenant({...newTenant, ownerEmail: e.target.value})} required disabled={!!editingId} />
-                                            {!editingId && <Input label="Senha Inicial" type="password" placeholder="Mínimo 6 caracteres" value={newTenant.password} onChange={e => setNewTenant({...newTenant, password: e.target.value})} required />}
+                                            <Input label="Nome do Admin" placeholder="Nome completo" value={newTenant.adminName} onChange={e => setNewTenant({ ...newTenant, adminName: e.target.value })} required />
+                                            <Input label="Email de Acesso (Login)" type="email" placeholder="admin@empresa.com" value={newTenant.ownerEmail} onChange={e => setNewTenant({ ...newTenant, ownerEmail: e.target.value })} required disabled={!!editingId} />
+                                            {!editingId && <Input label="Senha Inicial" type="password" placeholder="Mínimo 6 caracteres" value={newTenant.password} onChange={e => setNewTenant({ ...newTenant, password: e.target.value })} required />}
                                         </div>
                                     </div>
                                     {editingId && (
                                         <div>
                                             <label className="text-xs text-slate-400 mb-1 block">Status</label>
-                                            <Select value={newTenant.status} onChange={e => setNewTenant({...newTenant, status: e.target.value})}>
+                                            <Select value={newTenant.status} onChange={e => setNewTenant({ ...newTenant, status: e.target.value })}>
                                                 <option value="active">Ativa</option>
                                                 <option value="suspended">Suspensa</option>
                                                 <option value="inactive">Inativa</option>
@@ -344,7 +344,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                             return (
                                                 <button type="button" key={mod.id} onClick={() => !isMandatory && toggleDraftModule(mod.id)} className={`w-full text-left p-3 rounded-lg border flex items-center justify-between transition-all ${isSelected ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-slate-800 border-slate-700 hover:bg-slate-700'}`}>
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-500'}`}>{isSelected && <CheckCircle2 size={12} className="text-white"/>}</div>
+                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-500'}`}>{isSelected && <CheckCircle2 size={12} className="text-white" />}</div>
                                                         <div><div className={`font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>{mod.name}</div><div className="text-xs text-slate-500">{mod.category}</div></div>
                                                     </div>
                                                 </button>
