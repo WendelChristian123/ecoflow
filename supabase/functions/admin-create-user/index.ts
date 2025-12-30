@@ -59,10 +59,10 @@ serve(async (req) => {
 
         if (createError) throw createError;
 
-        // 5. Create Profile (Service Role bypasses RLS)
+        // 5. Create Profile (Service Role bypasses RLS) - Use Upsert to handle trigger conflict
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
-            .insert({
+            .upsert({
                 id: newUser.user.id,
                 email,
                 name,
