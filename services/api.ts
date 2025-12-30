@@ -725,18 +725,19 @@ export const api = {
         })) as Tenant[];
     },
     createTenant: async (data: any) => {
-        const { data: t, error } = await supabase.from('tenants').insert([{
-            name: data.name,
-            owner_email: data.ownerEmail,
-            admin_name: data.adminName,
-            cnpj: data.cnpj,
-            phone: data.phone,
-            contracted_modules: data.modules,
-            plan_id: data.planId,
-            status: 'active'
-        }]).select().single();
-        if (error) throw error;
-        return t.id;
+        const { data: response, error } = await supabase.functions.invoke('create-tenant-admin', {
+            body: {
+                name: data.name,
+                ownerEmail: data.ownerEmail,
+                adminName: data.adminName,
+                password: data.password,
+                planId: data.planId,
+                modules: data.modules
+            }
+        });
+
+        if (error || response.error) throw new Error(error?.message || response.error);
+        return response.tenantId;
     },
     updateTenant: async (id: string, data: any) => {
         const dbData = {
