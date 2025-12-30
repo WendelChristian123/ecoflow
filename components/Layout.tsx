@@ -278,6 +278,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const [openGroups, setOpenGroups] = useState<string[]>([]);
     const { can, isSuperAdmin } = useRBAC();
     const { user, refreshSession } = useAuth();
+    const { currentTenant } = useTenant();
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const saved = localStorage.getItem('ecoflow-sidebar-collapsed');
@@ -331,6 +332,29 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         if (path.startsWith('/settings')) return 'Configurações';
         if (path.startsWith('/super-admin')) return 'Backoffice Admin';
         return 'EcoFlow';
+    };
+
+    // Helper to check if the current tenant has contracted a specific module
+    const hasModule = (moduleKey: string) => {
+        // Super Admin viewing generic area or global dashboard sees all? 
+        // Or should respect the VIEWED tenant?
+        // Logic: If I am "impersonating" a tenant (switchTenant), I should see what THEY see.
+        // If I am in my own context (Super Admin), I have everything.
+
+        if (isSuperAdmin && !currentTenant) return true; // Safety
+
+        // If tenant has no modules array defined (legacy), show all or none? 
+        // Better to be permissive if undefined to avoid lockouts during migration, 
+        // OR restrictive if correct. Assuming new tenants have it.
+        // Let's check if array exists.
+        if (currentTenant?.contractedModules) {
+            const mods = currentTenant.contractedModules;
+            // Check for specific module key
+            return mods.includes(moduleKey);
+        }
+
+        // Default: If no list found, show YES (Legacy compatibility)
+        return true;
     };
 
     return (
@@ -397,7 +421,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 <div className="my-4 border-t border-slate-800/50"></div>
 
                                 {/* Commercial Module */}
-                                {can('routines', 'view') && (
+                                {can('routines', 'view') && hasModule('mod_commercial') && (
                                     <SidebarGroup
                                         label="Comercial"
                                         icon={<CommercialIcon size={18} />}
@@ -413,7 +437,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 )}
 
                                 {/* Rotinas */}
-                                {can('routines', 'view') && (
+                                {can('routines', 'view') && hasModule('mod_tasks') && (
                                     <SidebarGroup
                                         label="Rotinas & Execução"
                                         icon={<CheckSquare size={18} />}
@@ -430,7 +454,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 )}
 
                                 {/* Financeiro */}
-                                {can('finance', 'view') && (
+                                {can('finance', 'view') && hasModule('mod_finance') && (
                                     <SidebarGroup
                                         label="Financeiro"
                                         icon={<DollarSign size={18} />}

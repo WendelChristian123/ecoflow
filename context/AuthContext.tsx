@@ -13,6 +13,7 @@ interface AuthContextType {
   refreshSession: () => Promise<void>;
 }
 
+// System-wide default tenant ID for global/super-admin views and new user defaults
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

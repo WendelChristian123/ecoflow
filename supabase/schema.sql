@@ -30,7 +30,7 @@ create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, name, role, tenant_id)
-  values (new.id, new.raw_user_meta_data->>'name', 'user', 'tenant-1');
+  values (new.id, new.raw_user_meta_data->>'name', 'user', '00000000-0000-0000-0000-000000000001');
   return new;
 end;
 $$ language plpgsql security definer;

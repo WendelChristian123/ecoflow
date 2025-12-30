@@ -311,19 +311,19 @@ FOR SELECT USING (id = public.get_current_tenant_id());
 
 -- Teams
 CREATE POLICY "Tenant isolation for teams" ON public.teams
-USING (tenant_id = public.get_current_tenant_id());
+USING (tenant_id = public.get_current_tenant_id() OR is_super_admin());
 
 -- Projects
 CREATE POLICY "Tenant isolation for projects" ON public.projects
-USING (tenant_id = public.get_current_tenant_id());
+USING (tenant_id = public.get_current_tenant_id() OR is_super_admin());
 
 -- Tasks
 CREATE POLICY "Tenant isolation for tasks" ON public.tasks
-USING (tenant_id = public.get_current_tenant_id());
+USING (tenant_id = public.get_current_tenant_id() OR is_super_admin());
 
 -- Calendar
 CREATE POLICY "Tenant isolation for events" ON public.calendar_events
-USING (tenant_id = public.get_current_tenant_id());
+USING (tenant_id = public.get_current_tenant_id() OR is_super_admin());
 
 -- Financial Accounts
 CREATE POLICY "Tenant isolation for accounts" ON public.financial_accounts

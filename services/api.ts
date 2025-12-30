@@ -721,10 +721,13 @@ export const api = {
             planName: t.saas_plans?.name,
             ownerEmail: t.owner_email,
             adminName: t.admin_name,
+            contractedModules: t.contracted_modules,
             createdAt: t.created_at
         })) as Tenant[];
     },
     createTenant: async (data: any) => {
+        console.log('[API] Calling create-tenant-admin Edge Function with:', data);
+
         const { data: response, error } = await supabase.functions.invoke('create-tenant-admin', {
             body: {
                 name: data.name,
@@ -736,7 +739,14 @@ export const api = {
             }
         });
 
-        if (error || response.error) throw new Error(error?.message || response.error);
+        console.log('[API] Edge Function response:', { response, error });
+
+        if (error || response?.error) {
+            const errorMsg = error?.message || response?.error || 'Unknown error';
+            console.error('[API] Edge Function failed:', errorMsg);
+            throw new Error(errorMsg);
+        }
+
         return response.tenantId;
     },
     updateTenant: async (id: string, data: any) => {
