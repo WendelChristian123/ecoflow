@@ -278,30 +278,32 @@ export const SuperAdminUsers: React.FC = () => {
                                             <MoreVertical size={18} />
                                         </button>
 
-                                        <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
-                                            <button onClick={() => { setSelectedUser(user); setActionModal('tenant'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
-                                                <Building2 size={16} /> Detalhes Empresa
-                                            </button>
-                                            <button onClick={() => { setSelectedUser(user); setActionModal('role'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
-                                                <Shield size={16} /> Gerenciar Papel
-                                            </button>
-                                            <button onClick={() => { setSelectedUser(user); setActionModal('edit'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
-                                                <UserCog size={16} /> Editar Dados
-                                            </button>
-                                            <button onClick={() => { setSelectedUser(user); setActionModal('password'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
-                                                <Key size={16} /> Resetar Senha
-                                            </button>
-                                            <div className="h-px bg-slate-800 my-1" />
-                                            <button onClick={() => handleForceLogout(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
-                                                <LogOut size={16} /> Forçar Logout
-                                            </button>
-                                            <button onClick={() => handleToggleSuspend(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
-                                                <ShieldAlert size={16} /> {user.status === 'suspended' ? 'Reativar' : 'Suspender'}
-                                            </button>
-                                            <button onClick={() => handleDeleteUser(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
-                                                <Trash2 size={16} /> Excluir
-                                            </button>
-                                        </div>
+                                        {activeMenuId === user.id && (
+                                            <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('tenant'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                    <Building2 size={16} /> Detalhes Empresa
+                                                </button>
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('role'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                    <Shield size={16} /> Gerenciar Papel
+                                                </button>
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('edit'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                    <UserCog size={16} /> Editar Dados
+                                                </button>
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('password'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                    <Key size={16} /> Resetar Senha
+                                                </button>
+                                                <div className="h-px bg-slate-800 my-1" />
+                                                <button onClick={() => handleForceLogout(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
+                                                    <LogOut size={16} /> Forçar Logout
+                                                </button>
+                                                <button onClick={() => handleToggleSuspend(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
+                                                    <ShieldAlert size={16} /> {user.status === 'suspended' ? 'Reativar' : 'Suspender'}
+                                                </button>
+                                                <button onClick={() => handleDeleteUser(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
+                                                    <Trash2 size={16} /> Excluir
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </td>
                             </tr>
