@@ -28,7 +28,8 @@ export const SuperAdminUsers: React.FC = () => {
 
     // Action Modals State
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [actionModal, setActionModal] = useState<'tenant' | 'role' | 'none'>('none');
+    const [actionModal, setActionModal] = useState<'tenant' | 'role' | 'password' | 'edit' | 'none'>('none');
+    const [actionValue, setActionValue] = useState(''); // For password reset or other inputs
 
     // Create User State
     const [newUser, setNewUser] = useState({ name: '', email: '', phone: '', tenantId: '', role: 'user', password: '' });
@@ -96,6 +97,40 @@ export const SuperAdminUsers: React.FC = () => {
         switchTenant(tenantId);
         navigate('/dashboard');
     };
+
+    const handleForceLogout = async (user: User) => {
+        if (!confirm(`Tem certeza que deseja forçar o logout de ${user.name}?`)) return;
+        try {
+            await api.adminForceLogout(user.id);
+            alert("Logout forçado com sucesso. O usuário será desconectado na próxima ação.");
+        } catch (error) {
+            alert("Erro ao forçar logout: " + getErrorMessage(error));
+        }
+    };
+
+    const handleToggleSuspend = async (user: User) => {
+        const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+        if (!confirm(`Deseja realmente ${newStatus === 'active' ? 'reativar' : 'suspender'} o usuário ${user.name}?`)) return;
+
+        try {
+            await api.adminUpdateUserStatus(user.id, newStatus);
+            setUsers(users.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
+        } catch (error) {
+            alert("Erro ao alterar status: " + getErrorMessage(error));
+        }
+    };
+
+    const handleDeleteUser = async (user: User) => {
+        if (!confirm(`ATENÇÃO: Deseja realmente excluir permanentemente o usuário ${user.name}? Esta ação não pode ser desfeita.`)) return;
+
+        try {
+            await api.deleteUser(user.id);
+            setUsers(users.filter(u => u.id !== user.id));
+        } catch (error) {
+            alert("Erro ao excluir usuário: " + getErrorMessage(error));
+        }
+    };
+
 
     // Filter Logic
     const filteredUsers = users.filter((u) => {
@@ -226,7 +261,7 @@ export const SuperAdminUsers: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4">
                                     <button
-                                        onClick={() => alert(`Alterar status de ${user.name} (Simulação)`)} // Mock toggle
+                                        onClick={() => handleToggleSuspend(user)}
                                         title="Clique para alterar status"
                                     >
                                         <Badge variant={getUserStatusColor(user.status)}>
@@ -243,26 +278,30 @@ export const SuperAdminUsers: React.FC = () => {
                                             <MoreVertical size={18} />
                                         </button>
 
-                                        {activeMenuId === user.id && (
-                                            <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
-                                                <button onClick={() => alert("Editar simulado")} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
-                                                    <UserCog size={16} /> Editar Dados
-                                                </button>
-                                                <button onClick={() => alert("Resetar senha simulado")} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
-                                                    <Key size={16} /> Resetar Senha
-                                                </button>
-                                                <div className="h-px bg-slate-800 my-1" />
-                                                <button onClick={() => alert("Logout forçado simulado")} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
-                                                    <LogOut size={16} /> Forçar Logout
-                                                </button>
-                                                <button onClick={() => alert("Suspender simulado")} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
-                                                    <ShieldAlert size={16} /> Suspender
-                                                </button>
-                                                <button onClick={() => alert("Exclusão simulada")} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
-                                                    <Trash2 size={16} /> Excluir
-                                                </button>
-                                            </div>
-                                        )}
+                                        <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+                                            <button onClick={() => { setSelectedUser(user); setActionModal('tenant'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                <Building2 size={16} /> Detalhes Empresa
+                                            </button>
+                                            <button onClick={() => { setSelectedUser(user); setActionModal('role'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                <Shield size={16} /> Gerenciar Papel
+                                            </button>
+                                            <button onClick={() => { setSelectedUser(user); setActionModal('edit'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                <UserCog size={16} /> Editar Dados
+                                            </button>
+                                            <button onClick={() => { setSelectedUser(user); setActionModal('password'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                <Key size={16} /> Resetar Senha
+                                            </button>
+                                            <div className="h-px bg-slate-800 my-1" />
+                                            <button onClick={() => handleForceLogout(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
+                                                <LogOut size={16} /> Forçar Logout
+                                            </button>
+                                            <button onClick={() => handleToggleSuspend(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
+                                                <ShieldAlert size={16} /> {user.status === 'suspended' ? 'Reativar' : 'Suspender'}
+                                            </button>
+                                            <button onClick={() => handleDeleteUser(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
+                                                <Trash2 size={16} /> Excluir
+                                            </button>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -361,6 +400,8 @@ export const SuperAdminUsers: React.FC = () => {
                 )}
             </Modal>
 
+
+
             {/* Modal Role Manager */}
             <Modal isOpen={actionModal === 'role' && !!selectedUser} onClose={() => setActionModal('none')} title="Gerenciar Papel (Role)">
                 {selectedUser && (
@@ -374,7 +415,16 @@ export const SuperAdminUsers: React.FC = () => {
                             {['user', 'admin', 'super_admin'].map(r => (
                                 <button
                                     key={r}
-                                    onClick={() => alert(`Papel alterado para: ${r} (Simulação)`)}
+                                    onClick={async () => {
+                                        try {
+                                            await api.adminUpdateUserRole(selectedUser.id, r);
+                                            setUsers(users.map(u => u.id === selectedUser.id ? { ...u, role: r as any } : u));
+                                            setActionModal('none');
+                                            // alert(`Papel alterado para: ${r}`);
+                                        } catch (e) {
+                                            alert("Erro ao alterar papel: " + getErrorMessage(e));
+                                        }
+                                    }}
                                     className={`p-3 rounded-lg border text-left flex items-center justify-between hover:bg-slate-800 transition-colors ${selectedUser.role === r ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-transparent border-slate-700'}`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -400,6 +450,72 @@ export const SuperAdminUsers: React.FC = () => {
                 )}
             </Modal>
 
-        </div>
+            {/* Modal Password Reset */}
+            <Modal isOpen={actionModal === 'password' && !!selectedUser} onClose={() => { setActionModal('none'); setActionValue(''); }} title="Resetar Senha">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-400">Digite a nova senha para <strong>{selectedUser?.name}</strong>.</p>
+                    <Input
+                        placeholder="Nova senha (mín 6 caracteres)"
+                        type="password"
+                        value={actionValue}
+                        onChange={(e) => setActionValue(e.target.value)}
+                    />
+                    <Button
+                        disabled={!actionValue || actionValue.length < 6}
+                        onClick={async () => {
+                            if (!selectedUser) return;
+                            try {
+                                await api.adminResetPassword(selectedUser.id, actionValue);
+                                alert("Senha resetada com sucesso!");
+                                setActionModal('none');
+                                setActionValue('');
+                            } catch (e) {
+                                alert("Erro ao resetar senha: " + getErrorMessage(e));
+                            }
+                        }}
+                        className="w-full"
+                    >
+                        Confirmar Nova Senha
+                    </Button>
+                </div>
+            </Modal>
+
+            {/* Modal Edit User */}
+            <Modal isOpen={actionModal === 'edit' && !!selectedUser} onClose={() => { setActionModal('none'); }} title="Editar Dados">
+                {selectedUser && (
+                    <UserEditForm user={selectedUser} onSave={async (data) => {
+                        try {
+                            // Currently updateProfile updates name and phone
+                            // api.updateProfile(user.id, data)
+                            // But usually specialized admin update might be better if we change email etc.
+                            // For now reuse basic updateProfile or create adminUpdateProfile in api if needed.
+                            // Let's use api.updateProfile for now as it exists.
+                            await api.updateProfile(selectedUser.id, { name: data.name, phone: data.phone });
+                            setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...data } : u));
+                            setActionModal('none');
+                        } catch (e) {
+                            alert("Erro ao atualizar: " + getErrorMessage(e));
+                        }
+                    }} onCancel={() => setActionModal('none')} />
+                )}
+            </Modal>
+
+        </div >
+    );
+};
+
+const UserEditForm: React.FC<{ user: User, onSave: (data: { name: string, phone: string }) => void, onCancel: () => void }> = ({ user, onSave, onCancel }) => {
+    const [name, setName] = useState(user.name);
+    const [phone, setPhone] = useState(user.phone || '');
+
+    return (
+        <form onSubmit={(e) => { e.preventDefault(); onSave({ name, phone }); }} className="space-y-4">
+            <Input label="Nome" value={name} onChange={e => setName(e.target.value)} required />
+            <Input label="Telefone" value={phone} onChange={e => setPhone(e.target.value)} />
+            <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+                <Button type="submit">Salvar Alterações</Button>
+            </div>
+        </form>
     );
 };

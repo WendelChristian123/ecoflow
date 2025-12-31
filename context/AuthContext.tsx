@@ -32,39 +32,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Default user structure from token only (Offline-safe)
-    // Try to recover stored role to prevent flickering to 'user' on slow connections
     const storedRole = localStorage.getItem('ecoflow-user-role') as any;
 
     const appUser: AppUser = {
       id: sbUser.id,
       name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'User',
       email: sbUser.email || '',
-      role: storedRole || 'user', // Use stored role if available, otherwise default
+      role: storedRole || 'user',
       tenantId: localStorage.getItem('ecoflow-tenant-id') || undefined,
       avatarUrl: '',
       permissions: undefined
     };
 
     try {
-      // Fetch profile with short timeout to avoid hanging the UI
-      const profilePromise = supabase
+      // Fetch profile AND tenant status with strict enforcement
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, tenants(id, status, financial_status)')
         .eq('id', sbUser.id)
         .single();
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
-      );
-
-      const result: any = await Promise.race([profilePromise, timeoutPromise]);
-      const profile = result?.data;
+      if (error) throw error;
 
       if (profile) {
+        // ENFORCEMENT: Check Status (User & Tenant)
+        if (profile.role !== 'super_admin') {
+          if (profile.status === 'suspended' || profile.status === 'blocked') {
+            console.error("User suspended/blocked");
+            throw new Error("Sua conta foi suspensa ou bloqueada. Entre em contato com seu administrador.");
+          }
+          if (profile.tenants?.status !== 'active') {
+            console.error("Tenant inactive/suspended");
+            throw new Error("A sua empresa está inativa ou suspensa. Entre em contato com o suporte.");
+          }
+          // Optional: Check financial status if needed, but 'status' usually covers suspension
+        }
+
         appUser.name = profile.name || appUser.name;
         appUser.role = profile.role || appUser.role;
         appUser.tenantId = profile.tenant_id || appUser.tenantId;
         appUser.avatarUrl = profile.avatar_url || appUser.avatarUrl;
+
+        // Include status in the user object if we want to show it in UI (optional, but good for debugging)
+        (appUser as any).status = profile.status;
+
 
         // Force update persistence from DB (Source of Truth)
         if (profile.tenant_id) {
@@ -74,8 +85,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('ecoflow-user-role', profile.role);
         }
       }
-    } catch (err) {
-      console.warn('Profile fetch skipped/failed (using robust offline data):', err);
+    } catch (err: any) {
+      console.warn('Profile fetch/enforcement check failed:', err.message);
+      // If the error is our enforcement error, rethrow it to trigger logout/error handling
+      if (err.message.includes("suspensa") || err.message.includes("inativa")) {
+        // We can't easily "throw" from here to the initSession, but we can return null
+        // or handle signOut here.
+        await supabase.auth.signOut();
+        // We might want to alert if possible, or just fail silently to "unauthenticated"
+        // Ideally, we should propagate this error.
+        throw err;
+      }
     }
 
     return appUser;
@@ -102,8 +122,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error) throw error;
 
         if (session?.user) {
-          const mapped = await mapSupabaseUser(session.user);
-          if (mounted) setUser(mapped);
+          try {
+            const mapped = await mapSupabaseUser(session.user);
+            if (mounted) setUser(mapped);
+          } catch (mapErr: any) {
+            console.error("Login enforcement failed:", mapErr);
+            if (mounted) {
+              setUser(null); // Ensure logged out state
+              alert(mapErr.message); // Show message as requested
+            }
+          }
         }
       } catch (err: any) {
         console.warn("[AuthContext] Session verification failed/timedout:", err);

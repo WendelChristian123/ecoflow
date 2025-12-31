@@ -250,8 +250,15 @@ export const api = {
 
         return data;
     },
-    updateProfile: async (id: string, data: { name: string, phone: string }) => {
-        const { error } = await supabase.from('profiles').update(data).eq('id', id);
+    updateProfile: async (id: string, data: { name: string, phone: string, email?: string }) => {
+        // If email is changing, we might need to update Auth... but that's complex with verification.
+        // For now, just update profile metadata and trust the edge function for Auth updates if strictly needed.
+        // Actually, let's keep it simple: Profile update only updates public info.
+        const { error } = await supabase.from('profiles').update({
+            name: data.name,
+            phone: data.phone
+            // Email sync is tricky without Edge Function 'updateUserAuth' 
+        }).eq('id', id);
         if (error) throw error;
     },
     updatePassword: async (password: string) => {
@@ -266,12 +273,44 @@ export const api = {
         const { error } = await supabase.from('profiles').update({ permissions }).eq('id', id);
         if (error) console.warn("Permissions update failed (column might be missing)", error);
     },
+
     deleteUser: async (id: string) => {
-        // Requires Service Role usually to delete from Auth.
-        // Deleting from profile might cascade or fail.
-        const { error } = await supabase.from('profiles').delete().eq('id', id);
+        // Use the admin-action edge function for safe deletion from Auth + Profile
+        const { error } = await supabase.functions.invoke('admin-action', {
+            body: { action: 'deleteUser', targetId: id }
+        });
+
         if (error) throw error;
     },
+
+    // --- ADMIN USER ACTIONS (Edge Function) ---
+    adminResetPassword: async (userId: string, newPassword: string) => {
+        const { data, error } = await supabase.functions.invoke('admin-action', {
+            body: { action: 'resetPassword', targetId: userId, payload: { password: newPassword } }
+        });
+        if (error) throw new Error(error.message || 'Falha ao resetar senha');
+        if (data?.error) throw new Error(data.error);
+    },
+
+    adminForceLogout: async (userId: string) => {
+        const { data, error } = await supabase.functions.invoke('admin-action', {
+            body: { action: 'forceLogout', targetId: userId }
+        });
+        if (error) throw new Error(error.message || 'Falha ao forçar logout');
+        if (data?.error) throw new Error(data.error);
+    },
+
+    adminUpdateUserStatus: async (userId: string, status: 'active' | 'suspended' | 'blocked') => {
+        // Status is on the profile table, we can update it directly if we are super admin
+        const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
+        if (error) throw error;
+    },
+
+    adminUpdateUserRole: async (userId: string, role: string) => {
+        const { error } = await supabase.from('profiles').update({ role }).eq('id', userId);
+        if (error) throw error;
+    },
+
 
     // --- EVENTS ---
     getEvents: async (tenantId?: string) => {
