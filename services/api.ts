@@ -743,7 +743,9 @@ export const api = {
             ownerEmail: data.owner_email,
             adminName: data.admin_name,
             contractedModules: data.contracted_modules,
-            createdAt: data.created_at
+            createdAt: data.created_at,
+            financialStatus: data.financial_status,
+            lastActiveAt: data.last_active_at
         } as Tenant;
     },
     adminListTenants: async () => {
@@ -755,7 +757,9 @@ export const api = {
             ownerEmail: t.owner_email,
             adminName: t.admin_name,
             contractedModules: t.contracted_modules,
-            createdAt: t.created_at
+            createdAt: t.created_at,
+            financialStatus: t.financial_status,
+            lastActiveAt: t.last_active_at
         })) as Tenant[];
     },
     createTenant: async (data: any) => {
@@ -772,18 +776,24 @@ export const api = {
             }
         });
 
-        console.log('[API] Edge Function response:', { response, error });
-
         if (error || response?.error) {
             const errorMsg = error?.message || response?.error || 'Unknown error';
             console.error('[API] Edge Function failed:', errorMsg);
             throw new Error(errorMsg);
         }
 
+        // Post-creation update for new real fields
+        if (data.type || data.financialStatus) {
+            await supabase.from('tenants').update({
+                type: data.type || 'client',
+                financial_status: data.financialStatus || 'ok'
+            }).eq('id', response.tenantId);
+        }
+
         return response.tenantId;
     },
     updateTenant: async (id: string, data: any) => {
-        const dbData = {
+        const dbData: any = {
             name: data.name,
             owner_email: data.ownerEmail,
             admin_name: data.adminName,
@@ -791,8 +801,13 @@ export const api = {
             phone: data.phone,
             contracted_modules: data.modules,
             plan_id: data.planId,
-            status: data.status
+            status: data.status,
+            type: data.type,
+            financial_status: data.financialStatus
         };
+        // Remove undefined keys
+        Object.keys(dbData).forEach(key => dbData[key] === undefined && delete dbData[key]);
+
         await supabase.from('tenants').update(dbData).eq('id', id);
     },
     getSaasPlans: async () => {

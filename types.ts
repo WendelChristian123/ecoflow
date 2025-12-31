@@ -3,7 +3,7 @@ export type Status = 'todo' | 'in_progress' | 'review' | 'done';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 // --- RBAC Types ---
-export type UserRole = 'admin' | 'user' | 'super_admin'; // Updated
+export type UserRole = 'admin' | 'user' | 'super_admin';
 
 export interface ModulePermissions {
   view: boolean;
@@ -14,36 +14,44 @@ export interface ModulePermissions {
 export interface UserPermissions {
   routines: ModulePermissions;
   finance: ModulePermissions;
-  commercial: ModulePermissions; 
+  commercial: ModulePermissions;
   reports: { view: boolean };
 }
 
 export interface Tenant {
-    id: string;
-    name: string;
-    status: 'active' | 'inactive' | 'suspended';
-    ownerEmail?: string;
-    createdAt: string;
-    // Real DB fields
-    cnpj?: string;
-    phone?: string;
-    adminName?: string;
-    planId?: string; // Foreign Key to SaasPlan
-    planName?: string; // For UI display
-    contractedModules?: string[]; // JSONB
-    userCount?: number; // Calculated
+  id: string;
+  name: string;
+  status: 'active' | 'inactive' | 'suspended';
+  ownerEmail?: string;
+  createdAt: string;
+  // Real DB fields
+  cnpj?: string;
+  phone?: string;
+  adminName?: string;
+  planId?: string; // Foreign Key to SaasPlan
+  planName?: string; // For UI display
+  contractedModules?: string[]; // JSONB
+  userCount?: number; // Calculated
+  // New Real Fields
+  type?: 'trial' | 'client' | 'internal';
+  financialStatus?: 'ok' | 'overdue';
+  lastActiveAt?: string;
 }
 
 // --- Super Admin Types ---
 export interface SaasPlan {
-    id: string;
-    name: string;
-    price: number;
-    billingCycle: 'monthly' | 'yearly';
-    features: string[]; // JSONB in DB
-    allowedModules: string[]; // JSONB in DB
-    maxUsers: number;
-    active: boolean;
+  id: string;
+  name: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[]; // JSONB in DB - kept for legacy/simple lists
+  allowedModules: string[]; // JSONB in DB - kept for backend validation
+  maxUsers: number;
+  active: boolean; // boolean flag for backward compatibility
+  // New Real Fields
+  type: 'trial' | 'public' | 'internal' | 'custom';
+  status: 'active' | 'hidden' | 'archived';
+  moduleConfig?: Record<string, 'included' | 'locked' | 'extra'>; // JSONB
 }
 
 export interface Delegation {
@@ -56,20 +64,22 @@ export interface Delegation {
     create: boolean;
     edit: boolean;
   };
-  delegate?: User; 
+  delegate?: User;
 }
 
 export interface User {
   id: string;
   name: string;
   avatarUrl: string;
-  role: UserRole; 
+  role: UserRole;
   email: string;
   phone?: string;
   permissions?: UserPermissions;
   tenantId?: string; // Multi-tenant link
   companyName?: string; // Optional for global views
-  status?: 'active' | 'inactive';
+  // New Real Fields
+  status?: 'active' | 'suspended' | 'blocked';
+  lastActiveAt?: string;
 }
 
 export interface Task {
@@ -78,11 +88,11 @@ export interface Task {
   description: string;
   status: Status;
   priority: Priority;
-  projectId?: string; 
-  teamId?: string;    
+  projectId?: string;
+  teamId?: string;
   assigneeId: string;
-  dueDate: string; 
-  links: string[]; 
+  dueDate: string;
+  links: string[];
   tags: string[];
   tenantId?: string;
 }
@@ -92,10 +102,10 @@ export interface Project {
   name: string;
   description: string;
   status: 'active' | 'completed' | 'on_hold';
-  progress: number; 
+  progress: number;
   dueDate: string;
   teamIds: string[];
-  members: string[]; 
+  members: string[];
   links: string[];
   tenantId?: string;
 }
@@ -113,14 +123,14 @@ export interface Team {
 export interface CalendarEvent {
   id: string;
   title: string;
-  isTeamEvent: boolean; 
-  startDate: string; 
-  endDate: string;   
-  participants: string[]; 
+  isTeamEvent: boolean;
+  startDate: string;
+  endDate: string;
+  participants: string[];
   description: string;
   links: string[];
   type: 'meeting' | 'deadline' | 'review';
-  status: 'scheduled' | 'completed'; 
+  status: 'scheduled' | 'completed';
   tenantId?: string;
 }
 
@@ -142,19 +152,19 @@ export interface FinancialTransaction {
   description: string;
   amount: number;
   type: TransactionType;
-  date: string; 
+  date: string;
   isPaid: boolean;
   accountId?: string;
-  toAccountId?: string; 
+  toAccountId?: string;
   categoryId?: string;
   creditCardId?: string;
-  contactId?: string; 
+  contactId?: string;
   originType?: 'manual' | 'quote' | 'recurring' | 'setup';
   originId?: string;
   links: string[];
-  recurrenceId?: string; 
-  installmentIndex?: number; 
-  totalInstallments?: number; 
+  recurrenceId?: string;
+  installmentIndex?: number;
+  totalInstallments?: number;
   tenantId?: string;
 }
 
@@ -186,12 +196,12 @@ export interface Contact {
   id: string;
   scope: ContactScope;
   type: PersonType;
-  name: string; 
+  name: string;
   email?: string;
   phone?: string;
   address?: string;
   fantasyName?: string;
-  document?: string; 
+  document?: string;
   adminName?: string;
   notes?: string;
   tenantId?: string;
@@ -204,7 +214,7 @@ export interface CatalogItem {
   description?: string;
   price: number;
   active: boolean;
-  financialCategoryId?: string; 
+  financialCategoryId?: string;
   tenantId?: string;
 }
 
@@ -215,21 +225,21 @@ export interface QuoteItem {
   quantity: number;
   unitPrice: number;
   total: number;
-  catalogItem?: CatalogItem; 
+  catalogItem?: CatalogItem;
 }
 
 export interface Quote {
   id: string;
-  contactId?: string; 
-  customerName?: string; 
-  customerPhone?: string; 
+  contactId?: string;
+  customerName?: string;
+  customerPhone?: string;
   status: QuoteStatus;
   date: string;
   validUntil?: string;
   totalValue: number;
   notes?: string;
-  contact?: Contact; 
-  items?: QuoteItem[]; 
+  contact?: Contact;
+  items?: QuoteItem[];
   tenantId?: string;
 }
 
@@ -242,7 +252,7 @@ export interface RecurringService {
   frequency: 'monthly' | 'yearly';
   contractMonths?: number;
   active: boolean;
-  contact?: Contact; 
+  contact?: Contact;
   tenantId?: string;
 }
 
@@ -275,10 +285,10 @@ export interface DashboardMetrics {
 }
 
 export interface GlobalStats {
-    totalTenants: number;
-    activeTenants: number;
-    totalUsers: number;
-    activePlans: number;
+  totalTenants: number;
+  activeTenants: number;
+  totalUsers: number;
+  activePlans: number;
 }
 
 // Interfaces auxiliares para Forms
