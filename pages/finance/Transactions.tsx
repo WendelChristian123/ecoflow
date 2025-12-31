@@ -4,18 +4,18 @@ import { api } from '../../services/api';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, TransactionType, Contact } from '../../types';
 import { Loader, Badge, cn, Button, Select, Input } from '../../components/Shared';
 import { TransactionModal, ConfirmationModal, RecurrenceActionModal } from '../../components/Modals';
-import { 
-    FileText, 
-    ArrowDownCircle, 
-    ArrowUpCircle, 
-    Filter, 
-    Plus, 
-    Edit2, 
-    Search, 
-    ChevronLeft, 
-    ChevronRight, 
-    FileSpreadsheet, 
-    MoreVertical, 
+import {
+    FileText,
+    ArrowDownCircle,
+    ArrowUpCircle,
+    Filter,
+    Plus,
+    Edit2,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    FileSpreadsheet,
+    MoreVertical,
     ArrowRightLeft,
     ThumbsUp,
     ThumbsDown,
@@ -27,7 +27,10 @@ import { ptBR } from 'date-fns/locale';
 import { useLocation } from 'react-router-dom';
 import { useRBAC } from '../../context/RBACContext';
 
+import { useTenant } from '../../context/TenantContext';
+
 export const FinancialTransactions: React.FC = () => {
+    const { currentTenant } = useTenant();
     const { can, canDelete } = useRBAC();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -35,12 +38,12 @@ export const FinancialTransactions: React.FC = () => {
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
     const [cards, setCards] = useState<CreditCard[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
-    
+
     // States de Navegação e Filtro
     const [currentDate, setCurrentDate] = useState(new Date());
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
-    
+
     // States de UI
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const addMenuRef = useRef<HTMLDivElement>(null);
@@ -57,7 +60,9 @@ export const FinancialTransactions: React.FC = () => {
     const location = useLocation();
 
     useEffect(() => {
-        loadData();
+        if (currentTenant) {
+            loadData();
+        }
         const handleClickOutside = (event: MouseEvent) => {
             if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
                 setIsAddMenuOpen(false);
@@ -65,7 +70,7 @@ export const FinancialTransactions: React.FC = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [currentTenant]);
 
     useEffect(() => {
         if (!loading && transactions.length > 0 && location.state?.transactionId) {
@@ -78,21 +83,22 @@ export const FinancialTransactions: React.FC = () => {
     }, [loading, transactions, location.state]);
 
     const loadData = async () => {
+        if (!currentTenant) return;
         setLoading(true);
         try {
-             const [t, a, c, cc, cont] = await Promise.all([
-                api.getFinancialTransactions(),
-                api.getFinancialAccounts(),
-                api.getFinancialCategories(),
-                api.getCreditCards(),
-                api.getContacts()
+            const [t, a, c, cc, cont] = await Promise.all([
+                api.getFinancialTransactions(currentTenant.id),
+                api.getFinancialAccounts(currentTenant.id),
+                api.getFinancialCategories(currentTenant.id),
+                api.getCreditCards(currentTenant.id),
+                api.getContacts(currentTenant.id)
             ]);
             setTransactions(t);
             setAccounts(a);
             setCategories(c);
             setCards(cc);
             setContacts(cont);
-        } catch(e) { console.error(e); }
+        } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
@@ -159,7 +165,7 @@ export const FinancialTransactions: React.FC = () => {
         if (!can('finance', 'edit')) return;
         const newStatus = !t.isPaid;
         setTransactions(prev => prev.map(item => item.id === t.id ? { ...item, isPaid: newStatus } : item));
-        
+
         try {
             await api.toggleTransactionStatus(t.id, newStatus);
         } catch (error) {
@@ -178,23 +184,23 @@ export const FinancialTransactions: React.FC = () => {
         const matchesMonth = isSameMonth(transactionDate, currentDate);
         const matchesSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = filterType === 'all' || t.type === filterType;
-        
+
         return matchesMonth && matchesSearch && matchesType;
     });
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
-            
+
             {/* HEADER CUSTOMIZADO */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                
+
                 {/* Lado Esquerdo: Título + Botão Adicionar */}
                 <div className="flex items-center gap-3 w-full md:w-auto relative" ref={addMenuRef}>
                     <h1 className="text-2xl font-bold text-white">Lançamentos</h1>
-                    
+
                     {can('finance', 'create') && (
                         <>
-                            <button 
+                            <button
                                 onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
                                 className="h-8 w-8 rounded-full border border-rose-500/50 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all shadow-sm shadow-rose-900/20"
                             >
@@ -205,19 +211,19 @@ export const FinancialTransactions: React.FC = () => {
                             {isAddMenuOpen && (
                                 <div className="absolute top-10 left-20 z-50 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                     <div className="py-1">
-                                        <button 
+                                        <button
                                             onClick={() => handleOpenModal('expense')}
                                             className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-rose-400 flex items-center gap-2"
                                         >
                                             <div className="h-2 w-2 rounded-full bg-rose-500"></div> Nova Despesa
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => handleOpenModal('income')}
                                             className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-emerald-400 flex items-center gap-2"
                                         >
                                             <div className="h-2 w-2 rounded-full bg-emerald-500"></div> Nova Receita
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => handleOpenModal('transfer')}
                                             className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-indigo-400 flex items-center gap-2"
                                         >
@@ -245,9 +251,9 @@ export const FinancialTransactions: React.FC = () => {
 
                 {/* Lado Direito: Ações */}
                 <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                    <button 
+                    <button
                         onClick={handleExport}
-                        className="p-2 border border-slate-700 rounded-lg text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-slate-800 transition-all" 
+                        className="p-2 border border-slate-700 rounded-lg text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-slate-800 transition-all"
                         title="Exportar Excel"
                     >
                         <FileSpreadsheet size={18} />
@@ -264,12 +270,12 @@ export const FinancialTransactions: React.FC = () => {
                     <Filter size={16} />
                     <span className="text-sm font-medium whitespace-nowrap hidden sm:inline">Filtrar por</span>
                 </div>
-                
+
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                    <input 
-                        type="text" 
-                        placeholder="Buscar por descrição, categoria..." 
+                    <input
+                        type="text"
+                        placeholder="Buscar por descrição, categoria..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-transparent border-none text-slate-200 text-sm pl-10 pr-4 py-2.5 focus:ring-0 outline-none placeholder:text-slate-600"
@@ -277,8 +283,8 @@ export const FinancialTransactions: React.FC = () => {
                 </div>
 
                 <div className="px-2">
-                    <select 
-                        value={filterType} 
+                    <select
+                        value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                         className="bg-slate-800 border-none text-xs text-slate-400 rounded-lg py-1.5 px-2 outline-none cursor-pointer hover:text-white"
                     >
@@ -301,15 +307,15 @@ export const FinancialTransactions: React.FC = () => {
                         filteredTransactions.map(t => {
                             const contact = contacts.find(c => c.id === t.contactId);
                             const displayName = contact ? ` - ${contact.name}` : '';
-                            
+
                             return (
                                 <div key={t.id} className="p-4 hover:bg-slate-800/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group cursor-pointer border-l-2 border-l-transparent hover:border-l-emerald-500" onClick={() => handleEdit(t)}>
                                     <div className="flex items-start gap-4">
                                         <div className={cn(
-                                            "h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm", 
-                                            t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 
-                                            t.type === 'expense' ? 'bg-rose-500/10 text-rose-400' : 
-                                            'bg-indigo-500/10 text-indigo-400'
+                                            "h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
+                                            t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                t.type === 'expense' ? 'bg-rose-500/10 text-rose-400' :
+                                                    'bg-indigo-500/10 text-indigo-400'
                                         )}>
                                             {t.type === 'income' ? <ArrowUpCircle size={20} /> : t.type === 'expense' ? <ArrowDownCircle size={20} /> : <ArrowRightLeft size={18} />}
                                         </div>
@@ -345,21 +351,21 @@ export const FinancialTransactions: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <button 
+                                            <button
                                                 onClick={(e) => handleToggleStatus(e, t)}
                                                 className={cn(
                                                     "p-1.5 rounded transition-colors flex items-center justify-center",
-                                                    t.isPaid 
-                                                        ? "text-emerald-500 hover:bg-emerald-500/10" 
+                                                    t.isPaid
+                                                        ? "text-emerald-500 hover:bg-emerald-500/10"
                                                         : "text-slate-500 hover:text-emerald-500 hover:bg-slate-700"
                                                 )}
                                                 title={t.isPaid ? "Marcar como não pago" : "Marcar como pago"}
                                             >
                                                 {t.isPaid ? <ThumbsUp size={20} className="fill-emerald-500/10" /> : <ThumbsDown size={20} />}
                                             </button>
-                                            
+
                                             {canDelete() && (
-                                                <button 
+                                                <button
                                                     onClick={(e) => requestDelete(e, t)}
                                                     className="h-8 w-8 flex items-center justify-center rounded hover:bg-rose-500/10 hover:text-rose-400 text-slate-500 opacity-0 group-hover:opacity-100 transition-all"
                                                     title="Excluir"
@@ -376,7 +382,7 @@ export const FinancialTransactions: React.FC = () => {
                 </div>
             </div>
 
-            <TransactionModal 
+            <TransactionModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={loadData}
@@ -387,7 +393,7 @@ export const FinancialTransactions: React.FC = () => {
                 initialData={editingTransaction ? editingTransaction : { type: initialType, date: new Date().toISOString().split('T')[0], isPaid: false }}
             />
 
-            <ConfirmationModal 
+            <ConfirmationModal
                 isOpen={!!confirmDeleteId}
                 onClose={() => setConfirmDeleteId(null)}
                 onConfirm={executeDelete}

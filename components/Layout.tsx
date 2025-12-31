@@ -489,7 +489,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-30">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-slate-400 hover:text-white"><Menu size={24} /></button>
-                        <h1 className="text-xl font-semibold text-slate-100">{getPageTitle()}</h1>
+                        <div className="flex flex-col">
+                            <h1 className="text-xl font-semibold text-slate-100 leading-tight">{getPageTitle()}</h1>
+                            {currentTenant && !isSuperAdminArea && (
+                                <span className="text-xs text-emerald-400 font-medium">{currentTenant.name}</span>
+                            )}
+                        </div>
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="relative">

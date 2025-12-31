@@ -33,8 +33,10 @@ export const api = {
     },
 
     // --- TASKS ---
-    getTasks: async () => {
-        const { data, error } = await supabase.from('tasks').select('*');
+    getTasks: async (tenantId?: string) => {
+        let query = supabase.from('tasks').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((t: any) => ({
             ...t,
@@ -112,8 +114,10 @@ export const api = {
     },
 
     // --- PROJECTS ---
-    getProjects: async () => {
-        const { data, error } = await supabase.from('projects').select('*');
+    getProjects: async (tenantId?: string) => {
+        let query = supabase.from('projects').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((p: any) => ({
             ...p,
@@ -155,8 +159,10 @@ export const api = {
     },
 
     // --- TEAMS ---
-    getTeams: async () => {
-        const { data, error } = await supabase.from('teams').select('*');
+    getTeams: async (tenantId?: string) => {
+        let query = supabase.from('teams').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((t: any) => ({
             ...t,
@@ -191,8 +197,10 @@ export const api = {
     },
 
     // --- USERS ---
-    getUsers: async () => {
-        const { data, error } = await supabase.from('profiles').select('*');
+    getUsers: async (tenantId?: string) => {
+        let query = supabase.from('profiles').select('*').neq('role', 'super_admin');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         // Map DB fields to User type if needed (snake_case to camelCase mapping might be needed if not handled automatically)
         // Since my schema uses snake_case and Types use camelCase, I might need aliasing or mapping.
@@ -266,8 +274,10 @@ export const api = {
     },
 
     // --- EVENTS ---
-    getEvents: async () => {
-        const { data, error } = await supabase.from('calendar_events').select('*');
+    getEvents: async (tenantId?: string) => {
+        let query = supabase.from('calendar_events').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((e: any) => ({
             ...e,
@@ -311,8 +321,10 @@ export const api = {
     },
 
     // --- FINANCE ---
-    getFinancialTransactions: async () => {
-        const { data, error } = await supabase.from('financial_transactions').select('*');
+    getFinancialTransactions: async (tenantId?: string) => {
+        let query = supabase.from('financial_transactions').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((t: any) => ({
             ...t,
@@ -383,8 +395,10 @@ export const api = {
         if (error) throw error;
     },
 
-    getFinancialAccounts: async () => {
-        const { data, error } = await supabase.from('financial_accounts').select('*');
+    getFinancialAccounts: async (tenantId?: string) => {
+        let query = supabase.from('financial_accounts').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((a: any) => ({ ...a, initialBalance: a.initial_balance, tenantId: a.tenant_id })) as FinancialAccount[];
     },
@@ -411,8 +425,10 @@ export const api = {
         if (error) throw error;
     },
 
-    getFinancialCategories: async () => {
-        const { data, error } = await supabase.from('financial_categories').select('*');
+    getFinancialCategories: async (tenantId?: string) => {
+        let query = supabase.from('financial_categories').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({ ...c, tenantId: c.tenant_id })) as FinancialCategory[];
     },
@@ -430,8 +446,10 @@ export const api = {
         if (error) throw error;
     },
 
-    getCreditCards: async () => {
-        const { data, error } = await supabase.from('credit_cards').select('*');
+    getCreditCards: async (tenantId?: string) => {
+        let query = supabase.from('credit_cards').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({
             ...c,
@@ -467,8 +485,10 @@ export const api = {
     },
 
     // --- COMMERCIAL ---
-    getContacts: async () => {
-        const { data, error } = await supabase.from('contacts').select('*');
+    getContacts: async (tenantId?: string) => {
+        let query = supabase.from('contacts').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({
             ...c,
@@ -516,8 +536,10 @@ export const api = {
         if (error) throw error;
     },
 
-    getCatalogItems: async () => {
-        const { data, error } = await supabase.from('catalog_items').select('*');
+    getCatalogItems: async (tenantId?: string) => {
+        let query = supabase.from('catalog_items').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((i: any) => ({
             ...i,
@@ -554,8 +576,10 @@ export const api = {
         if (error) throw error;
     },
 
-    getQuotes: async () => {
-        const { data, error } = await supabase.from('quotes').select('*, contacts(*), quote_items(*)');
+    getQuotes: async (tenantId?: string) => {
+        let query = supabase.from('quotes').select('*, contacts(*), quote_items(*)');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((q: any) => ({
             ...q,
@@ -637,8 +661,10 @@ export const api = {
         if (error) throw error;
     },
 
-    getRecurringServices: async () => {
-        const { data, error } = await supabase.from('recurring_services').select('*, contacts(*)');
+    getRecurringServices: async (tenantId?: string) => {
+        let query = supabase.from('recurring_services').select('*, contacts(*)');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
         if (error) throw error;
         return data.map((r: any) => ({
             ...r,
@@ -811,8 +837,8 @@ export const api = {
     },
 
     // --- DASHBOARD METRICS ---
-    getDashboardMetrics: async (): Promise<DashboardMetrics> => {
-        const { data, error } = await supabase.rpc('get_dashboard_stats');
+    getDashboardMetrics: async (tenantId?: string): Promise<DashboardMetrics> => {
+        const { data, error } = await supabase.rpc('get_dashboard_stats', { p_tenant_id: tenantId });
         if (error) {
             console.error('Error fetching dashboard stats via RPC:', error);
             throw error;
