@@ -36,6 +36,12 @@ export interface Tenant {
   type?: 'trial' | 'client' | 'internal';
   financialStatus?: 'ok' | 'overdue';
   lastActiveAt?: string;
+  settings?: TenantSettings;
+}
+
+export interface TenantSettings {
+  credit_card_expense_mode?: 'competence' | 'cash';
+  // Future settings can go here
 }
 
 // --- Super Admin Types ---
@@ -159,7 +165,7 @@ export interface FinancialTransaction {
   categoryId?: string;
   creditCardId?: string;
   contactId?: string;
-  originType?: 'manual' | 'quote' | 'recurring' | 'setup';
+  originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical';
   originId?: string;
   links: string[];
   recurrenceId?: string;

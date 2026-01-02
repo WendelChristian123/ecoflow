@@ -341,7 +341,7 @@ export const Dashboard: React.FC = () => {
                             value={fmt(metrics.financial.overdueBills)}
                             icon={<AlertCircle size={20} />}
                             color="rose"
-                            onClick={() => openModal('Contas Vencidas', 'finance', (t) => t.type === 'expense' && !t.isPaid && isBefore(parseISO(t.date), todayStart))}
+                            onClick={() => openModal('Contas Vencidas', 'finance', (t) => t.type === 'expense' && !t.isPaid && !t.creditCardId && isBefore(parseISO(t.date), todayStart))}
                         />
                         <SummaryCard
                             title="A Pagar (7 dias)"
@@ -349,7 +349,7 @@ export const Dashboard: React.FC = () => {
                             icon={<TrendingDown size={20} />}
                             color="amber"
                             onClick={() => openModal('A Pagar (Próx. 7 dias)', 'finance', (t) => {
-                                return t.type === 'expense' && !t.isPaid && isWithinInterval(parseISO(t.date), { start: todayStart, end: next7DaysEnd });
+                                return t.type === 'expense' && !t.isPaid && !t.creditCardId && isWithinInterval(parseISO(t.date), { start: todayStart, end: next7DaysEnd });
                             })}
                         />
                         <SummaryCard

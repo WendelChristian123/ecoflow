@@ -1,385 +1,403 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, TransactionType, Contact } from '../../types';
-import { Loader, Badge, cn, Button, Select, Input } from '../../components/Shared';
-import { TransactionModal, ConfirmationModal, RecurrenceActionModal } from '../../components/Modals';
-import {
-    FileText,
-    ArrowDownCircle,
-    ArrowUpCircle,
-    Filter,
-    Plus,
-    Edit2,
-    Search,
-    ChevronLeft,
-    ChevronRight,
-    FileSpreadsheet,
-    MoreVertical,
-    ArrowRightLeft,
-    ThumbsUp,
-    ThumbsDown,
-    Trash2,
-    RefreshCw
-} from 'lucide-react';
-import { format, parseISO, addMonths, subMonths, isSameMonth, startOfMonth } from 'date-fns';
+import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact, TenantSettings } from '../../types';
+import { Loader, Badge, cn, Button, Select, LinkInput } from '../../components/Shared';
+import { TransactionModal, DrilldownModal, ConfirmationModal } from '../../components/Modals';
+import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
+import { TrendingUp, TrendingDown, Filter, Plus, Calendar, Search, ArrowRight, DollarSign, MoreVertical, Edit2, Trash2, CheckSquare, Square, ThumbsUp, ThumbsDown, Copy, CreditCard as CardIcon, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay, addDays, addMonths, subMonths, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useLocation } from 'react-router-dom';
-import { useRBAC } from '../../context/RBACContext';
-
-import { useTenant } from '../../context/TenantContext';
 
 export const FinancialTransactions: React.FC = () => {
-    const { currentTenant } = useTenant();
-    const { can, canDelete } = useRBAC();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
     const [cards, setCards] = useState<CreditCard[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
+    const [settings, setSettings] = useState<TenantSettings>({});
 
-    // States de Navegação e Filtro
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState<string>('all');
-
-    // States de UI
+    const [filters, setFilters] = useState<FinanceFilters & { search: string }>({
+        period: 'month',
+        accountId: 'all',
+        categoryId: 'all',
+        type: 'all',
+        status: 'all',
+        search: ''
+    });
+    const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+    const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-    const addMenuRef = useRef<HTMLDivElement>(null);
 
-    // Modal & Editing
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | Partial<FinancialTransaction> | undefined>(undefined);
-    const [initialType, setInitialType] = useState<TransactionType>('expense');
+    const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | undefined>(undefined);
+    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
 
-    // Confirm Delete State
+    // Deletion
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-    const [recurrenceDeleteData, setRecurrenceDeleteData] = useState<FinancialTransaction | null>(null);
 
-    const location = useLocation();
-
-    useEffect(() => {
-        if (currentTenant) {
-            loadData();
-        }
-        const handleClickOutside = (event: MouseEvent) => {
-            if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
-                setIsAddMenuOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [currentTenant]);
-
-    useEffect(() => {
-        if (!loading && transactions.length > 0 && location.state?.transactionId) {
-            const target = transactions.find(t => t.id === location.state.transactionId);
-            if (target) {
-                handleEdit(target);
-                setCurrentDate(parseISO(target.date));
-            }
-        }
-    }, [loading, transactions, location.state]);
+    useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
-        if (!currentTenant) return;
         setLoading(true);
         try {
-            const [t, a, c, cc, cont] = await Promise.all([
-                api.getFinancialTransactions(currentTenant.id),
-                api.getFinancialAccounts(currentTenant.id),
-                api.getFinancialCategories(currentTenant.id),
-                api.getCreditCards(currentTenant.id),
-                api.getContacts(currentTenant.id)
+            const [t, a, c, cc, cont, s] = await Promise.all([
+                api.getFinancialTransactions(),
+                api.getFinancialAccounts(),
+                api.getFinancialCategories(),
+                api.getCreditCards(),
+                api.getContacts(),
+                api.getTenantSettings()
             ]);
             setTransactions(t);
             setAccounts(a);
             setCategories(c);
             setCards(cc);
             setContacts(cont);
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
-    };
-
-    const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
-    const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-
-    const handleOpenModal = (type: TransactionType) => {
-        if (!can('finance', 'create')) return;
-        setEditingTransaction(undefined);
-        setInitialType(type);
-        setIsModalOpen(true);
-        setIsAddMenuOpen(false);
+            setSettings(s || {});
+        } catch (error) {
+            console.error(error);
+        } finally { setLoading(false); }
     };
 
     const handleEdit = (t: FinancialTransaction) => {
-        if (!can('finance', 'edit')) return;
         setEditingTransaction(t);
-        setInitialType(t.type);
         setIsModalOpen(true);
     };
 
-    const requestDelete = (e: React.MouseEvent, t: FinancialTransaction) => {
-        e.stopPropagation();
-        if (!canDelete()) return;
-        if (t.recurrenceId) {
-            setRecurrenceDeleteData(t);
-        } else {
-            setConfirmDeleteId(t.id);
+    const handleCreate = (type?: 'income' | 'expense' | 'transfer') => {
+        setEditingTransaction(undefined);
+        if (type) {
+            // Pre-select type if needed, or just open modal
+            // In a real app we might pass this type to the modal
         }
-    };
+        setIsModalOpen(true);
+        setIsAddMenuOpen(false);
+    }
 
-    const executeDelete = async () => {
+    const deleteTransaction = async () => {
         if (!confirmDeleteId) return;
         try {
             await api.deleteTransaction(confirmDeleteId);
-            loadData();
-        } catch (error) {
-            console.error(error);
-            alert("Falha ao excluir o lançamento.");
-        } finally {
             setConfirmDeleteId(null);
-        }
-    };
-
-    const executeRecurrenceDelete = async (scope: 'single' | 'future') => {
-        if (!recurrenceDeleteData) return;
-        try {
-            await api.deleteTransaction(recurrenceDeleteData.id, scope, recurrenceDeleteData.recurrenceId, recurrenceDeleteData.date);
             loadData();
         } catch (error) {
             console.error(error);
-            alert("Erro ao excluir recorrência.");
-        } finally {
-            setRecurrenceDeleteData(null);
+            alert("Erro ao excluir.");
         }
-    };
+    }
 
-    const handleExport = () => {
-        alert("Funcionalidade de exportar para Excel em desenvolvimento.");
-    };
-
-    const handleToggleStatus = async (e: React.MouseEvent, t: FinancialTransaction) => {
-        e.stopPropagation();
-        if (!can('finance', 'edit')) return;
-        const newStatus = !t.isPaid;
-        setTransactions(prev => prev.map(item => item.id === t.id ? { ...item, isPaid: newStatus } : item));
-
+    const toggleStatus = async (id: string, currentStatus: boolean) => {
         try {
-            await api.toggleTransactionStatus(t.id, newStatus);
+            await api.toggleTransactionStatus(id, !currentStatus);
+            setTransactions(prev => prev.map(t => t.id === id ? { ...t, isPaid: !currentStatus } : t));
         } catch (error) {
-            console.error("Failed to toggle status", error);
-            setTransactions(prev => prev.map(item => item.id === t.id ? { ...item, isPaid: !newStatus } : item));
+            console.error(error);
             alert("Erro ao atualizar status.");
         }
+    }
+
+    // Filter Logic
+    const getFilteredTransactions = () => {
+        // Pass the mode from settings to processTransactions
+        // If settings.credit_card_expense_mode is 'competence', individual items are shown
+        // If 'cash', they are grouped into virtual invoices
+        const mode = settings.credit_card_expense_mode || 'competence';
+        let processed = processTransactions(transactions, cards, mode);
+
+        let filtered = processed;
+        const now = new Date();
+
+        // 0. Mandatory Technical Filter (Hide Internal/Technical Transactions)
+        filtered = filtered.filter(t =>
+            t.originType !== 'technical' &&
+            !t.description.includes('Crédito Local') &&
+            !t.description.includes('Entrada Técnica')
+        );
+
+        // 1. Date Filter
+        if (filters.period === 'today') {
+            filtered = filtered.filter(t => t.date === now.toISOString().split('T')[0]);
+        } else if (filters.period === 'last7') {
+            const last7 = addDays(now, -7);
+            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), { start: last7, end: now }));
+        } else if (filters.period === 'month') {
+            const first = startOfMonth(selectedMonth);
+            const last = endOfMonth(selectedMonth);
+            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), { start: first, end: last }));
+        } else if (filters.period === 'custom' && customDateRange.start && customDateRange.end) {
+            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), {
+                start: parseISO(customDateRange.start),
+                end: endOfDay(parseISO(customDateRange.end))
+            }));
+        }
+
+        // 2. Account
+        if (filters.accountId !== 'all') filtered = filtered.filter(t => t.accountId === filters.accountId);
+
+        // 3. Category
+        if (filters.categoryId !== 'all') filtered = filtered.filter(t => t.categoryId === filters.categoryId);
+
+        // 4. Type
+        if (filters.type !== 'all') filtered = filtered.filter(t => t.type === filters.type);
+
+        // 5. Status
+        if (filters.status !== 'all') {
+            if (filters.status === 'paid') filtered = filtered.filter(t => t.isPaid);
+            if (filters.status === 'pending') filtered = filtered.filter(t => !t.isPaid);
+            if (filters.status === 'overdue') filtered = filtered.filter(t => !t.isPaid && isBefore(parseISO(t.date), startOfDay(now)));
+        }
+
+        // 6. Search
+        if (filters.search) {
+            const q = filters.search.toLowerCase();
+            filtered = filtered.filter(t =>
+                t.description.toLowerCase().includes(q) ||
+                (t as any).virtualChildren?.some((c: any) => c.description.toLowerCase().includes(q))
+            );
+        }
+
+        return filtered; // processTransactions already sorts by date desc
     };
 
-    if (loading) return <Loader />;
+    const filteredData = getFilteredTransactions();
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
-    const filteredTransactions = transactions.filter(t => {
-        const transactionDate = parseISO(t.date);
-        const matchesMonth = isSameMonth(transactionDate, currentDate);
-        const matchesSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = filterType === 'all' || t.type === filterType;
-
-        return matchesMonth && matchesSearch && matchesType;
-    });
+    if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
-
-            {/* HEADER CUSTOMIZADO */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-
-                {/* Lado Esquerdo: Título + Botão Adicionar */}
-                <div className="flex items-center gap-3 w-full md:w-auto relative" ref={addMenuRef}>
+        <div className="h-full flex flex-col space-y-6 pb-4">
+            {/* Header: Title (+) | Month Nav | Actions */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 px-1 relative">
+                <div className="flex items-center gap-3">
                     <h1 className="text-2xl font-bold text-white">Lançamentos</h1>
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+                            className="w-8 h-8 rounded-full bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center transition-colors shadow-lg shadow-rose-500/20"
+                            title="Novo Lançamento"
+                        >
+                            <Plus size={18} />
+                        </button>
 
-                    {can('finance', 'create') && (
-                        <>
-                            <button
-                                onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-                                className="h-8 w-8 rounded-full border border-rose-500/50 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all shadow-sm shadow-rose-900/20"
-                            >
-                                <Plus size={18} />
-                            </button>
-
-                            {/* Dropdown Menu */}
-                            {isAddMenuOpen && (
-                                <div className="absolute top-10 left-20 z-50 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="py-1">
-                                        <button
-                                            onClick={() => handleOpenModal('expense')}
-                                            className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-rose-400 flex items-center gap-2"
-                                        >
-                                            <div className="h-2 w-2 rounded-full bg-rose-500"></div> Nova Despesa
-                                        </button>
-                                        <button
-                                            onClick={() => handleOpenModal('income')}
-                                            className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-emerald-400 flex items-center gap-2"
-                                        >
-                                            <div className="h-2 w-2 rounded-full bg-emerald-500"></div> Nova Receita
-                                        </button>
-                                        <button
-                                            onClick={() => handleOpenModal('transfer')}
-                                            className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-indigo-400 flex items-center gap-2"
-                                        >
-                                            <div className="h-2 w-2 rounded-full bg-indigo-500"></div> Nova Transferência
-                                        </button>
-                                    </div>
+                        {/* Dropdown Menu */}
+                        {isAddMenuOpen && (
+                            <div className="absolute top-10 left-0 w-48 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                <div className="p-1 space-y-0.5">
+                                    <button
+                                        onClick={() => handleCreate('expense')}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left"
+                                    >
+                                        <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></span>
+                                        Nova Despesa
+                                    </button>
+                                    <button
+                                        onClick={() => handleCreate('income')}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left"
+                                    >
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                                        Nova Receita
+                                    </button>
+                                    <button
+                                        onClick={() => handleCreate('transfer')}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left"
+                                    >
+                                        <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
+                                        Nova Transferência
+                                    </button>
                                 </div>
-                            )}
-                        </>
-                    )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Centro: Navegação de Data */}
-                <div className="flex items-center gap-4 text-slate-200">
-                    <button onClick={handlePrevMonth} className="p-1 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white">
+                {/* Month Navigation */}
+                <div className="flex items-center gap-8 text-slate-200">
+                    <button onClick={() => setSelectedMonth(prev => subMonths(prev, 1))} className="text-slate-500 hover:text-white transition-colors">
                         <ChevronLeft size={20} />
                     </button>
-                    <span className="text-lg font-medium capitalize min-w-[140px] text-center select-none">
-                        {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+                    <span className="text-lg font-bold capitalize w-36 text-center select-none">
+                        {format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
                     </span>
-                    <button onClick={handleNextMonth} className="p-1 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white">
+                    <button onClick={() => setSelectedMonth(prev => addMonths(prev, 1))} className="text-slate-500 hover:text-white transition-colors">
                         <ChevronRight size={20} />
                     </button>
                 </div>
 
-                {/* Lado Direito: Ações */}
-                <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                    <button
-                        onClick={handleExport}
-                        className="p-2 border border-slate-700 rounded-lg text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-slate-800 transition-all"
-                        title="Exportar Excel"
-                    >
-                        <FileSpreadsheet size={18} />
+                {/* Actions */}
+                <div className="flex gap-2">
+                    <button className="w-10 h-10 rounded-xl bg-transparent border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 flex items-center justify-center transition-colors">
+                        <FileText size={18} />
                     </button>
-                    <button className="p-2 text-slate-400 hover:text-white transition-colors">
+                    <button className="w-10 h-10 rounded-xl bg-transparent border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 flex items-center justify-center transition-colors">
                         <MoreVertical size={18} />
                     </button>
                 </div>
             </div>
 
-            {/* BARRA DE FILTROS & BUSCA */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-1 flex items-center shadow-sm">
-                <div className="flex items-center px-4 py-2 text-slate-500 border-r border-slate-800 gap-2 cursor-pointer hover:text-slate-300 transition-colors">
-                    <Filter size={16} />
-                    <span className="text-sm font-medium whitespace-nowrap hidden sm:inline">Filtrar por</span>
-                </div>
+            {/* Filter Bar */}
+            <div className="bg-slate-950/30 p-1.5 rounded-xl border border-slate-800/50 flex items-center shrink-0">
+                <button className="flex items-center gap-2 text-slate-400 px-4 py-2 border-r border-slate-800/50 hover:text-emerald-500 transition-colors text-xs font-medium uppercase tracking-wide">
+                    <Filter size={14} /> Filtrar por
+                </button>
 
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                <div className="flex-1 flex items-center gap-2 px-3">
+                    <Search size={16} className="text-slate-600" />
                     <input
                         type="text"
                         placeholder="Buscar por descrição, categoria..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-transparent border-none text-slate-200 text-sm pl-10 pr-4 py-2.5 focus:ring-0 outline-none placeholder:text-slate-600"
+                        className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder:text-slate-600"
+                        value={filters.search}
+                        onChange={e => setFilters({ ...filters, search: e.target.value })}
                     />
                 </div>
 
                 <div className="px-2">
-                    <select
-                        value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
-                        className="bg-slate-800 border-none text-xs text-slate-400 rounded-lg py-1.5 px-2 outline-none cursor-pointer hover:text-white"
-                    >
+                    <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} className="py-1.5 text-xs w-[100px] bg-slate-900 border-slate-800">
                         <option value="all">Todos</option>
-                        <option value="expense">Despesas</option>
-                        <option value="income">Receitas</option>
-                    </select>
+                        <option value="paid">Pagos</option>
+                        <option value="pending">Pendentes</option>
+                        <option value="overdue">Vencidos</option>
+                    </Select>
                 </div>
             </div>
 
-            {/* LISTAGEM */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden min-h-[400px]">
-                <div className="divide-y divide-slate-800/50">
-                    {filteredTransactions.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                            <FileText size={48} className="mb-4 opacity-20" />
-                            <p>Nenhum lançamento neste mês.</p>
-                        </div>
-                    ) : (
-                        filteredTransactions.map(t => {
-                            const contact = contacts.find(c => c.id === t.contactId);
-                            const displayName = contact ? ` - ${contact.name}` : '';
+            {/* Transactions List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                {filteredData.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900/20 rounded-xl border border-dashed border-slate-800/50">
+                        <FileText size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                        <p className="text-sm font-medium opacity-50">Nenhum lançamento neste mês.</p>
+                    </div>
+                ) : (
+                    filteredData.map((t) => {
+                        const isVirtual = (t as ProcessedTransaction).isVirtual;
+                        const accountName = accounts.find(a => a.id === t.accountId)?.name || 'Conta Excluída';
+                        const categoryName = categories.find(c => c.id === t.categoryId)?.name || 'Geral';
+                        const card = cards.find(c => c.id === t.creditCardId);
 
-                            return (
-                                <div key={t.id} className="p-4 hover:bg-slate-800/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group cursor-pointer border-l-2 border-l-transparent hover:border-l-emerald-500" onClick={() => handleEdit(t)}>
-                                    <div className="flex items-start gap-4">
-                                        <div className={cn(
-                                            "h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                            t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                t.type === 'expense' ? 'bg-rose-500/10 text-rose-400' :
-                                                    'bg-indigo-500/10 text-indigo-400'
-                                        )}>
-                                            {t.type === 'income' ? <ArrowUpCircle size={20} /> : t.type === 'expense' ? <ArrowDownCircle size={20} /> : <ArrowRightLeft size={18} />}
-                                        </div>
-                                        <div>
-                                            <div className="font-medium text-slate-200 text-sm md:text-base flex items-center gap-2">
-                                                {t.description}<span className="text-slate-400 font-normal">{displayName}</span>
-                                                {t.recurrenceId && <span title="Recorrente"><RefreshCw size={12} className="text-slate-500" /></span>}
-                                            </div>
-                                            <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                                                <span className="font-medium text-slate-400">{format(parseISO(t.date), 'dd/MM/yyyy')}</span>
-                                                {t.categoryId && (
-                                                    <>
-                                                        <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                                                        <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] border border-slate-700">
-                                                            {categories.find(c => c.id === t.categoryId)?.name || 'Geral'}
-                                                        </span>
-                                                    </>
-                                                )}
-                                                {t.accountId && (
-                                                    <>
-                                                        <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                                                        <span className="text-slate-500">{accounts.find(a => a.id === t.accountId)?.name}</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
+                        // Drilldown for virtual invoice
+                        const handleVirtualClick = () => {
+                            if (isVirtual) {
+                                setDrilldownState({
+                                    isOpen: true,
+                                    title: t.description,
+                                    data: (t as ProcessedTransaction).virtualChildren || []
+                                });
+                            }
+                        };
+
+                        // Check if item is an individual credit card expense in Competence Mode
+                        // We check: Type=Expense AND CreditCardID exists AND !isVirtual AND Mode=Competence
+                        const isCreditCardExpenseInCompetenceMode =
+                            t.type === 'expense' &&
+                            t.creditCardId &&
+                            !isVirtual &&
+                            settings.credit_card_expense_mode === 'competence';
+
+                        return (
+                            <div
+                                key={t.id}
+                                className={cn(
+                                    "relative flex items-center justify-between p-4 rounded-xl border transition-all group",
+                                    isVirtual
+                                        ? "bg-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/40 cursor-pointer"
+                                        : "bg-slate-800 border-slate-700/50 hover:border-slate-600"
+                                )}
+                                onClick={isVirtual ? handleVirtualClick : undefined}
+                            >
+                                <div className="flex items-center gap-4 overflow-hidden">
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                        isVirtual ? "bg-indigo-500/10 text-indigo-400" :
+                                            t.type === 'income' ? "bg-emerald-500/10 text-emerald-400" :
+                                                t.type === 'transfer' ? "bg-blue-500/10 text-blue-400" :
+                                                    "bg-rose-500/10 text-rose-400"
+                                    )}>
+                                        {isVirtual || t.creditCardId ? <CardIcon size={20} /> :
+                                            t.type === 'income' ? <TrendingUp size={20} /> :
+                                                t.type === 'transfer' ? <ArrowRight size={20} /> :
+                                                    <TrendingDown size={20} />
+                                        }
                                     </div>
-                                    <div className="flex items-center justify-between sm:justify-end gap-6 min-w-[220px]">
-                                        <div className="text-right">
-                                            <div className={cn("font-bold text-sm md:text-base", t.type === 'expense' ? 'text-rose-400' : t.type === 'income' ? 'text-emerald-400' : 'text-slate-300')}>
-                                                {t.type === 'expense' ? '-' : t.type === 'income' ? '+' : ''}
-                                                {fmt(t.amount)}
-                                            </div>
+                                    <div className="min-w-0">
+                                        <div className="font-semibold text-slate-200 truncate flex items-center gap-2">
+                                            {t.description}
+                                            {isVirtual && <Badge variant="neutral" className="h-5 px-1.5 text-[10px]">Fatura Agrupada</Badge>}
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={(e) => handleToggleStatus(e, t)}
-                                                className={cn(
-                                                    "p-1.5 rounded transition-colors flex items-center justify-center",
-                                                    t.isPaid
-                                                        ? "text-emerald-500 hover:bg-emerald-500/10"
-                                                        : "text-slate-500 hover:text-emerald-500 hover:bg-slate-700"
-                                                )}
-                                                title={t.isPaid ? "Marcar como não pago" : "Marcar como pago"}
-                                            >
-                                                {t.isPaid ? <ThumbsUp size={20} className="fill-emerald-500/10" /> : <ThumbsDown size={20} />}
-                                            </button>
-
-                                            {canDelete() && (
-                                                <button
-                                                    onClick={(e) => requestDelete(e, t)}
-                                                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-rose-500/10 hover:text-rose-400 text-slate-500 opacity-0 group-hover:opacity-100 transition-all"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            )}
+                                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+                                            <span className="flex items-center gap-1">
+                                                <Calendar size={12} /> {t.date.split('T')[0].split('-').reverse().join('/')}
+                                            </span>
+                                            <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                            <span>{isVirtual || t.creditCardId ? (card?.name || 'Cartão') : accountName}</span>
+                                            <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                            <span className="px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">
+                                                {categoryName}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            );
-                        })
-                    )}
-                </div>
+
+                                <div className="flex items-center gap-6 pl-4">
+                                    <div className="text-right">
+                                        <div className={cn("font-bold text-sm",
+                                            t.type === 'income' ? "text-emerald-400" :
+                                                t.type === 'transfer' ? "text-slate-300" :
+                                                    "text-rose-400"
+                                        )}>
+                                            {t.type === 'expense' ? '-' : t.type === 'income' ? '+' : ''}{fmt(t.amount)}
+                                        </div>
+                                        {t.recurrenceId && (
+                                            <div className="text-[10px] text-slate-500 flex items-center justify-end gap-1 mt-0.5">
+                                                <Copy size={10} /> Recorrente
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Actions / Status */}
+                                    <div className="flex items-center gap-2">
+                                        {isVirtual ? (
+                                            <div className="px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded text-xs font-medium">
+                                                {t.virtualChildren?.length} itens
+                                            </div>
+                                        ) : isCreditCardExpenseInCompetenceMode ? (
+                                            /* STATIC BADGE FOR CREDIT CARD EXPENSE IN COMPETENCE MODE */
+                                            <div className="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium flex items-center gap-1.5 select-none" title="Este item compõe uma fatura de cartão">
+                                                <CardIcon size={12} />
+                                                <span>Fatura</span>
+                                            </div>
+                                        ) : (
+                                            /* TOGGLE BUTTON FOR STANDARD TRANSACTIONS */
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleStatus(t.id, t.isPaid); }}
+                                                className={cn(
+                                                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                                    t.isPaid
+                                                        ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                                                        : "bg-slate-700/50 text-slate-500 hover:bg-slate-700 hover:text-emerald-500"
+                                                )}
+                                                title={t.isPaid ? "Pago (Clique para desfazer)" : "Pendente (Clique para pagar)"}
+                                            >
+                                                {t.isPaid ? <ThumbsUp size={16} /> : <ThumbsDown size={16} />}
+                                            </button>
+                                        )}
+
+                                        {/* Edit/Delete Actions */}
+                                        {!isVirtual && (
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"><Edit2 size={16} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(t.id); }} className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors"><Trash2 size={16} /></button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })
+                )}
             </div>
 
             <TransactionModal
@@ -390,22 +408,23 @@ export const FinancialTransactions: React.FC = () => {
                 categories={categories}
                 cards={cards}
                 contacts={contacts}
-                initialData={editingTransaction ? editingTransaction : { type: initialType, date: new Date().toISOString().split('T')[0], isPaid: false }}
+                initialData={editingTransaction}
+            />
+
+            <DrilldownModal
+                isOpen={drilldownState.isOpen}
+                onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })}
+                title={drilldownState.title}
+                type="finance"
+                data={drilldownState.data}
             />
 
             <ConfirmationModal
                 isOpen={!!confirmDeleteId}
                 onClose={() => setConfirmDeleteId(null)}
-                onConfirm={executeDelete}
+                onConfirm={deleteTransaction}
                 title="Excluir Lançamento"
-                description="Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita."
-            />
-
-            <RecurrenceActionModal
-                isOpen={!!recurrenceDeleteData}
-                onClose={() => setRecurrenceDeleteData(null)}
-                onConfirm={executeRecurrenceDelete}
-                action="delete"
+                description="Tem certeza? Esta ação não pode ser desfeita."
             />
         </div>
     );

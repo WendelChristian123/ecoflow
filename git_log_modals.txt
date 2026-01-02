@@ -1,0 +1,8 @@
+commit e499df09dbed8ba04eafc37f0a03249d89e7ce2a
+Author: WendelChristian123 <wendel.d.f93@gmail.com>
+Date:   Tue Dec 30 11:12:04 2025 -0400
+
+    01
+
+ components/Modals.tsx | 1364 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 1364 insertions(+)

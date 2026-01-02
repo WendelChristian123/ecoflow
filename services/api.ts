@@ -376,6 +376,8 @@ export const api = {
             recurrenceId: t.recurrence_id,
             installmentIndex: t.installment_index,
             totalInstallments: t.total_installments,
+            originType: t.origin_type,
+            originId: t.origin_id,
             tenantId: t.tenant_id
         })) as FinancialTransaction[];
     },
@@ -400,8 +402,9 @@ export const api = {
             links: t.links,
             tenant_id: tenantId
         };
-        const { error } = await supabase.from('financial_transactions').insert([dbTrans]);
+        const { data, error } = await supabase.from('financial_transactions').insert([dbTrans]).select().single();
         if (error) throw error;
+        return data as FinancialTransaction; // Return for linking
     },
     updateTransaction: async (t: FinancialTransaction, scope: 'single' | 'future' = 'single') => {
         const dbTrans = {
@@ -428,9 +431,32 @@ export const api = {
     toggleTransactionStatus: async (id: string, isPaid: boolean) => {
         const { error } = await supabase.from('financial_transactions').update({ is_paid: isPaid }).eq('id', id);
         if (error) throw error;
+        // Also toggle linked technical transactions (e.g. credit card limit release)
+        await supabase.from('financial_transactions')
+            .update({ is_paid: isPaid })
+            .eq('origin_id', id)
+            .eq('origin_type', 'technical');
     },
     deleteTransaction: async (id: string) => {
+        // First delete any linked technical transactions (e.g. credit card limit release)
+        await supabase.from('financial_transactions')
+            .delete()
+            .eq('origin_id', id)
+            .eq('origin_type', 'technical');
+
         const { error } = await supabase.from('financial_transactions').delete().eq('id', id);
+        if (error) throw error;
+    },
+    cleanupCardTechnicalTransactions: async (cardId: string) => {
+        // Delete orphans: "Technical Income" on the card that has NO origin_id linked to a real payment.
+        // OR legacy ones that just have the description but no origin_id.
+        const { error } = await supabase.from('financial_transactions')
+            .delete()
+            .eq('credit_card_id', cardId)
+            .eq('type', 'income')
+            .is('origin_id', null)
+            .ilike('description', '%Pagamento Fatura%'); // Safe check
+
         if (error) throw error;
     },
 
@@ -599,6 +625,18 @@ export const api = {
         }]);
         if (error) throw error;
     },
+    updateTenantSettings: async (settings: any) => {
+        const tenantId = getCurrentTenantId();
+        const { error } = await supabase.from('tenants').update({ settings }).eq('id', tenantId);
+        if (error) throw error;
+    },
+    getTenantSettings: async () => {
+        const tenantId = getCurrentTenantId();
+        const { data, error } = await supabase.from('tenants').select('settings').eq('id', tenantId).single();
+        if (error) throw error;
+        return data?.settings || {};
+    },
+
     updateCatalogItem: async (i: CatalogItem) => {
         const { error } = await supabase.from('catalog_items').update({
             name: i.name,

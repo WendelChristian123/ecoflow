@@ -5,14 +5,15 @@ import { FinancialTransaction, FinancialCategory } from '../../types';
 import { Loader, Card, Button } from '../../components/Shared';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Printer, PieChart as PieChartIcon } from 'lucide-react';
-import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths, parseISO, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const FinancialReports: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
-    const [filterPeriod, setFilterPeriod] = useState<'current' | 'last' | 'all'>('current');
+    const [filterPeriod, setFilterPeriod] = useState<'current' | 'last' | 'all' | 'custom'>('current');
+    const [customDate, setCustomDate] = useState({ start: '', end: '' });
 
     useEffect(() => {
         Promise.all([api.getFinancialTransactions(), api.getFinancialCategories()])
@@ -27,17 +28,32 @@ export const FinancialReports: React.FC = () => {
     if (loading) return <Loader />;
 
     // Filter Logic
-    let filteredTransactions = transactions;
     const now = new Date();
-    
+
+    // Mandatory Technical Filter
+    const baseTransactions = transactions.filter(t =>
+        t.originType !== 'technical' &&
+        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
+        !t.description.includes('Entrada Técnica')
+    );
+
+    let filteredTransactions = baseTransactions;
+
     if (filterPeriod === 'current') {
-        filteredTransactions = transactions.filter(t => 
+        filteredTransactions = baseTransactions.filter(t =>
             isWithinInterval(new Date(t.date), { start: startOfMonth(now), end: endOfMonth(now) })
         );
     } else if (filterPeriod === 'last') {
         const last = subMonths(now, 1);
-        filteredTransactions = transactions.filter(t => 
+        filteredTransactions = baseTransactions.filter(t =>
             isWithinInterval(new Date(t.date), { start: startOfMonth(last), end: endOfMonth(last) })
+        );
+    } else if (filterPeriod === 'custom' && customDate.start && customDate.end) {
+        filteredTransactions = transactions.filter(t =>
+            isWithinInterval(new Date(t.date), {
+                start: parseISO(customDate.start),
+                end: endOfDay(parseISO(customDate.end))
+            })
         );
     }
 
@@ -68,21 +84,39 @@ export const FinancialReports: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 print:p-0">
-             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden">
                 <h1 className="text-2xl font-bold text-white flex items-center gap-3">
                     <PieChartIcon className="text-emerald-500" /> Relatórios
                 </h1>
-                
+
                 <div className="flex items-center gap-2">
-                    <select 
+                    <select
                         className="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm outline-none"
                         value={filterPeriod}
                         onChange={(e) => setFilterPeriod(e.target.value as any)}
                     >
                         <option value="current">Este Mês</option>
                         <option value="last">Mês Passado</option>
+                        <option value="custom">Personalizado</option>
                         <option value="all">Todo o Período</option>
                     </select>
+                    {filterPeriod === 'custom' && (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                            <input
+                                type="date"
+                                className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                                value={customDate.start}
+                                onChange={e => setCustomDate({ ...customDate, start: e.target.value })}
+                            />
+                            <span className="text-slate-500">-</span>
+                            <input
+                                type="date"
+                                className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                                value={customDate.end}
+                                onChange={e => setCustomDate({ ...customDate, end: e.target.value })}
+                            />
+                        </div>
+                    )}
                     <Button variant="secondary" onClick={handlePrint} className="gap-2">
                         <Printer size={16} /> Imprimir
                     </Button>
@@ -102,7 +136,7 @@ export const FinancialReports: React.FC = () => {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                                     <XAxis dataKey="name" stroke="#94a3b8" />
                                     <YAxis stroke="#94a3b8" />
-                                    <RechartsTooltip 
+                                    <RechartsTooltip
                                         contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
                                         formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
                                     />
@@ -139,7 +173,7 @@ export const FinancialReports: React.FC = () => {
                                             <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <RechartsTooltip 
+                                    <RechartsTooltip
                                         contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
                                         formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
                                     />
@@ -150,7 +184,7 @@ export const FinancialReports: React.FC = () => {
                     )}
                 </Card>
             </div>
-            
+
             <div className="text-center text-xs text-slate-500 mt-4">
                 Relatório gerado em {format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
             </div>

@@ -58,7 +58,7 @@ export const Input: React.FC<InputProps> = ({ className, label, leftIcon, ...pro
       )}
       <input
         className={cn(
-          "w-full bg-slate-950/50 border border-slate-800 text-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder:text-slate-600 disabled:opacity-50 transition-all font-medium",
+          "w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder:text-slate-600 disabled:opacity-50 transition-all font-medium",
           leftIcon && "pl-10",
           className
         )}
