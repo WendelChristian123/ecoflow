@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput } from './Shared';
 import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
+import { supabase } from '../services/supabase';
 import { CheckCircle2, Clock, Trash2, Edit2, X, Calendar, User as UserIcon, Link as LinkIcon, Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, Copy, FileText, ArrowRight, RotateCcw, PlayCircle, CheckSquare } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -1190,19 +1191,47 @@ interface EventModalProps {
     onClose: () => void;
     onSuccess: () => void;
     users: User[];
-    initialData?: Partial<CalendarEvent>;
+    projects: Project[];
+    teams: Team[];
+    initialData?: any;
 }
 
-export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSuccess, users, initialData }) => {
-    const [formData, setFormData] = useState<Partial<CalendarEvent>>({
-        title: '', description: '', startDate: '', endDate: '', type: 'meeting', isTeamEvent: false, participants: [], status: 'scheduled', links: []
+export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSuccess, users, projects, teams, initialData }) => {
+    const isEditing = !!initialData?.id;
+    const [mode, setMode] = useState<'event' | 'task'>('event');
+
+    // Unified Form Data
+    const [formData, setFormData] = useState<any>({
+        title: '', description: '', startDate: '', endDate: '', type: 'meeting',
+        isTeamEvent: false, participants: [], status: 'scheduled', links: [],
+        priority: 'medium', projectId: '', assigneeId: '', teamId: ''
     });
+
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(initialData ? { ...initialData, startDate: initialData.startDate?.substring(0, 16), endDate: initialData.endDate?.substring(0, 16), links: initialData.links || [] } : {
-                title: '', description: '', startDate: new Date().toISOString().substring(0, 16), endDate: new Date().toISOString().substring(0, 16), type: 'meeting', isTeamEvent: false, participants: [], status: 'scheduled', links: []
+            const isTask = initialData?.origin === 'task';
+            setMode(isTask ? 'task' : 'event');
+
+            const start = initialData?.startDate || new Date().toISOString().substring(0, 16);
+            const end = initialData?.endDate || new Date().toISOString().substring(0, 16);
+
+            setFormData(initialData ? {
+                ...initialData,
+                startDate: start,
+                endDate: end,
+                links: initialData.links || [],
+                // Task specific mappings if editing
+                priority: initialData.metadata?.priority || 'medium',
+                projectId: initialData.metadata?.projectId || '',
+                assigneeId: initialData.metadata?.assigneeId || '',
+                teamId: initialData.metadata?.teamId || '',
+                status: initialData.metadata?.status || initialData.status || 'scheduled'
+            } : {
+                title: '', description: '', startDate: start, endDate: end, type: 'meeting',
+                isTeamEvent: false, participants: [], status: 'scheduled', links: [],
+                priority: 'medium', projectId: '', assigneeId: '', teamId: ''
             });
         }
     }, [isOpen, initialData]);
@@ -1211,63 +1240,160 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSucce
         e.preventDefault();
         setLoading(true);
         try {
-            if (initialData?.id) {
-                await api.updateEvent({ ...initialData, ...formData } as CalendarEvent);
+            if (mode === 'task') {
+                const taskData: Partial<Task> = {
+                    title: formData.title,
+                    description: formData.description,
+                    dueDate: formData.startDate, // Use StartDate as DueDate
+                    priority: formData.priority,
+                    status: formData.status === 'scheduled' ? 'todo' : formData.status, // Map status
+                    assigneeId: formData.assigneeId,
+                    projectId: formData.projectId,
+                    teamId: formData.teamId,
+                    links: formData.links,
+                };
+
+                if (initialData?.id && initialData.origin === 'task') {
+                    await api.updateTask({ ...taskData, id: initialData.id } as Task);
+                } else {
+                    await api.addTask(taskData as Task);
+                }
             } else {
-                await api.addEvent(formData as CalendarEvent);
+                // Event Mode
+                const eventData: Partial<CalendarEvent> = {
+                    title: formData.title,
+                    description: formData.description,
+                    startDate: formData.startDate,
+                    endDate: formData.endDate,
+                    type: formData.type,
+                    isTeamEvent: formData.isTeamEvent,
+                    participants: formData.participants,
+                    status: formData.status,
+                    links: formData.links
+                };
+
+                if (initialData?.id && initialData.origin === 'agenda') {
+                    await api.updateEvent({ ...eventData, id: initialData.id } as CalendarEvent);
+                } else {
+                    await api.addEvent(eventData as CalendarEvent);
+                }
             }
             onSuccess();
             onClose();
         } catch (e) {
             console.error(e);
-            alert(`Erro ao salvar evento: ${getErrorMessage(e)}`);
+            alert(`Erro ao salvar: ${getErrorMessage(e)}`);
         } finally { setLoading(false); }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Evento" : "Novo Evento"} className="max-w-4xl">
+        <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? (mode === 'task' ? "Editar Tarefa" : "Editar Evento") : "Novo Item"} className="max-w-4xl">
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ... Form ... */}
+
+                {/* Type Switcher */}
+                {!isEditing && (
+                    <div className="flex bg-slate-800 p-1 rounded-lg w-full max-w-sm mx-auto mb-6">
+                        <button
+                            type="button"
+                            onClick={() => setMode('event')}
+                            className={cn("flex-1 py-2 text-sm font-medium rounded transition-all", mode === 'event' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-white")}
+                        >
+                            Evento da Agenda
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMode('task')}
+                            className={cn("flex-1 py-2 text-sm font-medium rounded transition-all", mode === 'task' ? "bg-indigo-500 text-white shadow-lg" : "text-slate-400 hover:text-white")}
+                        >
+                            Tarefa
+                        </button>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-5">
-                        <Input label="Título" placeholder="Ex: Reunião Semanal" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
-                        <div>
+                        <Input label="Título" placeholder={mode === 'task' ? "Ex: Revisar relatório" : "Ex: Reunião de Pauta"} value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
+
+                        <div className="h-full flex flex-col">
                             <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Descrição</label>
-                            <Textarea placeholder="Pauta da reunião..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-40" />
+                            <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="flex-1 min-h-[120px]" />
                         </div>
                     </div>
+
                     <div className="space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Início</label>
-                                <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Fim</label>
-                                <Input type="datetime-local" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} required />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Tipo</label>
-                                <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
-                                    <option value="meeting">Reunião</option>
-                                    <option value="deadline">Prazo</option>
-                                    <option value="review">Revisão</option>
-                                </Select>
-                            </div>
-                            <div className="flex items-center gap-2 pt-6">
-                                <input type="checkbox" checked={formData.isTeamEvent} onChange={e => setFormData({ ...formData, isTeamEvent: e.target.checked })} className="rounded bg-slate-700 border-slate-600 accent-emerald-500" />
-                                <span className="text-sm text-slate-300">Evento de Equipe</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-xs text-slate-400 mb-2 block ml-1">Participantes</label>
-                            <UserMultiSelect users={users} selectedIds={formData.participants || []} onChange={ids => setFormData({ ...formData, participants: ids })} />
-                        </div>
+                        {mode === 'event' ? (
+                            <>
+                                {/* Event Fields */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Início</label>
+                                        <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Fim</label>
+                                        <Input type="datetime-local" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} required />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Tipo</label>
+                                        <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
+                                            <option value="meeting">Reunião</option>
+                                            <option value="deadline">Prazo</option>
+                                            <option value="review">Revisão</option>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-6 px-1">
+                                        <input type="checkbox" checked={formData.isTeamEvent} onChange={e => setFormData({ ...formData, isTeamEvent: e.target.checked })} className="rounded bg-slate-700 border-slate-600 accent-emerald-500 w-4 h-4" />
+                                        <span className="text-sm text-slate-300">Evento de Equipe?</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-2 block ml-1">Participantes</label>
+                                    <UserMultiSelect users={users} selectedIds={formData.participants || []} onChange={ids => setFormData({ ...formData, participants: ids })} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* Task Fields */}
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prazo Final</label>
+                                    <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prioridade</label>
+                                        <Select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })}>
+                                            <option value="low">Baixa</option>
+                                            <option value="medium">Média</option>
+                                            <option value="high">Alta</option>
+                                            <option value="urgent">Urgente</option>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Projeto</label>
+                                        <Select value={formData.projectId} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
+                                            <option value="">Nenhum</option>
+                                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-1.5 block ml-1">Responsável</label>
+                                    <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
+                                        <option value="">Selecione...</option>
+                                        {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                                    </Select>
+                                </div>
+                            </>
+                        )}
+
                         <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
                     </div>
                 </div>
+
                 <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
                     <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button type="submit" disabled={loading}>Salvar</Button>
@@ -1277,69 +1403,239 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSucce
     );
 };
 
+
+const getPriorityColor = (priority: string) => {
+    switch (priority) {
+        case 'high':
+        case 'urgent': return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+        case 'medium': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+        case 'low': return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+        default: return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+    }
+};
+
 interface EventDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    event: CalendarEvent | null;
+    event: any; // Using any for compatibility or import UnifiedEvent
     users: User[];
     onEdit: () => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onClose, onSuccess, event, users, onEdit }) => {
+    const [loading, setLoading] = useState(false);
+
     if (!event) return null;
 
-    const handleStatusToggle = async () => {
+    const isFinance = event.origin?.startsWith('finance');
+    const isTask = event.origin === 'task';
+    const isAgenda = event.origin === 'agenda' || !event.origin;
+
+    const handleStatusUpdate = async (newStatus?: string) => {
+        setLoading(true);
         try {
-            const newStatus = event.status === 'completed' ? 'scheduled' : 'completed';
-            await api.updateEvent({ ...event, status: newStatus });
+            if (isTask && event.metadata?.id && newStatus) {
+                const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', event.metadata.id);
+                if (error) throw error;
+            } else if (isAgenda) {
+                const updatedStatus = event.status === 'completed' ? 'scheduled' : 'completed';
+                await api.updateEvent({ ...event, status: updatedStatus });
+            } else if (isFinance && event.metadata?.id) {
+                const newPaidStatus = !event.metadata.isPaid;
+                await api.toggleTransactionStatus(event.metadata.id, newPaidStatus);
+            }
             onSuccess();
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao atualizar status do evento.');
-        }
+            onClose(); // Close modal immediately
+        } catch (error: any) {
+            console.error('Update Failed:', error);
+            alert(`Erro ao atualizar status: ${error.message || JSON.stringify(error)}`);
+        } finally { setLoading(false); }
+    };
+
+    // Task Specific UI Components
+    const renderTaskBadges = () => (
+        <div className="flex flex-wrap items-center gap-2 mt-1">
+            <div className="px-2.5 py-0.5 rounded border border-slate-600 text-xs font-medium text-slate-300">
+                {translateStatus(event.metadata?.status || 'todo')}
+            </div>
+            {event.metadata?.priority && (
+                <div className={`px-2.5 py-0.5 rounded border text-xs font-medium ${getPriorityColor(event.metadata.priority)}`}>
+                    {translatePriority(event.metadata.priority)}
+                </div>
+            )}
+            {event.metadata?.project && (
+                <div className="px-2.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-medium">
+                    {event.metadata.project.name}
+                </div>
+            )}
+        </div>
+    );
+
+    const renderTaskStageMover = () => {
+        const currentStatus = event.metadata?.status || 'todo';
+        return (
+            <div className="mt-4 border border-slate-800 bg-slate-900/50 rounded-lg p-4">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-3">
+                    Mover para Etapa
+                </span>
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex bg-slate-800 rounded-lg p-1 gap-1">
+                        {['todo', 'in_progress', 'review'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => handleStatusUpdate(status)}
+                                disabled={loading}
+                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all
+                                    ${currentStatus === status
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'}
+                                `}
+                            >
+                                {translateStatus(status)}
+                            </button>
+                        ))}
+                    </div>
+
+                    <Button
+                        variant="success"
+                        size="sm"
+                        className="h-8 text-xs px-4 bg-emerald-600 hover:bg-emerald-500 border-none"
+                        onClick={() => handleStatusUpdate('done')}
+                        disabled={loading}
+                    >
+                        <CheckCircle2 size={14} className="mr-1.5" />
+                        Concluir Tarefa
+                    </Button>
+                </div>
+            </div>
+        );
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do Evento">
-            <div className="space-y-6">
-                <div className="flex justify-between items-start">
-                    <h2 className="text-xl font-bold text-white">{event.title}</h2>
-                    <button onClick={onEdit} className="text-slate-500 hover:text-white"><Edit2 size={18} /></button>
-                </div>
-                {/* ... Rest of Event Detail Modal ... */}
-                <div className="flex gap-2">
-                    <Badge variant={event.status === 'completed' ? 'success' : 'neutral'}>{translateStatus(event.status)}</Badge>
-                    <Badge variant="default">{translateEventType(event.type)}</Badge>
-                    {event.isTeamEvent && <Badge variant="warning">Equipe</Badge>}
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={isFinance ? "Detalhes Financeiros" : (isTask ? "Detalhes da Tarefa" : "Detalhes do Evento")}
+        >
+            <div className="space-y-5">
+                {/* Header */}
+                <div className="flex justify-between items-start gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-white leading-tight">{event.title}</h2>
+                        {isFinance && (
+                            <p className="text-sm text-slate-400 mt-1">
+                                {event.metadata?.category?.name || 'Geral'} • {event.metadata?.account?.name || 'Conta Padrão'}
+                            </p>
+                        )}
+                        {/* Task specific subtitle/badges moved below */}
+                    </div>
+                    {/* Edit Actions */}
+                    <button onClick={onEdit} className="text-slate-500 hover:text-white shrink-0"><Edit2 size={18} /></button>
                 </div>
 
-                <div className="bg-slate-800 p-4 rounded-lg text-slate-300 text-sm whitespace-pre-wrap border border-slate-700 min-h-[100px]">
+                {/* Badges */}
+                {isTask ? renderTaskBadges() : (
+                    <div className="flex flex-wrap gap-2">
+                        {!isAgenda && !isTask && (
+                            <Badge variant="neutral" className="uppercase tracking-wider text-[10px]">Financeiro</Badge>
+                        )}
+                        {isAgenda && <Badge variant={event.status === 'completed' ? 'success' : 'neutral'}>{translateStatus(event.status)}</Badge>}
+                        {isFinance && (
+                            <Badge variant={event.metadata?.isPaid ? 'success' : 'warning'}>
+                                {event.metadata?.isPaid ? 'PAGO' : 'PENDENTE'}
+                            </Badge>
+                        )}
+                        {isAgenda && <Badge variant="default">{translateEventType(event.type)}</Badge>}
+                    </div>
+                )}
+
+                {/* Finance Amount */}
+                {isFinance && event.metadata?.amount && (
+                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 flex items-center justify-between">
+                        <span className="text-slate-400 text-sm">Valor</span>
+                        <span className={`text-2xl font-bold ${event.origin === 'finance_receivable' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata.amount)}
+                        </span>
+                    </div>
+                )}
+
+                {/* Description */}
+                <div className="bg-slate-800 p-3 rounded-lg text-slate-300 text-sm whitespace-pre-wrap border border-slate-700 min-h-[80px]">
                     {event.description || "Sem descrição."}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span className="text-slate-500 block mb-1">Início</span>
-                        <div className="flex items-center gap-2 text-slate-200">
-                            <Calendar size={16} />
-                            <span>{new Date(event.startDate).toLocaleString()}</span>
-                        </div>
-                    </div>
-                    <div>
-                        <span className="text-slate-500 block mb-1">Fim</span>
-                        <div className="flex items-center gap-2 text-slate-200">
-                            <Clock size={16} />
-                            <span>{new Date(event.endDate).toLocaleString()}</span>
-                        </div>
-                    </div>
+                {/* Task Stage Mover */}
+                {isTask && renderTaskStageMover()}
+
+                {/* Grid Details */}
+                <div className={`grid ${isTask ? 'grid-cols-2 mt-4' : 'grid-cols-2 gap-4'} text-sm`}>
+                    {/* Task Specific Footer */}
+                    {isTask ? (
+                        <>
+                            <div>
+                                <span className="text-slate-500 block mb-1">Responsável</span>
+                                <div className="flex items-center gap-2 text-slate-200">
+                                    {event.metadata?.assignee ? (
+                                        <>
+                                            <Avatar name={event.metadata.assignee.name} src={event.metadata.assignee.avatarUrl} size="sm" />
+                                            <span className="font-medium text-slate-300">{event.metadata.assignee.name}</span>
+                                        </>
+                                    ) : <span className="text-slate-400">-</span>}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 block mb-1">Prazo</span>
+                                <div className="flex items-center gap-2 text-slate-200">
+                                    <Calendar size={16} />
+                                    <span>{new Date(event.startDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}</span>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        // Standard Agenda/Finance Footer
+                        <>
+                            <div>
+                                <span className="text-slate-500 block mb-1">Início / Vencimento</span>
+                                <div className="flex items-center gap-2 text-slate-200">
+                                    <Calendar size={16} />
+                                    <span>{new Date(event.startDate).toLocaleDateString()} {new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                            </div>
+                            {isAgenda && (
+                                <div>
+                                    <span className="text-slate-500 block mb-1">Fim</span>
+                                    <div className="flex items-center gap-2 text-slate-200">
+                                        <Clock size={16} />
+                                        <span>{new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
 
-                {event.participants && event.participants.length > 0 && (
+                {/* Task Links */}
+                {isTask && event.links && event.links.length > 0 && (
+                    <div className="mt-4">
+                        <span className="text-slate-500 block mb-2 text-sm">Links Anexados</span>
+                        <div className="space-y-1">
+                            {event.links.map((link: string, i: number) => (
+                                <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 hover:underline transition-colors">
+                                    <LinkIcon size={12} /> {link}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+
+                {/* Participants (Agenda) */}
+                {isAgenda && event.participants && event.participants.length > 0 && (
                     <div>
                         <span className="text-slate-500 block mb-2 text-sm">Participantes</span>
                         <div className="flex flex-wrap gap-2">
-                            {event.participants.map(pid => {
+                            {event.participants.map((pid: string) => {
                                 const u = users.find(user => user.id === pid);
                                 return u ? (
                                     <div key={pid} className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded text-xs text-slate-300 border border-slate-700">
@@ -1352,33 +1648,42 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                     </div>
                 )}
 
-                {event.links && event.links.length > 0 && (
-                    <div>
-                        <span className="text-slate-500 block mb-2 text-sm">Links Anexados</span>
-                        <div className="space-y-1">
-                            {event.links.map((link, i) => (
-                                <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-400 hover:underline">
-                                    <LinkIcon size={12} /> {link}
-                                </a>
-                            ))}
-                        </div>
+                {/* Footer Buttons (Non-Task) */}
+                {!isTask && (
+                    <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
+                        <Button variant="ghost" onClick={onClose}>Fechar</Button>
+
+                        {isAgenda && (
+                            <Button
+                                variant={event.status === 'completed' ? 'secondary' : 'primary'}
+                                onClick={() => handleStatusUpdate()}
+                                disabled={loading}
+                                className="gap-2"
+                            >
+                                {event.status === 'completed' ? (
+                                    <><RotateCcw size={16} /> Reabrir</>
+                                ) : (
+                                    <><CheckCircle2 size={16} /> Concluir</>
+                                )}
+                            </Button>
+                        )}
+
+                        {isFinance && (
+                            <Button
+                                variant={event.metadata?.isPaid ? 'secondary' : 'success'}
+                                onClick={() => handleStatusUpdate()}
+                                disabled={loading}
+                                className="gap-2"
+                            >
+                                {event.metadata?.isPaid ? (
+                                    <><RotateCcw size={16} /> Reabrir (Não Pago)</>
+                                ) : (
+                                    <><ThumbsUp size={16} /> Confirmar Pagamento</>
+                                )}
+                            </Button>
+                        )}
                     </div>
                 )}
-
-                {/* Action Footer */}
-                <div className="pt-4 border-t border-slate-800 flex justify-end">
-                    <Button
-                        variant={event.status === 'completed' ? 'secondary' : 'primary'}
-                        onClick={handleStatusToggle}
-                        className="gap-2"
-                    >
-                        {event.status === 'completed' ? (
-                            <><RotateCcw size={16} /> Reabrir Compromisso</>
-                        ) : (
-                            <><CheckCircle2 size={16} /> Concluir Compromisso</>
-                        )}
-                    </Button>
-                </div>
             </div>
         </Modal>
     );

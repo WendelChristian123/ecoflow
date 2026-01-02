@@ -822,7 +822,11 @@ export const api = {
             contractedModules: data.contracted_modules,
             createdAt: data.created_at,
             financialStatus: data.financial_status,
-            lastActiveAt: data.last_active_at
+            lastActiveAt: data.last_active_at,
+            settings: {
+                ...data.settings,
+                calendar: data.calendar_settings
+            }
         } as Tenant;
     },
     adminListTenants: async () => {
@@ -836,7 +840,11 @@ export const api = {
             contractedModules: t.contracted_modules,
             createdAt: t.created_at,
             financialStatus: t.financial_status,
-            lastActiveAt: t.last_active_at
+            lastActiveAt: t.last_active_at,
+            settings: {
+                ...t.settings,
+                calendar: t.calendar_settings
+            }
         })) as Tenant[];
     },
     createTenant: async (data: any) => {
@@ -880,12 +888,19 @@ export const api = {
             plan_id: data.planId,
             status: data.status,
             type: data.type,
-            financial_status: data.financialStatus
+            financial_status: data.financialStatus,
+            calendar_settings: data.settings?.calendar
         };
         // Remove undefined keys
         Object.keys(dbData).forEach(key => dbData[key] === undefined && delete dbData[key]);
 
         await supabase.from('tenants').update(dbData).eq('id', id);
+    },
+    updateCalendarSettings: async (settings: any) => {
+        const tenantId = getCurrentTenantId();
+        if (!tenantId) throw new Error("No tenant ID");
+        const { error } = await supabase.from('tenants').update({ calendar_settings: settings }).eq('id', tenantId);
+        if (error) throw error;
     },
     getSaasPlans: async () => {
         const { data } = await supabase.from('saas_plans').select('*');

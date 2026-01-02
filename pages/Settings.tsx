@@ -7,6 +7,7 @@ import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon } from 'lucide-react';
 import { CreateUserModal, EditPermissionsModal, DelegationModal } from '../components/UserModals';
+import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 
 export const SettingsPage: React.FC = () => {
     const { user: authUser } = useAuth();
@@ -20,7 +21,7 @@ export const SettingsPage: React.FC = () => {
     const [search, setSearch] = useState('');
 
     // UI State
-    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance'>('delegation');
+    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar'>('delegation');
     const [pendingMode, setPendingMode] = useState<'competence' | 'cash'>('competence');
 
     // Modals State
@@ -125,6 +126,14 @@ export const SettingsPage: React.FC = () => {
                         className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'finance' ? 'text-emerald-500 border-emerald-500' : 'text-slate-400 border-transparent hover:text-slate-200'}`}
                     >
                         Financeiro
+                    </button>
+                )}
+                {isAdmin && (
+                    <button
+                        onClick={() => setActiveTab('calendar')}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'calendar' ? 'text-emerald-500 border-emerald-500' : 'text-slate-400 border-transparent hover:text-slate-200'}`}
+                    >
+                        Calendário
                     </button>
                 )}
             </div>
@@ -345,6 +354,14 @@ export const SettingsPage: React.FC = () => {
                         </div>
                     </div>
                 </Card>
+            )}
+
+            {/* TAB: CALENDAR */}
+            {activeTab === 'calendar' && isAdmin && (
+                <CalendarSettingsTab
+                    initialSettings={financeSettings?.calendar}
+                    onSave={(newSettings) => setFinanceSettings({ ...financeSettings, calendar: newSettings })}
+                />
             )}
 
             <CreateUserModal

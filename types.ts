@@ -41,7 +41,19 @@ export interface Tenant {
 
 export interface TenantSettings {
   credit_card_expense_mode?: 'competence' | 'cash';
-  // Future settings can go here
+  calendar?: CalendarSettings;
+}
+
+export interface CalendarSettings {
+  commitments: boolean;
+  tasks: boolean;
+  financial: {
+    enabled: boolean;
+    budgets: boolean;
+    receivable: boolean;
+    payable: boolean;
+    credit_card: boolean;
+  };
 }
 
 // --- Super Admin Types ---
@@ -140,6 +152,13 @@ export interface CalendarEvent {
   tenantId?: string;
 }
 
+export interface UnifiedEvent extends CalendarEvent {
+  origin: 'agenda' | 'task' | 'finance_payable' | 'finance_receivable' | 'finance_card' | 'finance_budget';
+  color?: string;
+  icon?: any; // ReactNode
+  metadata?: any;
+}
+
 // --- Tipos Financeiros ---
 
 export type TransactionType = 'income' | 'expense' | 'transfer';
@@ -165,7 +184,8 @@ export interface FinancialTransaction {
   categoryId?: string;
   creditCardId?: string;
   contactId?: string;
-  originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical';
+  originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical' | 'credit_card';
+  category?: FinancialCategory; // Joined content
   originId?: string;
   links: string[];
   recurrenceId?: string;
