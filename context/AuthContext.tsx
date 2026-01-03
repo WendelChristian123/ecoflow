@@ -97,7 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (err: any) {
-      console.warn('Profile fetch/enforcement check failed:', err.message);
+
+      console.error('Profile fetch/enforcement check failed:', err.message);
 
       // CRITICAL: If enforcement failed due to logic (suspended), RE-THROW to logout.
       if (err.message.includes("suspensa") || err.message.includes("inativa") || err.message.includes("bloqueada")) {
@@ -105,18 +106,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw err;
       }
 
-      // If just a timeout or network error, maybe allow partial login? 
-      // Risk: Unsafe access.
-      // Better: Throw to force retry or explicit failure state, BUT ensure loading stops.
-      // For now, let's allow partial login if it's just a timeout (offline mode), 
-      // UNLESS we want strict online enforcement.
-      // Given the "infinite loading" complaint, we must ensure this function returns OR throws, never hangs.
-      // If we throw here, initSession catches it and sets User=null, which is safe.
+      // If it's a network/timeout error, we cannot trust the session context (Tenant ID might be wrong/missing).
+      // Risk: Infinite loading if we don't resolve.
+      // Decision: Alert user and Throw to let initSession handle cleanup.
 
-      // If it's a fetch error that is NOT enforcement, it might be RLS blocking access.
-      // In that case, we should probably fall back to basic user info.
-      console.warn("Falling back to basic user info due to profile fetch error/timeout");
+      // But if we throw, initSession catches and logs out.Ideally we want "Try Again"? 
+      // For now, fail safe (Logout) is better than "Ghost State".
+      // We will re-throw.
+      throw new Error("Falha ao carregar perfil de usuário. Verifique sua conexão e tente novamente. (" + err.message + ")");
     }
+
 
 
     return appUser;

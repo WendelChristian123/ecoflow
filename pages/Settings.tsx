@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon } from 'lucide-react';
 import { CreateUserModal, EditPermissionsModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
+import { AuditLogsTab } from '../components/AuditLogsTab';
 
 export const SettingsPage: React.FC = () => {
     const { user: authUser } = useAuth();
@@ -21,7 +22,7 @@ export const SettingsPage: React.FC = () => {
     const [search, setSearch] = useState('');
 
     // UI State
-    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar'>('delegation');
+    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'audit'>('delegation');
     const [pendingMode, setPendingMode] = useState<'competence' | 'cash'>('competence');
 
     // Modals State
@@ -134,6 +135,14 @@ export const SettingsPage: React.FC = () => {
                         className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'calendar' ? 'text-emerald-500 border-emerald-500' : 'text-slate-400 border-transparent hover:text-slate-200'}`}
                     >
                         Calendário
+                    </button>
+                )}
+                {isAdmin && (
+                    <button
+                        onClick={() => setActiveTab('audit')}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'audit' ? 'text-emerald-500 border-emerald-500' : 'text-slate-400 border-transparent hover:text-slate-200'}`}
+                    >
+                        Auditoria
                     </button>
                 )}
             </div>
@@ -362,6 +371,13 @@ export const SettingsPage: React.FC = () => {
                     initialSettings={financeSettings?.calendar}
                     onSave={(newSettings) => setFinanceSettings({ ...financeSettings, calendar: newSettings })}
                 />
+            )}
+
+            {/* TAB: AUDIT */}
+            {activeTab === 'audit' && isAdmin && (
+                <Card className="p-6">
+                    <AuditLogsTab />
+                </Card>
             )}
 
             <CreateUserModal

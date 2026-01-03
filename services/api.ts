@@ -4,7 +4,7 @@ import {
     FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard,
     Contact, Quote, CatalogItem, RecurringService,
     Tenant, SaasPlan, Delegation,
-    DashboardMetrics, GlobalStats, UserPermissions
+    DashboardMetrics, GlobalStats, UserPermissions, AuditLog
 } from '../types';
 import { supabase } from './supabase';
 import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
@@ -334,7 +334,45 @@ export const api = {
     },
 
 
-    // --- EVENTS ---
+
+    // --- AUDIT LOGS ---
+    getAuditLogs: async (tenantId?: string) => {
+        let query = supabase
+            .from('audit_logs')
+            .select(`
+                *,
+                user:profiles!user_id(name, email, avatar_url, role)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(100); // Reasonable limit for UI
+
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        return data.map((log: any) => ({
+            id: log.id,
+            tableName: log.table_name,
+            recordId: log.record_id,
+            action: log.action,
+            oldData: log.old_data,
+            newData: log.new_data,
+            userId: log.user_id,
+            tenantId: log.tenant_id,
+            description: log.description,
+            ipAddress: log.ip_address,
+            userAgent: log.user_agent,
+            createdAt: log.created_at,
+            user: log.user ? {
+                name: log.user.name,
+                email: log.user.email,
+                avatarUrl: log.user.avatar_url,
+                role: log.user.role
+            } : undefined
+        })) as AuditLog[];
+    },
+
     getEvents: async (tenantId?: string) => {
         let query = supabase.from('calendar_events').select('*');
         if (tenantId) query = query.eq('tenant_id', tenantId);

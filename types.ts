@@ -332,3 +332,19 @@ export interface FinanceFilters {
   categoryId: string;
   type: 'all' | TransactionType;
 }
+
+export interface AuditLog {
+  id: string;
+  tableName: string;
+  recordId?: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'ACTION';
+  oldData?: any;
+  newData?: any;
+  userId?: string;
+  tenantId?: string;
+  description?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+  user?: User; // Joined payload
+}
