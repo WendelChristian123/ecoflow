@@ -374,7 +374,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
 
             // If it's the "Invalid Refresh Token" error, it actually means the password changed
             // and invalidated the old session. We should treat this as success.
-            if (msg.includes('Refresh Token') || (changePassword && msg.includes('timeout'))) {
+            // Also handle "timed out" from our manual timeout in api.ts
+            if (msg.includes('Refresh Token') || (changePassword && msg.includes('timed out'))) {
                 alert("Senha alterada com sucesso! Por segurança, faça login novamente.");
                 onSuccess();
                 onClose();
