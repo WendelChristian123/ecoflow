@@ -3,53 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact } from '../../types';
-import { Loader, Card, Badge, cn, Button, Select, ProgressBar } from '../../components/Shared';
+import { Loader, Card, Badge, cn, Button, Select } from '../../components/Shared';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, ArrowRightLeft } from 'lucide-react';
 import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
-const StatCard: React.FC<{
-    title: string;
-    value: number;
-    icon: React.ReactNode;
-    color: 'emerald' | 'rose' | 'amber' | 'indigo' | 'slate';
-    subtitle?: string;
-    onClick?: () => void;
-}> = ({ title, value, icon, color, subtitle, onClick }) => {
-    const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    const colors = {
-        emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-        rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-        amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-        indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-        slate: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-    };
 
-    return (
-        <div
-            onClick={onClick}
-            className={cn(
-                "bg-slate-800 border border-slate-700/50 p-6 rounded-xl transition-all relative overflow-hidden group flex flex-col justify-between h-full",
-                onClick && "cursor-pointer hover:bg-slate-700/50 hover:border-slate-600"
-            )}
-        >
-            <div className="flex justify-between items-start mb-4 relative z-10">
-                <span className="text-slate-400 text-sm font-medium uppercase tracking-wide">{title}</span>
-                <div className={cn("p-2 rounded-lg", colors[color])}>{icon}</div>
-            </div>
-            <div className="relative z-10">
-                <div className="text-2xl font-bold text-white tracking-tight">{fmt(value)}</div>
-                {subtitle && <div className="text-xs text-slate-500 mt-1">{subtitle}</div>}
-            </div>
-            {onClick && (
-                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight size={18} className="text-slate-400" />
-                </div>
-            )}
-        </div>
-    );
-};
 
 export const FinancialOverview: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -389,86 +349,161 @@ export const FinancialOverview: React.FC = () => {
 
 
             {/* BLOCO 1 - RESUMO */}
-            {/* BLOCO 1 - KPIS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard
-                    title="SALDO ATUAL"
-                    value={currentBalance}
-                    icon={<Wallet size={24} />}
-                    color="slate"
-                    subtitle="Soma das Contas"
-                />
-                <StatCard
-                    title="RECEITAS"
-                    value={realizedIncome}
-                    icon={<TrendingUp size={24} />}
-                    color="emerald"
-                    subtitle="No período selecionado"
-                    onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)}
-                />
-                <StatCard
-                    title="DESPESAS"
-                    value={realizedExpense}
-                    icon={<TrendingDown size={24} />}
-                    color="rose"
-                    subtitle="No período selecionado"
-                    onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)}
-                />
-                <StatCard
-                    title="RESULTADO"
-                    value={realizedIncome - realizedExpense}
-                    icon={<DollarSign size={24} />}
-                    color={(realizedIncome - realizedExpense) >= 0 ? 'indigo' : 'amber'}
-                    subtitle="Op. Realizadas"
-                />
+            {/* BLOCO 1 - KPIS (HIERARQUIA: SALDO > FLUXO > RESULTADO) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+                {/* SALDO - PROTAGONISTA */}
+                <div className="lg:col-span-4 bg-[#0B0D12] border border-slate-800/40 p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Wallet size={80} className="text-emerald-500" />
+                    </div>
+                    <div>
+                        <span className="text-slate-400 text-sm font-medium uppercase tracking-wide opacity-80">Saldo Atual</span>
+                        <div className="mt-4 text-4xl xl:text-5xl font-bold text-white tracking-tighter">
+                            {fmt(currentBalance)}
+                        </div>
+                    </div>
+                    <div className="mt-8 flex items-center gap-2 text-sm text-slate-500">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                        <span>Soma de todas as contas</span>
+                    </div>
+                </div>
+
+                {/* FLUXO - SECUNDÁRIO */}
+                <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div
+                        className="bg-[#0B0D12] border border-slate-800/40 p-6 rounded-2xl flex flex-col justify-center cursor-pointer hover:bg-emerald-500/5 hover:border-emerald-500/20 transition-all group"
+                        onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)}
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-emerald-500/5 text-emerald-500 group-hover:bg-emerald-500/10 transition-colors">
+                                <TrendingUp size={18} />
+                            </div>
+                            <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Receitas</span>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 transition-colors tracking-tight">
+                            {fmt(realizedIncome)}
+                        </div>
+                    </div>
+
+                    <div
+                        className="bg-[#0B0D12] border border-slate-800/40 p-6 rounded-2xl flex flex-col justify-center cursor-pointer hover:bg-rose-500/5 hover:border-rose-500/20 transition-all group"
+                        onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)}
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-rose-500/5 text-rose-500 group-hover:bg-rose-500/10 transition-colors">
+                                <TrendingDown size={18} />
+                            </div>
+                            <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Despesas</span>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-200 group-hover:text-rose-400 transition-colors tracking-tight">
+                            {fmt(realizedExpense)}
+                        </div>
+                    </div>
+
+                    <div className="bg-[#0B0D12] border border-slate-800/40 p-6 rounded-2xl flex flex-col justify-center">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className={cn("p-2 rounded-lg bg-slate-800/50 transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-400" : "text-amber-400")}>
+                                <DollarSign size={18} />
+                            </div>
+                            <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Resultado</span>
+                        </div>
+                        <div className={cn("text-2xl font-bold tracking-tight transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-300" : "text-amber-300")}>
+                            {fmt(realizedIncome - realizedExpense)}
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* BLOCO 2 - PREVISÃO */}
-            {/* BLOCO 2 - PREVISÃO (SITUAÇÃO FINANCEIRA) */}
-            <div className="mb-8">
-                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <AlertCircle size={16} /> Situação Financeira
-                </h2>
+            {/* BLOCO 2 - RISCO (ATRASADOS vs FUTUROS) */}
+            <div className="mb-10">
+                <div className="flex items-center gap-3 mb-4 pl-1">
+                    <div className="h-px bg-slate-800 flex-1"></div>
+                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <AlertCircle size={14} /> Fluxo de Caixa Previsto
+                    </h2>
+                    <div className="h-px bg-slate-800 flex-1"></div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard
-                        title="VENCIDAS"
-                        value={filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.creditCardId && isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0)}
-                        icon={<AlertCircle size={24} />}
-                        color="rose"
-                        onClick={() => openDrilldown('Contas Vencidas', t => t.type === 'expense' && !t.isPaid && !t.creditCardId && isBefore(parseISO(t.date), todayStart))}
-                    />
-                    <StatCard
-                        title="A VENCER (7D)"
-                        value={filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.creditCardId && !isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0)}
-                        icon={<Clock size={24} />}
-                        color="amber"
-                        onClick={() => openDrilldown('A Pagar (Futuro)', t => t.type === 'expense' && !t.isPaid && !t.creditCardId && !isBefore(parseISO(t.date), todayStart))}
-                    />
-                    <StatCard
-                        title="A RECEBER VENCIDAS"
-                        value={filteredData.filter(t => t.type === 'income' && !t.isPaid && isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0)}
-                        icon={<AlertCircle size={24} />}
-                        color="rose"
-                        onClick={() => openDrilldown('Receitas Vencidas', t => t.type === 'income' && !t.isPaid && isBefore(parseISO(t.date), todayStart))}
-                    />
-                    <StatCard
-                        title="A RECEBER (7D)"
-                        value={filteredData.filter(t => t.type === 'income' && !t.isPaid && !isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0)}
-                        icon={<Clock size={24} />}
-                        color="indigo"
-                        onClick={() => openDrilldown('A Receber (Futuro)', t => t.type === 'income' && !t.isPaid && !isBefore(parseISO(t.date), todayStart))}
-                    />
+                    {/* PAYABLES OVERDUE - ALARM */}
+                    <div
+                        className="bg-[#0B0D12] border border-rose-900/30 p-5 rounded-xl cursor-pointer hover:bg-rose-900/10 transition-all group relative overflow-hidden"
+                        onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && !t.creditCardId && isBefore(parseISO(t.date), todayStart))}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-50"></div>
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-rose-400/80 text-[10px] font-bold uppercase tracking-wider">Pagamentos em Atraso</span>
+                                <AlertCircle size={16} className="text-rose-500" />
+                            </div>
+                            <div>
+                                <div className="text-2xl font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
+                                    {fmt(filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.creditCardId && isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PAYABLES FUTURE - QUIET */}
+                    <div
+                        className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/60 transition-all group flex flex-col justify-between"
+                        onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && !t.creditCardId && !isBefore(parseISO(t.date), todayStart))}
+                    >
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pagamentos a Vencer (7d)</span>
+                            <Clock size={16} className="text-slate-600 group-hover:text-amber-500 transition-colors" />
+                        </div>
+                        <div className="text-2xl font-bold text-slate-300 group-hover:text-amber-400 transition-colors">
+                            {fmt(filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.creditCardId && !isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                        </div>
+                    </div>
+
+                    {/* RECEIVABLES OVERDUE - ALARM */}
+                    <div
+                        className="bg-[#0B0D12] border border-rose-900/30 p-5 rounded-xl cursor-pointer hover:bg-rose-900/10 transition-all group relative overflow-hidden"
+                        onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseISO(t.date), todayStart))}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-50"></div>
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-rose-400/80 text-[10px] font-bold uppercase tracking-wider">Recebimentos em Atraso</span>
+                                <AlertCircle size={16} className="text-rose-500" />
+                            </div>
+                            <div className="text-2xl font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
+                                {fmt(filteredData.filter(t => t.type === 'income' && !t.isPaid && isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RECEIVABLES FUTURE - QUIET */}
+                    <div
+                        className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/60 transition-all group flex flex-col justify-between"
+                        onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseISO(t.date), todayStart))}
+                    >
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Recebimentos a Vencer (7d)</span>
+                            <Clock size={16} className="text-slate-600 group-hover:text-indigo-500 transition-colors" />
+                        </div>
+                        <div className="text-2xl font-bold text-slate-300 group-hover:text-indigo-400 transition-colors">
+                            {fmt(filteredData.filter(t => t.type === 'income' && !t.isPaid && !isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* BLOCO 3 - CARTÕES DE CRÉDITO */}
             {
                 cards.length > 0 && (
-                    <div>
-                        <h2 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
-                            <CardIcon size={18} className="text-slate-400" /> Cartões de Crédito
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="mb-10">
+                        <div className="flex items-center gap-3 mb-4 pl-1">
+                            <div className="h-px bg-slate-800 flex-1"></div>
+                            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                <CardIcon size={14} /> Cartões de Crédito
+                            </h2>
+                            <div className="h-px bg-slate-800 flex-1"></div>
+                        </div>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             {cards.map(card => {
                                 const invoice = getCardInvoice(card.id);
                                 const available = card.limitAmount - invoice;
@@ -477,37 +512,36 @@ export const FinancialOverview: React.FC = () => {
                                 return (
                                     <div key={card.id}
                                         onClick={() => openDrilldown(`Fatura: ${card.name}`, t => t.creditCardId === card.id && !t.isPaid)}
-                                        className="bg-slate-800 border border-slate-700/50 p-5 rounded-xl cursor-pointer hover:border-emerald-500/30 transition-all"
+                                        className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/30 transition-all group"
                                     >
-                                        <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-slate-700 rounded-lg text-slate-300">
-                                                    <CardIcon size={20} />
+                                                <div className="w-10 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-md shadow-inner flex items-center justify-center">
+                                                    <div className="w-6 h-3 bg-white/20 rounded-sm"></div>
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-white text-sm">{card.name}</h3>
-                                                    <p className="text-xs text-slate-500">Limite: {fmt(card.limitAmount)}</p>
+                                                    <h3 className="text-sm font-bold text-slate-200">{card.name}</h3>
+                                                    <div className="text-[10px] text-slate-500">
+                                                        Fecha dia {card.closingDay} • Vence dia {card.dueDay}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xs text-slate-500 uppercase">Fatura Atual</div>
-                                                <div className="text-slate-200 font-bold">{fmt(invoice)}</div>
+                                                <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">Fatura Atual</div>
+                                                <div className="text-xl font-bold text-white tracking-tight">{fmt(invoice)}</div>
                                             </div>
                                         </div>
-                                        <div className="space-y-2 mb-4">
-                                            <div className="flex justify-between text-xs">
-                                                <span className="text-rose-400">Usado: {Math.round(percent)}%</span>
-                                                <span className="text-emerald-400">Disp: {fmt(available)}</span>
-                                            </div>
-                                            <ProgressBar progress={percent} />
+
+                                        <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mb-2">
+                                            <div
+                                                className="absolute top-0 left-0 h-full bg-indigo-500 rounded-full transition-all duration-500"
+                                                style={{ width: `${percent}%` }}
+                                            ></div>
                                         </div>
-                                        <div className="flex justify-between items-center pt-3 border-t border-slate-700/50 text-xs text-slate-400">
-                                            <div className="flex items-center gap-1">
-                                                <Calendar size={12} /> Fecha: {card.closingDay}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Calendar size={12} /> Vence: {card.dueDay}
-                                            </div>
+
+                                        <div className="flex justify-between text-[10px] font-medium uppercase tracking-wide">
+                                            <span className="text-indigo-400">Usado: {Math.round(percent)}%</span>
+                                            <span className="text-emerald-500">Disponível: {fmt(available)}</span>
                                         </div>
                                     </div>
                                 )
@@ -518,85 +552,85 @@ export const FinancialOverview: React.FC = () => {
             }
 
             {/* BLOCO 4 - ÚLTIMOS LANÇAMENTOS */}
-            <div className="bg-slate-800 border border-slate-700/50 rounded-xl p-6">
-                <h3 className="font-bold text-white mb-4">Últimos Lançamentos</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredData.slice(0, 9).map((t: any) => {
-                        const isVirtual = t.isVirtual;
-                        return (
-                            <div key={t.id}
-                                className={cn(
-                                    "flex items-center justify-between p-3 rounded-lg border",
-                                    isVirtual ? "bg-indigo-500/10 border-indigo-500/30 cursor-pointer hover:bg-indigo-500/20" : "bg-slate-900/50 border-slate-700/50"
-                                )}
-                                onClick={() => isVirtual && openDrilldown(t.description, (item) => item.creditCardId === t.virtualChildren[0]?.creditCardId && item.type === 'expense' && !item.isPaid)}
-                            >
-                                <div className="flex items-center gap-3 truncate">
-                                    <div className={cn("p-2 rounded-full shrink-0", t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400', isVirtual && "bg-indigo-500/10 text-indigo-400")}>
-                                        {isVirtual ? <CardIcon size={16} /> : (t.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />)}
-                                    </div>
-                                    <div className="truncate">
-                                        <div className="font-medium text-slate-200 truncate">{t.description}</div>
-                                        <div className="text-xs text-slate-500">{t.date.split('T')[0].split('-').reverse().join('/')} {isVirtual && `(${t.virtualChildren?.length} itens)`}</div>
-                                    </div>
-                                </div>
-                                <div className="text-right flex flex-col items-end pl-2">
-                                    <div className={cn("font-bold", t.type === 'income' ? 'text-emerald-400' : 'text-rose-400')}>
-                                        {t.type === 'expense' ? '-' : '+'}{fmt(t.amount)}
-                                    </div>
-                                    {!isVirtual && (
-                                        financeSettings.credit_card_expense_mode === 'competence' && t.creditCardId ? (
-                                            <div className="px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-medium flex items-center gap-1 select-none" title="Item em fatura aberta (Consome Limite)">
-                                                <CardIcon size={10} />
-                                                <span>Fatura</span>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={(e) => handleToggleStatus(e, t)}
-                                                className={cn(
-                                                    "mt-1 p-1 rounded transition-colors",
-                                                    t.isPaid ? "text-emerald-500" : "text-slate-500 hover:text-emerald-500"
-                                                )}
-                                                title={t.isPaid ? "Pago" : "Pendente"}
-                                            >
-                                                {t.isPaid ? <ThumbsUp size={14} className="fill-emerald-500/10" /> : <ThumbsDown size={14} />}
-                                            </button>
-                                        )
+            <div className="mb-10">
+                <div className="flex items-center gap-3 mb-4 pl-1">
+                    <div className="h-px bg-slate-800 flex-1"></div>
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <ArrowRightLeft size={14} /> Últimas Movimentações
+                    </h3>
+                    <div className="h-px bg-slate-800 flex-1"></div>
+                </div>
+
+                <div className="bg-[#0B0D12] border border-slate-800/40 rounded-2xl overflow-hidden p-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-800/40">
+                        {filteredData.slice(0, 9).map((t: any, i: number) => {
+                            const isVirtual = t.isVirtual;
+                            return (
+                                <div key={t.id}
+                                    className={cn(
+                                        "flex items-center justify-between p-4 transition-colors group cursor-pointer",
+                                        isVirtual ? "hover:bg-indigo-500/5" : "hover:bg-slate-800/30",
+                                        t.type === 'expense' && !isVirtual ? "hover:bg-rose-500/5" : "",
+                                        t.type === 'income' && !isVirtual ? "hover:bg-emerald-500/5" : ""
                                     )}
+                                    // Adicionando borda inferior apenas se não for a última linha (mobile) ou ajustando grid
+                                    style={{ borderBottomWidth: '1px', borderBottomColor: 'rgba(30, 41, 59, 0.4)' }}
+                                    onClick={() => isVirtual && openDrilldown(t.description, (item) => item.creditCardId === t.virtualChildren[0]?.creditCardId && item.type === 'expense' && !item.isPaid)}
+                                >
+                                    <div className="flex items-center gap-4 truncate">
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                                            isVirtual ? "bg-indigo-500/10 text-indigo-500" : (t.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'),
+                                            "group-hover:scale-110"
+                                        )}>
+                                            {isVirtual ? <CardIcon size={14} /> : (t.type === 'income' ? <TrendingUp size={14} /> : <TrendingDown size={14} />)}
+                                        </div>
+                                        <div className="truncate">
+                                            <div className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate">{t.description}</div>
+                                            <div className="text-[10px] text-slate-500">{t.date.split('T')[0].split('-').reverse().join('/')} {isVirtual && `• ${t.virtualChildren?.length} itens`}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right pl-2">
+                                        <div className={cn("text-sm font-bold tracking-tight", t.type === 'income' ? 'text-emerald-400' : 'text-slate-400 group-hover:text-rose-400 transition-colors')}>
+                                            {t.type === 'expense' ? '-' : '+'}{fmt(t.amount)}
+                                        </div>
+                                        {!isVirtual && !t.isPaid && financeSettings.credit_card_expense_mode !== 'competence' && (
+                                            <div className="text-[10px] text-amber-500/80 font-medium">Pendente</div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                    })}
-                    {filteredData.length === 0 && <p className="text-slate-500 text-sm col-span-full text-center py-4">Nenhum lançamento.</p>}
+                            )
+                        })}
+                        {filteredData.length === 0 && <p className="text-slate-500 text-sm col-span-full text-center py-8 opacity-50">Nenhuma movimentação no período.</p>}
+                    </div>
                 </div>
             </div>
 
             {/* BLOCO 5 - EVOLUÇÃO */}
-            <div className="bg-slate-800 border border-slate-700/50 rounded-xl p-6">
-                <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-                    <h3 className="font-bold text-white flex items-center gap-2">
-                        <BarChart2 className="text-indigo-500" /> Evolução Financeira
+            <div className="bg-[#0B0D12] border border-slate-800/40 rounded-2xl p-6 sm:p-8">
+                <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+                    <h3 className="font-bold text-slate-400 uppercase tracking-widest text-xs flex items-center gap-2">
+                        <BarChart2 size={16} /> Evolução Financeira
                     </h3>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400 uppercase font-bold">Comparar:</span>
-                        <Select value={comparisonMode} onChange={(e) => setComparisonMode(e.target.value as any)} className="w-[150px] py-1.5 text-xs bg-slate-900 border-slate-700">
+                        <Select value={comparisonMode} onChange={(e) => setComparisonMode(e.target.value as any)} className="w-[160px] py-1 text-xs bg-slate-900 border-slate-700/50 rounded-lg text-slate-400 focus:text-white focus:border-slate-600">
                             <option value="month">Mês Atual vs Anterior</option>
                             <option value="semester">Últimos 6 Meses</option>
                             <option value="year">Anual</option>
                             <option value="custom">Personalizado</option>
                         </Select>
                         {comparisonMode === 'custom' && (
-                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 ml-2">
                                 <input
                                     type="date"
-                                    className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500"
+                                    className="bg-transparent text-xs text-slate-400 outline-none w-24 border-b border-slate-800 focus:border-emerald-500 transition-colors"
                                     value={chartCustomRange.start}
                                     onChange={(e) => setChartCustomRange(prev => ({ ...prev, start: e.target.value }))}
                                 />
-                                <span className="text-slate-600">-</span>
+                                <span className="text-slate-700">-</span>
                                 <input
                                     type="date"
-                                    className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500"
+                                    className="bg-transparent text-xs text-slate-400 outline-none w-24 border-b border-slate-800 focus:border-emerald-500 transition-colors"
                                     value={chartCustomRange.end}
                                     onChange={(e) => setChartCustomRange(prev => ({ ...prev, end: e.target.value }))}
                                 />
@@ -605,27 +639,123 @@ export const FinancialOverview: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="space-y-6">
-                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-                            <span className="text-sm text-slate-400 uppercase font-bold tracking-wide">Receitas (Realizadas)</span>
-                            <div className="mt-2 text-2xl font-bold text-emerald-400">{fmt(currentComparisonData.reduce((acc, d) => acc + d.Receitas, 0))}</div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                    <div className="lg:col-span-1 space-y-4">
+                        <div className="p-5 rounded-xl border border-dashed border-emerald-500/20 bg-emerald-500/5">
+                            <span className="text-xs text-emerald-500/70 font-bold uppercase tracking-widest">Receitas (Totais)</span>
+                            <div className="mt-2 text-3xl font-bold text-emerald-400 tracking-tighter">{fmt(currentComparisonData.reduce((acc, d) => acc + d.Receitas, 0))}</div>
+                            {(() => {
+                                const currentTotal = currentComparisonData.reduce((acc, d) => acc + d.Receitas, 0);
+                                let previousTotal = 0;
+                                const now = new Date();
+
+                                const calcPrevious = (start: Date, end: Date) =>
+                                    transactions.filter(t =>
+                                        t.type === 'income' &&
+                                        isCompetenceExpense(t) &&
+                                        t.originType !== 'technical' &&
+                                        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
+                                        isWithinInterval(parseISO(t.date), { start, end })
+                                    ).reduce((s, t) => s + t.amount, 0);
+
+                                if (comparisonMode === 'month') {
+                                    const rangeStart = startOfMonth(subMonths(now, 3));
+                                    const rangeEnd = endOfMonth(subMonths(now, 2));
+                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
+                                } else if (comparisonMode === 'semester') {
+                                    const rangeStart = startOfMonth(subMonths(now, 11));
+                                    const rangeEnd = endOfMonth(subMonths(now, 6));
+                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
+                                } else if (comparisonMode === 'year') {
+                                    const rangeStart = startOfMonth(subMonths(now, 23));
+                                    const rangeEnd = endOfMonth(subMonths(now, 12));
+                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
+                                }
+
+                                if (comparisonMode !== 'custom') {
+                                    return (
+                                        <div className="mt-1 flex items-center gap-1.5 opacity-60">
+                                            <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+                                                Anterior: {fmt(previousTotal)}
+                                            </span>
+                                        </div>
+                                    )
+                                }
+                                return null;
+                            })()}
                         </div>
-                        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-                            <span className="text-sm text-slate-400 uppercase font-bold tracking-wide">Despesas (Realizadas)</span>
-                            <div className="mt-2 text-2xl font-bold text-rose-400">{fmt(currentComparisonData.reduce((acc, d) => acc + d.Despesas, 0))}</div>
+                        <div className="p-5 rounded-xl border border-dashed border-rose-500/20 bg-rose-500/5">
+                            <span className="text-xs text-rose-500/70 font-bold uppercase tracking-widest">Despesas (Totais)</span>
+                            <div className="mt-2 text-3xl font-bold text-rose-400 tracking-tighter">{fmt(currentComparisonData.reduce((acc, d) => acc + d.Despesas, 0))}</div>
+                            {(() => {
+                                const currentTotal = currentComparisonData.reduce((acc, d) => acc + d.Despesas, 0);
+                                let previousTotal = 0;
+                                const now = new Date();
+
+                                const calcPrevious = (start: Date, end: Date) =>
+                                    transactions.filter(t =>
+                                        t.type === 'expense' &&
+                                        isCompetenceExpense(t) &&
+                                        t.originType !== 'technical' &&
+                                        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
+                                        isWithinInterval(parseISO(t.date), { start, end })
+                                    ).reduce((s, t) => s + t.amount, 0);
+
+                                if (comparisonMode === 'month') {
+                                    const rangeStart = startOfMonth(subMonths(now, 3));
+                                    const rangeEnd = endOfMonth(subMonths(now, 2));
+                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
+                                } else if (comparisonMode === 'semester') {
+                                    const rangeStart = startOfMonth(subMonths(now, 11));
+                                    const rangeEnd = endOfMonth(subMonths(now, 6));
+                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
+                                } else if (comparisonMode === 'year') {
+                                    const rangeStart = startOfMonth(subMonths(now, 23));
+                                    const rangeEnd = endOfMonth(subMonths(now, 12));
+                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
+                                }
+
+                                if (comparisonMode !== 'custom') {
+                                    return (
+                                        <div className="mt-1 flex items-center gap-1.5 opacity-60">
+                                            <span className="text-[10px] font-medium uppercase tracking-wide text-rose-300">
+                                                Anterior: {fmt(previousTotal)}
+                                            </span>
+                                        </div>
+                                    )
+                                }
+                                return null;
+                            })()}
                         </div>
                     </div>
-                    <div className="lg:col-span-2 h-[300px] w-full min-w-0">
-                        <ResponsiveContainer width="99%" height="100%">
-                            <BarChart data={currentComparisonData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                                <YAxis stroke="#94a3b8" fontSize={12} maxLength={3} />
-                                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} formatter={(value: number) => fmt(value)} />
-                                <Legend />
-                                <Bar dataKey="Receitas" fill="#10b981" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="Despesas" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+
+                    <div className="lg:col-span-2 h-[250px] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={currentComparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
+                                <XAxis
+                                    dataKey="name"
+                                    stroke="#475569"
+                                    fontSize={10}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    dy={10}
+                                />
+                                <YAxis
+                                    stroke="#475569"
+                                    fontSize={10}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => `R$${val / 1000}k`}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '8px', fontSize: '12px' }}
+                                    itemStyle={{ padding: 0 }}
+                                    formatter={(value: number) => fmt(value)}
+                                    cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }}
+                                />
+                                <Bar dataKey="Receitas" fill="#10b981" radius={[2, 2, 0, 0]} maxBarSize={40} />
+                                <Bar dataKey="Despesas" fill="#f43f5e" radius={[2, 2, 0, 0]} maxBarSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
