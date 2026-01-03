@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
       );
 
       const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -129,9 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // console.log('[AuthContext] initSession started');
 
       try {
-        // 1. Try standard getSession with a short timeout (3s)
+        // 1. Try standard getSession with a short timeout (6s)
         const timeoutPromise = new Promise<{ data: { session: null }, error: any }>((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timeout')), 3000)
+          setTimeout(() => reject(new Error('Session check timeout')), 6000)
         );
 
         const { data: { session }, error } = await Promise.race([
