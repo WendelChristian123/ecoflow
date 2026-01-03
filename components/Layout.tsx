@@ -128,8 +128,14 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
     }, []);
 
     const handleLogout = async () => {
-        await signOut();
-        navigate('/login');
+        try {
+            await signOut();
+        } catch (error) {
+            console.error("Error signing out:", error);
+        } finally {
+            // Force hard reload/redirect to ensure clean state
+            window.location.href = '/login';
+        }
     };
 
     const getRoleLabel = () => {

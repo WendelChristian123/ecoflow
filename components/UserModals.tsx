@@ -365,6 +365,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                 await api.updatePassword(passwordData.new);
             }
 
+            if (changePassword) {
+                alert("Senha alterada com sucesso! Você será redirecionado para o login.");
+                await supabase.auth.signOut();
+                window.location.href = '/'; // Force redirect to login
+                return;
+            }
+
             alert("Perfil atualizado com sucesso!");
             onSuccess();
             onClose();
