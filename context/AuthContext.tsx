@@ -47,11 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Fetch profile AND tenant status with strict enforcement
       // RESTORED TIMEOUT PROTECTION: Prevent hang if RLS/Network stalls
-      // Fetch profile ONLY first (Avoid join timeouts)
+      // Fetch profile using RPC (Bypasses RLS complexity & timeouts)
       const profilePromise = supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', sbUser.id)
+        .rpc('get_my_profile')
         .single();
 
       const timeoutPromise = new Promise((_, reject) =>
