@@ -214,19 +214,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                   if (mounted) setUser(mapped);
                 } catch (mapErr) {
-                  console.error('Error mapping stored user:', mapErr);
-                  // Basic fallback if mapping fails
-                  if (mounted) {
-                    setUser({
-                      id: stored.user.id,
-                      name: stored.user.user_metadata?.name || '',
-                      email: stored.user.email,
-                      role: localStorage.getItem('ecoflow-user-role') as any || 'user',
-                      tenantId: localStorage.getItem('ecoflow-tenant-id') || DEFAULT_TENANT_ID,
-                      avatarUrl: '',
-                      permissions: undefined
-                    });
-                  }
+                  console.warn('[Auth] Could not recover session (likely invalid/expired). Enforcing logout.');
+                  if (mounted) setUser(null);
+                  supabase.auth.signOut().catch(() => { }); // Clean up client state
                 }
               }
             }
