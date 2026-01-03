@@ -47,18 +47,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Fetch profile AND tenant status with strict enforcement
       // RESTORED TIMEOUT PROTECTION: Prevent hang if RLS/Network stalls
-      // Fetch profile using RPC (Bypasses RLS complexity & timeouts)
-      // Note: RPC returns scalar jsonb, we don't need .single()
-      const profilePromise = supabase
-        .rpc('get_my_profile');
+      // Fetch profile using RPC with RETRY LOGIC (Bypasses RLS complexity & timeouts)
+      // Retry up to 3 times if it fails (common during password reset/re-auth)
+      let profile = null;
+      let attempt = 0;
+      const maxRetries = 3;
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
-      );
+      while (attempt < maxRetries) {
+        attempt++;
+        try {
+          console.log(`[Auth] Fetching profile (Attempt ${attempt}/${maxRetries})...`);
 
-      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+          const profilePromise = supabase.rpc('get_my_profile');
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+          );
 
-      if (error) throw error;
+          const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
+          if (error) throw error;
+
+          profile = data;
+          console.log(`[Auth] Profile fetched successfully on attempt ${attempt}`);
+          break; // Success
+        } catch (err: any) {
+          console.warn(`[Auth] Profile fetch failed (Attempt ${attempt}):`, err.message);
+          if (attempt >= maxRetries) throw err; // Throw on final failure
+          // Wait 1s before retry
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
 
       if (profile) {
         // ENFORCEMENT: Check Status (User & Tenant)
@@ -210,14 +228,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     // Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // OPTIMIZATION: Ignore token refreshes (profile data hasn't changed)
+      // This prevents redundant RPC calls that spam the DB and cause timeouts
+      if (event === 'TOKEN_REFRESHED') {
+        return;
+      }
+
+      console.log(`[Auth] State changed: ${event}`, session?.user?.id);
+
       if (session?.user) {
-        const mapped = await mapSupabaseUser(session.user);
-        if (mounted) setUser(mapped);
+        // Silent refresh - If this fails, we don't want to crash the app, just warn.
+        try {
+          const mapped = await mapSupabaseUser(session.user);
+          if (mounted) setUser(mapped);
+        } catch (err) {
+          console.warn("[Auth] Failed to refresh profile on auth change:", err);
+          // Do NOT logout user here if they were already logged in. 
+          // Just let them continue with current state if possible.
+        }
       } else {
         if (mounted) {
           setUser(null);
-          // Only set loading false if we were loading (though usually init handles it)
           setLoading(false);
         }
       }
