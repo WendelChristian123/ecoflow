@@ -324,7 +324,7 @@ export const FinancialCards: React.FC = () => {
                                     </div>
                                     <div className="text-right">
                                         <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Limite Total</div>
-                                        <div className="text-lg font-mono text-slate-200">{fmt(card.limitAmount)}</div>
+                                        <div className="text-lg text-slate-200 font-bold">{fmt(card.limitAmount)}</div>
                                     </div>
                                 </div>
 

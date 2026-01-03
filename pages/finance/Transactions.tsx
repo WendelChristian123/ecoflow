@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact, TenantSettings } from '../../types';
 import { Loader, Badge, cn, Button, Select, LinkInput } from '../../components/Shared';
-import { TransactionModal, DrilldownModal, ConfirmationModal } from '../../components/Modals';
+import { TransactionModal, DrilldownModal, ConfirmationModal, RecurrenceActionModal } from '../../components/Modals';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { TrendingUp, TrendingDown, Filter, Plus, Calendar, Search, ArrowRight, DollarSign, MoreVertical, Edit2, Trash2, CheckSquare, Square, ThumbsUp, ThumbsDown, Copy, CreditCard as CardIcon, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay, addDays, addMonths, subMonths, isBefore } from 'date-fns';
@@ -36,6 +36,7 @@ export const FinancialTransactions: React.FC = () => {
 
     // Deletion
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [recurrenceDeleteTarget, setRecurrenceDeleteTarget] = useState<FinancialTransaction | null>(null);
 
     useEffect(() => { loadData(); }, []);
 
@@ -76,6 +77,15 @@ export const FinancialTransactions: React.FC = () => {
         setIsAddMenuOpen(false);
     }
 
+    const handleDeleteClick = (e: React.MouseEvent, t: FinancialTransaction) => {
+        e.stopPropagation();
+        if (t.recurrenceId) {
+            setRecurrenceDeleteTarget(t);
+        } else {
+            setConfirmDeleteId(t.id);
+        }
+    };
+
     const deleteTransaction = async () => {
         if (!confirmDeleteId) return;
         try {
@@ -87,6 +97,23 @@ export const FinancialTransactions: React.FC = () => {
             alert("Erro ao excluir.");
         }
     }
+
+    const executeRecurrenceDelete = async (scope: 'single' | 'future') => {
+        if (!recurrenceDeleteTarget) return;
+        try {
+            await api.deleteTransaction(
+                recurrenceDeleteTarget.id,
+                scope,
+                recurrenceDeleteTarget.recurrenceId,
+                recurrenceDeleteTarget.date
+            );
+            setRecurrenceDeleteTarget(null);
+            loadData();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao excluir recorrência.");
+        }
+    };
 
     const toggleStatus = async (id: string, currentStatus: boolean) => {
         try {
@@ -389,7 +416,7 @@ export const FinancialTransactions: React.FC = () => {
                                         {!isVirtual && (
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button onClick={(e) => { e.stopPropagation(); handleEdit(t); }} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"><Edit2 size={16} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(t.id); }} className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors"><Trash2 size={16} /></button>
+                                                <button onClick={(e) => handleDeleteClick(e, t)} className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors"><Trash2 size={16} /></button>
                                             </div>
                                         )}
                                     </div>
@@ -425,6 +452,13 @@ export const FinancialTransactions: React.FC = () => {
                 onConfirm={deleteTransaction}
                 title="Excluir Lançamento"
                 description="Tem certeza? Esta ação não pode ser desfeita."
+            />
+
+            <RecurrenceActionModal
+                isOpen={!!recurrenceDeleteTarget}
+                onClose={() => setRecurrenceDeleteTarget(null)}
+                onConfirm={executeRecurrenceDelete}
+                action="delete"
             />
         </div>
     );

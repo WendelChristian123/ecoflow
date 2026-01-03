@@ -405,7 +405,7 @@ export const TaskTableView: React.FC<{
                       </div>
                     ) : <span className="text-slate-600 italic">--</span>}
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs">
+                  <td className="px-6 py-4 text-xs font-medium text-slate-300">
                     {new Date(task.dueDate).toLocaleDateString('pt-BR')} <span className="text-slate-500 ml-1">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                   </td>
                   <td className="px-6 py-4 text-right">

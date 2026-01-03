@@ -7,6 +7,7 @@ import {
     DashboardMetrics, GlobalStats, UserPermissions
 } from '../types';
 import { supabase } from './supabase';
+import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
 
 export const getErrorMessage = (error: any): string => {
     return error?.message || error?.error_description || String(error);
@@ -157,6 +158,23 @@ export const api = {
         const { error } = await supabase.from('projects').update(dbProject).eq('id', project.id);
         if (error) throw error;
     },
+    deleteProject: async (id: string) => {
+        const { error } = await supabase.from('projects').delete().eq('id', id);
+        if (error) throw error;
+    },
+    completeProject: async (id: string) => {
+        // Update project to completed
+        const { error: pError } = await supabase.from('projects')
+            .update({ status: 'completed', progress: 100 })
+            .eq('id', id);
+        if (pError) throw pError;
+
+        // Update all tasks of this project to done
+        const { error: tError } = await supabase.from('tasks')
+            .update({ status: 'done' })
+            .eq('project_id', id);
+        if (tError) throw tError;
+    },
 
     // --- TEAMS ---
     getTeams: async (tenantId?: string) => {
@@ -193,6 +211,10 @@ export const api = {
             links: team.links
         };
         const { error } = await supabase.from('teams').update(dbTeam).eq('id', team.id);
+        if (error) throw error;
+    },
+    deleteTeam: async (id: string) => {
+        const { error } = await supabase.from('teams').delete().eq('id', id);
         if (error) throw error;
     },
 
@@ -383,36 +405,59 @@ export const api = {
     },
     addTransaction: async (t: Partial<FinancialTransaction>, recurrence?: any) => {
         const tenantId = getCurrentTenantId();
-        const dbTrans = {
-            description: t.description,
-            amount: t.amount,
-            type: t.type,
-            date: t.date,
-            is_paid: t.isPaid,
-            account_id: uuidOrNull(t.accountId),
-            to_account_id: uuidOrNull(t.toAccountId),
-            category_id: uuidOrNull(t.categoryId),
-            credit_card_id: uuidOrNull(t.creditCardId),
-            contact_id: uuidOrNull(t.contactId),
-            origin_type: t.originType,
-            origin_id: uuidOrNull(t.originId),
-            recurrence_id: uuidOrNull(t.recurrenceId),
-            installment_index: t.installmentIndex,
-            total_installments: t.totalInstallments,
-            links: t.links,
+        const transactionsToInsert: any[] = [];
+        const baseRecurrenceId = recurrence?.isRecurring ? crypto.randomUUID() : null;
+
+        // Helper to prepare DB object
+        const createDbObj = (trans: Partial<FinancialTransaction>, date: string, recId: string | null, index?: number, total?: number) => ({
+            description: trans.description,
+            amount: trans.amount,
+            type: trans.type,
+            date: date,
+            is_paid: trans.isPaid,
+            account_id: uuidOrNull(trans.accountId),
+            to_account_id: uuidOrNull(trans.toAccountId),
+            category_id: uuidOrNull(trans.categoryId),
+            credit_card_id: uuidOrNull(trans.creditCardId),
+            contact_id: uuidOrNull(trans.contactId),
+            origin_type: trans.originType,
+            origin_id: uuidOrNull(trans.originId),
+            recurrence_id: recId,
+            installment_index: index,
+            total_installments: total,
+            links: trans.links,
             tenant_id: tenantId
-        };
-        const { data, error } = await supabase.from('financial_transactions').insert([dbTrans]).select().single();
+        });
+
+        if (recurrence && recurrence.isRecurring) {
+            const count = recurrence.repeatCount || 1;
+            const startDate = new Date(t.date || new Date());
+
+            for (let i = 0; i < count; i++) {
+                let nextDate = new Date(startDate);
+                if (recurrence.frequency === 'daily') nextDate = addDays(startDate, i);
+                if (recurrence.frequency === 'weekly') nextDate = addWeeks(startDate, i);
+                if (recurrence.frequency === 'monthly') nextDate = addMonths(startDate, i);
+                if (recurrence.frequency === 'yearly') nextDate = addYears(startDate, i);
+
+                const dateStr = nextDate.toISOString().split('T')[0];
+                transactionsToInsert.push(createDbObj(t, dateStr, baseRecurrenceId, i + 1, count));
+            }
+        } else {
+            // Single transaction
+            transactionsToInsert.push(createDbObj(t, t.date || new Date().toISOString().split('T')[0], null, t.installmentIndex, t.totalInstallments));
+        }
+
+        const { data, error } = await supabase.from('financial_transactions').insert(transactionsToInsert).select();
         if (error) throw error;
-        return data as FinancialTransaction; // Return for linking
+        return data[0] as FinancialTransaction; // Return first for linking if needed
     },
     updateTransaction: async (t: FinancialTransaction, scope: 'single' | 'future' = 'single') => {
-        const dbTrans = {
+        // Base fields that can be updated in bulk
+        const dbBaseOptions = {
             description: t.description,
             amount: t.amount,
             type: t.type,
-            date: t.date,
-            is_paid: t.isPaid,
             account_id: uuidOrNull(t.accountId),
             to_account_id: uuidOrNull(t.toAccountId),
             category_id: uuidOrNull(t.categoryId),
@@ -425,8 +470,28 @@ export const api = {
             total_installments: t.totalInstallments,
             links: t.links
         };
-        const { error } = await supabase.from('financial_transactions').update(dbTrans).eq('id', t.id);
+
+        // For the specific item being edited, we also update date and status
+        const dbTransSpecific = {
+            ...dbBaseOptions,
+            date: t.date,
+            is_paid: t.isPaid,
+        };
+
+        // 1. Update the specific transaction (This covers 'single' scope and the 'this' part of 'this and future')
+        const { error } = await supabase.from('financial_transactions').update(dbTransSpecific).eq('id', t.id);
         if (error) throw error;
+
+        // 2. If scope is future, update subsequent transactions
+        if (scope === 'future' && t.recurrenceId) {
+            // We do NOT update 'date' or 'is_paid' for future items to preserve their schedule and status
+            const { error: batchError } = await supabase.from('financial_transactions')
+                .update(dbBaseOptions)
+                .eq('recurrence_id', t.recurrenceId)
+                .gt('date', t.date);
+
+            if (batchError) throw batchError;
+        }
     },
     toggleTransactionStatus: async (id: string, isPaid: boolean) => {
         const { error } = await supabase.from('financial_transactions').update({ is_paid: isPaid }).eq('id', id);
@@ -437,15 +502,43 @@ export const api = {
             .eq('origin_id', id)
             .eq('origin_type', 'technical');
     },
-    deleteTransaction: async (id: string) => {
-        // First delete any linked technical transactions (e.g. credit card limit release)
-        await supabase.from('financial_transactions')
-            .delete()
-            .eq('origin_id', id)
-            .eq('origin_type', 'technical');
+    deleteTransaction: async (id: string, scope: 'single' | 'future' = 'single', recurrenceId?: string, date?: string) => {
+        // Helper to delete technical transactions
+        const deleteTechnical = async (targetId: string) => {
+            await supabase.from('financial_transactions')
+                .delete()
+                .eq('origin_id', targetId)
+                .eq('origin_type', 'technical');
+        };
 
-        const { error } = await supabase.from('financial_transactions').delete().eq('id', id);
-        if (error) throw error;
+        if (scope === 'single') {
+            await deleteTechnical(id);
+            const { error } = await supabase.from('financial_transactions').delete().eq('id', id);
+            if (error) throw error;
+        } else if (scope === 'future' && recurrenceId && date) {
+            // Find all IDs to delete first (to cleanup technicals)
+            const { data: toDelete } = await supabase.from('financial_transactions')
+                .select('id')
+                .eq('recurrence_id', recurrenceId)
+                .gte('date', date);
+
+            if (toDelete && toDelete.length > 0) {
+                const ids = toDelete.map(r => r.id);
+                // Cleanup technicals for all
+                for (const tid of ids) await deleteTechnical(tid);
+
+                // Delete actuals
+                const { error } = await supabase.from('financial_transactions')
+                    .delete()
+                    .in('id', ids);
+                if (error) throw error;
+            }
+        } else {
+            // Fallback if missing params
+            await deleteTechnical(id);
+            const { error } = await supabase.from('financial_transactions').delete().eq('id', id);
+            if (error) throw error;
+        }
     },
     cleanupCardTechnicalTransactions: async (cardId: string) => {
         // Delete orphans: "Technical Income" on the card that has NO origin_id linked to a real payment.

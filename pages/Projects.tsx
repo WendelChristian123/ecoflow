@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, MoreVertical, ArrowLeft, LayoutList, Kanban, Edit2 } from 'lucide-react';
+import { Plus, Search, MoreVertical, ArrowLeft, LayoutList, Kanban, Edit2, Trash2, CheckCircle } from 'lucide-react';
 import { Card, Badge, ProgressBar, Button, Loader, Avatar, TaskTableView } from '../components/Shared';
 import { KanbanBoard } from '../components/Kanban';
 import { TaskModal, ProjectModal, TaskDetailModal } from '../components/Modals';
@@ -9,9 +9,11 @@ import { Project, User, Team, Task, Status } from '../types';
 import { useLocation } from 'react-router-dom';
 
 import { useTenant } from '../context/TenantContext';
+import { useAuth } from '../context/AuthContext';
 
 export const ProjectsPage: React.FC = () => {
   const { currentTenant } = useTenant();
+  const { user } = useAuth();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -97,6 +99,37 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
+  const handleDeleteProject = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"?`)) return;
+
+    try {
+      await api.deleteProject(project.id);
+      if (selectedProject?.id === project.id) setSelectedProject(null);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao excluir projeto.");
+    }
+  };
+
+  const handleCompleteProject = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    if (!window.confirm(`Deseja concluir o projeto "${project.name}"? Isso também marcará todas as tarefas como concluídas.`)) return;
+
+    try {
+      await api.completeProject(project.id);
+      loadData();
+      if (selectedProject?.id === project.id) {
+        // Update local state to reflect changes immediately if viewing details
+        setSelectedProject({ ...project, status: 'completed', progress: 100 });
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao concluir projeto.");
+    }
+  };
+
   const handleCreate = () => {
     setEditingProject(undefined);
     setIsModalOpen(true);
@@ -143,9 +176,27 @@ export const ProjectsPage: React.FC = () => {
                   <Badge variant={selectedProject.status === 'active' ? 'success' : 'neutral'}>
                     {translateStatus(selectedProject.status)}
                   </Badge>
-                  <button onClick={handleEdit} className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={handleEdit} className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" title="Editar Projeto">
                     <Edit2 size={16} />
                   </button>
+                  {user?.role === 'admin' && (
+                    <>
+                      <button
+                        onClick={(e) => handleCompleteProject(e, selectedProject)}
+                        className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-emerald-400 transition-colors"
+                        title="Concluir Projeto (e todas tarefas)"
+                      >
+                        <CheckCircle size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteProject(e, selectedProject)}
+                        className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Excluir Projeto"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
                 </h2>
               </div>
             </div>
@@ -270,6 +321,35 @@ export const ProjectsPage: React.FC = () => {
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-lg">
                 {project.name.charAt(0)}
               </div>
+              {user?.role === 'admin' && (
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingProject(project);
+                      setIsModalOpen(true);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                    title="Editar"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => handleCompleteProject(e, project)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-700"
+                    title="Concluir"
+                  >
+                    <CheckCircle size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteProject(e, project)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-700"
+                    title="Excluir"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
             </div>
 
             <h3 className="text-lg font-semibold text-white mb-2">{project.name}</h3>

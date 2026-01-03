@@ -491,7 +491,7 @@ export const FinancialOverview: React.FC = () => {
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-xs text-slate-500 uppercase">Fatura Atual</div>
-                                                <div className="font-mono text-slate-200 font-bold">{fmt(invoice)}</div>
+                                                <div className="text-slate-200 font-bold">{fmt(invoice)}</div>
                                             </div>
                                         </div>
                                         <div className="space-y-2 mb-4">

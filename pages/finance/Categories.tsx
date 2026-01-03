@@ -10,9 +10,9 @@ export const FinancialCategories: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
-    
+
     // Modals
-    const [drilldownState, setDrilldownState] = useState<{isOpen: boolean, title: string, data: any[]}>({ isOpen: false, title: '', data: [] });
+    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<FinancialCategory | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export const FinancialCategories: React.FC = () => {
     };
 
     const getCategoryTotal = (catId: string) => {
-        return transactions.filter(t => t.categoryId === catId).reduce((sum, t) => sum + t.amount, 0);
+        return transactions.filter(t => t.categoryId === catId && t.isPaid).reduce((sum, t) => sum + t.amount, 0);
     };
 
     const handleCreate = () => {
@@ -64,13 +64,13 @@ export const FinancialCategories: React.FC = () => {
     if (loading) return <Loader />;
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    
+
     const incomeCats = categories.filter(c => c.type === 'income');
     const expenseCats = categories.filter(c => c.type === 'expense');
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
-             <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-white flex items-center gap-3">
                     <Tags className="text-emerald-500" /> Categorias
                 </h1>
@@ -83,12 +83,12 @@ export const FinancialCategories: React.FC = () => {
                 {/* Income Column */}
                 <div className="bg-slate-800/50 rounded-xl border border-slate-800 p-6">
                     <h2 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2 pb-4 border-b border-slate-700/50">
-                        <ArrowUpCircle size={18} className="text-emerald-400"/> Receitas
+                        <ArrowUpCircle size={18} className="text-emerald-400" /> Receitas
                     </h2>
                     <div className="space-y-3">
                         {incomeCats.map(cat => (
-                            <div 
-                                key={cat.id} 
+                            <div
+                                key={cat.id}
                                 onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id) })}
                                 className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-700/50 transition-all group"
                             >
@@ -99,8 +99,8 @@ export const FinancialCategories: React.FC = () => {
                                 <div className="flex items-center gap-4">
                                     <span className="font-bold text-slate-300 text-sm">{fmt(getCategoryTotal(cat.id))}</span>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={(e) => handleEdit(e, cat)} className="text-slate-500 hover:text-white p-1"><Edit2 size={14}/></button>
-                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-slate-500 hover:text-rose-500 p-1"><Trash2 size={14}/></button>
+                                        <button onClick={(e) => handleEdit(e, cat)} className="text-slate-500 hover:text-white p-1"><Edit2 size={14} /></button>
+                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-slate-500 hover:text-rose-500 p-1"><Trash2 size={14} /></button>
                                     </div>
                                     <ChevronRight size={16} className="text-slate-600" />
                                 </div>
@@ -113,12 +113,12 @@ export const FinancialCategories: React.FC = () => {
                 {/* Expense Column */}
                 <div className="bg-slate-800/50 rounded-xl border border-slate-800 p-6">
                     <h2 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2 pb-4 border-b border-slate-700/50">
-                        <ArrowDownCircle size={18} className="text-rose-400"/> Despesas
+                        <ArrowDownCircle size={18} className="text-rose-400" /> Despesas
                     </h2>
                     <div className="space-y-3">
                         {expenseCats.map(cat => (
-                            <div 
-                                key={cat.id} 
+                            <div
+                                key={cat.id}
                                 onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id) })}
                                 className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer hover:border-rose-500/50 hover:bg-slate-700/50 transition-all group"
                             >
@@ -129,8 +129,8 @@ export const FinancialCategories: React.FC = () => {
                                 <div className="flex items-center gap-4">
                                     <span className="font-bold text-slate-300 text-sm">{fmt(getCategoryTotal(cat.id))}</span>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={(e) => handleEdit(e, cat)} className="text-slate-500 hover:text-white p-1"><Edit2 size={14}/></button>
-                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-slate-500 hover:text-rose-500 p-1"><Trash2 size={14}/></button>
+                                        <button onClick={(e) => handleEdit(e, cat)} className="text-slate-500 hover:text-white p-1"><Edit2 size={14} /></button>
+                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-slate-500 hover:text-rose-500 p-1"><Trash2 size={14} /></button>
                                     </div>
                                     <ChevronRight size={16} className="text-slate-600" />
                                 </div>
@@ -141,15 +141,15 @@ export const FinancialCategories: React.FC = () => {
                 </div>
             </div>
 
-            <DrilldownModal 
+            <DrilldownModal
                 isOpen={drilldownState.isOpen}
-                onClose={() => setDrilldownState({...drilldownState, isOpen: false})}
+                onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })}
                 title={drilldownState.title}
                 type="finance"
                 data={drilldownState.data}
             />
 
-            <CategoryModal 
+            <CategoryModal
                 isOpen={isCategoryModalOpen}
                 onClose={() => setIsCategoryModalOpen(false)}
                 onSuccess={loadData}

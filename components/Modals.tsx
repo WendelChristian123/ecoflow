@@ -159,6 +159,10 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
         } else if (type === 'events') {
             navigate('/agenda', { state: { eventId: item.id } });
         } else if (type === 'finance') {
+            if ((item as any).isVirtualBill) {
+                navigate('/finance/cards');
+                return;
+            }
             navigate('/finance/transactions', { state: { transactionId: item.id } });
         } else if (type === 'quotes') {
             // Need a way to open quotes, for now just go to quotes page
@@ -232,18 +236,20 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                         <div className={cn("font-bold", t.type === 'expense' ? 'text-rose-400' : 'text-emerald-400')}>
                                             {t.type === 'expense' ? '-' : '+'}{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
                                         </div>
-                                        <button
-                                            onClick={(e) => handleToggleStatus(e, t)}
-                                            className={cn(
-                                                "p-1 rounded transition-colors",
-                                                t.isPaid
-                                                    ? "text-emerald-500 hover:bg-emerald-500/10"
-                                                    : "text-slate-500 hover:text-emerald-500 hover:bg-slate-700"
-                                            )}
-                                            title={t.isPaid ? "Marcar como não pago" : "Marcar como pago"}
-                                        >
-                                            {t.isPaid ? <ThumbsUp size={16} className="fill-emerald-500/10" /> : <ThumbsDown size={16} />}
-                                        </button>
+                                        {!(t as any).isVirtualBill && (
+                                            <button
+                                                onClick={(e) => handleToggleStatus(e, t)}
+                                                className={cn(
+                                                    "p-1 rounded transition-colors",
+                                                    t.isPaid
+                                                        ? "text-emerald-500 hover:bg-emerald-500/10"
+                                                        : "text-slate-500 hover:text-emerald-500 hover:bg-slate-700"
+                                                )}
+                                                title={t.isPaid ? "Marcar como não pago" : "Marcar como pago"}
+                                            >
+                                                {t.isPaid ? <ThumbsUp size={16} className="fill-emerald-500/10" /> : <ThumbsDown size={16} />}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )
@@ -280,7 +286,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                     })
                 )}
             </div>
-        </Modal>
+        </Modal >
     )
 }
 
