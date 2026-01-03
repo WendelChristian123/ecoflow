@@ -47,9 +47,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Fetch profile AND tenant status with strict enforcement
       // RESTORED TIMEOUT PROTECTION: Prevent hang if RLS/Network stalls
+      // Fetch profile ONLY first (Avoid join timeouts)
       const profilePromise = supabase
         .from('profiles')
-        .select('*, tenants(id, status, financial_status)')
+        .select('*')
         .eq('id', sbUser.id)
         .single();
 
@@ -68,14 +69,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error("User suspended/blocked");
             throw new Error("Sua conta foi suspensa ou bloqueada. Entre em contato com seu administrador.");
           }
-          if (profile.tenants?.status !== 'active') {
-            // Allow 'trial' status if we had that conceptualized, but for now stick to active
-            // If tenant status is undefined (e.g. mock data issues), let it slide or default to active?
-            // Let's be strict but safe: check if explicitly suspended/inactive
-            const tStatus = profile.tenants?.status;
-            if (tStatus === 'suspended' || tStatus === 'inactive') {
-              console.error("Tenant inactive/suspended");
-              throw new Error("A sua empresa está inativa ou suspensa. Entre em contato com o suporte.");
+
+          // Separate check for Tenant Status (Lazy load / Safe fail)
+          if (profile.tenant_id) {
+            const { data: tenantData } = await supabase
+              .from('tenants')
+              .select('status')
+              .eq('id', profile.tenant_id)
+              .single();
+
+            if (tenantData) {
+              const tStatus = tenantData.status;
+              if (tStatus === 'suspended' || tStatus === 'inactive') {
+                console.error("Tenant inactive/suspended");
+                throw new Error("A sua empresa está inativa ou suspensa. Entre em contato com o suporte.");
+              }
             }
           }
         }
