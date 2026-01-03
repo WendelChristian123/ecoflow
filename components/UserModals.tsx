@@ -244,7 +244,7 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
         setLoading(true);
         try {
             await api.addDelegation({
-                userId: delegateId,
+                delegateId: delegateId,
                 module: moduleName,
                 permissions: permissions
             });
