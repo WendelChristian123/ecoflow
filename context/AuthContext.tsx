@@ -58,9 +58,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           console.log(`[Auth] Fetching profile (Attempt ${attempt}/${maxRetries})...`);
 
+          // Ensure we have a valid token before asking RPC
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (!currentSession) {
+            console.warn("[Auth] No active session during profile fetch retry. Aborting.");
+            throw new Error("No active session");
+          }
+
           const profilePromise = supabase.rpc('get_my_profile');
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+            // Increased timeout to 12s to handle potential Auth refresh delays/hiccups
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 12000)
           );
 
           const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;

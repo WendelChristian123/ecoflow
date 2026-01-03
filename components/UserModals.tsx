@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select } from './Shared';
 import { User, UserRole, UserPermissions } from '../types';
 import { api, getErrorMessage } from '../services/api';
+import { supabase } from '../services/supabase';
 import { DEFAULT_USER_PERMISSIONS } from '../context/RBACContext';
 import { Shield, Check, X, AlertTriangle, UserCheck, Lock } from 'lucide-react';
 
@@ -24,7 +25,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
     const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_USER_PERMISSIONS);
 
     useEffect(() => {
-        if(isOpen) {
+        if (isOpen) {
             setFormData({ name: '', email: '', phone: '', password: '', role: 'user' });
             setPermissions(DEFAULT_USER_PERMISSIONS);
         }
@@ -52,39 +53,39 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Criar Novo Usuário">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Input 
-                    placeholder="Nome Completo" 
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value})} 
-                    required 
+                <Input
+                    placeholder="Nome Completo"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    required
                 />
-                <Input 
-                    type="email" 
-                    placeholder="E-mail" 
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
-                    required 
+                <Input
+                    type="email"
+                    placeholder="E-mail"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    required
                 />
-                <Input 
-                    placeholder="Telefone" 
-                    value={formData.phone} 
-                    onChange={e => setFormData({...formData, phone: e.target.value})} 
-                    required 
+                <Input
+                    placeholder="Telefone"
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                    required
                 />
-                <Input 
-                    type="password" 
-                    placeholder="Senha Provisória" 
-                    value={formData.password} 
-                    onChange={e => setFormData({...formData, password: e.target.value})} 
-                    required 
+                <Input
+                    type="password"
+                    placeholder="Senha Provisória"
+                    value={formData.password}
+                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                    required
                     minLength={6}
                 />
-                
+
                 <div>
                     <label className="text-xs text-slate-400 mb-1 block">Tipo de Acesso</label>
-                    <Select 
-                        value={formData.role} 
-                        onChange={e => setFormData({...formData, role: e.target.value as UserRole})}
+                    <Select
+                        value={formData.role}
+                        onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
                     >
                         <option value="user">Usuário Padrão</option>
                         <option value="admin">Administrador (Acesso Total)</option>
@@ -97,30 +98,30 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                             <Shield size={14} className="text-emerald-500" />
                             Permissões de Acesso
                         </div>
-                        
-                        <PermissionToggleGroup 
+
+                        <PermissionToggleGroup
                             label="Rotinas & Execução"
                             values={permissions.routines}
-                            onChange={(newVals) => setPermissions({...permissions, routines: newVals})}
-                        />
-                        
-                        <PermissionToggleGroup 
-                            label="Comercial"
-                            values={permissions.commercial}
-                            onChange={(newVals) => setPermissions({...permissions, commercial: newVals})}
+                            onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
                         />
 
-                        <PermissionToggleGroup 
+                        <PermissionToggleGroup
+                            label="Comercial"
+                            values={permissions.commercial}
+                            onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
+                        />
+
+                        <PermissionToggleGroup
                             label="Financeiro"
                             values={permissions.finance}
-                            onChange={(newVals) => setPermissions({...permissions, finance: newVals})}
+                            onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
                         />
 
                         <div className="flex items-center justify-between py-1">
                             <span className="text-sm text-slate-400">Relatórios</span>
-                            <Toggle 
-                                checked={permissions.reports.view} 
-                                onChange={v => setPermissions({...permissions, reports: { view: v }})}
+                            <Toggle
+                                checked={permissions.reports.view}
+                                onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
                                 label="Ver"
                             />
                         </div>
@@ -155,7 +156,7 @@ export const EditPermissionsModal: React.FC<EditPermissionsModalProps> = ({ isOp
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if(user && user.permissions) {
+        if (user && user.permissions) {
             setPermissions(user.permissions);
         } else {
             setPermissions(DEFAULT_USER_PERMISSIONS);
@@ -163,7 +164,7 @@ export const EditPermissionsModal: React.FC<EditPermissionsModalProps> = ({ isOp
     }, [user, isOpen]);
 
     const handleSubmit = async () => {
-        if(!user) return;
+        if (!user) return;
         setLoading(true);
         try {
             await api.updateUserPermissions(user.id, permissions);
@@ -183,26 +184,26 @@ export const EditPermissionsModal: React.FC<EditPermissionsModalProps> = ({ isOp
         <Modal isOpen={isOpen} onClose={onClose} title={`Permissões: ${user.name}`}>
             <div className="space-y-6">
                 <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
-                    <PermissionToggleGroup 
+                    <PermissionToggleGroup
                         label="Rotinas & Execução"
                         values={permissions.routines}
-                        onChange={(newVals) => setPermissions({...permissions, routines: newVals})}
+                        onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
                     />
-                    <PermissionToggleGroup 
+                    <PermissionToggleGroup
                         label="Comercial"
                         values={permissions.commercial}
-                        onChange={(newVals) => setPermissions({...permissions, commercial: newVals})}
+                        onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
                     />
-                    <PermissionToggleGroup 
+                    <PermissionToggleGroup
                         label="Financeiro"
                         values={permissions.finance}
-                        onChange={(newVals) => setPermissions({...permissions, finance: newVals})}
+                        onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
                     />
                     <div className="flex items-center justify-between py-1">
                         <span className="text-sm text-slate-400">Relatórios</span>
-                        <Toggle 
-                            checked={permissions.reports.view} 
-                            onChange={v => setPermissions({...permissions, reports: { view: v }})}
+                        <Toggle
+                            checked={permissions.reports.view}
+                            onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
                             label="Ver"
                         />
                     </div>
@@ -242,7 +243,11 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
         if (!delegateId) return alert("Selecione um usuário.");
         setLoading(true);
         try {
-            await api.addDelegation(delegateId, moduleName, permissions);
+            await api.addDelegation({
+                userId: delegateId,
+                module: moduleName,
+                permissions: permissions
+            });
             onSuccess();
             onClose();
         } catch (error: any) {
@@ -267,7 +272,7 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
                 <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-lg flex items-start gap-3">
                     <UserCheck className="text-indigo-500 shrink-0" size={18} />
                     <p className="text-xs text-indigo-200">
-                        Você está concedendo permissão para outro usuário visualizar ou gerenciar <b>seus</b> dados. 
+                        Você está concedendo permissão para outro usuário visualizar ou gerenciar <b>seus</b> dados.
                         Eles não poderão excluir registros, apenas visualizar, criar ou editar conforme definido.
                     </p>
                 </div>
@@ -293,9 +298,9 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
                 <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-3">
                     <p className="text-sm font-medium text-slate-300">Nível de Permissão em {moduleLabel(moduleName)}</p>
                     <div className="grid grid-cols-3 gap-2">
-                        <Toggle checked={permissions.view} onChange={v => setPermissions({...permissions, view: v})} label="Visualizar" />
-                        <Toggle checked={permissions.create} onChange={v => setPermissions({...permissions, create: v})} label="Criar" />
-                        <Toggle checked={permissions.edit} onChange={v => setPermissions({...permissions, edit: v})} label="Editar" />
+                        <Toggle checked={permissions.view} onChange={v => setPermissions({ ...permissions, view: v })} label="Visualizar" />
+                        <Toggle checked={permissions.create} onChange={v => setPermissions({ ...permissions, create: v })} label="Criar" />
+                        <Toggle checked={permissions.edit} onChange={v => setPermissions({ ...permissions, edit: v })} label="Editar" />
                     </div>
                 </div>
 
@@ -322,6 +327,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     const [changePassword, setChangePassword] = useState(false);
     const [passwordData, setPasswordData] = useState({ old: '', new: '', confirm: '' });
     const [loading, setLoading] = useState(false);
+    let mounted = true;
+
+    useEffect(() => {
+        mounted = true;
+        return () => { mounted = false; };
+    }, []);
 
     useEffect(() => {
         if (isOpen && user) {
@@ -357,11 +368,26 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             alert("Perfil atualizado com sucesso!");
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert(`Erro ao atualizar perfil: ${getErrorMessage(error)}`);
+            const msg = getErrorMessage(error);
+
+            // If it's the "Invalid Refresh Token" error, it actually means the password changed
+            // and invalidated the old session. We should treat this as success.
+            if (msg.includes('Refresh Token') || (changePassword && msg.includes('timeout'))) {
+                alert("Senha alterada com sucesso! Por segurança, faça login novamente.");
+                onSuccess();
+                onClose();
+                // Force logout to clean state
+                await api.adminForceLogout(user.id).catch(() => { }); // Try backend logout
+                await supabase.auth.signOut();
+                window.location.reload();
+                return;
+            }
+
+            alert(`Erro ao atualizar perfil: ${msg}`);
         } finally {
-            setLoading(false);
+            if (mounted) setLoading(false);
         }
     };
 
@@ -371,35 +397,35 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         <Modal isOpen={isOpen} onClose={onClose} title="Meu Perfil">
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
-                    <Input 
+                    <Input
                         label="E-mail (Somente leitura)"
-                        value={user.email} 
-                        disabled 
+                        value={user.email}
+                        disabled
                         className="opacity-60 cursor-not-allowed bg-slate-900 border-slate-800"
                     />
                     <div className="text-xs text-slate-500 -mt-2 mb-2 flex items-center gap-1">
                         <Lock size={10} /> O e-mail não pode ser alterado. Contate o administrador.
                     </div>
 
-                    <Input 
-                        placeholder="Nome Completo" 
-                        value={name} 
-                        onChange={e => setName(e.target.value)} 
-                        required 
+                    <Input
+                        placeholder="Nome Completo"
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        required
                     />
-                    <Input 
-                        placeholder="Telefone" 
-                        value={phone} 
-                        onChange={e => setPhone(e.target.value)} 
+                    <Input
+                        placeholder="Telefone"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
                     />
                 </div>
 
                 <div className="pt-4 border-t border-slate-800">
                     <div className="flex items-center gap-2 mb-4">
-                        <input 
-                            type="checkbox" 
-                            id="changePass" 
-                            checked={changePassword} 
+                        <input
+                            type="checkbox"
+                            id="changePass"
+                            checked={changePassword}
                             onChange={e => setChangePassword(e.target.checked)}
                             className="rounded bg-slate-800 border-slate-700"
                         />
@@ -409,18 +435,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                     {changePassword && (
                         <div className="space-y-3 bg-slate-900/50 p-4 rounded-lg border border-slate-800">
                             {/* Note: Supabase Auth client often handles 'update user' without old password if logged in, but for good UX we just ask for new. */}
-                            <Input 
-                                type="password" 
-                                placeholder="Nova Senha" 
-                                value={passwordData.new} 
-                                onChange={e => setPasswordData({...passwordData, new: e.target.value})} 
+                            <Input
+                                type="password"
+                                placeholder="Nova Senha"
+                                value={passwordData.new}
+                                onChange={e => setPasswordData({ ...passwordData, new: e.target.value })}
                                 required={changePassword}
                             />
-                            <Input 
-                                type="password" 
-                                placeholder="Confirmar Nova Senha" 
-                                value={passwordData.confirm} 
-                                onChange={e => setPasswordData({...passwordData, confirm: e.target.value})} 
+                            <Input
+                                type="password"
+                                placeholder="Confirmar Nova Senha"
+                                value={passwordData.confirm}
+                                onChange={e => setPasswordData({ ...passwordData, confirm: e.target.value })}
                                 required={changePassword}
                             />
                         </div>
@@ -447,23 +473,22 @@ const PermissionToggleGroup: React.FC<{
         <div className="space-y-2 border-b border-slate-700/50 pb-3 last:border-0">
             <p className="text-sm font-medium text-slate-300">{label}</p>
             <div className="grid grid-cols-3 gap-2">
-                <Toggle checked={values.view} onChange={v => onChange({...values, view: v})} label="Ver" />
-                <Toggle checked={values.create} onChange={v => onChange({...values, create: v})} label="Criar" />
-                <Toggle checked={values.edit} onChange={v => onChange({...values, edit: v})} label="Editar" />
+                <Toggle checked={values.view} onChange={v => onChange({ ...values, view: v })} label="Ver" />
+                <Toggle checked={values.create} onChange={v => onChange({ ...values, create: v })} label="Criar" />
+                <Toggle checked={values.edit} onChange={v => onChange({ ...values, edit: v })} label="Editar" />
             </div>
         </div>
     );
 };
 
 const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label: string }> = ({ checked, onChange, label }) => (
-    <button 
+    <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded text-xs font-medium border transition-all ${
-            checked 
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                : 'bg-slate-700/50 text-slate-500 border-slate-700'
-        }`}
+        className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded text-xs font-medium border transition-all ${checked
+            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+            : 'bg-slate-700/50 text-slate-500 border-slate-700'
+            }`}
     >
         {checked ? <Check size={12} /> : <X size={12} />}
         {label}

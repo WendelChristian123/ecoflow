@@ -284,7 +284,13 @@ export const api = {
         if (error) throw error;
     },
     updatePassword: async (password: string) => {
-        const { error } = await supabase.auth.updateUser({ password });
+        // Enforce a timeout because Supabase client can sometimes hang on token refresh race conditions
+        const updatePromise = supabase.auth.updateUser({ password });
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Password update timed out')), 8000)
+        );
+
+        const { error } = await Promise.race([updatePromise, timeoutPromise]) as any;
         if (error) throw error;
     },
     updateUserPermissions: async (id: string, permissions: UserPermissions) => {
