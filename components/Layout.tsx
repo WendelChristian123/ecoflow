@@ -129,7 +129,9 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
 
     const handleLogout = async () => {
         try {
-            await signOut();
+            const logoutPromise = signOut();
+            const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
+            await Promise.race([logoutPromise, timeoutPromise]);
         } catch (error) {
             console.error("Error signing out:", error);
         } finally {

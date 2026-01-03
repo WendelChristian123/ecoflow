@@ -389,7 +389,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                 // Force logout to clean state
                 await api.adminForceLogout(user.id).catch(() => { }); // Try backend logout
                 await supabase.auth.signOut();
-                window.location.reload();
+                window.location.href = '/login';
                 return;
             }
 
