@@ -205,7 +205,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Use the stored user data immediately
                 // We wrap mapping in a try-catch to avoid secondary hangs
                 try {
-                  const mapped = await mapSupabaseUser(stored.user);
+                  // Safety: wrap recovery in timeout to avoid infinite loading
+                  const recoveryPromise = mapSupabaseUser(stored.user);
+                  const recoveryTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Recovery timeout')), 2000)
+                  );
+                  const mapped = await Promise.race([recoveryPromise, recoveryTimeout]) as any;
+
                   if (mounted) setUser(mapped);
                 } catch (mapErr) {
                   console.error('Error mapping stored user:', mapErr);
