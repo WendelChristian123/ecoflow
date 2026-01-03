@@ -68,21 +68,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw new Error("Sua conta foi suspensa ou bloqueada. Entre em contato com seu administrador.");
           }
 
-          // Separate check for Tenant Status (Lazy load / Safe fail)
-          if (profile.tenant_id) {
-            const { data: tenantData } = await supabase
-              .from('tenants')
-              .select('status')
-              .eq('id', profile.tenant_id)
-              .single();
+          // ENFORCEMENT: Check Tenant Status (from RPC data)
+          // The RPC 'get_my_profile' already includes the 'tenants' object if valid.
+          // We don't need to fetch it again (which risks RLS timeouts).
 
-            if (tenantData) {
-              const tStatus = tenantData.status;
-              if (tStatus === 'suspended' || tStatus === 'inactive') {
-                console.error("Tenant inactive/suspended");
-                throw new Error("A sua empresa está inativa ou suspensa. Entre em contato com o suporte.");
-              }
+          if (profile.tenant_id && profile.tenants) {
+            const tStatus = profile.tenants.status;
+            if (tStatus === 'suspended' || tStatus === 'inactive') {
+              console.error("Tenant inactive/suspended");
+              throw new Error("A sua empresa está inativa ou suspensa. Entre em contato com o suporte.");
             }
+          } else if (profile.tenant_id && !profile.tenants) {
+            // Edge case: Tenant ID exists but RPC returned no tenant data? 
+            // Could be deleted tenant or permissions. Safe to ignore or warn?
+            // Let's warn but proceed, or treat as active if we can't verify?
+            // If RPC is secure, missing tenant data means it doesn't exist.
+            // But we shouldn't block login unless we are sure.
+            console.warn("Tenant ID set but no tenant data returned from RPC.");
           }
         }
 
