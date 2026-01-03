@@ -129,14 +129,12 @@ export const SettingsPage: React.FC = () => {
                         Financeiro
                     </button>
                 )}
-                {isAdmin && (
-                    <button
-                        onClick={() => setActiveTab('calendar')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'calendar' ? 'text-emerald-500 border-emerald-500' : 'text-slate-400 border-transparent hover:text-slate-200'}`}
-                    >
-                        Calendário
-                    </button>
-                )}
+                <button
+                    onClick={() => setActiveTab('calendar')}
+                    className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'calendar' ? 'text-emerald-500 border-emerald-500' : 'text-slate-400 border-transparent hover:text-slate-200'}`}
+                >
+                    Calendário
+                </button>
                 {isAdmin && (
                     <button
                         onClick={() => setActiveTab('audit')}
@@ -366,7 +364,7 @@ export const SettingsPage: React.FC = () => {
             )}
 
             {/* TAB: CALENDAR */}
-            {activeTab === 'calendar' && isAdmin && (
+            {activeTab === 'calendar' && (
                 <CalendarSettingsTab
                     initialSettings={financeSettings?.calendar}
                     onSave={(newSettings) => setFinanceSettings({ ...financeSettings, calendar: newSettings })}
