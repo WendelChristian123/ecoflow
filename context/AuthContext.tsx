@@ -248,8 +248,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (mounted) setUser(mapped);
         } catch (err) {
           console.warn("[Auth] Failed to refresh profile on auth change:", err);
-          // Do NOT logout user here if they were already logged in. 
-          // Just let them continue with current state if possible.
+          // FALLBACK: If RPC fails, use basic session data so user can at least login
+          if (mounted && !user) {
+            const fallbackUser: User = {
+              id: session.user.id,
+              name: session.user.user_metadata?.name || session.user.email || '',
+              email: session.user.email || '',
+              role: 'user', // Default safe role
+              tenantId: DEFAULT_TENANT_ID,
+              avatarUrl: '',
+              permissions: undefined
+            };
+            setUser(fallbackUser);
+          }
         }
       } else {
         if (mounted) {
