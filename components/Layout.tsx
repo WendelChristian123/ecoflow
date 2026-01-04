@@ -429,7 +429,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 <div className="my-4 border-t border-slate-800/50"></div>
 
                                 {/* Commercial Module */}
-                                {can('routines', 'view') && hasModule('mod_commercial') && (
+                                {can('commercial', 'view') && hasModule('mod_commercial') && (
                                     <SidebarGroup
                                         label="Comercial"
                                         icon={<CommercialIcon size={18} />}

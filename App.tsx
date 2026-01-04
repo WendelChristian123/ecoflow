@@ -13,7 +13,7 @@ import { TenantProvider } from './context/TenantContext'; // Added
 import { ThemeProvider } from './context/ThemeContext';
 import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, PermissionRoute } from './components/ProtectedRoute';
 import { SettingsPage } from './pages/Settings';
 
 // Super Admin Pages
@@ -42,38 +42,38 @@ import { RoutinesOverview } from './pages/routines/Overview';
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <RBACProvider> 
+      <RBACProvider>
         <TenantProvider>
-            <ThemeProvider>
+          <ThemeProvider>
             <Router>
-                <Routes>
+              <Routes>
                 {/* Rotas Públicas */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
                 {/* Rotas Protegidas */}
                 <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-                
+
                 {/* Routines & Execution */}
-                <Route path="/routines/overview" element={<ProtectedRoute><Layout><RoutinesOverview /></Layout></ProtectedRoute>} />
-                <Route path="/tasks" element={<ProtectedRoute><Layout><TasksPage /></Layout></ProtectedRoute>} />
-                <Route path="/projects" element={<ProtectedRoute><Layout><ProjectsPage /></Layout></ProtectedRoute>} />
-                <Route path="/teams" element={<ProtectedRoute><Layout><TeamsPage /></Layout></ProtectedRoute>} />
-                <Route path="/agenda" element={<ProtectedRoute><Layout><AgendaPage /></Layout></ProtectedRoute>} />
+                <Route path="/routines/overview" element={<PermissionRoute module="routines" action="view"><Layout><RoutinesOverview /></Layout></PermissionRoute>} />
+                <Route path="/tasks" element={<PermissionRoute module="routines" action="view"><Layout><TasksPage /></Layout></PermissionRoute>} />
+                <Route path="/projects" element={<PermissionRoute module="routines" action="view"><Layout><ProjectsPage /></Layout></PermissionRoute>} />
+                <Route path="/teams" element={<PermissionRoute module="routines" action="view"><Layout><TeamsPage /></Layout></PermissionRoute>} />
+                <Route path="/agenda" element={<PermissionRoute module="routines" action="view"><Layout><AgendaPage /></Layout></PermissionRoute>} />
 
                 {/* Commercial Routes */}
-                <Route path="/commercial/contacts" element={<ProtectedRoute><Layout><ContactsPage /></Layout></ProtectedRoute>} />
-                <Route path="/commercial/catalog" element={<ProtectedRoute><Layout><CatalogPage /></Layout></ProtectedRoute>} />
-                <Route path="/commercial/quotes" element={<ProtectedRoute><Layout><QuotesPage /></Layout></ProtectedRoute>} />
-                <Route path="/commercial/recurring" element={<ProtectedRoute><Layout><RecurringPage /></Layout></ProtectedRoute>} />
+                <Route path="/commercial/contacts" element={<PermissionRoute module="commercial" action="view"><Layout><ContactsPage /></Layout></PermissionRoute>} />
+                <Route path="/commercial/catalog" element={<PermissionRoute module="commercial" action="view"><Layout><CatalogPage /></Layout></PermissionRoute>} />
+                <Route path="/commercial/quotes" element={<PermissionRoute module="commercial" action="view"><Layout><QuotesPage /></Layout></PermissionRoute>} />
+                <Route path="/commercial/recurring" element={<PermissionRoute module="commercial" action="view"><Layout><RecurringPage /></Layout></PermissionRoute>} />
 
                 {/* Financial Routes */}
-                <Route path="/finance/overview" element={<ProtectedRoute><Layout><FinancialOverview /></Layout></ProtectedRoute>} />
-                <Route path="/finance/transactions" element={<ProtectedRoute><Layout><FinancialTransactions /></Layout></ProtectedRoute>} />
-                <Route path="/finance/accounts" element={<ProtectedRoute><Layout><FinancialAccounts /></Layout></ProtectedRoute>} />
-                <Route path="/finance/categories" element={<ProtectedRoute><Layout><FinancialCategories /></Layout></ProtectedRoute>} />
-                <Route path="/finance/cards" element={<ProtectedRoute><Layout><FinancialCards /></Layout></ProtectedRoute>} />
-                <Route path="/finance/reports" element={<ProtectedRoute><Layout><FinancialReports /></Layout></ProtectedRoute>} />
+                <Route path="/finance/overview" element={<PermissionRoute module="finance" action="view"><Layout><FinancialOverview /></Layout></PermissionRoute>} />
+                <Route path="/finance/transactions" element={<PermissionRoute module="finance" action="view"><Layout><FinancialTransactions /></Layout></PermissionRoute>} />
+                <Route path="/finance/accounts" element={<PermissionRoute module="finance" action="view"><Layout><FinancialAccounts /></Layout></PermissionRoute>} />
+                <Route path="/finance/categories" element={<PermissionRoute module="finance" action="view"><Layout><FinancialCategories /></Layout></PermissionRoute>} />
+                <Route path="/finance/cards" element={<PermissionRoute module="finance" action="view"><Layout><FinancialCards /></Layout></PermissionRoute>} />
+                <Route path="/finance/reports" element={<PermissionRoute module="reports" action="view"><Layout><FinancialReports /></Layout></PermissionRoute>} />
 
                 <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
 
@@ -82,14 +82,14 @@ const App: React.FC = () => {
                 <Route path="/super-admin/users" element={<ProtectedRoute><Layout><SuperAdminUsers /></Layout></ProtectedRoute>} />
                 <Route path="/super-admin/admins" element={<ProtectedRoute><Layout><SuperAdminAdmins /></Layout></ProtectedRoute>} />
                 <Route path="/super-admin/plans" element={<ProtectedRoute><Layout><SuperAdminPlans /></Layout></ProtectedRoute>} />
-                
+
                 {/* Legacy redirect */}
                 <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
 
                 <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+              </Routes>
             </Router>
-            </ThemeProvider>
+          </ThemeProvider>
         </TenantProvider>
       </RBACProvider>
     </AuthProvider>

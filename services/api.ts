@@ -293,13 +293,22 @@ export const api = {
         const { error } = await Promise.race([updatePromise, timeoutPromise]) as any;
         if (error) throw error;
     },
+    adminUpdateUser: async (id: string, data: { name?: string, phone?: string, status?: string, permissions?: UserPermissions, role?: string }) => {
+        // Clean undefined keys
+        const updates: any = {};
+        if (data.name !== undefined) updates.name = data.name;
+        if (data.phone !== undefined) updates.phone = data.phone;
+        if (data.status !== undefined) updates.status = data.status;
+        if (data.permissions !== undefined) updates.permissions = data.permissions;
+        if (data.role !== undefined) updates.role = data.role;
+
+        const { error } = await supabase.from('profiles').update(updates).eq('id', id);
+        if (error) throw error;
+    },
+
+    // Deprecated but kept for compatibility (wraps new method)
     updateUserPermissions: async (id: string, permissions: UserPermissions) => {
-        // Permissions usually in a separate table or column.
-        // Assuming column exists (it wasn't in my minimal schema, I should have added it, but let's assume JSONB in profiles or dedicated table)
-        // Check schema.sql... I didn't add permissions column explicitly. 
-        // I will attempt to update it if it exists.
-        const { error } = await supabase.from('profiles').update({ permissions }).eq('id', id);
-        if (error) console.warn("Permissions update failed (column might be missing)", error);
+        await api.adminUpdateUser(id, { permissions });
     },
 
     deleteUser: async (id: string) => {

@@ -144,22 +144,31 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
     );
 };
 
-interface EditPermissionsModalProps {
+interface EditUserModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
     user: User | null;
 }
 
-export const EditPermissionsModal: React.FC<EditPermissionsModalProps> = ({ isOpen, onClose, onSuccess, user }) => {
+export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, onSuccess, user }) => {
     const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_USER_PERMISSIONS);
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [status, setStatus] = useState<string>('active');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (user && user.permissions) {
-            setPermissions(user.permissions);
+        if (user) {
+            setPermissions(user.permissions || DEFAULT_USER_PERMISSIONS);
+            setName(user.name);
+            setPhone(user.phone || '');
+            setStatus(user.status || 'active');
         } else {
             setPermissions(DEFAULT_USER_PERMISSIONS);
+            setName('');
+            setPhone('');
+            setStatus('active');
         }
     }, [user, isOpen]);
 
@@ -167,12 +176,17 @@ export const EditPermissionsModal: React.FC<EditPermissionsModalProps> = ({ isOp
         if (!user) return;
         setLoading(true);
         try {
-            await api.updateUserPermissions(user.id, permissions);
+            await api.adminUpdateUser(user.id, {
+                name,
+                phone,
+                status,
+                permissions
+            });
             onSuccess();
             onClose();
         } catch (error) {
             console.error(error);
-            alert(`Erro ao atualizar permissões: ${getErrorMessage(error)}`);
+            alert(`Erro ao atualizar usuário: ${getErrorMessage(error)}`);
         } finally {
             setLoading(false);
         }
@@ -181,34 +195,68 @@ export const EditPermissionsModal: React.FC<EditPermissionsModalProps> = ({ isOp
     if (!user) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`Permissões: ${user.name}`}>
-            <div className="space-y-6">
-                <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
-                    <PermissionToggleGroup
-                        label="Rotinas & Execução"
-                        values={permissions.routines}
-                        onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
-                    />
-                    <PermissionToggleGroup
-                        label="Comercial"
-                        values={permissions.commercial}
-                        onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
-                    />
-                    <PermissionToggleGroup
-                        label="Financeiro"
-                        values={permissions.finance}
-                        onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
-                    />
-                    <div className="flex items-center justify-between py-1">
-                        <span className="text-sm text-slate-400">Relatórios</span>
-                        <Toggle
-                            checked={permissions.reports.view}
-                            onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
-                            label="Ver"
+        <Modal isOpen={isOpen} onClose={onClose} title={`Editar Usuário: ${user.name}`}>
+            <div className="space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar pr-2">
+
+                {/* Basic Info Block */}
+                <div className="space-y-4">
+                    <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Informações Básicas</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                            label="Nome"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                        />
+                        <Input
+                            label="Telefone"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
                         />
                     </div>
+                    <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Status do Acesso</label>
+                        <Select
+                            value={status}
+                            onChange={e => setStatus(e.target.value)}
+                        >
+                            <option value="active">Ativo (Acesso Liberado)</option>
+                            <option value="suspended">Suspenso (Login Bloqueado)</option>
+                            <option value="blocked">Banido</option>
+                        </Select>
+                    </div>
                 </div>
-                <div className="flex justify-end gap-2">
+
+                {/* Permissions Block */}
+                <div className="space-y-4 pt-4 border-t border-slate-700/50">
+                    <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Permissões de Acesso</p>
+                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
+                        <PermissionToggleGroup
+                            label="Rotinas & Execução"
+                            values={permissions.routines}
+                            onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
+                        />
+                        <PermissionToggleGroup
+                            label="Comercial"
+                            values={permissions.commercial}
+                            onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
+                        />
+                        <PermissionToggleGroup
+                            label="Financeiro"
+                            values={permissions.finance}
+                            onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
+                        />
+                        <div className="flex items-center justify-between py-1">
+                            <span className="text-sm text-slate-400">Relatórios</span>
+                            <Toggle
+                                checked={permissions.reports.view}
+                                onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
+                                label="Ver"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-700/50">
                     <Button variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button onClick={handleSubmit} disabled={loading}>Salvar Alterações</Button>
                 </div>

@@ -6,7 +6,7 @@ import { Loader, Button, Avatar, Badge, Card, Input } from '../components/Shared
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon } from 'lucide-react';
-import { CreateUserModal, EditPermissionsModal, DelegationModal } from '../components/UserModals';
+import { CreateUserModal, EditUserModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
 
@@ -378,13 +378,14 @@ export const SettingsPage: React.FC = () => {
                 </Card>
             )}
 
+
             <CreateUserModal
                 isOpen={isCreateOpen}
                 onClose={() => setIsCreateOpen(false)}
                 onSuccess={loadData}
             />
 
-            <EditPermissionsModal
+            <EditUserModal
                 isOpen={!!editingPermissionsUser}
                 onClose={() => setEditingPermissionsUser(null)}
                 onSuccess={loadData}
