@@ -22,60 +22,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper to map Supabase user to AppUser (Safe, Non-Blocking)
-  const mapSupabaseUser = async (sbUser: any): Promise<AppUser> => {
-    // 1. Basic mapping from Auth User metadata (Always succeeds)
-    const appUser: AppUser = {
+  // 1. Basic mapping from Auth User metadata (Synchronous, Safe)
+  const mapBasicUser = (sbUser: any): AppUser => {
+    return {
       id: sbUser.id,
       name: sbUser.user_metadata?.name || sbUser.email || '',
       email: sbUser.email || '',
       avatarUrl: sbUser.user_metadata?.avatar_url || '',
-      role: 'user', // Default
+      role: 'user', // Default, will be updated by profile
       tenantId: undefined,
       permissions: undefined
     };
+  };
 
-    // 2. Try to fetch profile to enhance data (Async, Best Effort)
+  // 2. Fetch profile to enhance data (Async, Background)
+  const fetchUserProfile = async (currentUser: AppUser) => {
     try {
-      // Ensure we have a valid token
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-
-      if (!currentSession || sessionError) {
-        console.warn("[Auth] No active session for profile fetch. Using basic data.");
-        return appUser;
-      }
-
-      // RPC Call - with simple timeout to avoid hanging, but NOT throwing to caller
-      const profilePromise = supabase.rpc('get_my_profile');
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('RPC Timeout')), 10000));
-
-      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+      // console.log('[Auth] Syncing profile in background...');
+      const { data: profile, error } = await supabase.rpc('get_my_profile');
 
       if (error) throw error;
 
       if (profile) {
-        // Update user with real profile data
-        appUser.name = profile.name || appUser.name;
-        appUser.role = profile.role || appUser.role;
-        appUser.tenantId = profile.tenant_id || appUser.tenantId;
-        appUser.avatarUrl = profile.avatar_url || appUser.avatarUrl;
-        (appUser as any).status = profile.status;
+        // ENFORCEMENT: We check status but DO NOT logout automatically.
+        // We just log/warn. The UI can handle "suspended" state if needed.
+        if (profile.status === 'suspended' || profile.status === 'blocked') {
+          console.warn(`[Auth] User status is ${profile.status}`);
+        }
 
-        // Persist Source of Truth
+        // Persist Source of Truth logic
         if (profile.tenant_id) localStorage.setItem('ecoflow-tenant-id', profile.tenant_id);
         if (profile.role) localStorage.setItem('ecoflow-user-role', profile.role);
 
-        // Optional: We could set an error state here if status is suspended, 
-        // but user explicitly asked NOT to auto-logout.
-        // We will just let the UI handle accessing restricted areas based on 'status'.
+        // Update User State with full profile
+        setUser(prev => {
+          if (!prev || prev.id !== currentUser.id) return prev; // Avoid ordering issues
+          return {
+            ...prev,
+            name: profile.name || prev.name,
+            role: profile.role || prev.role,
+            tenantId: profile.tenant_id || prev.tenantId,
+            avatarUrl: profile.avatar_url || prev.avatarUrl,
+            status: profile.status
+          } as AppUser;
+        });
+        // console.log('[Auth] Profile synced.');
       }
-
     } catch (err: any) {
-      console.warn(`[Auth] Profile sync failed (using token data): ${err.message}`);
-      // We ignore errors and return the basic user to allow app access
+      console.warn(`[Auth] Background profile sync failed: ${err.message}`);
+      // Do nothing. User continues with basic access.
     }
-
-    return appUser;
   };
 
   useEffect(() => {
@@ -84,21 +80,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check initial session
     const initSession = async () => {
       try {
-        // Simple, standard check. No wrappers, no race conditions.
+        // Get session (standard)
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) throw error;
 
         if (session?.user) {
-          // Success! Map user and allow access.
-          const user = await mapSupabaseUser(session.user);
-          if (mounted) setUser(user);
+          // INSTANT UNLOCK
+          const basicUser = mapBasicUser(session.user);
+          if (mounted) {
+            setUser(basicUser);
+            setLoading(false); // <--- CRITICAL: Unblock UI immediately
+          }
+
+          // THEN fetch profile in background
+          fetchUserProfile(basicUser);
+        } else {
+          if (mounted) setLoading(false);
         }
       } catch (err) {
         console.error("[Auth] Initial session check failed:", err);
-        // Do nothing. User remains null, UI will show login.
-      } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setLoading(false); // Always unblock
       }
     };
 
@@ -108,34 +110,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`[Auth] State changed: ${event}`, session?.user?.id);
 
-      if (event === 'SIGNED_OUT' || !session) {
+      if (event === 'SIGNED_OUT') {
         if (mounted) {
           setUser(null);
           setLoading(false);
+          localStorage.removeItem('ecoflow-tenant-id');
+          localStorage.removeItem('ecoflow-user-role');
         }
         return;
       }
 
-      if (event === 'TOKEN_REFRESHED') return; // Ignore
+      if (event === 'TOKEN_REFRESHED') return;
 
       if (session?.user) {
-        // On Login/Update: Fast update
+        // On Login/Update
+        const basicUser = mapBasicUser(session.user);
+
         if (mounted) {
-          // 1. Set basic user immediately (if not set) to unblock UI
-          if (!user) {
-            const basic = await mapSupabaseUser(session.user); // This is now safe/fast-ish?
-            // Actually mapSupabaseUser tries RPC. 
-            // To be truly non-blocking, we should maybe set basic FIRST?
-            // usage: We rely on mapSupabaseUser's internal timeout (10s) not to block TOO long, 
-            // BUT for 'SIGNED_IN', we might want instant feedback.
-            // Let's rely on the fact that mapSupabaseUser catches connection errors.
-            setUser(basic);
-          } else {
-            // already have user, maybe just refreshing profile
-            const updated = await mapSupabaseUser(session.user);
-            setUser(updated);
-          }
+          // Update state immediately if not present or different
+          setUser(prev => {
+            if (!prev || prev.id !== basicUser.id) {
+              return basicUser;
+            }
+            return prev;
+          });
+
+          // Ensure loading is false (important for login flows)
+          setLoading(false);
         }
+
+        // Trigger background sync
+        fetchUserProfile(basicUser);
+      } else if (!session && mounted) {
+        // Fallback for null session without explicit SIGNED_OUT
+        setUser(null);
+        setLoading(false);
       }
     });
 
