@@ -23,40 +23,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   // Helper to map Supabase user to AppUser
-  const mapSupabaseUser = async (sbUser: any): Promise<AppUser | null> => {
+  const mapSupabaseUser = async (sbUser: any, options: { retries?: number; timeout?: number } = {}): Promise<AppUser | null> => {
     if (!sbUser) return null;
 
     // Purge legacy hardcoded tenant string if exists
     if (localStorage.getItem('ecoflow-tenant-id') === 'tenant-1') {
       localStorage.removeItem('ecoflow-tenant-id');
     }
-
-    // Default user structure from token only (Offline-safe)
-    const storedRole = localStorage.getItem('ecoflow-user-role') as any;
-
+    // Basic mapping from Auth User metadata (fallback safe)
     const appUser: AppUser = {
       id: sbUser.id,
-      name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'User',
+      name: sbUser.user_metadata?.name || sbUser.email || '',
       email: sbUser.email || '',
-      role: storedRole || 'user',
-      tenantId: localStorage.getItem('ecoflow-tenant-id') || undefined,
-      avatarUrl: '',
+      avatarUrl: sbUser.user_metadata?.avatar_url || '',
+      role: 'user', // Default, will be updated by profile
+      tenantId: undefined, // Will be updated by profile
       permissions: undefined
     };
 
     try {
-      // Fetch profile AND tenant status with strict enforcement
-      // RESTORED TIMEOUT PROTECTION: Prevent hang if RLS/Network stalls
-      // Fetch profile using RPC with RETRY LOGIC (Bypasses RLS complexity & timeouts)
-      // Retry up to 3 times if it fails (common during password reset/re-auth)
+      // Fetch profile using RPC with RETRY LOGIC
+      // Default: 3 retries, 12s timeout (robust). Can be overridden for speed.
       let profile = null;
       let attempt = 0;
-      const maxRetries = 3;
+      const maxRetries = options.retries ?? 3;
+      const timeoutMs = options.timeout ?? 12000;
 
-      while (attempt < maxRetries) {
+      while (attempt <= maxRetries) { // use <= to allow at least 1 attempt if maxRetries is 0
         attempt++;
         try {
-          console.log(`[Auth] Fetching profile (Attempt ${attempt}/${maxRetries})...`);
+          // console.log(`[Auth] Fetching profile (Attempt ${attempt}/${maxRetries + 1})...`);
 
           // Ensure we have a valid token before asking RPC
           const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -67,8 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const profilePromise = supabase.rpc('get_my_profile');
           const timeoutPromise = new Promise((_, reject) =>
-            // Increased timeout to 12s to handle potential Auth refresh delays/hiccups
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 12000)
+            setTimeout(() => reject(new Error('Profile fetch timeout')), timeoutMs)
           );
 
           const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -76,11 +71,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (error) throw error;
 
           profile = data;
-          console.log(`[Auth] Profile fetched successfully on attempt ${attempt}`);
+          // console.log(`[Auth] Profile fetched successfully on attempt ${attempt}`);
           break; // Success
         } catch (err: any) {
           console.warn(`[Auth] Profile fetch failed (Attempt ${attempt}):`, err.message);
-          if (attempt >= maxRetries) throw err; // Throw on final failure
+          if (attempt > maxRetries) throw err; // Throw on final failure
           // Wait 1s before retry
           await new Promise(r => setTimeout(r, 1000));
         }
@@ -94,23 +89,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw new Error("Sua conta foi suspensa ou bloqueada. Entre em contato com seu administrador.");
           }
 
-          // ENFORCEMENT: Check Tenant Status (from RPC data)
-          // The RPC 'get_my_profile' already includes the 'tenants' object if valid.
-          // We don't need to fetch it again (which risks RLS timeouts).
-
           if (profile.tenant_id && profile.tenants) {
             const tStatus = profile.tenants.status;
             if (tStatus === 'suspended' || tStatus === 'inactive') {
               console.error("Tenant inactive/suspended");
               throw new Error("A sua empresa está inativa ou suspensa. Entre em contato com o suporte.");
             }
-          } else if (profile.tenant_id && !profile.tenants) {
-            // Edge case: Tenant ID exists but RPC returned no tenant data? 
-            // Could be deleted tenant or permissions. Safe to ignore or warn?
-            // Let's warn but proceed, or treat as active if we can't verify?
-            // If RPC is secure, missing tenant data means it doesn't exist.
-            // But we shouldn't block login unless we are sure.
-            console.warn("Tenant ID set but no tenant data returned from RPC.");
           }
         }
 
@@ -118,20 +102,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         appUser.role = profile.role || appUser.role;
         appUser.tenantId = profile.tenant_id || appUser.tenantId;
         appUser.avatarUrl = profile.avatar_url || appUser.avatarUrl;
-
-        // Include status in the user object
         (appUser as any).status = profile.status;
 
-        // Force update persistence from DB (Source of Truth)
-        if (profile.tenant_id) {
-          localStorage.setItem('ecoflow-tenant-id', profile.tenant_id);
-        }
-        if (profile.role) {
-          localStorage.setItem('ecoflow-user-role', profile.role);
-        }
+        if (profile.tenant_id) localStorage.setItem('ecoflow-tenant-id', profile.tenant_id);
+        if (profile.role) localStorage.setItem('ecoflow-user-role', profile.role);
       }
     } catch (err: any) {
-
       console.error('Profile fetch/enforcement check failed:', err.message);
 
       // CRITICAL: If enforcement failed due to logic (suspended), RE-THROW to logout.
@@ -140,17 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw err;
       }
 
-      // If it's a network/timeout error, we cannot trust the session context (Tenant ID might be wrong/missing).
-      // Risk: Infinite loading if we don't resolve.
-      // Decision: Alert user and Throw to let initSession handle cleanup.
-
-      // But if we throw, initSession catches and logs out.Ideally we want "Try Again"? 
-      // For now, fail safe (Logout) is better than "Ghost State".
-      // We will re-throw.
-      throw new Error("Falha ao carregar perfil de usuário. Verifique sua conexão e tente novamente. (" + err.message + ")");
+      // If it's a network/timeout error, we re-throw to let the caller handle fallback
+      throw new Error("Falha ao carregar perfil de usuário. (" + err.message + ")");
     }
-
-
 
     return appUser;
   };
@@ -206,9 +174,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // We wrap mapping in a try-catch to avoid secondary hangs
                 try {
                   // Safety: wrap recovery in timeout to avoid infinite loading
-                  const recoveryPromise = mapSupabaseUser(stored.user);
+                  // Use FAST options: 3s timeout, 1 retry
+                  const recoveryPromise = mapSupabaseUser(stored.user, { timeout: 3000, retries: 1 });
                   const recoveryTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Recovery timeout')), 2000)
+                    setTimeout(() => reject(new Error('Recovery timeout')), 4000)
                   );
                   const mapped = await Promise.race([recoveryPromise, recoveryTimeout]) as any;
 
@@ -244,7 +213,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         // Silent refresh - If this fails, we don't want to crash the app, just warn.
         try {
-          const mapped = await mapSupabaseUser(session.user);
+          // FAST TRACK: If user is waiting (LOGIN), don't wait 40 seconds. 
+          // 4s timeout, 1 retry. Fallback immediately if it fails.
+          const mapped = await mapSupabaseUser(session.user, { timeout: 4000, retries: 1 });
           if (mounted) setUser(mapped);
         } catch (err) {
           console.warn("[Auth] Failed to refresh profile on auth change:", err);
