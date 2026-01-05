@@ -78,12 +78,7 @@ CREATE POLICY "Events View" ON public.calendar_events
 FOR SELECT USING (
   tenant_id = public.get_current_tenant_id() AND (
     public.is_admin() OR
-    participants @> to_jsonb(auth.uid()::text) OR
-    public.check_user_permission(ARRAY['routines', 'view']) -- Simple View permission for now, or restrict to participants? 
-    -- User requested STRICT visibility. Let's start with: Admins + Participants.
-    -- BUT if the event is "Team Event", maybe all team sees?
-    -- Original Requirement: "Users generally see events they are part of".
-    -- Let's stick to strict: Admin OR Participant.
+    participants @> to_jsonb(auth.uid()::text)
   )
 );
 
