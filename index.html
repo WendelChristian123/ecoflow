@@ -116,21 +116,17 @@
       background: var(--c-slate-600);
     }
 
-    /* AUTOFILL DARK MODE FIX */
-    /* Forces the background to be dark even when autofilled by browser */
+    /* AUTOFILL DARK MODE FIX (ROBUST) */
+    /* Uses transition delay to prevent browser from changing the background color */
     input:-webkit-autofill,
-    input:-webkit-autofill:hover, 
-    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
     input:-webkit-autofill:active {
-        /* Use the slate-800 color (#1e293b) found in dark mode variables or just hardcode checking the theme */
-        /* Since we are mostly dark mode focused for login, we force dark. 
-           But if user is light mode? 
-           The login page forces dark background classes.
-           So we should force dark autofill background for transparency consistency.
-        */
-        -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
-        -webkit-text-fill-color: white !important;
-        caret-color: white !important;
+      transition: background-color 9999s ease-in-out 0s;
+      -webkit-text-fill-color: white !important;
+      caret-color: white !important;
+      /* Optional: Add a transparent shadow or maintain specific color if transition fails */
+      /* box-shadow: 0 0 0 30px #1e293b inset !important; */
     }
   </style>
   <script>
