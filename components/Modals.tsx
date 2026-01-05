@@ -132,6 +132,28 @@ interface DrilldownModalProps {
     users: User[];
 }
 
+// --- Refactored & Robust Drilldown Modal ---
+
+interface DrilldownItem {
+    id: string;
+    title?: string;
+    description?: string; // For finance/generic
+    date?: string; // ISO string 
+    dueDate?: string; // For tasks
+    startDate?: string; // For events
+    validUntil?: string; // For quotes
+    status?: string;
+    priority?: string;
+    type?: string;
+    isPaid?: boolean;
+    assigneeId?: string;
+    participants?: string[];
+    // Generic fields as requested
+    modulo?: 'tasks' | 'events' | 'finance' | 'quotes';
+    origem?: string;
+    metadata?: any;
+}
+
 export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const navigate = useNavigate();
@@ -139,6 +161,24 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
     useEffect(() => {
         setLocalData(data);
     }, [data, isOpen]);
+
+    // Helper: Safe User Name Getter
+    const getSafeUserName = (id?: string) => {
+        if (!id) return null;
+        const u = users.find(user => user.id === id);
+        // Fallback if user not found or name missing
+        return u?.name ? u.name : 'N/A';
+    };
+
+    // Helper: Safe Date Formatter
+    const formatDate = (dateString?: string, formatStr: string = 'dd/MM HH:mm') => {
+        if (!dateString) return '-';
+        try {
+            return format(parseISO(dateString), formatStr);
+        } catch (e) {
+            return '-';
+        }
+    };
 
     const handleToggleStatus = async (e: React.MouseEvent, item: FinancialTransaction) => {
         e.stopPropagation();
@@ -154,35 +194,32 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
 
     const handleItemClick = (item: any) => {
         onClose();
-
-        if (type === 'tasks') {
-            navigate('/tasks', { state: { taskId: item.id } });
-        } else if (type === 'events') {
-            navigate('/agenda', { state: { eventId: item.id } });
-        } else if (type === 'finance') {
-            if ((item as any).isVirtualBill) {
-                navigate('/finance/cards');
-                return;
-            }
+        if (type === 'tasks') navigate('/tasks', { state: { taskId: item.id } });
+        else if (type === 'events') navigate('/agenda', { state: { eventId: item.id } });
+        else if (type === 'finance') {
+            if (item.isVirtualBill) { navigate('/finance/cards'); return; }
             navigate('/finance/transactions', { state: { transactionId: item.id } });
-        } else if (type === 'quotes') {
-            navigate('/commercial/quotes');
         }
+        else if (type === 'quotes') navigate('/commercial/quotes');
     };
-
-    const getUser = (id: string) => users.find(u => u.id === id);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
             <div className="mt-2 space-y-2">
-                {localData.length === 0 ? (
+                {(!localData || localData.length === 0) ? (
                     <div className="text-center py-8 text-slate-500 border border-dashed border-slate-700 rounded-lg">
                         Nenhum registro encontrado.
                     </div>
                 ) : (
                     localData.map((item: any, idx) => {
+                        // Guard Clause for Critical Falure
+                        if (!item || !item.id) return null;
+
+                        // --- TASKS RENDERER ---
                         if (type === 'tasks') {
-                            const assignee = getUser(item.assigneeId);
+                            const assigneeName = getSafeUserName(item.assigneeId);
+                            const firstName = assigneeName ? assigneeName.split(' ')[0] : '?'; // Safe split on string guaranteed to exist or fallback
+
                             return (
                                 <div
                                     key={idx}
@@ -191,30 +228,36 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
                                         <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2 truncate">
-                                            {item.title}
+                                            {item.title || 'Sem título'}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
                                         <div className="flex items-center gap-3 mt-1.5">
                                             <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/50">
                                                 <Calendar size={10} className="text-slate-500" />
-                                                <span className="text-xs text-slate-400 font-mono">{format(parseISO(item.dueDate), 'dd/MM HH:mm')}</span>
+                                                <span className="text-xs text-slate-400 font-mono">{formatDate(item.dueDate)}</span>
                                             </div>
-                                            {assignee && (
-                                                <div className="flex items-center gap-1.5" title={`Responsável: ${assignee.name}`}>
-                                                    <Avatar name={assignee.name} src={assignee.avatarUrl} size="xs" />
-                                                    <span className="text-xs text-slate-400 truncate max-w-[100px]">{assignee.name.split(' ')[0]}</span>
+                                            {assigneeName && (
+                                                <div className="flex items-center gap-1.5" title={`Responsável: ${assigneeName}`}>
+                                                    <Avatar name={assigneeName} size="xs" />
+                                                    <span className="text-xs text-slate-400 truncate max-w-[100px]">{firstName}</span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                     <Badge variant={item.status === 'done' ? 'success' : item.priority === 'urgent' ? 'error' : 'neutral'}>
-                                        {item.status === 'done' ? 'Concluído' : translatePriority(item.priority)}
+                                        {item.status === 'done' ? 'Concluído' : translatePriority(item.priority || 'normal')}
                                     </Badge>
                                 </div>
                             )
                         }
+
+                        // --- EVENTS RENDERER ---
                         if (type === 'events') {
-                            const participants = (item.participants || []).map((id: string) => getUser(id)).filter(Boolean);
+                            const participants = (item.participants || []).map((id: string) => {
+                                const u = users.find(usr => usr.id === id);
+                                return u || null;
+                            }).filter(Boolean);
+
                             return (
                                 <div
                                     key={idx}
@@ -223,17 +266,17 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
                                         <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2 truncate">
-                                            {item.title}
+                                            {item.title || 'Evento'}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
                                         <div className="flex items-center gap-3 mt-1.5">
                                             <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/50">
                                                 <Calendar size={10} className="text-slate-500" />
-                                                <span className="text-xs text-slate-400 font-mono">{format(parseISO(item.startDate), 'dd/MM HH:mm')}</span>
+                                                <span className="text-xs text-slate-400 font-mono">{formatDate(item.startDate)}</span>
                                             </div>
                                             {participants.length > 0 && (
                                                 <div className="flex -space-x-1.5">
-                                                    {participants.slice(0, 3).map((u: User, i: number) => (
+                                                    {participants.slice(0, 3).map((u: any, i: number) => (
                                                         <Avatar key={i} name={u.name} src={u.avatarUrl} size="xs" className="border border-slate-800 w-5 h-5 text-[9px]" />
                                                     ))}
                                                     {participants.length > 3 && (
@@ -243,12 +286,18 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                             )}
                                         </div>
                                     </div>
-                                    <Badge variant="default">{translateEventType(item.type)}</Badge>
+                                    <Badge variant="default">{translateEventType(item.type || 'event')}</Badge>
                                 </div>
                             )
                         }
+
+                        // --- FINANCE RENDERER ---
                         if (type === 'finance') {
                             const t = item as FinancialTransaction;
+                            // Safe Date Display using data-fns, NO SPLIT
+                            const displayDate = t.date ? formatDate(t.date, 'dd/MM/yyyy') : '-';
+                            const displayAmount = t.amount ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount) : 'R$ 0,00';
+
                             return (
                                 <div
                                     key={idx}
@@ -257,14 +306,14 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 >
                                     <div>
                                         <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2">
-                                            {t.description}
+                                            {t.description || 'Transação'}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50" />
                                         </div>
-                                        <div className="text-xs text-slate-500">{t.date.split('T')[0].split('-').reverse().join('/')}</div>
+                                        <div className="text-xs text-slate-500">{displayDate}</div>
                                     </div>
                                     <div className="text-right flex items-center gap-3">
                                         <div className={cn("font-bold", t.type === 'expense' ? 'text-rose-400' : 'text-emerald-400')}>
-                                            {t.type === 'expense' ? '-' : '+'}{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
+                                            {t.type === 'expense' ? '-' : '+'}{displayAmount}
                                         </div>
                                         {!(t as any).isVirtualBill && (
                                             <button
@@ -284,9 +333,13 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 </div>
                             )
                         }
+
+                        // --- QUOTES RENDERER ---
                         if (type === 'quotes') {
                             const q = item as Quote;
                             const statusColor = q.status === 'approved' ? 'success' : q.status === 'rejected' || q.status === 'expired' ? 'error' : 'neutral';
+                            const clientName = q.contact?.name || q.customerName || 'Cliente';
+
                             return (
                                 <div
                                     key={idx}
@@ -296,18 +349,18 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                     <div>
                                         <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2">
                                             <FileText size={14} className="text-emerald-500" />
-                                            {q.contact?.name || q.customerName || 'Cliente'}
+                                            {clientName}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50" />
                                         </div>
                                         <div className="text-xs text-slate-500">
-                                            {format(parseISO(q.date), 'dd/MM/yyyy')} • #{q.id.substring(0, 6)}
+                                            {formatDate(q.date, 'dd/MM/yyyy')} • #{q.id?.substring(0, 6) || '???'}
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <div className="font-bold text-slate-200 text-sm">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue || 0)}
                                         </div>
-                                        <Badge variant={statusColor} className="mt-1 text-[10px] py-0">{translateStatus(q.status)}</Badge>
+                                        <Badge variant={statusColor} className="mt-1 text-[10px] py-0">{translateStatus(q.status || 'draft')}</Badge>
                                     </div>
                                 </div>
                             )
@@ -335,7 +388,7 @@ interface TransactionModalProps {
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSuccess, accounts, categories, cards, contacts, initialData, initialType }) => {
     const [formData, setFormData] = useState<Partial<FinancialTransaction>>({
-        description: '', amount: 0, type: 'expense', date: new Date().toISOString().split('T')[0], isPaid: false,
+        description: '', amount: 0, type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), isPaid: false,
         accountId: '', categoryId: '', creditCardId: '', contactId: '', links: []
     });
     const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'monthly', repeatCount: 0 });
@@ -350,7 +403,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                 description: initialData?.description || '',
                 amount: initialData?.amount || 0,
                 type: initialData?.type || initialType || 'expense',
-                date: initialData?.date || new Date().toISOString().split('T')[0],
+                date: initialData?.date || format(new Date(), 'yyyy-MM-dd'),
                 isPaid: initialData?.isPaid || false,
                 accountId: initialData?.accountId || accounts[0]?.id || '',
                 categoryId: initialData?.categoryId || '',

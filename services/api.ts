@@ -130,6 +130,14 @@ export const api = {
     },
     addProject: async (project: Partial<Project>) => {
         const tenantId = getCurrentTenantId();
+        const { data: userData } = await supabase.auth.getUser();
+
+        let members = project.members || [];
+        // Ensure current user is in members to satisfy RLS "View" policy upon insert
+        if (userData?.user?.id && !members.includes(userData.user.id)) {
+            members = [...members, userData.user.id];
+        }
+
         const dbProject = {
             name: project.name,
             description: project.description,
@@ -138,7 +146,7 @@ export const api = {
             due_date: project.dueDate,
             tenant_id: tenantId,
             team_ids: project.teamIds,
-            member_ids: project.members,
+            member_ids: members,
             links: project.links
         };
         const { error } = await supabase.from('projects').insert([dbProject]);

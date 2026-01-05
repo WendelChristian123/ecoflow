@@ -113,8 +113,8 @@ export const AgendaPage: React.FC = () => {
               id: `task-${t.id}`,
               title: t.title,
               description: t.description,
-              startDate: t.dueDate,
-              endDate: t.dueDate,
+              startDate: t.dueDate.split('T')[0],
+              endDate: t.dueDate.split('T')[0],
               status: t.status === 'done' ? 'completed' : 'scheduled',
               type: 'deadline',
               isTeamEvent: false,
@@ -142,8 +142,8 @@ export const AgendaPage: React.FC = () => {
                 id: `quote-${q.id}`,
                 title: `Venc. Orçamento: ${q.customerName || 'Cliente'}`,
                 description: `Valor: R$ ${q.totalValue}`,
-                startDate: q.validUntil,
-                endDate: q.validUntil,
+                startDate: q.validUntil.split('T')[0],
+                endDate: q.validUntil.split('T')[0],
                 status: 'scheduled',
                 type: 'deadline',
                 isTeamEvent: false,
@@ -171,8 +171,8 @@ export const AgendaPage: React.FC = () => {
                   id: `fin-inc-${tr.id}`,
                   title: `Receber: ${tr.description}`,
                   description: `Categoria: ${tr.category?.name || 'Geral'}`,
-                  startDate: tr.date,
-                  endDate: tr.date,
+                  startDate: tr.date?.split('T')[0],
+                  endDate: tr.date?.split('T')[0],
                   status: 'scheduled',
                   type: 'deadline',
                   isTeamEvent: false,
@@ -190,8 +190,8 @@ export const AgendaPage: React.FC = () => {
                   id: `fin-exp-${tr.id}`,
                   title: `Pagar: ${tr.description}`,
                   description: `Categoria: ${tr.category?.name || 'Geral'}`,
-                  startDate: tr.date,
-                  endDate: tr.date,
+                  startDate: tr.date?.split('T')[0],
+                  endDate: tr.date?.split('T')[0],
                   status: 'scheduled',
                   type: 'deadline',
                   isTeamEvent: false,
@@ -297,7 +297,7 @@ export const AgendaPage: React.FC = () => {
 
   const filteredEvents = getFilteredEvents();
   const selectedDayEvents = filteredEvents
-    .filter(e => isSameDay(new Date(e.startDate), selectedDate))
+    .filter(e => isSameDay(parseISO(e.startDate), selectedDate))
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
   if (loading) return <Loader />;
@@ -379,7 +379,7 @@ export const AgendaPage: React.FC = () => {
               start: startOfWeek(startOfMonth(viewDate)),
               end: endOfWeek(endOfMonth(viewDate))
             }).map((day, idx) => {
-              const dayEvents = filteredEvents.filter(e => isSameDay(new Date(e.startDate), day));
+              const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.startDate), day));
               const isSelected = isSameDay(day, selectedDate);
               const isCurrentMonth = isSameMonth(day, viewDate);
               const isTodayDate = isToday(day);
@@ -493,7 +493,7 @@ export const AgendaPage: React.FC = () => {
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-1.5 text-[10px] font-bold opacity-80 text-white">
                         {event.icon}
-                        {format(new Date(event.startDate), 'HH:mm')}
+                        {format(parseISO(event.startDate), 'HH:mm')}
                       </div>
                     </div>
 

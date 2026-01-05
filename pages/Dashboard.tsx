@@ -196,16 +196,23 @@ export const Dashboard: React.FC = () => {
             getDeadlineStatus(t.dueDate, t.status === 'done' || t.status === 'completed') === zone
         ) : [];
 
-        const zoneEvents = enableEvents ? events.filter(e =>
-            getDeadlineStatus(e.startDate, e.status === 'completed' || e.status === 'cancelled') === zone
-        ) : [];
+        const zoneEvents = enableEvents ? events.filter(e => {
+            // Filter by participant if assignee filter is active
+            if (assigneeFilter !== 'all' && !e.participants?.includes(assigneeFilter)) return false;
 
-        const zoneQuotes = enableQuotes ? quotes.filter(q =>
-            q.validUntil &&
-            getDeadlineStatus(q.validUntil, ['approved', 'rejected', 'expired'].includes(q.status)) === zone
-        ) : [];
+            return getDeadlineStatus(e.startDate, e.status === 'completed' || e.status === 'cancelled') === zone;
+        }) : [];
+
+        const zoneQuotes = enableQuotes ? quotes.filter(q => {
+            // Quotes are global/commercial, hide if filtering by user (unless we add responsibleId later)
+            if (assigneeFilter !== 'all') return false;
+
+            return q.validUntil &&
+                getDeadlineStatus(q.validUntil, ['approved', 'rejected', 'expired'].includes(q.status)) === zone;
+        }) : [];
 
         const zoneFinance = enableFinance ? transactions.filter(t => {
+            if (assigneeFilter !== 'all') return false; // Hide finance when filtering by user
             if (t.isPaid) return false;
             // Exclude individual credit card purchases from the radar to reduce noise
             if (t.originType === 'credit_card' || t.creditCardId) return false;
