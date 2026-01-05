@@ -950,159 +950,156 @@ export const api = {
         if (error) return [];
         return data as Delegation[];
     },
-    addDelegation: async (d: Partial<Delegation>) => {
-        const tenantId = getCurrentTenantId();
-        await supabase.from('delegations').insert([{
-            owner_id: d.ownerId || (await supabase.auth.getUser()).data.user?.id, // Default to current user if not specified
-            delegate_id: d.delegateId,
-            module: d.module,
-            permissions: d.permissions,
-            tenant_id: tenantId // Ensure tenant isolation if column exists (delegations usually implies same tenant)
-        }]);
-    },
+    await supabase.from('delegations').insert([{
+        owner_id: d.ownerId || (await supabase.auth.getUser()).data.user?.id, // Default to current user if not specified
+        delegate_id: d.delegateId,
+        module: d.module,
+        permissions: d.permissions
+    }]);
+},
     deleteDelegation: async (id: string) => {
         await supabase.from('delegations').delete().eq('id', id);
     },
 
-    // --- TENANTS & SUPER ADMIN ---
-    getTenantById: async (id: string) => {
-        const { data, error } = await supabase.from('tenants').select('*').eq('id', id).single();
-        if (error) return null;
-        return {
-            ...data,
-            ownerEmail: data.owner_email,
-            adminName: data.admin_name,
-            contractedModules: data.contracted_modules,
-            createdAt: data.created_at,
-            financialStatus: data.financial_status,
-            lastActiveAt: data.last_active_at,
-            settings: {
-                ...data.settings,
-                calendar: data.calendar_settings
-            }
-        } as Tenant;
-    },
-    adminListTenants: async () => {
-        const { data, error } = await supabase.from('tenants').select('*, saas_plans(name)');
-        if (error) throw error;
-        return data.map((t: any) => ({
-            ...t,
-            planName: t.saas_plans?.name,
-            ownerEmail: t.owner_email,
-            adminName: t.admin_name,
-            contractedModules: t.contracted_modules,
-            createdAt: t.created_at,
-            financialStatus: t.financial_status,
-            lastActiveAt: t.last_active_at,
-            settings: {
-                ...t.settings,
-                calendar: t.calendar_settings
-            }
-        })) as Tenant[];
-    },
-    createTenant: async (data: any) => {
-        console.log('[API] Calling create-tenant-admin Edge Function with:', data);
+        // --- TENANTS & SUPER ADMIN ---
+        getTenantById: async (id: string) => {
+            const { data, error } = await supabase.from('tenants').select('*').eq('id', id).single();
+            if (error) return null;
+            return {
+                ...data,
+                ownerEmail: data.owner_email,
+                adminName: data.admin_name,
+                contractedModules: data.contracted_modules,
+                createdAt: data.created_at,
+                financialStatus: data.financial_status,
+                lastActiveAt: data.last_active_at,
+                settings: {
+                    ...data.settings,
+                    calendar: data.calendar_settings
+                }
+            } as Tenant;
+        },
+            adminListTenants: async () => {
+                const { data, error } = await supabase.from('tenants').select('*, saas_plans(name)');
+                if (error) throw error;
+                return data.map((t: any) => ({
+                    ...t,
+                    planName: t.saas_plans?.name,
+                    ownerEmail: t.owner_email,
+                    adminName: t.admin_name,
+                    contractedModules: t.contracted_modules,
+                    createdAt: t.created_at,
+                    financialStatus: t.financial_status,
+                    lastActiveAt: t.last_active_at,
+                    settings: {
+                        ...t.settings,
+                        calendar: t.calendar_settings
+                    }
+                })) as Tenant[];
+            },
+                createTenant: async (data: any) => {
+                    console.log('[API] Calling create-tenant-admin Edge Function with:', data);
 
-        const { data: response, error } = await supabase.functions.invoke('create-tenant-admin', {
-            body: {
-                name: data.name,
-                ownerEmail: data.ownerEmail,
-                adminName: data.adminName,
-                password: data.password,
-                planId: data.planId,
-                modules: data.modules
-            }
-        });
+                    const { data: response, error } = await supabase.functions.invoke('create-tenant-admin', {
+                        body: {
+                            name: data.name,
+                            ownerEmail: data.ownerEmail,
+                            adminName: data.adminName,
+                            password: data.password,
+                            planId: data.planId,
+                            modules: data.modules
+                        }
+                    });
 
-        if (error || response?.error) {
-            const errorMsg = error?.message || response?.error || 'Unknown error';
-            console.error('[API] Edge Function failed:', errorMsg);
-            throw new Error(errorMsg);
-        }
+                    if (error || response?.error) {
+                        const errorMsg = error?.message || response?.error || 'Unknown error';
+                        console.error('[API] Edge Function failed:', errorMsg);
+                        throw new Error(errorMsg);
+                    }
 
-        // Post-creation update for new real fields
-        if (data.type || data.financialStatus) {
-            await supabase.from('tenants').update({
-                type: data.type || 'client',
-                financial_status: data.financialStatus || 'ok'
-            }).eq('id', response.tenantId);
-        }
+                    // Post-creation update for new real fields
+                    if (data.type || data.financialStatus) {
+                        await supabase.from('tenants').update({
+                            type: data.type || 'client',
+                            financial_status: data.financialStatus || 'ok'
+                        }).eq('id', response.tenantId);
+                    }
 
-        return response.tenantId;
-    },
-    updateTenant: async (id: string, data: any) => {
-        const dbData: any = {
-            name: data.name,
-            owner_email: data.ownerEmail,
-            admin_name: data.adminName,
-            cnpj: data.cnpj,
-            phone: data.phone,
-            contracted_modules: data.modules,
-            plan_id: data.planId,
-            status: data.status,
-            type: data.type,
-            financial_status: data.financialStatus,
-            calendar_settings: data.settings?.calendar
-        };
-        // Remove undefined keys
-        Object.keys(dbData).forEach(key => dbData[key] === undefined && delete dbData[key]);
+                    return response.tenantId;
+                },
+                    updateTenant: async (id: string, data: any) => {
+                        const dbData: any = {
+                            name: data.name,
+                            owner_email: data.ownerEmail,
+                            admin_name: data.adminName,
+                            cnpj: data.cnpj,
+                            phone: data.phone,
+                            contracted_modules: data.modules,
+                            plan_id: data.planId,
+                            status: data.status,
+                            type: data.type,
+                            financial_status: data.financialStatus,
+                            calendar_settings: data.settings?.calendar
+                        };
+                        // Remove undefined keys
+                        Object.keys(dbData).forEach(key => dbData[key] === undefined && delete dbData[key]);
 
-        await supabase.from('tenants').update(dbData).eq('id', id);
-    },
-    updateCalendarSettings: async (settings: any) => {
-        const tenantId = getCurrentTenantId();
-        if (!tenantId) throw new Error("No tenant ID");
-        const { error } = await supabase.from('tenants').update({ calendar_settings: settings }).eq('id', tenantId);
-        if (error) throw error;
-    },
-    getSaasPlans: async () => {
-        const { data } = await supabase.from('saas_plans').select('*');
-        return data?.map((p: any) => ({
-            ...p,
-            billingCycle: p.billing_cycle,
-            allowedModules: p.allowed_modules,
-            maxUsers: p.max_users
-        })) as SaasPlan[] || [];
-    },
-    createSaasPlan: async (data: any) => {
-        const dbData = {
-            ...data,
-            billing_cycle: data.billingCycle,
-            allowed_modules: data.allowedModules,
-            max_users: data.maxUsers
-        };
-        await supabase.from('saas_plans').insert([dbData]);
-    },
-    updateSaasPlan: async (data: any) => {
-        const dbData = {
-            ...data,
-            billing_cycle: data.billingCycle,
-            allowed_modules: data.allowedModules,
-            max_users: data.maxUsers
-        };
-        await supabase.from('saas_plans').update(dbData).eq('id', data.id);
-    },
-    getGlobalStats: async (): Promise<GlobalStats> => {
-        const { count: tenantCount } = await supabase.from('tenants').select('*', { count: 'exact', head: true });
-        const { count: activeTenants } = await supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active');
-        const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-        const { count: planCount } = await supabase.from('saas_plans').select('*', { count: 'exact', head: true }).eq('active', true);
+                        await supabase.from('tenants').update(dbData).eq('id', id);
+                    },
+                        updateCalendarSettings: async (settings: any) => {
+                            const tenantId = getCurrentTenantId();
+                            if (!tenantId) throw new Error("No tenant ID");
+                            const { error } = await supabase.from('tenants').update({ calendar_settings: settings }).eq('id', tenantId);
+                            if (error) throw error;
+                        },
+                            getSaasPlans: async () => {
+                                const { data } = await supabase.from('saas_plans').select('*');
+                                return data?.map((p: any) => ({
+                                    ...p,
+                                    billingCycle: p.billing_cycle,
+                                    allowedModules: p.allowed_modules,
+                                    maxUsers: p.max_users
+                                })) as SaasPlan[] || [];
+                            },
+                                createSaasPlan: async (data: any) => {
+                                    const dbData = {
+                                        ...data,
+                                        billing_cycle: data.billingCycle,
+                                        allowed_modules: data.allowedModules,
+                                        max_users: data.maxUsers
+                                    };
+                                    await supabase.from('saas_plans').insert([dbData]);
+                                },
+                                    updateSaasPlan: async (data: any) => {
+                                        const dbData = {
+                                            ...data,
+                                            billing_cycle: data.billingCycle,
+                                            allowed_modules: data.allowedModules,
+                                            max_users: data.maxUsers
+                                        };
+                                        await supabase.from('saas_plans').update(dbData).eq('id', data.id);
+                                    },
+                                        getGlobalStats: async (): Promise<GlobalStats> => {
+                                            const { count: tenantCount } = await supabase.from('tenants').select('*', { count: 'exact', head: true });
+                                            const { count: activeTenants } = await supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active');
+                                            const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+                                            const { count: planCount } = await supabase.from('saas_plans').select('*', { count: 'exact', head: true }).eq('active', true);
 
-        return {
-            totalTenants: tenantCount || 0,
-            activeTenants: activeTenants || 0,
-            totalUsers: userCount || 0,
-            activePlans: planCount || 0
-        };
-    },
+                                            return {
+                                                totalTenants: tenantCount || 0,
+                                                activeTenants: activeTenants || 0,
+                                                totalUsers: userCount || 0,
+                                                activePlans: planCount || 0
+                                            };
+                                        },
 
-    // --- DASHBOARD METRICS ---
-    getDashboardMetrics: async (tenantId?: string): Promise<DashboardMetrics> => {
-        const { data, error } = await supabase.rpc('get_dashboard_stats', { p_tenant_id: tenantId });
-        if (error) {
-            console.error('Error fetching dashboard stats via RPC:', error);
-            throw error;
-        }
-        return data as DashboardMetrics;
-    }
+                                            // --- DASHBOARD METRICS ---
+                                            getDashboardMetrics: async (tenantId?: string): Promise<DashboardMetrics> => {
+                                                const { data, error } = await supabase.rpc('get_dashboard_stats', { p_tenant_id: tenantId });
+                                                if (error) {
+                                                    console.error('Error fetching dashboard stats via RPC:', error);
+                                                    throw error;
+                                                }
+                                                return data as DashboardMetrics;
+                                            }
 };
