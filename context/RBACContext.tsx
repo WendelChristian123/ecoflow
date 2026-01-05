@@ -7,7 +7,7 @@ interface RBACContextType {
   role: UserRole;
   permissions: UserPermissions | undefined;
   can: (module: keyof UserPermissions, action: 'view' | 'create' | 'edit') => boolean;
-  canDelete: () => boolean; 
+  canDelete: () => boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
 }
@@ -22,7 +22,7 @@ const ADMIN_PERMISSIONS: UserPermissions = {
 };
 
 export const DEFAULT_USER_PERMISSIONS: UserPermissions = {
-  routines: { view: true, create: false, edit: false },
+  routines: { view: true, create: true, edit: false },
   finance: { view: false, create: false, edit: false },
   commercial: { view: false, create: false, edit: false },
   reports: { view: false }
@@ -34,18 +34,18 @@ export const RBACProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Role comes directly from the User object (merged from profile in AuthContext)
   // Fallback to 'user' if undefined
   const role: UserRole = (user as any)?.role || 'user';
-  
+
   const isSuperAdmin = role === 'super_admin';
   const isAdmin = role === 'admin' || isSuperAdmin;
 
   // Permissions: Admin gets full access, others get from DB or Default
   const permissions: UserPermissions = isAdmin
-    ? ADMIN_PERMISSIONS 
+    ? ADMIN_PERMISSIONS
     : ((user as any)?.permissions || DEFAULT_USER_PERMISSIONS);
 
   const can = (module: keyof UserPermissions, action: 'view' | 'create' | 'edit') => {
     if (isAdmin) return true;
-    
+
     const modulePerms = permissions[module];
     if (!modulePerms) return false;
 

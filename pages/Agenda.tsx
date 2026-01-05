@@ -7,6 +7,7 @@ import { CalendarEvent, User, CalendarSettings, Task, FinancialTransaction, Quot
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, parseISO, isValid, getHours, getMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 type ViewMode = 'month' | 'week' | 'day';
 type FilterType = 'all' | 'agenda' | 'task' | 'finance';
@@ -20,9 +21,14 @@ interface UnifiedEvent extends CalendarEvent {
 }
 
 export const AgendaPage: React.FC = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  // STRICT:
+  const [assignableTaskUsers, setAssignableTaskUsers] = useState<User[]>([]);
+  const [assignableEventUsers, setAssignableEventUsers] = useState<User[]>([]);
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
 
@@ -48,15 +54,34 @@ export const AgendaPage: React.FC = () => {
     setLoading(true);
     try {
       // 1. Fetch Settings & Users (Always needed)
-      const [settings, u, p, t] = await Promise.all([
+      // Also fetch Delegators strictly
+      const [settings, u, p, t, taskDelegators, agendaDelegators] = await Promise.all([
         api.getTenantSettings(),
         api.getUsers(),
         api.getProjects(),
-        api.getTeams()
+        api.getTeams(),
+        api.getDelegators('tasks'),
+        api.getDelegators('agenda')
       ]);
       setUsers(u);
       setProjects(p);
       setTeams(t);
+
+      if (user) {
+        if (user.role === 'admin' || user.role === 'owner' || user.role === 'super_admin') {
+          setAssignableTaskUsers(u);
+          setAssignableEventUsers(u);
+        } else {
+          const taskAllowed = [user.id, ...taskDelegators];
+          setAssignableTaskUsers(u.filter(x => taskAllowed.includes(x.id)));
+
+          const agendaAllowed = [user.id, ...agendaDelegators];
+          setAssignableEventUsers(u.filter(x => agendaAllowed.includes(x.id)));
+        }
+      } else {
+        setAssignableTaskUsers([]);
+        setAssignableEventUsers([]);
+      }
 
       const calSettings: CalendarSettings = settings?.calendar || {
         commitments: true,
@@ -529,6 +554,8 @@ export const AgendaPage: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={loadData}
         users={users}
+        assignableTaskUsers={assignableTaskUsers}
+        assignableEventUsers={assignableEventUsers}
         projects={projects}
         teams={teams}
         initialData={editingEvent}

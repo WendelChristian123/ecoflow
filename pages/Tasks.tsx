@@ -9,14 +9,19 @@ import { Task, User, Status, Project, Team } from '../types';
 import { useLocation } from 'react-router-dom';
 import { useTenant } from '../context/TenantContext';
 import { useRBAC } from '../context/RBACContext';
+import { useAuth } from '../context/AuthContext';
 
 export const TasksPage: React.FC = () => {
+  const { user } = useAuth();
   const { currentTenant } = useTenant();
   const { can, canDelete } = useRBAC();
   const [view, setView] = useState<'list' | 'board'>('board');
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  // STRICT: Only Self + Delegators
+  const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
 
@@ -49,16 +54,30 @@ export const TasksPage: React.FC = () => {
     if (!currentTenant) return;
     setLoading(true);
     try {
-      const [t, u, p, tm] = await Promise.all([
+      const [t, u, p, tm, delegatorIds] = await Promise.all([
         api.getTasks(currentTenant.id),
         api.getUsers(currentTenant.id),
         api.getProjects(currentTenant.id),
-        api.getTeams(currentTenant.id)
+        api.getTeams(currentTenant.id),
+        api.getDelegators('tasks')
       ]);
       setTasks(t);
       setUsers(u);
       setProjects(p);
       setTeams(tm);
+
+      // STRICT FILTER: Self + Delegators (Unless Admin)
+      if (user) {
+        if (user.role === 'admin' || user.role === 'owner' || user.role === 'super_admin') {
+          setAssignableUsers(u);
+        } else {
+          const allowedIds = [user.id, ...delegatorIds];
+          setAssignableUsers(u.filter(x => allowedIds.includes(x.id)));
+        }
+      } else {
+        setAssignableUsers([]);
+      }
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -234,7 +253,7 @@ export const TasksPage: React.FC = () => {
         onSuccess={loadData}
         projects={projects}
         teams={teams}
-        users={users}
+        users={assignableUsers} // STRICT
       />
 
       <TaskDetailModal
@@ -242,7 +261,7 @@ export const TasksPage: React.FC = () => {
         onClose={() => setSelectedTask(null)}
         onSuccess={loadData}
         task={selectedTask}
-        users={users}
+        users={assignableUsers} // STRICT
         projects={projects}
         teams={teams}
       />

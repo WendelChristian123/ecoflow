@@ -9,7 +9,10 @@ import { TrendingUp, TrendingDown, Filter, Plus, Calendar, Search, ArrowRight, D
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay, addDays, addMonths, subMonths, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+import { useSearchParams } from 'react-router-dom';
+
 export const FinancialTransactions: React.FC = () => {
+    const [searchParams] = useSearchParams(); // Deep linking
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
@@ -32,6 +35,7 @@ export const FinancialTransactions: React.FC = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | undefined>(undefined);
+    const [modalInitialType, setModalInitialType] = useState<'income' | 'expense' | 'transfer' | undefined>(undefined);
     const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
 
     // Deletion
@@ -57,6 +61,19 @@ export const FinancialTransactions: React.FC = () => {
             setCards(cc);
             setContacts(cont);
             setSettings(s || {});
+
+            // Deep Linking Check
+            const transactionId = searchParams.get('transactionId');
+            if (transactionId) {
+                const target = t.find(tx => tx.id === transactionId);
+                if (target) {
+                    // 1. Switch month to target date
+                    setSelectedMonth(parseISO(target.date));
+                    // 2. Open Modal
+                    setEditingTransaction(target);
+                    setIsModalOpen(true);
+                }
+            }
         } catch (error) {
             console.error(error);
         } finally { setLoading(false); }
@@ -69,10 +86,7 @@ export const FinancialTransactions: React.FC = () => {
 
     const handleCreate = (type?: 'income' | 'expense' | 'transfer') => {
         setEditingTransaction(undefined);
-        if (type) {
-            // Pre-select type if needed, or just open modal
-            // In a real app we might pass this type to the modal
-        }
+        setModalInitialType(type);
         setIsModalOpen(true);
         setIsAddMenuOpen(false);
     }
@@ -436,6 +450,7 @@ export const FinancialTransactions: React.FC = () => {
                 cards={cards}
                 contacts={contacts}
                 initialData={editingTransaction}
+                initialType={modalInitialType}
             />
 
             <DrilldownModal

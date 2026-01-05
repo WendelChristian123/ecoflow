@@ -171,6 +171,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    try {
+      await import('../services/api').then(m => m.api.logAuthEvent('LOGOUT', 'Logout realizado'));
+    } catch (e) {
+      console.error(e);
+    }
     await supabase.auth.signOut();
     setUser(null);
     localStorage.removeItem('ecoflow-tenant-id');
@@ -180,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const mapped = await mapSupabaseUser(session.user);
+      const mapped = mapBasicUser(session.user);
       setUser(mapped);
     }
   };

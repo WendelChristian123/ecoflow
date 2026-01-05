@@ -129,9 +129,10 @@ interface DrilldownModalProps {
     title: string;
     type: 'tasks' | 'events' | 'finance' | 'quotes';
     data: any[];
+    users: User[];
 }
 
-export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data }) => {
+export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const navigate = useNavigate();
 
@@ -165,10 +166,11 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
             }
             navigate('/finance/transactions', { state: { transactionId: item.id } });
         } else if (type === 'quotes') {
-            // Need a way to open quotes, for now just go to quotes page
             navigate('/commercial/quotes');
         }
     };
+
+    const getUser = (id: string) => users.find(u => u.id === id);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
@@ -180,18 +182,30 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                 ) : (
                     localData.map((item: any, idx) => {
                         if (type === 'tasks') {
+                            const assignee = getUser(item.assigneeId);
                             return (
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
                                     className="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-700 hover:border-slate-600 transition-all group"
                                 >
-                                    <div>
-                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2">
+                                    <div className="flex-1 min-w-0 pr-3">
+                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2 truncate">
                                             {item.title}
-                                            <ExternalLink size={12} className="opacity-0 group-hover:opacity-50" />
+                                            <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
-                                        <div className="text-xs text-slate-500">Prazo: {format(parseISO(item.dueDate), 'dd/MM/yyyy HH:mm')}</div>
+                                        <div className="flex items-center gap-3 mt-1.5">
+                                            <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/50">
+                                                <Calendar size={10} className="text-slate-500" />
+                                                <span className="text-xs text-slate-400 font-mono">{format(parseISO(item.dueDate), 'dd/MM HH:mm')}</span>
+                                            </div>
+                                            {assignee && (
+                                                <div className="flex items-center gap-1.5" title={`Responsável: ${assignee.name}`}>
+                                                    <Avatar name={assignee.name} src={assignee.avatarUrl} size="xs" />
+                                                    <span className="text-xs text-slate-400 truncate max-w-[100px]">{assignee.name.split(' ')[0]}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <Badge variant={item.status === 'done' ? 'success' : item.priority === 'urgent' ? 'error' : 'neutral'}>
                                         {item.status === 'done' ? 'Concluído' : translatePriority(item.priority)}
@@ -200,18 +214,34 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                             )
                         }
                         if (type === 'events') {
+                            const participants = (item.participants || []).map((id: string) => getUser(id)).filter(Boolean);
                             return (
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
                                     className="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-700 hover:border-slate-600 transition-all group"
                                 >
-                                    <div>
-                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2">
+                                    <div className="flex-1 min-w-0 pr-3">
+                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2 truncate">
                                             {item.title}
-                                            <ExternalLink size={12} className="opacity-0 group-hover:opacity-50" />
+                                            <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
-                                        <div className="text-xs text-slate-500">{format(parseISO(item.startDate), 'dd/MM HH:mm')} - {format(parseISO(item.endDate), 'HH:mm')}</div>
+                                        <div className="flex items-center gap-3 mt-1.5">
+                                            <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/50">
+                                                <Calendar size={10} className="text-slate-500" />
+                                                <span className="text-xs text-slate-400 font-mono">{format(parseISO(item.startDate), 'dd/MM HH:mm')}</span>
+                                            </div>
+                                            {participants.length > 0 && (
+                                                <div className="flex -space-x-1.5">
+                                                    {participants.slice(0, 3).map((u: User, i: number) => (
+                                                        <Avatar key={i} name={u.name} src={u.avatarUrl} size="xs" className="border border-slate-800 w-5 h-5 text-[9px]" />
+                                                    ))}
+                                                    {participants.length > 3 && (
+                                                        <div className="w-5 h-5 rounded-full bg-slate-700 border border-slate-800 flex items-center justify-center text-[8px] text-slate-300">+{participants.length - 3}</div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <Badge variant="default">{translateEventType(item.type)}</Badge>
                                 </div>
@@ -300,9 +330,10 @@ interface TransactionModalProps {
     cards: CreditCard[];
     contacts: Contact[];
     initialData?: Partial<FinancialTransaction>;
+    initialType?: 'income' | 'expense' | 'transfer';
 }
 
-export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSuccess, accounts, categories, cards, contacts, initialData }) => {
+export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSuccess, accounts, categories, cards, contacts, initialData, initialType }) => {
     const [formData, setFormData] = useState<Partial<FinancialTransaction>>({
         description: '', amount: 0, type: 'expense', date: new Date().toISOString().split('T')[0], isPaid: false,
         accountId: '', categoryId: '', creditCardId: '', contactId: '', links: []
@@ -318,7 +349,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
             setFormData({
                 description: initialData?.description || '',
                 amount: initialData?.amount || 0,
-                type: initialData?.type || 'expense',
+                type: initialData?.type || initialType || 'expense',
                 date: initialData?.date || new Date().toISOString().split('T')[0],
                 isPaid: initialData?.isPaid || false,
                 accountId: initialData?.accountId || accounts[0]?.id || '',
@@ -1197,14 +1228,27 @@ interface EventModalProps {
     onClose: () => void;
     onSuccess: () => void;
     users: User[];
+    // Strict Filtering Lists
+    assignableTaskUsers?: User[];
+    assignableEventUsers?: User[];
+
     projects: Project[];
     teams: Team[];
     initialData?: any;
 }
 
-export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSuccess, users, projects, teams, initialData }) => {
+export const EventModal: React.FC<EventModalProps> = ({
+    isOpen, onClose, onSuccess,
+    users, assignableTaskUsers, assignableEventUsers,
+    projects, teams, initialData
+}) => {
     const isEditing = !!initialData?.id;
     const [mode, setMode] = useState<'event' | 'task'>('event');
+
+    // Determine strict user list based on mode
+    const activeUsers = mode === 'task'
+        ? (assignableTaskUsers || users)
+        : (assignableEventUsers || users);
 
     // Unified Form Data
     const [formData, setFormData] = useState<any>({
@@ -1356,7 +1400,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSucce
                                 </div>
                                 <div>
                                     <label className="text-xs text-slate-400 mb-2 block ml-1">Participantes</label>
-                                    <UserMultiSelect users={users} selectedIds={formData.participants || []} onChange={ids => setFormData({ ...formData, participants: ids })} />
+                                    <UserMultiSelect users={activeUsers} selectedIds={formData.participants || []} onChange={ids => setFormData({ ...formData, participants: ids })} />
                                 </div>
                             </>
                         ) : (
@@ -1390,7 +1434,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSucce
                                     <label className="text-xs text-slate-400 mb-1.5 block ml-1">Responsável</label>
                                     <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
                                         <option value="">Selecione...</option>
-                                        {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                                        {activeUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                     </Select>
                                 </div>
                             </>

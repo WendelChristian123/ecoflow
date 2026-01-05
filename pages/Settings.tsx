@@ -173,11 +173,12 @@ export const SettingsPage: React.FC = () => {
                             {delegations.map(del => {
                                 const isOwner = del.ownerId === authUser?.id;
                                 const otherPerson = isOwner ? del.delegate : del.owner;
-                                const avatarSrc = (otherPerson as any)?.avatar_url;
+                                const avatarSrc = otherPerson?.avatarUrl;
+                                const canManage = isOwner || isAdmin;
 
                                 return (
                                     <div key={del.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3 relative group hover:border-indigo-500/50 transition-colors">
-                                        {isOwner && (
+                                        {canManage && (
                                             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => { setEditingDelegation(del); setIsDelegationOpen(true); }}
@@ -199,7 +200,7 @@ export const SettingsPage: React.FC = () => {
                                         <div className="flex items-center gap-3">
                                             <Avatar src={avatarSrc} name={otherPerson?.name || 'Usuário'} />
                                             <div className="overflow-hidden">
-                                                <div className="text-xs text-slate-500 mb-0.5">{isOwner ? 'Concedido a:' : 'Recebido de:'}</div>
+                                                <div className="text-xs text-slate-500 mb-0.5">{isOwner ? 'Compartilhado com:' : 'Compartilhado por:'}</div>
                                                 <div className="font-medium text-white truncate">{otherPerson?.name || 'Desconhecido'}</div>
                                                 <div className="text-xs text-slate-500 truncate">{otherPerson?.email}</div>
                                             </div>

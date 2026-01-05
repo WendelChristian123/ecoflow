@@ -82,8 +82,8 @@ export interface Delegation {
     create: boolean;
     edit: boolean;
   };
-  delegate?: { name: string; email: string };
-  owner?: { name: string; email: string };
+  delegate?: { name: string; email: string; avatarUrl?: string };
+  owner?: { name: string; email: string; avatarUrl?: string };
 }
 
 export interface User {
@@ -142,15 +142,18 @@ export interface Team {
 export interface CalendarEvent {
   id: string;
   title: string;
-  isTeamEvent: boolean;
+  description?: string;
   startDate: string;
   endDate: string;
-  participants: string[];
-  description: string;
-  links: string[];
-  type: 'meeting' | 'deadline' | 'review';
-  status: 'scheduled' | 'completed';
+  type: 'meeting' | 'task' | 'reminder' | 'other';
+  status: 'pending' | 'confirmed' | 'cancelled';
+  participants: string[]; // JSONB of user IDs
+  links?: { title: string; url: string }[];
+  isTeamEvent?: boolean;
   tenantId?: string;
+  // Context Fields
+  projectId?: string; // Links to a specific project
+  teamId?: string;    // Links to a specific team
 }
 
 export interface UnifiedEvent extends CalendarEvent {

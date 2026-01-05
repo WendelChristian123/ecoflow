@@ -520,6 +520,7 @@ export const Dashboard: React.FC = () => {
                 title={modalState.title}
                 type={modalState.type}
                 data={modalState.data}
+                users={users}
             />
         </div>
     );

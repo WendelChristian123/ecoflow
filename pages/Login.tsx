@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { Button, Input } from '../components/Shared';
 import { LayoutDashboard, AlertTriangle } from 'lucide-react';
 
+import { api } from '../services/api';
+
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,10 +31,19 @@ export const LoginPage: React.FC = () => {
     try {
       const { error } = await signIn(email, password);
       if (error) {
+        // Optional: Log failed attempt via an Edge Function if needed later
         setError(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message);
         setLocalLoading(false);
+      } else {
+        // Success: auth.uid() is now invalid?? Wait, session is set.
+        // We attempt to log.
+        try {
+          await api.logAuthEvent('LOGIN', 'Login realizado com sucesso via Web');
+        } catch (logErr) {
+          console.error(logErr);
+        }
+        // Redirect handled by useEffect
       }
-      // If success, the useEffect above will handle the redirect
     } catch (err) {
       setError('Ocorreu um erro inesperado.');
       setLocalLoading(false);

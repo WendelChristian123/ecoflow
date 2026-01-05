@@ -359,7 +359,7 @@ export const api = {
                 user:profiles!user_id(name, email, avatar_url, role)
             `)
             .order('created_at', { ascending: false })
-            .limit(100); // Reasonable limit for UI
+            .limit(500); // Increased limit for better client-side search
 
         if (tenantId) query = query.eq('tenant_id', tenantId);
 
@@ -388,6 +388,14 @@ export const api = {
         })) as AuditLog[];
     },
 
+    logAuthEvent: async (action: 'LOGIN' | 'LOGOUT', description: string) => {
+        const { error } = await supabase.rpc('log_auth_event', {
+            p_action: action,
+            p_description: description
+        });
+        if (error) console.error("Failed to log auth event", error);
+    },
+
     getEvents: async (tenantId?: string) => {
         let query = supabase.from('calendar_events').select('*');
         if (tenantId) query = query.eq('tenant_id', tenantId);
@@ -398,7 +406,9 @@ export const api = {
             startDate: e.start_date,
             endDate: e.end_date,
             isTeamEvent: e.is_team_event,
-            tenantId: e.tenant_id
+            tenantId: e.tenant_id,
+            projectId: e.project_id,
+            teamId: e.team_id
         })) as CalendarEvent[];
     },
     addEvent: async (evt: Partial<CalendarEvent>) => {
@@ -413,7 +423,9 @@ export const api = {
             is_team_event: evt.isTeamEvent,
             participants: evt.participants,
             links: evt.links,
-            tenant_id: tenantId
+            tenant_id: tenantId,
+            project_id: evt.projectId,
+            team_id: evt.teamId
         };
         const { error } = await supabase.from('calendar_events').insert([dbEvt]);
         if (error) throw error;
@@ -428,7 +440,9 @@ export const api = {
             status: evt.status,
             is_team_event: evt.isTeamEvent,
             participants: evt.participants,
-            links: evt.links
+            links: evt.links,
+            project_id: evt.projectId,
+            team_id: evt.teamId
         };
         const { error } = await supabase.from('calendar_events').update(dbEvt).eq('id', evt.id);
         if (error) throw error;
@@ -771,16 +785,27 @@ export const api = {
         }]);
         if (error) throw error;
     },
+    // Update Tenant Settings (Finance)
     updateTenantSettings: async (settings: any) => {
         const tenantId = getCurrentTenantId();
-        const { error } = await supabase.from('tenants').update({ settings }).eq('id', tenantId);
+        // Prevent saving calendar settings inside general settings JSONB to avoid duplication
+        const settingsToSave = { ...settings };
+        delete settingsToSave.calendar;
+
+        const { error } = await supabase.from('tenants').update({ settings: settingsToSave }).eq('id', tenantId);
         if (error) throw error;
     },
+
     getTenantSettings: async () => {
         const tenantId = getCurrentTenantId();
-        const { data, error } = await supabase.from('tenants').select('settings').eq('id', tenantId).single();
+        const { data, error } = await supabase.from('tenants').select('settings, calendar_settings').eq('id', tenantId).single();
         if (error) throw error;
-        return data?.settings || {};
+
+        // Merge general settings with dedicated calendar_settings column
+        return {
+            ...(data?.settings || {}),
+            calendar: data?.calendar_settings
+        };
     },
 
     updateCatalogItem: async (i: CatalogItem) => {
@@ -949,7 +974,24 @@ export const api = {
         const { data, error } = await supabase.from('delegations')
             .select('*, owner:profiles!owner_id(name, email, avatar_url), delegate:profiles!delegate_id(name, email, avatar_url)');
         if (error) return [];
-        return data as Delegation[];
+
+        return data.map((d: any) => ({
+            id: d.id,
+            ownerId: d.owner_id,
+            delegateId: d.delegate_id,
+            module: d.module,
+            permissions: d.permissions,
+            owner: d.owner ? {
+                name: d.owner.name,
+                email: d.owner.email,
+                avatarUrl: d.owner.avatar_url
+            } : undefined,
+            delegate: d.delegate ? {
+                name: d.delegate.name,
+                email: d.delegate.email,
+                avatarUrl: d.delegate.avatar_url
+            } : undefined
+        })) as Delegation[];
     },
     addDelegation: async (d: Partial<Delegation>) => {
         await supabase.from('delegations').insert([{
@@ -962,6 +1004,36 @@ export const api = {
     updateDelegation: async (id: string, permissions: any) => {
         const { error } = await supabase.from('delegations').update({ permissions }).eq('id', id);
         if (error) throw error;
+    },
+    getDelegators: async (module: 'tasks' | 'agenda'): Promise<string[]> => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase.from('delegations')
+            .select('owner_id, permissions')
+            .eq('delegate_id', user.id)
+            .eq('module', module);
+
+        if (error) throw error;
+
+        // Filter those who gave at least 'create' or 'edit' or 'view' permission?
+        // User says: "Usuários que concederam acesso direto ...". Usually implies View/Create.
+        // If I can assign a task to them, I need at least some access.
+        // Let's assume ANY delegation record for the module implies "Access Granted" for this context, 
+        // OR strictly check permissions?
+        // The Prompt says: "Usuários que não concederam acesso... NÃO devem aparecer".
+        // It doesn't specify which permission bit. But usually if I delegate 'agenda', I expect you to manage it.
+        // Let's filter for where 'create' or 'edit' is true, OR just simple existence if we assume granular permissions are for specific actions.
+        // Actually, for "Assigning", I am creating a task FOR them.
+        // If they granted me "View" only, can I create a task for them? Probably not?
+        // But usually delegation is "Manage my stuff".
+        // Let's just return all owners found for the module effectively.
+        // Or better, let's filter for explicit permissions if needed.
+        // For 'tasks', usually I need 'create' permission on their behalf? 
+        // OR 'edit'?
+        // Let's stick to existence of delegation record for now, as that's the "Access" concept.
+
+        return data.map((d: any) => d.owner_id);
     },
     deleteDelegation: async (id: string) => {
         await supabase.from('delegations').delete().eq('id', id);

@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Input, Select } from './Shared';
+import { Modal, Button, Input, Select, cn } from './Shared';
 import { User, UserRole, UserPermissions, Delegation } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
 import { DEFAULT_USER_PERMISSIONS } from '../context/RBACContext';
-import { Shield, Check, X, AlertTriangle, UserCheck, Lock } from 'lucide-react';
+import { Shield, Check, X, AlertTriangle, UserCheck, Lock, CheckSquare, Square } from 'lucide-react';
 
 interface CreateUserModalProps {
     isOpen: boolean;
@@ -277,21 +277,28 @@ interface DelegationModalProps {
 
 export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClose, onSuccess, users, initialData }) => {
     const [delegateId, setDelegateId] = useState('');
-    const [moduleName, setModuleName] = useState('tasks');
-    const [permissions, setPermissions] = useState({ view: true, create: false, edit: false });
+    const [permissions, setPermissions] = useState<Record<string, { view: boolean; create: boolean; edit: boolean }>>({
+        tasks: { view: false, create: false, edit: false },
+        agenda: { view: false, create: false, edit: false },
+    });
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
+            setDelegateId(initialData?.delegateId || '');
+
+            const reset: Record<string, { view: boolean; create: boolean; edit: boolean }> = {
+                tasks: { view: false, create: false, edit: false },
+                agenda: { view: false, create: false, edit: false },
+            };
+
             if (initialData) {
-                setDelegateId(initialData.delegateId);
-                setModuleName(initialData.module);
-                setPermissions(initialData.permissions);
-            } else {
-                setDelegateId('');
-                setModuleName('tasks');
-                setPermissions({ view: true, create: false, edit: false });
+                // Pre-fill the specific module being edited
+                if (initialData.module in reset) {
+                    reset[initialData.module] = initialData.permissions;
+                }
             }
+            setPermissions(reset);
         }
     }, [isOpen, initialData]);
 
@@ -300,15 +307,22 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
         if (!delegateId) return alert("Selecione um usuário.");
         setLoading(true);
         try {
-            if (initialData) {
-                await api.updateDelegation(initialData.id, permissions);
-            } else {
-                await api.addDelegation({
-                    delegateId: delegateId,
-                    module: moduleName as any,
-                    permissions: permissions
-                });
-            }
+            // Bulk insert/update
+            const promises = Object.entries(permissions).map(async ([mod, perms]: [string, { view: boolean; create: boolean; edit: boolean }]) => {
+                const hasAny = perms.view || perms.create || perms.edit;
+
+                if (initialData && initialData.module === mod) {
+                    await api.updateDelegation(initialData.id, perms);
+                } else if (hasAny) {
+                    await api.addDelegation({
+                        delegateId: delegateId,
+                        module: mod as any,
+                        permissions: perms
+                    });
+                }
+            });
+
+            await Promise.all(promises);
             onSuccess();
             onClose();
         } catch (error: any) {
@@ -319,12 +333,16 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
         }
     };
 
-    const moduleLabel = (m: string) => {
-        if (m === 'tasks') return 'Rotinas & Tarefas';
-        if (m === 'finance') return 'Financeiro';
-        if (m === 'agenda') return 'Agenda';
-        if (m === 'commercial') return 'Comercial';
-        return m;
+    const modules = [
+        { key: 'tasks', label: 'Tarefas' },
+        { key: 'agenda', label: 'Agenda' },
+    ];
+
+    const togglePermission = (mod: string, type: 'view' | 'create' | 'edit') => {
+        setPermissions(prev => ({
+            ...prev,
+            [mod]: { ...prev[mod], [type]: !prev[mod][type] }
+        }));
     };
 
     return (
@@ -340,28 +358,64 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
 
                 <div>
                     <label className="text-xs text-slate-400 mb-1 block">Quem receberá o acesso?</label>
-                    <Select value={delegateId} onChange={e => setDelegateId(e.target.value)} required>
+                    <Select value={delegateId} onChange={e => setDelegateId(e.target.value)} required disabled={!!initialData}>
                         <option value="">Selecione um usuário...</option>
                         {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                     </Select>
                 </div>
 
-                <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Módulo</label>
-                    <Select value={moduleName} onChange={e => setModuleName(e.target.value)}>
-                        <option value="tasks">Rotinas & Tarefas</option>
-                        <option value="commercial">Comercial</option>
-                        <option value="agenda">Agenda</option>
-                        <option value="finance">Financeiro</option>
-                    </Select>
-                </div>
+                <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+                    <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+                        <Shield size={16} className="text-emerald-500" /> Permissões de Acesso
+                    </h3>
 
-                <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-3">
-                    <p className="text-sm font-medium text-slate-300">Nível de Permissão em {moduleLabel(moduleName)}</p>
-                    <div className="grid grid-cols-3 gap-2">
-                        <Toggle checked={permissions.view} onChange={v => setPermissions({ ...permissions, view: v })} label="Visualizar" />
-                        <Toggle checked={permissions.create} onChange={v => setPermissions({ ...permissions, create: v })} label="Criar" />
-                        <Toggle checked={permissions.edit} onChange={v => setPermissions({ ...permissions, edit: v })} label="Editar" />
+                    <div className="space-y-4">
+                        {modules.map(mod => (
+                            <div key={mod.key} className="border-b border-slate-700/50 pb-4 last:border-0 last:pb-0">
+                                <label className="text-sm text-slate-400 mb-2 block">{mod.label}</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePermission(mod.key, 'view')}
+                                        className={cn(
+                                            "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
+                                            permissions[mod.key].view
+                                                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
+                                                : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600"
+                                        )}
+                                    >
+                                        {permissions[mod.key].view ? <CheckSquare size={14} /> : <Square size={14} />}
+                                        Ver
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePermission(mod.key, 'create')}
+                                        className={cn(
+                                            "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
+                                            permissions[mod.key].create
+                                                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
+                                                : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600"
+                                        )}
+                                    >
+                                        {permissions[mod.key].create ? <CheckSquare size={14} /> : <Square size={14} />}
+                                        Criar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePermission(mod.key, 'edit')}
+                                        className={cn(
+                                            "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
+                                            permissions[mod.key].edit
+                                                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
+                                                : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600"
+                                        )}
+                                    >
+                                        {permissions[mod.key].edit ? <CheckSquare size={14} /> : <Square size={14} />}
+                                        Editar
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
