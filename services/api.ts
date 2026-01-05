@@ -951,7 +951,14 @@ export const api = {
         return data as Delegation[];
     },
     addDelegation: async (d: Partial<Delegation>) => {
-        await supabase.from('delegations').insert([d]);
+        const tenantId = getCurrentTenantId();
+        await supabase.from('delegations').insert([{
+            owner_id: d.ownerId || (await supabase.auth.getUser()).data.user?.id, // Default to current user if not specified
+            delegate_id: d.delegateId,
+            module: d.module,
+            permissions: d.permissions,
+            tenant_id: tenantId // Ensure tenant isolation if column exists (delegations usually implies same tenant)
+        }]);
     },
     deleteDelegation: async (id: string) => {
         await supabase.from('delegations').delete().eq('id', id);
