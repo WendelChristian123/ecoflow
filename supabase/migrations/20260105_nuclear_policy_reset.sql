@@ -83,14 +83,30 @@ FOR SELECT USING (
 );
 
 CREATE POLICY "Events Management" ON public.calendar_events
-FOR ALL USING (
+FOR INSERT WITH CHECK (
   tenant_id = public.get_current_tenant_id() AND (
     public.is_admin() OR
     public.check_user_permission(ARRAY['routines', 'edit'])
   )
 );
 
--- 3. TEAMS (View only if member or admin)
+CREATE POLICY "Events Update" ON public.calendar_events
+FOR UPDATE USING (
+  tenant_id = public.get_current_tenant_id() AND (
+    public.is_admin() OR
+    public.check_user_permission(ARRAY['routines', 'edit'])
+  )
+);
+
+CREATE POLICY "Events Delete" ON public.calendar_events
+FOR DELETE USING (
+  tenant_id = public.get_current_tenant_id() AND (
+    public.is_admin() OR
+    public.check_user_permission(ARRAY['routines', 'edit'])
+  )
+);
+
+-- 3. TEAMS
 CREATE POLICY "Teams View" ON public.teams
 FOR SELECT USING (
   tenant_id = public.get_current_tenant_id() AND (
@@ -100,15 +116,31 @@ FOR SELECT USING (
   )
 );
 
-CREATE POLICY "Teams Management" ON public.teams
-FOR ALL USING (
+CREATE POLICY "Teams Mod" ON public.teams
+FOR INSERT WITH CHECK (
   tenant_id = public.get_current_tenant_id() AND (
     public.is_admin() OR
     public.check_user_permission(ARRAY['routines', 'edit'])
   )
 );
 
--- 4. PROJECTS (View only if member or admin)
+CREATE POLICY "Teams Update" ON public.teams
+FOR UPDATE USING (
+  tenant_id = public.get_current_tenant_id() AND (
+    public.is_admin() OR
+    public.check_user_permission(ARRAY['routines', 'edit'])
+  )
+);
+
+CREATE POLICY "Teams Delete" ON public.teams
+FOR DELETE USING (
+  tenant_id = public.get_current_tenant_id() AND (
+    public.is_admin() OR
+    public.check_user_permission(ARRAY['routines', 'edit'])
+  )
+);
+
+-- 4. PROJECTS
 CREATE POLICY "Projects View" ON public.projects
 FOR SELECT USING (
   tenant_id = public.get_current_tenant_id() AND (
@@ -117,8 +149,24 @@ FOR SELECT USING (
   )
 );
 
-CREATE POLICY "Projects Management" ON public.projects
-FOR ALL USING (
+CREATE POLICY "Projects Mod" ON public.projects
+FOR INSERT WITH CHECK (
+  tenant_id = public.get_current_tenant_id() AND (
+    public.is_admin() OR
+    public.check_user_permission(ARRAY['routines', 'edit'])
+  )
+);
+
+CREATE POLICY "Projects Update" ON public.projects
+FOR UPDATE USING (
+  tenant_id = public.get_current_tenant_id() AND (
+    public.is_admin() OR
+    public.check_user_permission(ARRAY['routines', 'edit'])
+  )
+);
+
+CREATE POLICY "Projects Delete" ON public.projects
+FOR DELETE USING (
   tenant_id = public.get_current_tenant_id() AND (
     public.is_admin() OR
     public.check_user_permission(ARRAY['routines', 'edit'])
