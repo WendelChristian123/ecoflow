@@ -61,10 +61,12 @@ export const LoginPage: React.FC = () => {
 
       <div className="w-full max-w-[400px] relative z-10">
         <div className="flex flex-col items-center mb-8">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-500/20 mb-4 transform hover:scale-105 transition-transform duration-300">
-            <LayoutDashboard className="h-8 w-8 text-white" />
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 transform hover:scale-105 transition-transform duration-300">
+              <LayoutDashboard className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">EcoFlow</h1>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">EcoFlow</h1>
           <p className="text-slate-400 text-sm">Gerencie seu negócio com inteligência</p>
         </div>
 
@@ -92,7 +94,7 @@ export const LoginPage: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
               required
-              className="bg-slate-950/60"
+              className="bg-slate-800/50 border-slate-700/50 focus:bg-slate-800 transition-all text-white placeholder-slate-500"
               leftIcon={<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>}
             />
 
@@ -104,7 +106,7 @@ export const LoginPage: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="bg-slate-950/60"
+                className="bg-slate-800/50 border-slate-700/50 focus:bg-slate-800 transition-all text-white placeholder-slate-500"
                 leftIcon={<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>}
               />
               <div className="flex justify-end">
