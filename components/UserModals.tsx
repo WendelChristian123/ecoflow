@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select } from './Shared';
-import { User, UserRole, UserPermissions } from '../types';
+import { User, UserRole, UserPermissions, Delegation } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
 import { DEFAULT_USER_PERMISSIONS } from '../context/RBACContext';
@@ -265,14 +265,17 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
     );
 };
 
+
+
 interface DelegationModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    users: User[]; // Available users to delegate to
+    users: User[];
+    initialData?: Delegation | null;
 }
 
-export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClose, onSuccess, users }) => {
+export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClose, onSuccess, users, initialData }) => {
     const [delegateId, setDelegateId] = useState('');
     const [moduleName, setModuleName] = useState('tasks');
     const [permissions, setPermissions] = useState({ view: true, create: false, edit: false });
@@ -280,27 +283,37 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
 
     useEffect(() => {
         if (isOpen) {
-            setDelegateId('');
-            setModuleName('tasks');
-            setPermissions({ view: true, create: false, edit: false });
+            if (initialData) {
+                setDelegateId(initialData.delegateId);
+                setModuleName(initialData.module);
+                setPermissions(initialData.permissions);
+            } else {
+                setDelegateId('');
+                setModuleName('tasks');
+                setPermissions({ view: true, create: false, edit: false });
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, initialData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!delegateId) return alert("Selecione um usuário.");
         setLoading(true);
         try {
-            await api.addDelegation({
-                delegateId: delegateId,
-                module: moduleName,
-                permissions: permissions
-            });
+            if (initialData) {
+                await api.updateDelegation(initialData.id, permissions);
+            } else {
+                await api.addDelegation({
+                    delegateId: delegateId,
+                    module: moduleName as any,
+                    permissions: permissions
+                });
+            }
             onSuccess();
             onClose();
         } catch (error: any) {
             console.error(error);
-            alert(`Erro ao delegar: ${getErrorMessage(error)}`);
+            alert(`Erro ao salvar: ${getErrorMessage(error)}`);
         } finally {
             setLoading(false);
         }

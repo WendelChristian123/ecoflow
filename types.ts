@@ -82,7 +82,8 @@ export interface Delegation {
     create: boolean;
     edit: boolean;
   };
-  delegate?: User;
+  delegate?: { name: string; email: string };
+  owner?: { name: string; email: string };
 }
 
 export interface User {

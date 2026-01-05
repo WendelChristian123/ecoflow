@@ -946,7 +946,8 @@ export const api = {
 
     // --- DELEGATIONS ---
     getMyDelegations: async () => {
-        const { data, error } = await supabase.from('delegations').select('*');
+        const { data, error } = await supabase.from('delegations')
+            .select('*, owner:profiles!owner_id(name, email, avatar_url), delegate:profiles!delegate_id(name, email, avatar_url)');
         if (error) return [];
         return data as Delegation[];
     },
@@ -957,6 +958,10 @@ export const api = {
             module: d.module,
             permissions: d.permissions
         }]);
+    },
+    updateDelegation: async (id: string, permissions: any) => {
+        const { error } = await supabase.from('delegations').update({ permissions }).eq('id', id);
+        if (error) throw error;
     },
     deleteDelegation: async (id: string) => {
         await supabase.from('delegations').delete().eq('id', id);

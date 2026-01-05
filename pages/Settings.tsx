@@ -5,7 +5,7 @@ import { User, Delegation } from '../types';
 import { Loader, Button, Avatar, Badge, Card, Input } from '../components/Shared';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon } from 'lucide-react';
+import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
 import { CreateUserModal, EditUserModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
@@ -28,6 +28,7 @@ export const SettingsPage: React.FC = () => {
     // Modals State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isDelegationOpen, setIsDelegationOpen] = useState(false);
+    const [editingDelegation, setEditingDelegation] = useState<Delegation | null>(null);
     const [editingPermissionsUser, setEditingPermissionsUser] = useState<User | null>(null);
 
     useEffect(() => {
@@ -169,34 +170,52 @@ export const SettingsPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {delegations.map(del => (
-                                <div key={del.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3 relative group hover:border-indigo-500/50 transition-colors">
-                                    <button
-                                        onClick={() => handleDeleteDelegation(del.id)}
-                                        className="absolute top-2 right-2 text-slate-500 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Revogar Acesso"
-                                    >
-                                        <XCircle size={18} />
-                                    </button>
+                            {delegations.map(del => {
+                                const isOwner = del.ownerId === authUser?.id;
+                                const otherPerson = isOwner ? del.delegate : del.owner;
+                                const avatarSrc = (otherPerson as any)?.avatar_url;
 
-                                    <div className="flex items-center gap-3">
-                                        <Avatar src={del.delegate?.avatarUrl} name={del.delegate?.name || 'Desconhecido'} />
-                                        <div className="overflow-hidden">
-                                            <div className="font-medium text-white truncate">{del.delegate?.name}</div>
-                                            <div className="text-xs text-slate-500 truncate">{del.delegate?.email}</div>
+                                return (
+                                    <div key={del.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3 relative group hover:border-indigo-500/50 transition-colors">
+                                        {isOwner && (
+                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => { setEditingDelegation(del); setIsDelegationOpen(true); }}
+                                                    className="p-1 text-slate-500 hover:text-indigo-500 transition-colors"
+                                                    title="Editar Permissões"
+                                                >
+                                                    <Pencil size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteDelegation(del.id)}
+                                                    className="p-1 text-slate-500 hover:text-rose-500 transition-colors"
+                                                    title="Revogar Acesso"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center gap-3">
+                                            <Avatar src={avatarSrc} name={otherPerson?.name || 'Usuário'} />
+                                            <div className="overflow-hidden">
+                                                <div className="text-xs text-slate-500 mb-0.5">{isOwner ? 'Concedido a:' : 'Recebido de:'}</div>
+                                                <div className="font-medium text-white truncate">{otherPerson?.name || 'Desconhecido'}</div>
+                                                <div className="text-xs text-slate-500 truncate">{otherPerson?.email}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-slate-700/50">
+                                            <Badge variant="default">{translateModule(del.module)}</Badge>
+                                            <div className="flex gap-1">
+                                                {del.permissions.view && <span title="Ver" className="text-emerald-400 bg-emerald-500/10 p-1 rounded"><CheckCircle size={12} /></span>}
+                                                {del.permissions.create && <span title="Criar" className="text-blue-400 bg-blue-500/10 p-1 rounded"><Plus size={12} /></span>}
+                                                {del.permissions.edit && <span title="Editar" className="text-amber-400 bg-amber-500/10 p-1 rounded"><Shield size={12} /></span>}
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div className="flex items-center justify-between pt-2 border-t border-slate-700/50">
-                                        <Badge variant="default">{translateModule(del.module)}</Badge>
-                                        <div className="flex gap-1">
-                                            {del.permissions.view && <span title="Ver" className="text-emerald-400 bg-emerald-500/10 p-1 rounded"><CheckCircle size={12} /></span>}
-                                            {del.permissions.create && <span title="Criar" className="text-blue-400 bg-blue-500/10 p-1 rounded"><Plus size={12} /></span>}
-                                            {del.permissions.edit && <span title="Editar" className="text-amber-400 bg-amber-500/10 p-1 rounded"><Shield size={12} /></span>}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </Card>
@@ -394,9 +413,10 @@ export const SettingsPage: React.FC = () => {
 
             <DelegationModal
                 isOpen={isDelegationOpen}
-                onClose={() => setIsDelegationOpen(false)}
+                onClose={() => { setIsDelegationOpen(false); setEditingDelegation(null); }}
                 onSuccess={loadData}
                 users={usersAvailableToDelegate}
+                initialData={editingDelegation}
             />
         </div>
     );
