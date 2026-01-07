@@ -24,7 +24,7 @@ export const QuotesPage: React.FC = () => {
         try {
             const [q, c, cat] = await Promise.all([api.getQuotes(), api.getContacts(), api.getCatalogItems()]);
             setQuotes(q); setContacts(c); setCatalog(cat);
-        } catch(e) { console.error(e); } 
+        } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
@@ -49,39 +49,39 @@ export const QuotesPage: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><FileText className="text-emerald-500"/> Orçamentos</h1>
-                <Button className="gap-2" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}><Plus size={16}/> Novo Orçamento</Button>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><FileText className="text-emerald-500" /> Orçamentos</h1>
+                <Button className="gap-2" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Orçamento</Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {quotes.map(q => (
                     <Card key={q.id} className="group relative hover:border-emerald-500/30 cursor-pointer" onClick={() => { setEditingQuote(q); setIsModalOpen(true); }}>
                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(q.id); }} className="text-slate-500 hover:text-rose-500"><Trash2 size={16}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(q.id); }} className="text-slate-500 hover:text-rose-500"><Trash2 size={16} /></button>
                         </div>
                         <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs text-slate-500">#{q.id.substring(0,8)}</span>
+                            <span className="text-xs text-slate-500">#{q.id.substring(0, 8)}</span>
                             <div className="flex gap-2">
                                 {!q.contactId && <Badge variant="neutral" className="bg-slate-700 text-slate-300 border-slate-600">Convidado</Badge>}
                                 <Badge variant={statusMap[q.status].color}>{statusMap[q.status].label}</Badge>
                             </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 mb-1">
                             {!q.contactId && <User size={16} className="text-slate-500" />}
                             <h3 className="font-bold text-white text-lg truncate">
                                 {q.contact?.name || q.customerName || <span className="text-slate-500 italic">Cliente Desconhecido</span>}
                             </h3>
                         </div>
-                        
+
                         <div className="text-sm text-slate-400">Data: {format(parseISO(q.date), 'dd/MM/yyyy')}</div>
                         {(q.customerPhone || q.contact?.phone) && (
                             <div className="text-xs text-slate-500 mt-1">{q.customerPhone || q.contact?.phone}</div>
                         )}
-                        
+
                         <div className="mt-4 pt-4 border-t border-slate-700/50 flex justify-between items-center">
                             <span className="text-xs text-slate-500">{q.items?.length || 0} itens</span>
-                            <span className="text-xl font-bold text-emerald-400">R$ {q.totalValue.toFixed(2)}</span>
+                            <span className="text-xl font-bold text-emerald-400">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}</span>
                         </div>
                     </Card>
                 ))}

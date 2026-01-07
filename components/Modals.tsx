@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput } from './Shared';
+import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput, CurrencyInput } from './Shared';
 import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
@@ -549,11 +549,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                             <Input label="Descrição" placeholder="Ex: Aluguel" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} required />
 
                             <div>
-                                <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Valor</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">R$</span>
-                                    <Input type="number" step="0.01" className="pl-10 text-lg font-semibold" value={formData.amount || ''} onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) })} required />
-                                </div>
+                                <CurrencyInput
+                                    label="Valor"
+                                    value={formData.amount}
+                                    onValueChange={(val) => setFormData({ ...formData, amount: val || 0 })}
+                                    className="text-lg font-semibold"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -1014,7 +1015,7 @@ export const CardModal: React.FC<CardModalProps> = ({ isOpen, onClose, onSuccess
         <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Cartão" : "Novo Cartão"}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Nome do Cartão" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                <Input label="Limite (R$)" type="number" step="0.01" value={formData.limitAmount} onChange={e => setFormData({ ...formData, limitAmount: parseFloat(e.target.value) })} required />
+                <CurrencyInput label="Limite (R$)" value={formData.limitAmount} onValueChange={val => setFormData({ ...formData, limitAmount: val || 0 })} required />
                 <div className="grid grid-cols-2 gap-4">
                     <Input label="Dia Fechamento" type="number" min="1" max="31" value={formData.closingDay} onChange={e => setFormData({ ...formData, closingDay: parseInt(e.target.value) })} required />
                     <Input label="Dia Vencimento" type="number" min="1" max="31" value={formData.dueDay} onChange={e => setFormData({ ...formData, dueDay: parseInt(e.target.value) })} required />
@@ -1067,7 +1068,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onS
                         <option value="investment">Investimento</option>
                     </Select>
                 </div>
-                <Input label="Saldo Inicial" type="number" step="0.01" value={formData.initialBalance} onChange={e => setFormData({ ...formData, initialBalance: parseFloat(e.target.value) })} required />
+                <CurrencyInput label="Saldo Inicial" value={formData.initialBalance} onValueChange={val => setFormData({ ...formData, initialBalance: val || 0 })} required />
                 <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button type="submit" disabled={loading}>Salvar</Button>

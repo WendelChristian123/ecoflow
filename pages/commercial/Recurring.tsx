@@ -13,7 +13,7 @@ export const RecurringPage: React.FC = () => {
     const [services, setServices] = useState<RecurringService[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     // State to hold the contract being edited/viewed
     const [editingService, setEditingService] = useState<RecurringService | undefined>(undefined);
@@ -26,7 +26,7 @@ export const RecurringPage: React.FC = () => {
         try {
             const [r, c, cat] = await Promise.all([api.getRecurringServices(), api.getContacts(), api.getCatalogItems()]);
             setServices(r); setContacts(c); setCatalog(cat);
-        } catch(e) { console.error(e); } 
+        } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
@@ -48,36 +48,36 @@ export const RecurringPage: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><RefreshCw className="text-emerald-500"/> Contratos Recorrentes</h1>
-                <Button className="gap-2" onClick={() => handleOpenModal()}><Plus size={16}/> Novo Contrato</Button>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><RefreshCw className="text-emerald-500" /> Contratos Recorrentes</h1>
+                <Button className="gap-2" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {services.map(s => (
-                    <Card 
-                        key={s.id} 
+                    <Card
+                        key={s.id}
                         className="group relative hover:border-emerald-500/30 cursor-pointer transition-all hover:bg-slate-800/80"
                         onClick={() => handleOpenModal(s)} // Open modal on click
                     >
                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(s.id); }} className="text-slate-500 hover:text-rose-500 bg-slate-900/50 p-1.5 rounded"><Trash2 size={16}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(s.id); }} className="text-slate-500 hover:text-rose-500 bg-slate-900/50 p-1.5 rounded"><Trash2 size={16} /></button>
                         </div>
-                        
+
                         <div className="flex justify-between items-start mb-3">
                             <Badge variant={s.active ? 'success' : 'neutral'}>{s.active ? 'Ativo' : 'Inativo'}</Badge>
                             <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{s.frequency === 'monthly' ? 'Mensal' : 'Anual'}</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-3 mb-4">
                             <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
                                 <User size={20} />
                             </div>
                             <h3 className="font-bold text-white text-lg truncate flex-1">{s.contact?.name || 'Cliente Removido'}</h3>
                         </div>
-                        
+
                         <div className="bg-slate-900/50 rounded-lg p-3 space-y-2 text-sm text-slate-400 border border-slate-700/50">
                             <div className="flex justify-between">
-                                <span className="flex items-center gap-2"><Calendar size={12}/> Início</span>
+                                <span className="flex items-center gap-2"><Calendar size={12} /> Início</span>
                                 <span className="text-slate-200">{format(parseISO(s.startDate), 'dd/MM/yyyy')}</span>
                             </div>
                             <div className="flex justify-between">
@@ -86,10 +86,10 @@ export const RecurringPage: React.FC = () => {
                             </div>
                             <div className="flex justify-between border-t border-slate-700/50 pt-2 mt-2">
                                 <span>Valor Recorrente</span>
-                                <span className="text-emerald-400 font-bold">R$ {s.recurringAmount.toFixed(2)}</span>
+                                <span className="text-emerald-400 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.recurringAmount)}</span>
                             </div>
                         </div>
-                        
+
                         <div className="mt-3 text-center text-xs text-slate-500 group-hover:text-emerald-400 transition-colors">
                             Clique para ver detalhes
                         </div>
@@ -102,15 +102,15 @@ export const RecurringPage: React.FC = () => {
                 )}
             </div>
 
-            <RecurringModal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
-                onSuccess={loadData} 
-                contacts={contacts} 
+            <RecurringModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={loadData}
+                contacts={contacts}
                 catalog={catalog}
                 initialData={editingService}
             />
-            
+
             <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={handleDelete} title="Encerrar Contrato" description="Isso removerá o contrato, mas manterá o histórico financeiro gerado." />
         </div>
     );

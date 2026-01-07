@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { CreditCard, FinancialTransaction, FinancialAccount, FinancialCategory, Contact } from '../../types';
-import { Loader, Card, ProgressBar, cn, Button, Modal, Input, Select } from '../../components/Shared';
+import { Loader, Card, ProgressBar, cn, Button, Modal, Input, Select, CurrencyInput } from '../../components/Shared';
 import { TransactionModal, DrilldownModal, CardModal, ConfirmationModal } from '../../components/Modals';
 import { CreditCard as CardIcon, Calendar, Plus, FileText, AlertCircle, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
@@ -21,19 +21,19 @@ interface InvoicePaymentModalProps {
 }
 
 const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({ isOpen, onClose, card, invoiceAmount, accounts, onConfirm }) => {
-    const [amount, setAmount] = useState(invoiceAmount.toString());
+    const [amount, setAmount] = useState<number | undefined>(invoiceAmount);
     const [accountId, setAccountId] = useState(accounts[0]?.id || '');
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (isOpen && invoiceAmount) setAmount(invoiceAmount.toString());
+        if (isOpen && invoiceAmount) setAmount(invoiceAmount);
     }, [isOpen, invoiceAmount]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        await onConfirm(parseFloat(amount), accountId, date);
+        await onConfirm(amount || 0, accountId, date);
         setLoading(false);
         onClose();
     };
@@ -45,11 +45,9 @@ const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({ isOpen, onClo
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-400 mb-1">Valor do Pagamento</label>
-                    <Input
-                        type="number"
-                        step="0.01"
+                    <CurrencyInput
                         value={amount}
-                        onChange={e => setAmount(e.target.value)}
+                        onValueChange={setAmount}
                         required
                     />
                     <div className="text-xs text-slate-500 mt-1">
@@ -240,7 +238,7 @@ export const FinancialCards: React.FC = () => {
                 categoryId: categories.find(c => c.name.toLowerCase().includes('pagamento'))?.id || '',
                 date: date,
                 isPaid: true,
-                installments: 1
+                totalInstallments: 1
             });
 
             if (expenseTx?.id) {
@@ -253,7 +251,7 @@ export const FinancialCards: React.FC = () => {
                     categoryId: '',
                     date: date,
                     isPaid: true,
-                    installments: 1,
+                    totalInstallments: 1,
                     originType: 'technical',
                     originId: expenseTx.id
                 });

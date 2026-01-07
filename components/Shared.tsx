@@ -68,6 +68,54 @@ export const Input: React.FC<InputProps> = ({ className, label, leftIcon, ...pro
   </div>
 );
 
+// --- Currency Input ---
+import CurrencyInputField from 'react-currency-input-field';
+
+interface CurrencyInputProps {
+  value: number | undefined;
+  onValueChange: (value: number | undefined) => void;
+  label?: string;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+}
+
+export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChange, label, placeholder, className, disabled }) => {
+  return (
+    <div className="w-full">
+      {label && <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
+      <div className="relative group">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-500 transition-colors">
+          <span className="text-sm font-semibold">R$</span>
+        </div>
+        <CurrencyInputField
+          id="validation-custom-input"
+          placeholder={placeholder || "0,00"}
+          defaultValue={value}
+          value={value}
+          decimalsLimit={2}
+          decimalSeparator=","
+          groupSeparator="."
+          onValueChange={(val) => {
+            const num = val ? parseFloat(val.replace(',', '.')) : undefined;
+            onValueChange(num);
+          }}
+          className={cn(
+            "w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder:text-slate-600 disabled:opacity-50 transition-all font-medium",
+            className
+          )}
+          disabled={disabled}
+          intlConfig={{ locale: 'pt-BR', currency: 'BRL' }}
+          disableGroupSeparators={false}
+          disableAbbreviations={true}
+          transformRawValue={(rawValue) => rawValue} // Can be used to validation
+        />
+      </div>
+    </div>
+  );
+};
+
+
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ className, ...props }) => (
   <div className="relative w-full">
     <select
