@@ -138,7 +138,7 @@ export const TeamsPage: React.FC = () => {
                   <button onClick={handleEdit} className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
                     <Edit2 size={16} />
                   </button>
-                  {user?.role === 'admin' && (
+                  {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
                     <button
                       onClick={(e) => handleDeleteTeam(e, selectedTeam.id)}
                       className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
@@ -285,7 +285,7 @@ export const TeamsPage: React.FC = () => {
                   Ver Tarefas da Equipe
                 </Button>
                 <Badge variant="neutral">{team.memberIds.length} membros</Badge>
-                {user?.role === 'admin' && (
+                {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
                   <div className="flex items-center gap-1 border-l border-slate-700 pl-3 ml-2">
                     <button
                       onClick={(e) => {

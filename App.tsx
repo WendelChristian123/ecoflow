@@ -36,6 +36,7 @@ import { CatalogPage } from './pages/commercial/Catalog';
 import { QuotesPage } from './pages/commercial/Quotes';
 import { RecurringPage } from './pages/commercial/Recurring';
 
+
 // Routines Pages
 import { RoutinesOverview } from './pages/routines/Overview';
 

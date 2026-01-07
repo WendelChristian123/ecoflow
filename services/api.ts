@@ -455,6 +455,10 @@ export const api = {
         const { error } = await supabase.from('calendar_events').update(dbEvt).eq('id', evt.id);
         if (error) throw error;
     },
+    deleteEvent: async (id: string) => {
+        const { error } = await supabase.from('calendar_events').delete().eq('id', id);
+        if (error) throw error;
+    },
 
     // --- FINANCE ---
     getFinancialTransactions: async (tenantId?: string) => {
