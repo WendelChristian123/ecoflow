@@ -97,6 +97,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             localStorage.setItem('ecoflow-mock-tenant-id', tenantId);
             localStorage.setItem('ecoflow-tenant-id', tenantId); // CRUCIAL para a API pegar o tenant certo
 
+            // 1.5. Sincroniza com o servidor (RLS Fix)
+            await api.switchActiveTenant(tenantId);
+
             // 2. Busca dados da nova empresa
             const tenant = await api.getTenantById(tenantId);
 

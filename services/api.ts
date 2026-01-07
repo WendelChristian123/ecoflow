@@ -797,6 +797,15 @@ export const api = {
         }]);
         if (error) throw error;
     },
+
+    switchActiveTenant: async (tenantId: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("No user logged in");
+
+        const { error } = await supabase.from('profiles').update({ tenant_id: tenantId }).eq('id', user.id);
+        if (error) throw error;
+    },
+
     // Update Tenant Settings (Finance)
     updateTenantSettings: async (settings: any) => {
         const tenantId = getCurrentTenantId();
