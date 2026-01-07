@@ -57,13 +57,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Update User State with full profile
         setUser(prev => {
           if (!prev || prev.id !== currentUser.id) return prev; // Avoid ordering issues
+
+          const newName = profile.name || prev.name;
+          const newRole = profile.role || prev.role;
+          const newTenant = profile.tenant_id || prev.tenantId;
+          const newAvatar = profile.avatar_url || prev.avatarUrl;
+          const newStatus = profile.status;
+
+          // Optimization: Only update state if something changed
+          if (
+            prev.name === newName &&
+            prev.role === newRole &&
+            prev.tenantId === newTenant &&
+            prev.avatarUrl === newAvatar &&
+            prev.status === newStatus
+          ) {
+            return prev;
+          }
+
           return {
             ...prev,
-            name: profile.name || prev.name,
-            role: profile.role || prev.role,
-            tenantId: profile.tenant_id || prev.tenantId,
-            avatarUrl: profile.avatar_url || prev.avatarUrl,
-            status: profile.status
+            name: newName,
+            role: newRole,
+            tenantId: newTenant,
+            avatarUrl: newAvatar,
+            status: newStatus
           } as AppUser;
         });
         // console.log('[Auth] Profile synced.');
@@ -190,7 +208,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = { session: !!user, user, loading, signOut, signIn, signUp, refreshSession };
+  const value = React.useMemo(() => ({
+    session: !!user,
+    user,
+    loading,
+    signOut,
+    signIn,
+    signUp,
+    refreshSession
+  }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

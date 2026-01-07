@@ -55,7 +55,11 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     try {
                         const tenant = await api.getTenantById(targetId);
                         if (mounted.current && tenant) {
-                            setCurrentTenant(tenant);
+                            // Avoid unnecessary updates if same tenant
+                            setCurrentTenant(prev => {
+                                if (prev?.id === tenant.id && prev?.name === tenant.name) return prev;
+                                return tenant;
+                            });
                             // Para usuários normais, a lista disponível é apenas a própria empresa
                             if (!isSuperAdmin) {
                                 setAvailableTenants([tenant]);
@@ -130,15 +134,17 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     };
 
+    const value = React.useMemo(() => ({
+        currentTenant,
+        availableTenants,
+        loading,
+        switchTenant,
+        refreshTenants,
+        isMultiTenant: isSuperAdmin
+    }), [currentTenant, availableTenants, loading, isSuperAdmin]);
+
     return (
-        <TenantContext.Provider value={{
-            currentTenant,
-            availableTenants,
-            loading,
-            switchTenant,
-            refreshTenants,
-            isMultiTenant: isSuperAdmin
-        }}>
+        <TenantContext.Provider value={value}>
             {children}
         </TenantContext.Provider>
     );
