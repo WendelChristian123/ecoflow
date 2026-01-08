@@ -101,6 +101,13 @@ export interface User {
   lastActiveAt?: string;
 }
 
+export interface RecurrenceConfig {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number;
+  endDate?: string;
+  occurrences?: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -111,12 +118,15 @@ export interface Task {
   teamId?: string;
   assigneeId: string;
   dueDate: string;
+  recurrence?: RecurrenceConfig;
+  recurrenceId?: string;
   links: string[];
   tags: string[];
   tenantId?: string;
 }
 
 export interface Project {
+  // ... (keep unchanged)
   id: string;
   name: string;
   description: string;
@@ -130,6 +140,7 @@ export interface Project {
 }
 
 export interface Team {
+  // ... (keep unchanged)
   id: string;
   name: string;
   description: string;
@@ -145,6 +156,8 @@ export interface CalendarEvent {
   description?: string;
   startDate: string;
   endDate: string;
+  recurrence?: RecurrenceConfig;
+  recurrenceId?: string;
   type: 'meeting' | 'task' | 'reminder' | 'other';
   status: 'pending' | 'confirmed' | 'cancelled';
   participants: string[]; // JSONB of user IDs
@@ -280,10 +293,22 @@ export interface RecurringService {
   recurringAmount: number;
   startDate: string;
   frequency: 'monthly' | 'yearly';
+  bankAccountId?: string;
   contractMonths?: number;
   active: boolean;
   contact?: Contact;
   tenantId?: string;
+  contactName?: string; // Optional for UI/Transaction generation
+
+  // New Fields
+  financialCategoryId?: string;
+  setupCategoryId?: string;
+  setupEntryAmount?: number;
+  setupEntryDate?: string;
+  setupSpotDate?: string; // For UI use when Spot payment selected
+  setupRemainingAmount?: number;
+  setupRemainingDate?: string;
+  firstRecurrenceDate?: string;
 }
 
 export interface DashboardMetrics {

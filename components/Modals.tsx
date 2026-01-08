@@ -154,7 +154,7 @@ interface DrilldownItem {
     metadata?: any;
 }
 
-export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users }) => {
+export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [] }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const navigate = useNavigate();
 
@@ -294,8 +294,8 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                         // --- FINANCE RENDERER ---
                         if (type === 'finance') {
                             const t = item as FinancialTransaction;
-                            // Safe Date Display using data-fns, NO SPLIT
-                            const displayDate = t.date ? formatDate(t.date, 'dd/MM/yyyy') : '-';
+                            // Safe Date Display with Strict Date Fix (Split T)
+                            const displayDate = t.date ? format(parseISO(t.date.split('T')[0]), 'dd/MM/yyyy') : '-';
                             const displayAmount = t.amount ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount) : 'R$ 0,00';
 
                             return (
@@ -721,6 +721,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     const [formData, setFormData] = useState<Partial<Task>>({
         title: '', description: '', status: 'todo', priority: 'medium', assigneeId: '', projectId: '', teamId: '', dueDate: '', links: []
     });
+    const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'weekly', repeatCount: 0 });
+    const [isIndefinite, setIsIndefinite] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -728,6 +730,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             setFormData(initialData ? { ...initialData, dueDate: initialData.dueDate ? initialData.dueDate.substring(0, 16) : '', links: initialData.links || [] } : {
                 title: '', description: '', status: 'todo', priority: 'medium', assigneeId: users[0]?.id || '', projectId: '', teamId: '', dueDate: new Date().toISOString().substring(0, 16), links: []
             });
+
+            if (initialData?.recurrence) {
+                setRecurrence({ ...initialData.recurrence, isRecurring: true });
+                setIsIndefinite(!initialData.recurrence.endDate && !initialData.recurrence.occurrences);
+            } else {
+                setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 0 });
+                setIsIndefinite(false);
+            }
         }
     }, [isOpen, initialData, users]);
 
@@ -738,7 +748,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             if (initialData?.id) {
                 await api.updateTask({ ...initialData, ...formData } as Task);
             } else {
-                await api.addTask(formData as Task);
+                const finalRecurrence = recurrence.isRecurring ? {
+                    frequency: recurrence.frequency,
+                    interval: 1,
+                    occurrences: isIndefinite ? 12 : (recurrence.repeatCount > 0 ? recurrence.repeatCount : undefined)
+                } : undefined;
+                await api.addTask(formData as Task, finalRecurrence);
             }
             onSuccess();
             onClose();
@@ -818,6 +833,65 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                         </div>
 
                         <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+
+                        {/* Recurrence Section (New) */}
+                        {!initialData?.id && (
+                            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <input
+                                        type="checkbox"
+                                        id="task-recurrence-toggle"
+                                        checked={recurrence.isRecurring}
+                                        onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })}
+                                        className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-emerald-500"
+                                    />
+                                    <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-slate-200 select-none cursor-pointer">
+                                        Repetir esta tarefa?
+                                    </label>
+                                </div>
+
+                                {recurrence.isRecurring && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-700/50">
+                                        <div>
+                                            <label className="text-xs text-slate-400 mb-1 block">Frequência</label>
+                                            <Select
+                                                value={recurrence.frequency}
+                                                onChange={e => setRecurrence({ ...recurrence, frequency: e.target.value as any })}
+                                            >
+                                                <option value="daily">Diário</option>
+                                                <option value="weekly">Semanal</option>
+                                                <option value="monthly">Mensal</option>
+                                                <option value="yearly">Anual</option>
+                                            </Select>
+                                        </div>
+                                        <div className="flex items-end gap-2">
+                                            <div className="flex-1">
+                                                <label className="text-xs text-slate-400 mb-1 block">Fim</label>
+                                                <Select
+                                                    value={isIndefinite ? 'indefinite' : 'count'}
+                                                    onChange={e => setIsIndefinite(e.target.value === 'indefinite')}
+                                                >
+                                                    <option value="count">Após ocorrências</option>
+                                                    <option value="indefinite">Indefinido (Máx 12)</option>
+                                                </Select>
+                                            </div>
+                                            {!isIndefinite && (
+                                                <div className="w-16">
+                                                    <label className="text-xs text-slate-400 mb-1 block">Qtd</label>
+                                                    <Input
+                                                        type="number"
+                                                        min="2"
+                                                        max="50"
+                                                        value={recurrence.repeatCount || 0}
+                                                        onChange={e => setRecurrence({ ...recurrence, repeatCount: parseInt(e.target.value) })}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -1311,6 +1385,9 @@ export const EventModal: React.FC<EventModalProps> = ({
         priority: 'medium', projectId: '', assigneeId: '', teamId: ''
     });
 
+    const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'weekly', repeatCount: 0 });
+    const [isIndefinite, setIsIndefinite] = useState(false);
+
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -1337,6 +1414,15 @@ export const EventModal: React.FC<EventModalProps> = ({
                 isTeamEvent: false, participants: [], status: 'scheduled', links: [],
                 priority: 'medium', projectId: '', assigneeId: '', teamId: ''
             });
+
+            // Initialize Recurrence State
+            if (initialData?.recurrence) {
+                setRecurrence({ ...initialData.recurrence, isRecurring: true });
+                setIsIndefinite(!initialData.recurrence.endDate && !initialData.recurrence.occurrences);
+            } else {
+                setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 0 });
+                setIsIndefinite(false);
+            }
         }
     }, [isOpen, initialData]);
 
@@ -1360,7 +1446,13 @@ export const EventModal: React.FC<EventModalProps> = ({
                 if (initialData?.id && initialData.origin === 'task') {
                     await api.updateTask({ ...taskData, id: initialData.id } as Task);
                 } else {
-                    await api.addTask(taskData as Task);
+                    const finalRecurrence = recurrence.isRecurring ? {
+                        frequency: recurrence.frequency,
+                        interval: 1, // Default to 1
+                        occurrences: isIndefinite ? 12 : (recurrence.repeatCount > 0 ? recurrence.repeatCount : undefined),
+                        endDate: undefined // Simplified for now, can be added later
+                    } : undefined;
+                    await api.addTask(taskData as Task, finalRecurrence);
                 }
             } else {
                 // Event Mode
@@ -1379,7 +1471,12 @@ export const EventModal: React.FC<EventModalProps> = ({
                 if (initialData?.id && initialData.origin === 'agenda') {
                     await api.updateEvent({ ...eventData, id: initialData.id } as CalendarEvent);
                 } else {
-                    await api.addEvent(eventData as CalendarEvent);
+                    const finalRecurrence = recurrence.isRecurring ? {
+                        frequency: recurrence.frequency,
+                        interval: 1,
+                        occurrences: isIndefinite ? 12 : (recurrence.repeatCount > 0 ? recurrence.repeatCount : undefined)
+                    } : undefined;
+                    await api.addEvent(eventData as CalendarEvent, finalRecurrence);
                 }
             }
             onSuccess();

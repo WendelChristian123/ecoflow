@@ -5,7 +5,8 @@ import { processTransactions, ProcessedTransaction } from '../../services/financ
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact } from '../../types';
 import { Loader, Card, Badge, cn, Button, Select } from '../../components/Shared';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, ArrowRightLeft } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, ArrowRightLeft, FileText } from 'lucide-react';
+import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
 import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
@@ -36,6 +37,7 @@ export const FinancialOverview: React.FC = () => {
         isOpen: false, title: '', data: []
     });
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     useEffect(() => { loadData(); }, []);
 
@@ -257,12 +259,21 @@ export const FinancialOverview: React.FC = () => {
                     </h1>
                 </div>
 
-                <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
-                    onClick={() => setIsTransactionModalOpen(true)}
-                >
-                    <Plus size={18} /> Novo Lançamento
-                </Button>
+                <div className="flex gap-3">
+                    <Button
+                        variant="ghost"
+                        onClick={() => setIsReportModalOpen(true)}
+                        className="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200 gap-2"
+                    >
+                        <FileText size={18} className="text-indigo-400" /> Relatórios
+                    </Button>
+                    <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
+                        onClick={() => setIsTransactionModalOpen(true)}
+                    >
+                        <Plus size={18} /> Novo Lançamento
+                    </Button>
+                </div>
             </div>
 
             {/* Filter Bar */}
@@ -764,6 +775,14 @@ export const FinancialOverview: React.FC = () => {
 
             <DrilldownModal isOpen={modalState.isOpen} onClose={() => setModalState({ ...modalState, isOpen: false })} title={modalState.title} type="finance" data={modalState.data} />
             <TransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} onSuccess={loadData} accounts={accounts} categories={categories} cards={cards} contacts={contacts} />
+
+            <FinancialReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                transactions={transactions}
+                accounts={accounts}
+                categories={categories}
+            />
         </div >
     );
 };

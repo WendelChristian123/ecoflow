@@ -1,7 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
-import { Mail, Shield, ArrowLeft, Plus, Search, LayoutList, Kanban, Edit2, Trash2 } from 'lucide-react';
+import { Mail, Shield, ArrowLeft, Plus, Search, LayoutList, Kanban, Edit2, Trash2, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Card, Avatar, Loader, Badge, Button, TaskTableView } from '../components/Shared';
+import { startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { KanbanBoard } from '../components/Kanban';
 import { TaskModal, TeamModal, TaskDetailModal } from '../components/Modals';
 import { api } from '../services/api';
@@ -25,6 +27,12 @@ export const TeamsPage: React.FC = () => {
   const [detailFilterStatus, setDetailFilterStatus] = useState<string>('all');
   const [detailSearch, setDetailSearch] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // Team Details Filters
+  const [detailDate, setDetailDate] = useState(new Date());
+  const [showDetailMonthFilter, setShowDetailMonthFilter] = useState(true);
+  const [detailFilterAssignee, setDetailFilterAssignee] = useState<string>('all');
+  const [detailFilterPriority, setDetailFilterPriority] = useState<string>('all');
 
 
   useEffect(() => {
@@ -114,12 +122,40 @@ export const TeamsPage: React.FC = () => {
     let teamTasks = tasks.filter(t => t.teamId === selectedTeam.id);
     const teamLead = users.find(u => u.id === selectedTeam.leadId);
 
+    // 1. Month Filter
+    if (showDetailMonthFilter) {
+      teamTasks = teamTasks.filter(t => {
+        if (!t.dueDate) return false;
+        return isSameMonth(parseISO(t.dueDate), detailDate);
+      });
+    }
+
+    // 2. Status Filter
     if (detailFilterStatus !== 'all') {
       teamTasks = teamTasks.filter(t => t.status === detailFilterStatus);
     }
+
+    // 3. Assignee Filter
+    if (detailFilterAssignee !== 'all') {
+      teamTasks = teamTasks.filter(t => t.assigneeId === detailFilterAssignee);
+    }
+
+    // 4. Priority Filter
+    if (detailFilterPriority !== 'all') {
+      teamTasks = teamTasks.filter(t => t.priority === detailFilterPriority);
+    }
+
+    // 5. Text Search
     if (detailSearch) {
       teamTasks = teamTasks.filter(t => t.title.toLowerCase().includes(detailSearch.toLowerCase()));
     }
+
+    // 6. Sort by Due Date
+    teamTasks.sort((a, b) => {
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
 
     return (
       // Optimized height
@@ -169,19 +205,66 @@ export const TeamsPage: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              {/* Month Toggle & Selector */}
+              <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <button
+                  onClick={() => setShowDetailMonthFilter(!showDetailMonthFilter)}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${showDetailMonthFilter ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-white'}`}
+                >
+                  {showDetailMonthFilter ? 'Mês' : 'Todos'}
+                </button>
+                {showDetailMonthFilter && (
+                  <div className="flex items-center gap-1 pl-1 border-l border-slate-700">
+                    <button onClick={() => setDetailDate(subMonths(detailDate, 1))} className="hover:text-white text-slate-400"><ChevronLeft size={14} /></button>
+                    <span className="text-xs font-bold text-white uppercase w-20 text-center select-none">
+                      {format(detailDate, 'MMMM', { locale: ptBR })}
+                    </span>
+                    <button onClick={() => setDetailDate(addMonths(detailDate, 1))} className="hover:text-white text-slate-400"><ChevronRight size={14} /></button>
+                  </div>
+                )}
+              </div>
+
+              {/* Status */}
               <select
-                className="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-1.5 outline-none"
+                className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 outline-none"
                 value={detailFilterStatus}
                 onChange={(e) => setDetailFilterStatus(e.target.value)}
               >
-                <option value="all">Todos os Status</option>
+                <option value="all">Status: Todos</option>
                 <option value="todo">A Fazer</option>
                 <option value="in_progress">Em Progresso</option>
                 <option value="review">Revisão</option>
                 <option value="done">Concluído</option>
               </select>
 
+              {/* Priority */}
+              <select
+                className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 outline-none"
+                value={detailFilterPriority}
+                onChange={(e) => setDetailFilterPriority(e.target.value)}
+              >
+                <option value="all">Prioridade: Todas</option>
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+                <option value="urgent">Urgente</option>
+              </select>
+
+              {/* Assignee Filter */}
+              <select
+                className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 outline-none"
+                value={detailFilterAssignee}
+                onChange={(e) => setDetailFilterAssignee(e.target.value)}
+              >
+                <option value="all">Membro: Todos</option>
+                {selectedTeam.memberIds.map(memberId => {
+                  const member = users.find(u => u.id === memberId);
+                  return member ? <option key={member.id} value={member.id}>{member.name}</option> : null;
+                })}
+              </select>
+
+              {/* View Toggle */}
               <div className="flex bg-slate-800 rounded-lg border border-slate-700 p-0.5">
                 <button
                   onClick={() => setDetailViewMode('list')}

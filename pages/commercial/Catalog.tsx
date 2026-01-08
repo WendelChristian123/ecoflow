@@ -22,7 +22,7 @@ export const CatalogPage: React.FC = () => {
         try {
             const data = await api.getCatalogItems();
             setItems(data);
-        } catch(e) { console.error(e); } 
+        } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
 
@@ -41,8 +41,8 @@ export const CatalogPage: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><ShoppingBag className="text-emerald-500"/> Produtos & Serviços</h1>
-                <Button className="gap-2" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16}/> Novo Item</Button>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><ShoppingBag className="text-emerald-500" /> Produtos & Serviços</h1>
+                <Button className="gap-2" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Item</Button>
             </div>
 
             <div className="relative">
@@ -50,26 +50,57 @@ export const CatalogPage: React.FC = () => {
                 <Input placeholder="Buscar no catálogo..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-3">
                 {filtered.map(i => (
-                    <Card key={i.id} className="group relative hover:border-emerald-500/30 flex flex-col justify-between">
-                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditingItem(i); setIsModalOpen(true); }} className="text-slate-500 hover:text-white"><Edit2 size={16}/></button>
-                            <button onClick={() => setConfirmDeleteId(i.id)} className="text-slate-500 hover:text-rose-500"><Trash2 size={16}/></button>
-                        </div>
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <Badge variant={i.type === 'service' ? 'neutral' : 'default'}>{i.type === 'service' ? 'Serviço' : 'Produto'}</Badge>
-                                {!i.active && <Badge variant="error">Inativo</Badge>}
+                    <div
+                        key={i.id}
+                        onClick={() => { setEditingItem(i); setIsModalOpen(true); }}
+                        className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group"
+                    >
+                        <div className="flex items-center gap-4">
+                            {/* Type Indicator */}
+                            <div className={`h-12 w-12 rounded-lg flex items-center justify-center font-bold text-lg border ${i.type === 'service'
+                                    ? 'bg-slate-800 border-slate-700 text-purple-400'
+                                    : 'bg-slate-800 border-slate-700 text-blue-400'
+                                }`}>
+                                {i.type === 'service' ? 'S' : 'P'}
                             </div>
-                            <h3 className="font-bold text-white text-lg mb-1">{i.name}</h3>
-                            <p className="text-xs text-slate-400 line-clamp-2 min-h-[32px]">{i.description}</p>
+
+                            {/* Info */}
+                            <div>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <h3 className="font-bold text-white text-base">{i.name}</h3>
+                                    {!i.active && <Badge variant="error">Inativo</Badge>}
+                                </div>
+                                <p className="text-xs text-slate-500 line-clamp-1">{i.description || 'Sem descrição'}</p>
+                            </div>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-slate-700/50 flex justify-between items-center">
-                            <span className="text-xs text-slate-500">Valor Unitário</span>
-                            <span className="text-lg font-bold text-emerald-400">R$ {i.price.toFixed(2)}</span>
+
+                        {/* Right Side */}
+                        <div className="flex items-center gap-6">
+                            <span className="text-sm font-bold text-emerald-400 whitespace-nowrap">
+                                R$ {i.price.toFixed(2)}
+                            </span>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setEditingItem(i); setIsModalOpen(true); }}
+                                    className="p-1.5 rounded-md hover:bg-slate-800 text-slate-500 hover:text-white transition-colors"
+                                    title="Editar"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(i.id); }}
+                                    className="p-1.5 rounded-md hover:bg-slate-800 text-slate-500 hover:text-rose-500 transition-colors"
+                                    title="Excluir"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
                         </div>
-                    </Card>
+                    </div>
                 ))}
             </div>
 

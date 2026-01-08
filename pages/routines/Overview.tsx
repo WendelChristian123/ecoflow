@@ -7,40 +7,42 @@ import { DrilldownModal } from '../../components/Modals';
 import { useAuth } from '../../context/AuthContext';
 import { useRBAC } from '../../context/RBACContext';
 import { useNavigate } from 'react-router-dom';
-import { 
-    CheckSquare, 
-    Briefcase, 
-    AlertCircle, 
-    Clock, 
-    CheckCircle2, 
-    BarChart2, 
+import {
+    CheckSquare,
+    Briefcase,
+    AlertCircle,
+    Clock,
+    CheckCircle2,
+    BarChart2,
     Filter,
     ArrowRight,
-    Users
+    Users,
+    FileText
 } from 'lucide-react';
-import { 
-    startOfWeek, 
-    endOfWeek, 
-    isWithinInterval, 
-    parseISO, 
-    startOfMonth, 
-    endOfMonth, 
+import { RoutineReportModal } from '../../components/Reports/RoutineReportModal';
+import {
+    startOfWeek,
+    endOfWeek,
+    isWithinInterval,
+    parseISO,
+    startOfMonth,
+    endOfMonth,
     isToday,
     isBefore,
     startOfDay
 } from 'date-fns';
-import { 
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip as RechartsTooltip, 
-    Legend, 
-    ResponsiveContainer, 
-    PieChart, 
-    Pie, 
-    Cell 
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
+    Legend,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell
 } from 'recharts';
 
 const StatCard: React.FC<{
@@ -60,7 +62,7 @@ const StatCard: React.FC<{
     };
 
     return (
-        <div 
+        <div
             onClick={onClick}
             className={cn(
                 "bg-slate-800 border border-slate-700/50 p-6 rounded-xl relative overflow-hidden flex flex-col justify-between h-full transition-all group",
@@ -99,9 +101,11 @@ export const RoutinesOverview: React.FC = () => {
     const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
     // Modal State
-    const [modalState, setModalState] = useState<{isOpen: boolean, title: string, type: 'tasks', data: any[]}>({
+    const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, type: 'tasks', data: any[] }>({
         isOpen: false, title: '', type: 'tasks', data: []
     });
+
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -131,14 +135,14 @@ export const RoutinesOverview: React.FC = () => {
     const getAvailableUsers = () => {
         if (isAdmin) return usersList;
         if (!user) return [];
-        
+
         const allowedIds = [user.id];
         delegations.forEach(d => {
             if (d.module === 'tasks' && d.permissions.view) {
                 allowedIds.push(d.ownerId);
             }
         });
-        
+
         // Return unique users
         return usersList.filter(u => allowedIds.includes(u.id));
     };
@@ -234,13 +238,22 @@ export const RoutinesOverview: React.FC = () => {
                 </div>
 
                 <div className="flex gap-3">
+                    {/* Report Button */}
+                    <Button
+                        variant="ghost"
+                        onClick={() => setIsReportModalOpen(true)}
+                        className="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200"
+                    >
+                        <FileText size={16} className="mr-2 text-indigo-400" /> Relatórios
+                    </Button>
+
                     {/* User Filter */}
                     <div className="bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 flex items-center gap-2">
                         <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase flex items-center gap-2">
-                            <Users size={14}/> Resp.
+                            <Users size={14} /> Resp.
                         </div>
-                        <select 
-                            value={selectedAssignee} 
+                        <select
+                            value={selectedAssignee}
                             onChange={(e) => setSelectedAssignee(e.target.value)}
                             className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-emerald-500 max-w-[150px]"
                         >
@@ -254,10 +267,10 @@ export const RoutinesOverview: React.FC = () => {
                     {/* Period Filter */}
                     <div className="bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 flex items-center gap-2">
                         <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase flex items-center gap-2">
-                            <Filter size={14}/> Período
+                            <Filter size={14} /> Período
                         </div>
-                        <select 
-                            value={period} 
+                        <select
+                            value={period}
                             onChange={(e) => setPeriod(e.target.value as any)}
                             className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-emerald-500"
                         >
@@ -272,34 +285,34 @@ export const RoutinesOverview: React.FC = () => {
 
             {/* KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                    title="Tarefas Pendentes" 
-                    value={totalPending} 
-                    icon={<Clock size={20} />} 
+                <StatCard
+                    title="Tarefas Pendentes"
+                    value={totalPending}
+                    icon={<Clock size={20} />}
                     color="amber"
                     subtitle="Aguardando conclusão"
                     onClick={() => openDrilldown('Tarefas Pendentes', t => t.status !== 'done')}
                 />
-                <StatCard 
-                    title="Projetos Ativos" 
-                    value={activeProjectsCount} 
-                    icon={<Briefcase size={20} />} 
+                <StatCard
+                    title="Projetos Ativos"
+                    value={activeProjectsCount}
+                    icon={<Briefcase size={20} />}
                     color="indigo"
                     subtitle="Em andamento"
                     onClick={() => navigate('/projects')}
                 />
-                <StatCard 
-                    title="Concluídas" 
-                    value={totalDone} 
-                    icon={<CheckCircle2 size={20} />} 
+                <StatCard
+                    title="Concluídas"
+                    value={totalDone}
+                    icon={<CheckCircle2 size={20} />}
                     color="emerald"
                     subtitle={period === 'all' ? 'Total histórico' : 'Neste período'}
                     onClick={() => openDrilldown('Tarefas Concluídas', t => t.status === 'done')}
                 />
-                <StatCard 
-                    title="Prioridade Urgente" 
-                    value={totalUrgent} 
-                    icon={<AlertCircle size={20} />} 
+                <StatCard
+                    title="Prioridade Urgente"
+                    value={totalUrgent}
+                    icon={<AlertCircle size={20} />}
                     color="rose"
                     subtitle="Requer atenção imediata"
                     onClick={() => openDrilldown('Tarefas Urgentes', t => t.priority === 'urgent' && t.status !== 'done')}
@@ -329,10 +342,10 @@ export const RoutinesOverview: React.FC = () => {
                                         <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                                     ))}
                                 </Pie>
-                                <RechartsTooltip 
+                                <RechartsTooltip
                                     contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
                                 />
-                                <Legend verticalAlign="bottom" height={36}/>
+                                <Legend verticalAlign="bottom" height={36} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
@@ -348,17 +361,17 @@ export const RoutinesOverview: React.FC = () => {
                             <BarChart data={priorityData} layout="vertical" margin={{ left: 10, right: 30 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
                                 <XAxis type="number" stroke="#94a3b8" hide />
-                                <YAxis dataKey="name" type="category" stroke="#94a3b8" width={60} tick={{fontSize: 12}} />
-                                <RechartsTooltip 
-                                    cursor={{fill: '#334155', opacity: 0.4}}
+                                <YAxis dataKey="name" type="category" stroke="#94a3b8" width={60} tick={{ fontSize: 12 }} />
+                                <RechartsTooltip
+                                    cursor={{ fill: '#334155', opacity: 0.4 }}
                                     contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
                                 />
                                 <Bar dataKey="value" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={24}>
                                     {priorityData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={
-                                            entry.name === 'Urgente' ? '#f43f5e' : 
-                                            entry.name === 'Alta' ? '#f59e0b' : 
-                                            entry.name === 'Média' ? '#6366f1' : '#10b981'
+                                            entry.name === 'Urgente' ? '#f43f5e' :
+                                                entry.name === 'Alta' ? '#f59e0b' :
+                                                    entry.name === 'Média' ? '#6366f1' : '#10b981'
                                         } />
                                     ))}
                                 </Bar>
@@ -372,7 +385,7 @@ export const RoutinesOverview: React.FC = () => {
             <Card className="p-0 overflow-hidden">
                 <div className="p-6 border-b border-slate-800 flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white">Próximas Entregas</h3>
-                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/tasks')}>Ver Tudo <ArrowRight size={14} className="ml-1"/></Button>
+                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/tasks')}>Ver Tudo <ArrowRight size={14} className="ml-1" /></Button>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-slate-400">
@@ -395,10 +408,10 @@ export const RoutinesOverview: React.FC = () => {
                                 upcomingTasks.map(task => {
                                     const assignee = getUser(task.assigneeId);
                                     const isOverdue = isBefore(parseISO(task.dueDate), startOfDay(new Date()));
-                                    
+
                                     return (
-                                        <tr 
-                                            key={task.id} 
+                                        <tr
+                                            key={task.id}
                                             className="hover:bg-slate-800/50 transition-colors cursor-pointer"
                                             onClick={() => navigate('/tasks', { state: { taskId: task.id } })}
                                         >
@@ -409,14 +422,14 @@ export const RoutinesOverview: React.FC = () => {
                                             <td className="px-6 py-4">
                                                 {assignee ? (
                                                     <div className="flex items-center gap-2">
-                                                        <Avatar src={assignee.avatarUrl} name={assignee.name} size="sm"/>
+                                                        <Avatar src={assignee.avatarUrl} name={assignee.name} size="sm" />
                                                         <span className="text-xs">{assignee.name}</span>
                                                     </div>
                                                 ) : <span className="text-xs italic">--</span>}
                                             </td>
                                             <td className="px-6 py-4 font-mono text-xs">
                                                 <div className={isOverdue ? 'text-rose-400 font-bold flex items-center gap-1' : 'text-slate-300'}>
-                                                    {isOverdue && <AlertCircle size={12}/>}
+                                                    {isOverdue && <AlertCircle size={12} />}
                                                     {new Date(task.dueDate).toLocaleDateString('pt-BR')}
                                                 </div>
                                             </td>
@@ -434,12 +447,21 @@ export const RoutinesOverview: React.FC = () => {
                 </div>
             </Card>
 
-            <DrilldownModal 
+            <DrilldownModal
                 isOpen={modalState.isOpen}
                 onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
                 title={modalState.title}
                 type="tasks"
                 data={modalState.data}
+                users={usersList}
+            />
+
+            <RoutineReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                tasks={visibleTasks} // Pass all visible tasks (respecting RBAC/Delegation) to the report, it will verify date filters itself
+                projects={projects}
+                users={usersList}
             />
         </div>
     );

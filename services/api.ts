@@ -2,7 +2,7 @@
 import {
     Task, Project, Team, User, CalendarEvent,
     FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard,
-    Contact, Quote, CatalogItem, RecurringService,
+    Contact, Quote, CatalogItem, RecurringService, RecurrenceConfig,
     Tenant, SaasPlan, Delegation,
     DashboardMetrics, GlobalStats, UserPermissions, AuditLog
 } from '../types';
@@ -20,6 +20,8 @@ const getCurrentTenantId = () => {
 
 // Helper: Convert empty strings to null for UUID fields to prevent Postgres errors
 const uuidOrNull = (val: any) => (val === '' || val === undefined) ? null : val;
+// Helper: Ensure date is valid string or null (sanitizes empty strings)
+const sanitizeDate = (val: any) => (val === '' || val === undefined) ? null : val;
 
 // ==========================================
 // REAL SUPABASE API IMPLEMENTATION
@@ -48,41 +50,76 @@ export const api = {
             dueDate: t.due_date,
         })) as Task[];
     },
-    addTask: async (task: Partial<Task>) => {
+    addTask: async (task: Partial<Task>, recurrence?: RecurrenceConfig) => {
         const tenantId = getCurrentTenantId();
-        const dbTask = {
-            title: task.title,
-            description: task.description,
-            status: task.status,
-            priority: task.priority,
-            assignee_id: uuidOrNull(task.assigneeId),
-            project_id: uuidOrNull(task.projectId),
-            team_id: uuidOrNull(task.teamId),
-            due_date: task.dueDate,
-            tags: task.tags,
-            links: task.links,
-            tenant_id: tenantId
+        const createdTasks: any[] = [];
+        const baseRecurrenceId = recurrence ? crypto.randomUUID() : null;
+
+        const createDbTask = (t: Partial<Task>, date: string, recId: string | null) => {
+            const dbTask = {
+                title: t.title,
+                description: t.description,
+                status: t.status,
+                priority: t.priority,
+                assignee_id: uuidOrNull(t.assigneeId),
+                project_id: uuidOrNull(t.projectId),
+                team_id: uuidOrNull(t.teamId),
+                due_date: date,
+                tags: t.tags,
+                links: t.links,
+                tenant_id: tenantId,
+                recurrence_id: recId
+            };
+            if (!dbTask.status) delete dbTask.status;
+            if (!dbTask.priority) delete dbTask.priority;
+            return dbTask;
         };
 
-        // Remove undefined fields to let DB defaults work
-        if (!dbTask.status) delete dbTask.status;
-        if (!dbTask.priority) delete dbTask.priority;
+        if (recurrence) {
+            const count = recurrence.occurrences || (recurrence.endDate ? 0 : 12); // Default 12 if indefinite
+            // If endDate is present, calculation is more complex, for now support occurrences or fixed count
+            const actualCount = count > 0 ? count : 12; // Fallback
+            const startDate = new Date(task.dueDate || new Date());
+
+            for (let i = 0; i < actualCount; i++) {
+                let nextDate = new Date(startDate);
+                const interval = recurrence.interval || 1;
+                if (recurrence.frequency === 'daily') nextDate = addDays(startDate, i * interval);
+                if (recurrence.frequency === 'weekly') nextDate = addWeeks(startDate, i * interval);
+                if (recurrence.frequency === 'monthly') nextDate = addMonths(startDate, i * interval);
+                if (recurrence.frequency === 'yearly') nextDate = addYears(startDate, i * interval);
+
+                // Stop if endDate is exceeded (if provided)
+                if (recurrence.endDate && nextDate > new Date(recurrence.endDate)) break;
+
+                const dateStr = nextDate.toISOString().split('T')[0]; // Store as YYYY-MM-DD for tasks, or ISO for datetime
+                // Note: Tasks dueDate is usually YYYY-MM-DD or ISO. Let's keep input format if possible, but calculating usually results in Date object.
+                // Assuming task.dueDate includes time if needed. API sanitizeDate handles empty strings.
+                // Using ISO string preserves time if present in original startDate.
+                const isoStr = nextDate.toISOString();
+                // Using task.dueDate format style would be ideal but hard to guess.
+                // Let's use ISO string for safety.
+                createdTasks.push(createDbTask(task, isoStr, baseRecurrenceId));
+            }
+        } else {
+            createdTasks.push(createDbTask(task, task.dueDate || new Date().toISOString(), null));
+        }
 
         const { data, error } = await supabase
             .from('tasks')
-            .insert([dbTask])
-            .select()
-            .single();
+            .insert(createdTasks)
+            .select();
 
         if (error) throw error;
-        // Map back to camelCase for the UI
+        // Return the first created task
+        const firstData = data[0];
         return {
-            ...data,
-            assigneeId: data.assignee_id,
-            projectId: data.project_id,
-            teamId: data.team_id,
-            tenantId: data.tenant_id,
-            dueDate: data.due_date,
+            ...firstData,
+            assigneeId: firstData.assignee_id,
+            projectId: firstData.project_id,
+            teamId: firstData.team_id,
+            tenantId: firstData.tenant_id,
+            dueDate: firstData.due_date,
         } as Task;
     },
     updateTask: async (task: Task) => {
@@ -419,23 +456,56 @@ export const api = {
             teamId: e.team_id
         })) as CalendarEvent[];
     },
-    addEvent: async (evt: Partial<CalendarEvent>) => {
+    addEvent: async (evt: Partial<CalendarEvent>, recurrence?: RecurrenceConfig) => {
         const tenantId = getCurrentTenantId();
-        const dbEvt = {
-            title: evt.title,
-            description: evt.description,
-            start_date: evt.startDate,
-            end_date: evt.endDate,
-            type: evt.type,
-            status: evt.status,
-            is_team_event: evt.isTeamEvent,
-            participants: evt.participants,
-            links: evt.links,
+        const createdEvents: any[] = [];
+        const baseRecurrenceId = recurrence ? crypto.randomUUID() : null;
+
+        const createDbEvt = (e: Partial<CalendarEvent>, start: string, end: string, recId: string | null) => ({
+            title: e.title,
+            description: e.description,
+            start_date: start,
+            end_date: end,
+            type: e.type,
+            status: e.status,
+            is_team_event: e.isTeamEvent,
+            participants: e.participants,
+            links: e.links,
             tenant_id: tenantId,
-            project_id: evt.projectId,
-            team_id: evt.teamId
-        };
-        const { error } = await supabase.from('calendar_events').insert([dbEvt]);
+            project_id: uuidOrNull(e.projectId),
+            team_id: uuidOrNull(e.teamId),
+            recurrence_id: recId
+        });
+
+        if (recurrence) {
+            const count = recurrence.occurrences || (recurrence.endDate ? 0 : 12);
+            const actualCount = count > 0 ? count : 12;
+
+            const startDateObj = new Date(evt.startDate || new Date());
+            const endDateObj = new Date(evt.endDate || new Date());
+            const duration = endDateObj.getTime() - startDateObj.getTime();
+
+            for (let i = 0; i < actualCount; i++) {
+                let nextStart = new Date(startDateObj);
+                const interval = recurrence.interval || 1;
+
+                if (recurrence.frequency === 'daily') nextStart = addDays(startDateObj, i * interval);
+                if (recurrence.frequency === 'weekly') nextStart = addWeeks(startDateObj, i * interval);
+                if (recurrence.frequency === 'monthly') nextStart = addMonths(startDateObj, i * interval);
+                if (recurrence.frequency === 'yearly') nextStart = addYears(startDateObj, i * interval);
+
+                // Stop if endDate is exceeded (if provided strictly)
+                if (recurrence.endDate && nextStart > new Date(recurrence.endDate)) break;
+
+                const nextEnd = new Date(nextStart.getTime() + duration);
+
+                createdEvents.push(createDbEvt(evt, nextStart.toISOString(), nextEnd.toISOString(), baseRecurrenceId));
+            }
+        } else {
+            createdEvents.push(createDbEvt(evt, evt.startDate || '', evt.endDate || '', null));
+        }
+
+        const { error } = await supabase.from('calendar_events').insert(createdEvents);
         if (error) throw error;
     },
     updateEvent: async (evt: CalendarEvent) => {
@@ -501,7 +571,7 @@ export const api = {
             contact_id: uuidOrNull(trans.contactId),
             origin_type: trans.originType,
             origin_id: uuidOrNull(trans.originId),
-            recurrence_id: recId,
+            recurrence_id: uuidOrNull(recId) || uuidOrNull(trans.recurrenceId), // Fix: Respect provided recurrenceId
             installment_index: index,
             total_installments: total,
             links: trans.links,
@@ -943,23 +1013,157 @@ export const api = {
             startDate: r.start_date,
             contractMonths: r.contract_months,
             tenantId: r.tenant_id,
+            financialCategoryId: r.financial_category_id,
+            setupCategoryId: r.setup_category_id,
+            setupEntryAmount: r.setup_entry_amount,
+            setupEntryDate: r.setup_entry_date,
+            setupRemainingAmount: r.setup_remaining_amount,
+            setupRemainingDate: r.setup_remaining_date,
+            firstRecurrenceDate: r.first_recurrence_date,
             contact: r.contacts ? { ...r.contacts, fantasyName: r.contacts.fantasy_name } : undefined
         })) as RecurringService[];
     },
     addRecurringService: async (data: Partial<RecurringService>) => {
+        console.log("Adding Recurring Service:", data);
         const tenantId = getCurrentTenantId();
+
+        // 1. Prepare DB Insert Data
+        // Map UI 'spot' date to DB 'setup_entry_date' if applicable explanation: "Entry" logic reused for "Spot"
+        const dbSetupEntryDate = data.setupSpotDate || data.setupEntryDate;
+
         const { data: rec, error } = await supabase.from('recurring_services').insert([{
             contact_id: uuidOrNull(data.contactId),
-            setup_fee: data.setupFee,
-            recurring_amount: data.recurringAmount,
-            start_date: data.startDate,
-            frequency: data.frequency,
-            contract_months: data.contractMonths,
+            setup_fee: data.setupFee ? parseFloat(data.setupFee.toString()) : 0,
+            recurring_amount: data.recurringAmount ? parseFloat(data.recurringAmount.toString()) : 0,
+            start_date: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+            frequency: data.frequency || 'monthly',
+            contract_months: data.contractMonths ? parseInt(data.contractMonths.toString()) : 12,
             active: true,
-            tenant_id: tenantId
+            tenant_id: tenantId,
+            financial_category_id: uuidOrNull(data.financialCategoryId),
+            setup_category_id: uuidOrNull(data.setupCategoryId),
+            setup_entry_amount: data.setupEntryAmount ? parseFloat(data.setupEntryAmount.toString()) : 0,
+            setup_entry_date: dbSetupEntryDate || null,
+            setup_remaining_amount: data.setupRemainingAmount ? parseFloat(data.setupRemainingAmount.toString()) : 0,
+            setup_remaining_date: data.setupRemainingDate || null,
+            first_recurrence_date: data.firstRecurrenceDate || null
         }]).select().single();
-        if (error) throw error;
-        return rec.id;
+
+        if (error) {
+            console.error("Supabase Insert Error:", error);
+            throw error;
+        }
+
+        console.log("Recurring Service Created:", rec);
+
+        // remove any transactions that might have been auto-generated by database triggers
+        // to prevent duplicates and ensure we use the strict logic below.
+        // 1. Delete by recurrence_id (if trigger sets it)
+        await supabase.from('financial_transactions').delete().eq('recurrence_id', rec.id);
+
+        // 2. Delete by strict "Ghost Pattern" (Aggressive Mode)
+        // Delete ALL transactions for this contact created in the last 30 seconds to strictly enforce our custom logic
+        // This clears any trigger-generated noise before we write our clean records.
+        const offset = new Date().getTimezoneOffset();
+        const past30s = new Date(Date.now() - 30000 - (offset * 60 * 1000)).toISOString();
+        await supabase.from('financial_transactions')
+            .delete()
+            .eq('contact_id', data.contactId)
+            .gt('created_at', past30s);
+
+        // 3. Delete "Ghost Category" if created by trigger (User request: "NAO é pra criar")
+        try {
+            await supabase.from('financial_categories')
+                .delete()
+                .eq('name', 'Receita Recorrente')
+                .gt('created_at', past30s);
+        } catch (e) { /* Ignore cleanup error */ }
+
+
+
+        // --- TRANSACTION GENERATION (STRICT SEPARATION) ---
+        const contractId = rec.id;
+
+        // 2. Generate SETUP Transactions (Independent)
+        if (data.setupFee && data.setupFee > 0 && data.setupCategoryId) {
+            // Case A: Split Payment
+            if (data.setupEntryAmount && data.setupEntryAmount > 0 && data.setupEntryDate) {
+                await api.addTransaction({
+                    description: `Setup (Entrada) - ${data.contactName || 'Contrato #' + contractId.substring(0, 4)}`,
+                    amount: data.setupEntryAmount,
+                    type: 'income',
+                    date: data.setupEntryDate, // Strict date usage
+                    categoryId: uuidOrNull(data.setupCategoryId),
+                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    contactId: uuidOrNull(data.contactId),
+                    isPaid: false
+                });
+            }
+            if (data.setupRemainingAmount && data.setupRemainingAmount > 0 && data.setupRemainingDate) {
+                await api.addTransaction({
+                    description: `Setup (Restante) - ${data.contactName || 'Contrato #' + contractId.substring(0, 4)}`,
+                    amount: data.setupRemainingAmount,
+                    type: 'income',
+                    date: data.setupRemainingDate, // Strict date usage
+                    categoryId: uuidOrNull(data.setupCategoryId),
+                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    contactId: uuidOrNull(data.contactId),
+                    isPaid: false
+                });
+            }
+
+            // Case B: Spot Payment (Single)
+            // If we have a Fee, but NO split amounts/dates, check for Spot Date
+            const isSplit = (data.setupEntryAmount && data.setupEntryAmount > 0 && data.setupRemainingAmount && data.setupRemainingAmount > 0);
+
+            if (!isSplit && data.setupSpotDate) {
+                await api.addTransaction({
+                    description: `Setup (À Vista) - ${data.contactName || 'Contrato #' + contractId.substring(0, 4)}`,
+                    amount: data.setupFee,
+                    type: 'income',
+                    date: data.setupSpotDate, // Strict date usage
+                    categoryId: uuidOrNull(data.setupCategoryId),
+                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    contactId: uuidOrNull(data.contactId),
+                    isPaid: false
+                });
+            }
+        }
+
+        // 3. Generate RECURRING Transactions (Independent)
+        if (data.active && data.recurringAmount > 0 && data.financialCategoryId && data.firstRecurrenceDate) {
+            let nextDate = new Date(data.firstRecurrenceDate); // Strict start date
+
+            // Generate for contract length or for 12 months if indefinite
+            const monthsToGen = data.contractMonths && data.contractMonths > 0 ? data.contractMonths : 12;
+
+            for (let i = 0; i < monthsToGen; i++) {
+                if (i > 60) break; // Safety cap
+
+                // Strict date calculation: valid Date object required
+                if (isNaN(nextDate.getTime())) {
+                    console.error("Invalid recurrence date, skipping generation for month", i);
+                    break;
+                }
+
+                await api.addTransaction({
+                    description: `Mensalidade ${i + 1}/${data.contractMonths || 'Inf'} - ${data.contactName || 'Contrato #' + contractId.substring(0, 4)}`,
+                    amount: data.recurringAmount,
+                    type: 'income',
+                    date: nextDate.toISOString().split('T')[0],
+                    categoryId: uuidOrNull(data.financialCategoryId),
+                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    contactId: uuidOrNull(data.contactId),
+                    isPaid: false,
+                    recurrenceId: contractId // Link to contract
+                });
+
+                // Advance one month
+                nextDate.setMonth(nextDate.getMonth() + 1);
+            }
+        }
+
+        return rec;
     },
     deleteRecurringService: async (id: string) => {
         const { error } = await supabase.from('recurring_services').delete().eq('id', id);

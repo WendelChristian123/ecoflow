@@ -105,7 +105,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
             className
           )}
           disabled={disabled}
-          intlConfig={{ locale: 'pt-BR', currency: 'BRL' }}
+          // intlConfig removed to prevent duplicate 'R$' symbol (already rendered by parent div)
           disableGroupSeparators={false}
           disableAbbreviations={true}
           transformRawValue={(rawValue) => rawValue} // Can be used to validation

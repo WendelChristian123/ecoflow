@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select, Textarea, Badge, CurrencyInput } from './Shared';
-import { Contact, CatalogItem, Quote, RecurringService, ContactScope, PersonType, CatalogType, QuoteItem, FinancialCategory } from '../types';
+import { Contact, CatalogItem, RecurringService, Quote, FinancialCategory, FinancialAccount, ContactScope, PersonType, CatalogType, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { Plus, Trash2, ShoppingBag, User as UserIcon, Building, FileText, Check, AlertCircle, UserPlus, X, Box, Calendar, DollarSign, ArrowRight, ArrowLeft } from 'lucide-react';
+import { format, parseISO, addMonths, differenceInDays, addDays } from 'date-fns';
+import { formatDate } from '../utils/formatters';
 
 const getLocalDateISO = () => {
     const date = new Date();
@@ -37,11 +39,12 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, onS
             if (initialData?.id) await api.updateContact({ ...initialData, ...formData } as Contact);
             else await api.addContact(formData);
             onSuccess(); onClose();
-        } catch (error) {
-            console.error(error);
-            alert(`Erro ao salvar contato: ${getErrorMessage(error)}`);
+        } catch (error: any) {
+            console.error("FULL ERROR DETAILS:", error);
+            alert(`Erro ao salvar contrato: ${error.message || JSON.stringify(error)} `);
+        } finally {
+            setLoading(false);
         }
-        finally { setLoading(false); }
     };
 
     return (
@@ -60,8 +63,8 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, onS
                     <div>
                         <label className="text-xs text-slate-400 mb-1 block">Pessoa</label>
                         <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
-                            <button type="button" onClick={() => setFormData({ ...formData, type: 'pf' })} className={`flex-1 text-xs py-1.5 rounded ${formData.type === 'pf' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}>Pessoa Física</button>
-                            <button type="button" onClick={() => setFormData({ ...formData, type: 'pj' })} className={`flex-1 text-xs py-1.5 rounded ${formData.type === 'pj' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}>Pessoa Jurídica</button>
+                            <button type="button" onClick={() => setFormData({ ...formData, type: 'pf' })} className={`flex - 1 text - xs py - 1.5 rounded ${formData.type === 'pf' ? 'bg-slate-700 text-white' : 'text-slate-400'} `}>Pessoa Física</button>
+                            <button type="button" onClick={() => setFormData({ ...formData, type: 'pj' })} className={`flex - 1 text - xs py - 1.5 rounded ${formData.type === 'pj' ? 'bg-slate-700 text-white' : 'text-slate-400'} `}>Pessoa Jurídica</button>
                         </div>
                     </div>
                 </div>
@@ -126,7 +129,7 @@ export const CatalogModal: React.FC<CatalogModalProps> = ({ isOpen, onClose, onS
             onSuccess(); onClose();
         } catch (error) {
             console.error(error);
-            alert(`Erro ao salvar item: ${getErrorMessage(error)}`);
+            alert(`Erro ao salvar item: ${getErrorMessage(error)} `);
         }
         finally { setLoading(false); }
     };
@@ -241,7 +244,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
             if (initialData?.id) await api.updateQuote(payload, items);
             else await api.addQuote(payload, items);
             onSuccess(); onClose();
-        } catch (error) { console.error(error); alert(`Erro: ${getErrorMessage(error)}`); }
+        } catch (error) { console.error(error); alert(`Erro: ${getErrorMessage(error)} `); }
         finally { setLoading(false); }
     };
 
@@ -260,12 +263,12 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                 amount: totalValue,
                 type: 'income',
                 date: getLocalDateISO(),
-                isPaid: false,
-                categoryId: catItem?.financialCategoryId,
-                contactId: formData.contactId
+                categoryId: catItem?.financialCategoryId || undefined,
+                contactId: initialData.contactId,
+                isPaid: false
             });
 
-            alert("Orçamento aprovado e receita lançada no financeiro!");
+            alert(`Venda gerada com sucesso!`);
             onSuccess(); onClose();
         } catch (error) { console.error(error); }
     };
@@ -409,13 +412,15 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
 interface RecurringModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: () => void;
+    onSave: () => void;
     contacts: Contact[];
     catalog: CatalogItem[];
+    financialCategories: FinancialCategory[]; // New Prop
+    bankAccounts: FinancialAccount[];
     initialData?: RecurringService;
 }
 
-export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose, onSuccess, contacts, catalog, initialData }) => {
+export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose, onSave, contacts, catalog, financialCategories, bankAccounts, initialData }) => {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState<Partial<RecurringService>>({
         contactId: '',
@@ -424,7 +429,15 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
         frequency: 'monthly',
         contractMonths: 12,
         active: true,
-        setupFee: 0
+        bankAccountId: '', // Include in init
+        setupFee: 0,
+        financialCategoryId: '',
+        setupCategoryId: '',
+        setupEntryAmount: 0,
+        setupEntryDate: '',
+        setupRemainingAmount: 0,
+        setupRemainingDate: '',
+        firstRecurrenceDate: ''
     });
 
     // UI Helpers for composition
@@ -433,19 +446,39 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
     const [discount, setDiscount] = useState(0);
     const [loading, setLoading] = useState(false);
 
+    // Setup Split Logic
+    const [setupPaymentMethod, setSetupPaymentMethod] = useState<'spot' | 'split'>('spot');
+
     useEffect(() => {
         if (isOpen) {
             setStep(1);
             if (initialData) {
                 setFormData(initialData);
-                // Simplify: we don't store individual items in mock RecurringService, so we just set the amount
                 setExtraAmount(initialData.recurringAmount);
                 setSelectedServices([]);
+                // Restore setup split state logic if needed (simplified for now: default to spot if not explicit)
+                setSetupPaymentMethod(initialData.setupEntryAmount ? 'split' : 'spot');
             } else {
-                setFormData({ contactId: '', recurringAmount: 0, startDate: getLocalDateISO(), frequency: 'monthly', contractMonths: 12, active: true, setupFee: 0 });
+                setFormData({
+                    contactId: '',
+                    recurringAmount: 0,
+                    startDate: getLocalDateISO(),
+                    frequency: 'monthly',
+                    contractMonths: 12,
+                    active: true,
+                    setupFee: 0,
+                    financialCategoryId: '',
+                    setupCategoryId: '',
+                    setupEntryAmount: 0,
+                    setupEntryDate: '',
+                    setupRemainingAmount: 0,
+                    setupRemainingDate: '',
+                    firstRecurrenceDate: ''
+                });
                 setSelectedServices([]);
                 setExtraAmount(0);
                 setDiscount(0);
+                setSetupPaymentMethod('spot');
             }
         }
     }, [isOpen, initialData]);
@@ -466,37 +499,54 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
     };
 
     const handleSave = async () => {
+        // Validations
+        if (!formData.financialCategoryId) return alert("Selecione a categoria financeira da recorrência.");
+
+        if (formData.setupFee && formData.setupFee > 0) {
+            if (!formData.setupCategoryId) return alert("Selecione a categoria financeira do setup.");
+
+            if (setupPaymentMethod === 'split') {
+                const totalSplit = (formData.setupEntryAmount || 0) + (formData.setupRemainingAmount || 0);
+                if (Math.abs(totalSplit - formData.setupFee) > 0.01) {
+                    return alert("A soma da entrada e do restante deve ser igual ao valor total do setup.");
+                }
+                if (!formData.setupEntryDate || !formData.setupRemainingDate) {
+                    return alert("Defina as datas de recebimento do setup.");
+                }
+            }
+        }
+
         setLoading(true);
         try {
             if (initialData?.id) {
-                // Update implementation (mock doesn't support deep update of contract logic easily, just basic fields)
                 alert("Edição de contratos ativa não implementada no mock. Crie um novo contrato.");
             } else {
-                // 1. Create Contract
-                const contractId = await api.addRecurringService(formData);
+                // Find contact name for transaction descriptions
+                const contactName = contacts.find(c => c.id === formData.contactId)?.name || 'Cliente';
 
-                // 2. Sync Financials (Try to use category from first service)
-                const mainCategory = selectedServices[0]?.categoryId || '';
-                // Since mock syncContractFinancials is a placeholder, we manually trigger the creation of the first transaction to look good
-                if (mainCategory) {
-                    await api.syncContractFinancials(contractId, mainCategory, mainCategory);
-
-                    // Create Setup Fee Transaction if exists
-                    if (formData.setupFee && formData.setupFee > 0) {
-                        await api.addTransaction({
-                            description: `Setup Contrato (Cliente: ${contacts.find(c => c.id === formData.contactId)?.name})`,
-                            amount: formData.setupFee,
-                            type: 'income',
-                            date: formData.startDate,
-                            categoryId: mainCategory,
-                            contactId: formData.contactId,
-                            isPaid: false
-                        });
-                    }
+                // Determine effective Start Date (Rule: Setup Date > Recurrence Date)
+                let effectiveStartDate = formData.firstRecurrenceDate;
+                if (formData.setupFee && formData.setupFee > 0) {
+                    if (setupPaymentMethod === 'spot' && formData.setupSpotDate) effectiveStartDate = formData.setupSpotDate;
+                    else if (setupPaymentMethod === 'split' && formData.setupEntryDate) effectiveStartDate = formData.setupEntryDate;
                 }
+
+                console.log("Creating Contract. StartDate:", effectiveStartDate);
+                await api.addRecurringService({
+                    ...formData,
+                    startDate: effectiveStartDate, // Overwrite with correct start date
+                    // If spot, ensure no split data is sent that might confuse backend
+                    setupEntryAmount: setupPaymentMethod === 'split' ? formData.setupEntryAmount : 0,
+                    setupRemainingAmount: setupPaymentMethod === 'split' ? formData.setupRemainingAmount : 0,
+                    // Pass contactName for API to use in descriptions
+                    contactName: contactName
+                } as any); // Cast to any to allow extra prop
             }
-            onSuccess(); onClose();
-        } catch (error) { console.error(error); alert("Erro ao salvar contrato."); }
+            onSave(); onClose();
+        } catch (error: any) {
+            console.error("RECURRING CONTRACT SAVE ERROR:", error);
+            alert(`Erro ao salvar contrato: ${error.message || JSON.stringify(error)} `);
+        }
         finally { setLoading(false); }
     };
 
@@ -505,13 +555,13 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
             <div className="space-y-6">
                 {/* Wizard Steps Indicator */}
                 <div className="flex items-center justify-between px-8 border-b border-slate-800 pb-4">
-                    {[1, 2, 3].map(s => (
+                    {[1, 2, 3, 4].map(s => (
                         <div key={s} className={`flex items-center gap-2 ${step >= s ? 'text-emerald-400' : 'text-slate-600'}`}>
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 ${step >= s ? 'border-emerald-400 bg-emerald-400/10' : 'border-slate-700 bg-slate-800'}`}>
                                 {s}
                             </div>
                             <span className="text-xs font-bold uppercase hidden sm:block">
-                                {s === 1 ? 'Cliente' : s === 2 ? 'Valores' : 'Confirmação'}
+                                {s === 1 ? 'Cliente' : s === 2 ? 'Implantação' : s === 3 ? 'Recorrência' : 'Confirmação'}
                             </span>
                         </div>
                     ))}
@@ -532,12 +582,75 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                     </div>
                 )}
 
-                {/* STEP 2: COMPOSITION */}
+
+                {/* STEP 2: SETUP (IMPLANTAÇÃO) */}
                 {step === 2 && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 max-w-lg mx-auto">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium text-white text-center mb-4">Configuração de Implantação</h3>
+
+                            <CurrencyInput label="Taxa de Implantação / Setup (Única)" value={formData.setupFee} onValueChange={(val) => setFormData({ ...formData, setupFee: val || 0 })} />
+
+                            {formData.setupFee && formData.setupFee > 0 ? (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1 block">Categoria Financeira (Setup) *</label>
+                                        <Select
+                                            value={formData.setupCategoryId}
+                                            onChange={e => setFormData({ ...formData, setupCategoryId: e.target.value })}
+                                            required
+                                        >
+                                            <option value="">Selecione...</option>
+                                            {financialCategories.filter(c => c.type === 'income').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </Select>
+                                    </div>
+
+                                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
+                                        <div className="flex gap-4">
+                                            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                                <input type="radio" name="setupType" checked={setupPaymentMethod === 'spot'} onChange={() => setSetupPaymentMethod('spot')} className="accent-emerald-500" />
+                                                À Vista
+                                            </label>
+                                            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                                <input type="radio" name="setupType" checked={setupPaymentMethod === 'split'} onChange={() => setSetupPaymentMethod('split')} className="accent-emerald-500" />
+                                                Entrada + Restante
+                                            </label>
+                                        </div>
+
+                                        {setupPaymentMethod === 'spot' ? (
+                                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                <Input type="date" label="Data de Recebimento *" value={formData.setupSpotDate || ''} onChange={(e) => setFormData({ ...formData, setupSpotDate: e.target.value })} required />
+                                                <p className="text-xs text-slate-500">O valor total de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.setupFee)} será lançado nesta data.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                                                <div className="space-y-2">
+                                                    <CurrencyInput label="Valor Entrada" value={formData.setupEntryAmount} onValueChange={(val) => setFormData({ ...formData, setupEntryAmount: val || 0 })} />
+                                                    <Input type="date" label="Data Entrada *" value={formData.setupEntryDate || ''} onChange={(e) => setFormData({ ...formData, setupEntryDate: e.target.value })} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <CurrencyInput label="Valor Restante" value={formData.setupRemainingAmount} onValueChange={(val) => setFormData({ ...formData, setupRemainingAmount: val || 0 })} />
+                                                    <Input type="date" label="Data Restante *" value={formData.setupRemainingDate || ''} onChange={(e) => setFormData({ ...formData, setupRemainingDate: e.target.value })} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-center text-slate-500 text-sm italic py-4">
+                                    Sem taxa de setup configurada. Opcional.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* STEP 3: RECURRENCE (RECORRÊNCIA) */}
+                {step === 3 && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="border border-slate-700 rounded-lg p-3 bg-slate-900/50">
-                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Serviços do Catálogo</h4>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Serviços do Catálogo (Opcional)</h4>
                                 <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                                     {catalog.filter(i => i.type === 'service').map(item => {
                                         const isSelected = !!selectedServices.find(s => s.id === item.id);
@@ -562,52 +675,207 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                                     <span className="text-xs text-slate-400 uppercase block mb-1">Mensalidade Final</span>
                                     <span className="text-3xl font-bold text-emerald-400">R$ {formData.recurringAmount?.toFixed(2)}</span>
                                 </div>
+
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-1 block">Categoria Financeira (Recorrência) *</label>
+                                    <Select
+                                        value={formData.financialCategoryId}
+                                        onChange={e => setFormData({ ...formData, financialCategoryId: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {financialCategories.filter(c => c.type === 'income').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </Select>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-1 block">Conta Bancária (Recebimento)</label>
+                                    <Select
+                                        value={formData.bankAccountId}
+                                        onChange={e => setFormData({ ...formData, bankAccountId: e.target.value })}
+                                    >
+                                        <option value="">Sem conta definida</option>
+                                        {bankAccounts?.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                    </Select>
+                                </div>
+
+                                <div>
+                                    <Input
+                                        label="Data da 1ª Parcela Recorrente *"
+                                        type="date"
+                                        value={formData.firstRecurrenceDate || ''}
+                                        onChange={e => {
+                                            const newDate = e.target.value;
+                                            setFormData({
+                                                ...formData,
+                                                firstRecurrenceDate: newDate,
+                                                startDate: newDate // Sync: Start of contract validity = First Recurrence
+                                            });
+                                        }}
+                                        required
+                                    />
+                                    <p className="text-[10px] text-slate-500 mt-1">Data que será gerada a primeira mensalidade.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* STEP 3: TERMS */}
-                {step === 3 && (
+                {/* STEP 4: CONFIRMATION (CONFIRMAÇÃO) */}
+                {step === 4 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 max-w-md mx-auto">
                         <div className="grid grid-cols-2 gap-4">
-                            <Input label="Início da Cobrança" type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
+                            <Input label="Início da Vigência (Contrato)" type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
                             <div>
                                 <label className="text-xs text-slate-400 mb-1 block">Duração (Meses)</label>
                                 <Input type="number" placeholder="0 = Indeterminado" value={formData.contractMonths} onChange={e => setFormData({ ...formData, contractMonths: parseInt(e.target.value) })} />
                             </div>
                         </div>
 
-                        <div className="pt-2 border-t border-slate-800">
-                            <CurrencyInput label="Taxa de Implantação / Setup (Única)" value={formData.setupFee} onValueChange={(val) => setFormData({ ...formData, setupFee: val || 0 })} />
-                            <p className="text-xs text-slate-500 mt-1">Será gerada uma cobrança avulsa para este valor na data de início.</p>
-                        </div>
-
-                        <div className="flex items-center gap-2 bg-indigo-500/10 p-3 rounded-lg border border-indigo-500/20">
-                            <Calendar className="text-indigo-400" size={18} />
-                            <div className="text-xs text-indigo-200">
-                                O sistema irá gerar automaticamente as previsões de receita no financeiro baseadas neste contrato.
-                            </div>
+                        <div className="bg-slate-800/50 p-4 rounded border border-slate-700">
+                            <h5 className="font-bold text-slate-300 mb-2 border-b border-slate-700 pb-1">Resumo</h5>
+                            <dl className="space-y-1 text-sm">
+                                <div className="flex justify-between text-slate-400">
+                                    <dt>Setup / Implantação:</dt>
+                                    <dd className="text-slate-200">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.setupFee || 0)}</dd>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <dt>Valor Mensal:</dt>
+                                    <dd className="text-emerald-400 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.recurringAmount || 0)}</dd>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <dt>Duração:</dt>
+                                    <dd className="text-slate-200">{formData.contractMonths ? `${formData.contractMonths} meses` : 'Indeterminado'}</dd>
+                                </div>
+                            </dl>
                         </div>
                     </div>
                 )}
 
                 {/* Footer Navigation */}
                 <div className="flex justify-between pt-4 border-t border-slate-800">
-                    <Button variant="ghost" onClick={step === 1 ? onClose : () => setStep(step - 1)}>
-                        {step === 1 ? 'Cancelar' : <><ArrowLeft size={16} className="mr-2" /> Voltar</>}
-                    </Button>
+                    {step > 1 ? (
+                        <Button variant="ghost" onClick={() => setStep(step - 1)} type="button" className="flex items-center gap-2">
+                            <ArrowLeft className="w-4 h-4" /> Voltar
+                        </Button>
+                    ) : <div />}
 
-                    {step < 3 ? (
-                        <Button onClick={() => setStep(step + 1)} disabled={step === 1 && !formData.contactId}>
-                            Próximo <ArrowRight size={16} className="ml-2" />
+                    {step < 4 ? (
+                        <Button
+                            type="button"
+                            onClick={() => setStep(step + 1)}
+                            className="flex items-center gap-2"
+                            disabled={
+                                (step === 1 && !formData.contactId) ||
+                                (step === 2 && formData.setupFee! > 0 && (
+                                    !formData.setupCategoryId ||
+                                    (setupPaymentMethod === 'split' && (!formData.setupEntryAmount || !formData.setupRemainingAmount || !formData.setupEntryDate || !formData.setupRemainingDate)) ||
+                                    (setupPaymentMethod === 'spot' && !formData.setupSpotDate)
+                                )) ||
+                                (step === 3 && (!formData.financialCategoryId || !formData.firstRecurrenceDate))
+                            }                      >
+                            Próximo <ArrowRight className="w-4 h-4" />
                         </Button>
                     ) : (
-                        <Button onClick={handleSave} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
-                            {loading ? 'Salvando...' : 'Confirmar Contrato'}
+                        <Button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={loading || !formData.startDate}
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                        >
+                            {loading ? 'Salvando...' : 'Finalizar Contrato'}
                         </Button>
                     )}
                 </div>
+            </div >
+        </Modal >
+    );
+};
+
+interface ContractDetailModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    service: RecurringService;
+    onEdit: () => void;
+}
+
+export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({ isOpen, onClose, service, onEdit }) => {
+    if (!service) return null;
+
+    // Safe parsing for calculation
+    const parseSafe = (d?: string) => d ? parseISO(d.split('T')[0]) : new Date();
+
+    const startDate = parseSafe(service.startDate);
+
+    // Calculate End Date: 30 days after last installment
+    // Base is First Recurrence Date (or Start Date if missing)
+    const recurrenceStart = service.firstRecurrenceDate ? parseSafe(service.firstRecurrenceDate) : startDate;
+    const months = service.contractMonths || 12;
+    // Last payment is at (months - 1) offset from start
+    const lastPaymentDate = addMonths(recurrenceStart, months - 1);
+    const endDate = addDays(lastPaymentDate, 30);
+
+    const totalDays = differenceInDays(endDate, startDate);
+    const elapsedDays = differenceInDays(new Date(), startDate);
+    const progress = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
+
+    // Format currency
+    const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`Detalhes do Contrato #${service.id.substring(0, 8)}`} className="max-w-xl">
+            <div className="space-y-6">
+
+                {/* Header: Client */}
+                <div className="text-center pb-4 border-b border-slate-700">
+                    <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 border-2 border-emerald-500/30">
+                        <UserIcon className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-1">{service.contactName || service.contact?.name || 'Cliente Desconhecido'}</h2>
+                    <Badge variant={service.active ? 'success' : 'default'}>{service.active ? 'Ativo' : 'Inativo'}</Badge>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <div className="flex justify-between text-xs text-slate-400 mb-2">
+                        <span>Início: {formatDate(startDate)}</span>
+                        <span>Fim: {formatDate(endDate)}</span>
+                    </div>
+                    <div className="h-4 bg-slate-900 rounded-full overflow-hidden border border-slate-700 relative">
+                        <div
+                            className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-1000"
+                            style={{ width: `${progress}%` }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow-md">
+                            {progress.toFixed(0)}% Concluído
+                        </div>
+                    </div>
+                    <div className="text-center mt-2 text-xs text-slate-500">
+                        Duração: {service.contractMonths || 12} meses
+                    </div>
+                </div>
+
+                {/* Financial Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-slate-800 rounded-xl border border-slate-700 text-center">
+                        <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Valor Setup</span>
+                        <span className="text-lg font-bold text-white">{formatCurrency(service.setupFee || 0)}</span>
+                    </div>
+                    <div className="p-4 bg-slate-800 rounded-xl border border-slate-700 text-center">
+                        <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Recorrência Mensal</span>
+                        <span className="text-xl font-bold text-emerald-400">{formatCurrency(service.recurringAmount || 0)}</span>
+                    </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="pt-4 flex justify-end gap-3">
+                    <Button variant="secondary" onClick={onClose}>Fechar</Button>
+                    <Button onClick={() => { onClose(); onEdit(); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                        <FileText className="w-4 h-4 mr-2" />
+                        Editar Contrato
+                    </Button>
+                </div>
+
             </div>
         </Modal>
     );

@@ -475,9 +475,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                         <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/accounts" icon={<Wallet size={16} />} label="Contas & Bancos" onClick={() => setIsMobileMenuOpen(false)} />
                                         <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/categories" icon={<Tags size={16} />} label="Categorias" onClick={() => setIsMobileMenuOpen(false)} />
                                         <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/cards" icon={<CreditCard size={16} />} label="Cartões" onClick={() => setIsMobileMenuOpen(false)} />
-                                        {can('reports', 'view') && (
-                                            <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/reports" icon={<FileText size={16} />} label="Relatórios" onClick={() => setIsMobileMenuOpen(false)} />
-                                        )}
+
                                     </SidebarGroup>
                                 )}
                             </>

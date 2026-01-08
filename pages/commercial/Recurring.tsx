@@ -1,22 +1,26 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { RecurringService, Contact, CatalogItem } from '../../types';
+import { RecurringService, Contact, CatalogItem, FinancialCategory, FinancialAccount } from '../../types';
 import { Loader, Card, Button, Badge } from '../../components/Shared';
-import { RecurringModal } from '../../components/CommercialModals';
+import { RecurringModal, ContractDetailModal } from '../../components/CommercialModals';
 import { ConfirmationModal } from '../../components/Modals';
-import { RefreshCw, Plus, Trash2, Calendar, Edit2, User } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { RefreshCw, Plus, Trash2, Calendar, Edit2, User, Eye, FileText, MoreHorizontal } from 'lucide-react';
+import { format, parseISO, addMonths, addDays } from 'date-fns';
+import { formatDate } from '../../utils/formatters';
 
 export const RecurringPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [services, setServices] = useState<RecurringService[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+    const [financialCategories, setFinancialCategories] = useState<FinancialCategory[]>([]);
+    const [bankAccounts, setBankAccounts] = useState<FinancialAccount[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     // State to hold the contract being edited/viewed
     const [editingService, setEditingService] = useState<RecurringService | undefined>(undefined);
+    const [detailService, setDetailService] = useState<RecurringService | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     useEffect(() => { loadData(); }, []);
@@ -24,8 +28,14 @@ export const RecurringPage: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [r, c, cat] = await Promise.all([api.getRecurringServices(), api.getContacts(), api.getCatalogItems()]);
-            setServices(r); setContacts(c); setCatalog(cat);
+            const [r, c, cat, fc, fa] = await Promise.all([
+                api.getRecurringServices(),
+                api.getContacts(),
+                api.getCatalogItems(),
+                api.getFinancialCategories(),
+                api.getFinancialAccounts()
+            ]);
+            setServices(r); setContacts(c); setCatalog(cat); setFinancialCategories(fc); setBankAccounts(fa);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -52,66 +62,115 @@ export const RecurringPage: React.FC = () => {
                 <Button className="gap-2" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {services.map(s => (
-                    <Card
-                        key={s.id}
-                        className="group relative hover:border-emerald-500/30 cursor-pointer transition-all hover:bg-slate-800/80"
-                        onClick={() => handleOpenModal(s)} // Open modal on click
-                    >
-                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(s.id); }} className="text-slate-500 hover:text-rose-500 bg-slate-900/50 p-1.5 rounded"><Trash2 size={16} /></button>
-                        </div>
+            <div className="space-y-3">
+                {services.map(s => {
+                    // Safe parsing for calculation (split T)
+                    const parseSafe = (d?: string) => d ? parseISO(d.split('T')[0]) : new Date();
 
-                        <div className="flex justify-between items-start mb-3">
-                            <Badge variant={s.active ? 'success' : 'neutral'}>{s.active ? 'Ativo' : 'Inativo'}</Badge>
-                            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{s.frequency === 'monthly' ? 'Mensal' : 'Anual'}</span>
-                        </div>
+                    const startDate = parseSafe(s.startDate);
+                    const recurrenceStart = parseSafe(s.firstRecurrenceDate);
 
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
-                                <User size={20} />
-                            </div>
-                            <h3 className="font-bold text-white text-lg truncate flex-1">{s.contact?.name || 'Cliente Removido'}</h3>
-                        </div>
+                    // Logic: Last Recurrence Date + 30 days
+                    // Last Recurrence Day = First + (Months-1) months
+                    const endDate = addDays(addMonths(recurrenceStart, (s.contractMonths || 12) - 1), 30);
 
-                        <div className="bg-slate-900/50 rounded-lg p-3 space-y-2 text-sm text-slate-400 border border-slate-700/50">
-                            <div className="flex justify-between">
-                                <span className="flex items-center gap-2"><Calendar size={12} /> Início</span>
-                                <span className="text-slate-200">{format(parseISO(s.startDate), 'dd/MM/yyyy')}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Duração</span>
-                                <span className="text-slate-200">{s.contractMonths ? `${s.contractMonths} meses` : 'Indeterminado'}</span>
-                            </div>
-                            <div className="flex justify-between border-t border-slate-700/50 pt-2 mt-2">
-                                <span>Valor Recorrente</span>
-                                <span className="text-emerald-400 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.recurringAmount)}</span>
-                            </div>
-                        </div>
+                    return (
+                        <div
+                            key={s.id}
+                            onClick={() => setDetailService(s)}
+                            className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group"
+                        >
+                            <div className="flex items-center gap-6">
+                                {/* Contract ID */}
+                                <div className="flex flex-col items-center justify-center h-12 w-16 bg-slate-800 rounded text-slate-400 font-mono text-xs border border-slate-700">
+                                    <span className="text-[10px] uppercase text-slate-500">Contrato</span>
+                                    <span className="font-bold text-slate-300">#{s.id.substring(0, 4)}</span>
+                                </div>
 
-                        <div className="mt-3 text-center text-xs text-slate-500 group-hover:text-emerald-400 transition-colors">
-                            Clique para ver detalhes
+                                {/* Client Name */}
+                                <div className="flex flex-col">
+                                    <span className="text-xs text-slate-500 font-medium uppercase mb-0.5">Cliente</span>
+                                    <h3 className="font-bold text-white text-lg leading-none">{s.contactName || s.contact?.name || '---'}</h3>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-8">
+                                {/* Dates */}
+                                <div className="hidden md:flex items-center gap-6 text-sm">
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-xs text-slate-500 uppercase">Início</span>
+                                        <div className="flex items-center gap-1.5 text-slate-300">
+                                            <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                                            {formatDate(s.startDate)}
+                                        </div>
+                                    </div>
+                                    <div className="h-8 w-px bg-slate-800"></div>
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-xs text-slate-500 uppercase">Fim</span>
+                                        <div className="flex items-center gap-1.5 text-slate-300">
+                                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                                            {format(endDate, 'dd/MM/yyyy')}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        className="h-9 w-9 p-0 rounded-full hover:bg-slate-800 hover:text-emerald-400 text-slate-500 transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); setEditingService(s); setIsModalOpen(true); }}
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        className="h-9 w-9 p-0 rounded-full hover:bg-slate-800 hover:text-rose-500 text-slate-500 transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(s.id); }}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
-                    </Card>
-                ))}
+                    );
+                })}
+
                 {services.length === 0 && (
-                    <div className="col-span-full py-12 text-center border border-dashed border-slate-700 rounded-xl text-slate-500">
+                    <div className="py-12 text-center border border-dashed border-slate-700 rounded-xl text-slate-500">
                         Nenhum contrato recorrente ativo.
                     </div>
                 )}
             </div>
 
+            {/* Detail Modal */}
+            <ContractDetailModal
+                isOpen={!!detailService}
+                onClose={() => setDetailService(undefined)}
+                service={detailService!}
+                onEdit={() => { setEditingService(detailService); setIsModalOpen(true); }}
+            />
+
             <RecurringModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onSuccess={loadData}
+                onSave={loadData}
                 contacts={contacts}
                 catalog={catalog}
+                financialCategories={financialCategories}
                 initialData={editingService}
+                bankAccounts={bankAccounts}
             />
 
-            <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={handleDelete} title="Encerrar Contrato" description="Isso removerá o contrato, mas manterá o histórico financeiro gerado." />
+            <ConfirmationModal
+                isOpen={!!confirmDeleteId}
+                onClose={() => setConfirmDeleteId(null)}
+                onConfirm={handleDelete}
+                title="Excluir Contrato"
+                description="Tem certeza que deseja excluir este contrato recorrente? Isso não excluirá lançamentos financeiros já gerados."
+                confirmText="Excluir"
+                cancelText="Cancelar"
+            />
         </div>
     );
 };

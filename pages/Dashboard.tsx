@@ -118,7 +118,17 @@ export const Dashboard: React.FC = () => {
         if (!dateStr || isDone) return 'none';
 
         let date: Date;
-        try { date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr; } catch (e) { return 'none'; }
+        try {
+            if (typeof dateStr === 'string') {
+                // STRICT DATE FIX: If string contains T, start by extracting date part only to avoid Timezone Shift on Due Dates
+                // This assumes string is ISO. If we parse ISO with 'Z', it shifts to local time (e.g. yesterday).
+                // By taking just YYYY-MM-DD, parseISO parses it as Local Midnight, preserving the calendar date.
+                const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+                date = parseISO(raw);
+            } else {
+                date = dateStr;
+            }
+        } catch (e) { return 'none'; }
 
         const today = startOfDay(new Date());
         const eventDate = startOfDay(date);

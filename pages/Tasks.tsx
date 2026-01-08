@@ -1,7 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Filter, LayoutList, Kanban, ChevronDown, ChevronRight } from 'lucide-react';
-import { Button, Loader, TaskTableView, Select } from '../components/Shared';
+import { Plus, Filter, LayoutList, Kanban, ChevronDown, ChevronRight, ChevronLeft, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Button, Loader, TaskTableView, Select as SelectComponent } from '../components/Shared';
+import { startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, parseISO, isValid } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { KanbanBoard } from '../components/Kanban';
 import { TaskModal, TaskDetailModal, ConfirmationModal } from '../components/Modals';
 import { api } from '../services/api';
@@ -25,7 +27,12 @@ export const TasksPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
 
+  // Filters & State
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterAssignee, setFilterAssignee] = useState<string>('all');
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [showMonthFilter, setShowMonthFilter] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -136,9 +143,36 @@ export const TasksPage: React.FC = () => {
   };
 
   let filteredTasks = tasks;
+
+  // 1. Month Filter
+  if (showMonthFilter) {
+    filteredTasks = filteredTasks.filter(t => {
+      if (!t.dueDate) return false; // If filtering by month, tasks without date might be hidden or shown? Usually hidden.
+      return isSameMonth(parseISO(t.dueDate), currentDate);
+    });
+  }
+
+  // 2. Status Filter
   if (filterStatus !== 'all') {
     filteredTasks = filteredTasks.filter(t => t.status === filterStatus);
   }
+
+  // 3. Assignee Filter
+  if (filterAssignee !== 'all') {
+    filteredTasks = filteredTasks.filter(t => t.assigneeId === filterAssignee);
+  }
+
+  // 4. Priority Filter
+  if (filterPriority !== 'all') {
+    filteredTasks = filteredTasks.filter(t => t.priority === filterPriority);
+  }
+
+  // 5. Sorting (Date Ascending)
+  filteredTasks.sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  });
 
   const activeTasks = filteredTasks.filter(t => t.status !== 'done');
   const completedTasks = filteredTasks.filter(t => t.status === 'done');
@@ -149,44 +183,122 @@ export const TasksPage: React.FC = () => {
     // FULL HEIGHT CONTAINER
     <div className="h-full flex flex-col gap-4">
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
-        <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
-          <button
-            onClick={() => setView('list')}
-            className={`p-2 rounded-md transition-all ${view === 'list' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-            title="Lista"
-          >
-            <LayoutList size={18} />
-          </button>
-          <button
-            onClick={() => setView('board')}
-            className={`p-2 rounded-md transition-all ${view === 'board' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-            title="Quadro"
-          >
-            <Kanban size={18} />
-          </button>
+      <div className="flex flex-col gap-4 shrink-0">
+
+        {/* Top Row: Navigation & Main Actions */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          {/* Left: View Mode & Date Nav */}
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
+              <button
+                onClick={() => setView('list')}
+                className={`p-2 rounded-md transition-all ${view === 'list' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                title="Lista"
+              >
+                <LayoutList size={18} />
+              </button>
+              <button
+                onClick={() => setView('board')}
+                className={`p-2 rounded-md transition-all ${view === 'board' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                title="Quadro"
+              >
+                <Kanban size={18} />
+              </button>
+            </div>
+
+            {/* Date Filter Toggle & Month Selector */}
+            <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
+              <button
+                onClick={() => setShowMonthFilter(!showMonthFilter)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showMonthFilter ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : 'text-slate-400 hover:text-white'}`}
+              >
+                {showMonthFilter ? 'Filtrando Mês' : 'Todas as Datas'}
+              </button>
+
+              {showMonthFilter && (
+                <div className="flex items-center h-full pl-2 border-l border-slate-700">
+                  <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1 hover:text-white text-slate-400"><ChevronLeft size={16} /></button>
+                  <span className="text-sm font-bold text-white uppercase w-32 text-center select-none">
+                    {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+                  </span>
+                  <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1 hover:text-white text-slate-400"><ChevronRight size={16} /></button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: New Task */}
+          <div className="w-full md:w-auto flex justify-end">
+            {can('routines', 'create') && (
+              <Button size="sm" className="gap-2" onClick={() => setIsModalOpen(true)}>
+                <Plus size={16} /> Nova Tarefa
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-800 rounded-lg px-2 border border-slate-700">
-            <Filter size={16} className="text-slate-400" />
+        {/* Bottom Row: Detailed Filters */}
+        <div className="flex flex-wrap items-center gap-3 pb-2 border-b border-slate-800/50">
+          <div className="flex items-center gap-2">
+            <Filter size={14} className="text-slate-500" />
+            <span className="text-xs font-medium text-slate-500 uppercase">Filtros:</span>
+          </div>
+
+          {/* Status */}
+          <div className="relative">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-transparent text-sm text-slate-200 py-2 outline-none cursor-pointer [&>option]:bg-slate-800 [&>option]:text-slate-200"
+              className="appearance-none bg-slate-800 hover:bg-slate-750 text-xs text-slate-300 py-1.5 pl-3 pr-8 rounded-lg border border-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer"
             >
-              <option value="all">Todos os Status</option>
+              <option value="all">Status: Todos</option>
               <option value="todo">A Fazer</option>
               <option value="in_progress">Em Progresso</option>
               <option value="review">Revisão</option>
               <option value="done">Concluído</option>
             </select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
 
-          {can('routines', 'create') && (
-            <Button size="sm" className="gap-2" onClick={() => setIsModalOpen(true)}>
-              <Plus size={16} /> Nova Tarefa
-            </Button>
+          {/* Priority */}
+          <div className="relative">
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className={`appearance-none bg-slate-800 hover:bg-slate-750 text-xs py-1.5 pl-3 pr-8 rounded-lg border border-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer ${filterPriority !== 'all' ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}
+            >
+              <option value="all">Prioridade: Todas</option>
+              <option value="low">Baixa</option>
+              <option value="medium">Média</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          </div>
+
+          {/* Assignee */}
+          <div className="relative">
+            <select
+              value={filterAssignee}
+              onChange={(e) => setFilterAssignee(e.target.value)}
+              className={`appearance-none bg-slate-800 hover:bg-slate-750 text-xs py-1.5 pl-3 pr-8 rounded-lg border border-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer ${filterAssignee !== 'all' ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}
+            >
+              <option value="all">Responsável: Todos</option>
+              {assignableUsers.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          </div>
+
+          {/* Clear Filters Button (only shows if filters active) */}
+          {(filterStatus !== 'all' || filterPriority !== 'all' || filterAssignee !== 'all') && (
+            <button
+              onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterAssignee('all'); }}
+              className="text-[10px] text-slate-500 hover:text-rose-400 underline underline-offset-2 flex items-center gap-1"
+            >
+              <X size={10} /> Limpar
+            </button>
           )}
         </div>
       </div>
