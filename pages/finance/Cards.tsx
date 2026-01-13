@@ -7,6 +7,7 @@ import { TransactionModal, DrilldownModal, CardModal, ConfirmationModal } from '
 import { CreditCard as CardIcon, Calendar, Plus, FileText, AlertCircle, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { format, parseISO, isBefore, isAfter, addMonths, startOfDay } from 'date-fns';
+import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
 
 // --- Local Components ---
@@ -174,55 +175,55 @@ export const FinancialCards: React.FC = () => {
         return { used, available, percent };
     };
 
-    const getCurrentInvoice = (card: CreditCard) => {
+    const getCardInvoices = (card: CreditCard) => {
         const processed = processTransactions(transactions, cards, 'cash');
 
-        // Filter for THIS card
+        // Filter for THIS card's virtual invoices
         const virtualInvoices = processed.filter(t =>
             (t as ProcessedTransaction).isVirtual &&
             t.id.startsWith(`virtual-invoice-${card.id}`)
         ) as ProcessedTransaction[];
 
-        // Sort by Date (Due Date) ascending to find first unpaid
-        virtualInvoices.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        // Sort by Date Ascending (Oldest First)
+        // Use parseDateLocal for sorting to ensure correctness
+        virtualInvoices.sort((a, b) => parseDateLocal(a.date).getTime() - parseDateLocal(b.date).getTime());
 
-        const invoice = virtualInvoices[0]; // Simplification: Oldest unpaid
-
-        if (!invoice) {
-            return null;
-        }
-
-        // Determine Status
-        const dueDate = parseISO(invoice.date);
         const today = startOfDay(new Date());
 
-        let status: 'open' | 'closed' | 'overdue' = 'open';
+        // Split into Overdue and Current/Future
+        const overdueInvoices = virtualInvoices.filter(inv => {
+            const dueDate = parseDateLocal(inv.date);
+            return isBefore(dueDate, today) && !inv.isPaid;
+        });
 
-        if (isBefore(dueDate, today)) {
-            status = 'overdue';
-        } else {
-            // Check if Closed
+        let currentInvoice = virtualInvoices.find(inv => {
+            const dueDate = parseDateLocal(inv.date);
+            return !isBefore(dueDate, today); // Today or Future
+        });
+
+        // Calculate Closing Date for the Current Invoice
+        if (currentInvoice) {
+            const dueDate = parseDateLocal(currentInvoice.date);
             let closingDate = new Date(dueDate);
             const closingDayNum = Number(card.closingDay);
             const dueDayNum = Number(card.dueDay);
 
-            // Approximate month shift
             if (dueDayNum < closingDayNum) {
                 closingDate = addMonths(closingDate, -1);
             }
             closingDate.setDate(closingDayNum);
 
-            if (isAfter(today, closingDate)) {
-                status = 'closed';
-            }
+            // Check status of Current Invoice
+            let status: 'open' | 'closed' | 'overdue' = 'open';
+            if (isAfter(today, closingDate)) status = 'closed';
 
-            return { ...invoice, status, closingDate };
+            (currentInvoice as any).closingDate = closingDate;
+            (currentInvoice as any).status = status;
         }
 
         return {
-            ...invoice,
-            status,
-            closingDate: dueDate
+            current: currentInvoice || null,
+            overdue: overdueInvoices
         };
     };
 
@@ -292,7 +293,11 @@ export const FinancialCards: React.FC = () => {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {cards.map(card => {
                         const stats = getCardStats(card.id, card.limitAmount);
-                        const invoice = getCurrentInvoice(card);
+                        const { current, overdue } = getCardInvoices(card);
+                        const invoice = current; // For backward compatibility in render below
+
+                        // Calculate total overdue amount
+                        const totalOverdue = overdue.reduce((acc, inv) => acc + inv.amount, 0);
 
                         return (
                             <Card key={card.id} className="p-0 overflow-hidden bg-slate-900 border-slate-800 group relative">
@@ -336,6 +341,36 @@ export const FinancialCards: React.FC = () => {
                                         <ProgressBar progress={stats.percent} className="h-2" colorClass={stats.percent > 90 ? 'bg-rose-500' : 'bg-emerald-500'} />
                                     </div>
 
+                                    {/* Overdue Warning Block */}
+                                    {overdue.length > 0 && (
+                                        <div className="bg-rose-950/30 rounded-xl border border-rose-900/50 p-4 mb-4 animate-in fade-in slide-in-from-top-2">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-rose-500/10 rounded-lg text-rose-500">
+                                                        <AlertCircle size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-rose-400 uppercase">Faturas em Atraso</h4>
+                                                        <p className="text-[10px] text-rose-300/70">{overdue.length} fatura(s) pendente(s)</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-lg font-bold text-rose-400">{fmt(totalOverdue)}</div>
+                                                    <button
+                                                        className="text-[10px] text-rose-300 hover:text-rose-200 underline mt-1"
+                                                        onClick={() => setDrilldownState({
+                                                            isOpen: true,
+                                                            title: `Faturas em Atraso: ${card.name}`,
+                                                            data: overdue // Simplistic. Ideally drilldown accepts processed transactions.
+                                                        })}
+                                                    >
+                                                        Ver Detalhes
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Current Invoice Block */}
                                     <div className="bg-slate-950/50 rounded-xl border border-slate-800 p-4">
                                         <div className="flex justify-between items-center mb-4">
@@ -345,11 +380,11 @@ export const FinancialCards: React.FC = () => {
                                             {invoice && (
                                                 <span className={cn(
                                                     "text-[10px] font-bold px-2 py-1 rounded uppercase",
-                                                    invoice.status === 'open' ? "bg-blue-500/10 text-blue-400" :
-                                                        invoice.status === 'closed' ? "bg-amber-500/10 text-amber-400" :
+                                                    (invoice as any).status === 'open' ? "bg-blue-500/10 text-blue-400" :
+                                                        (invoice as any).status === 'closed' ? "bg-amber-500/10 text-amber-400" :
                                                             "bg-rose-500/10 text-rose-400"
                                                 )}>
-                                                    {invoice.status === 'open' ? 'Aberta' : invoice.status === 'closed' ? 'Fechada' : 'Vencida'}
+                                                    {(invoice as any).status === 'open' ? 'Aberta' : (invoice as any).status === 'closed' ? 'Fechada' : 'Vencida'}
                                                 </span>
                                             )}
                                         </div>
@@ -358,10 +393,10 @@ export const FinancialCards: React.FC = () => {
                                             <div className="flex justify-between items-end">
                                                 <div className="space-y-1 text-sm text-slate-400">
                                                     <div className="flex items-center gap-2">
-                                                        <Calendar size={14} /> Fecha: <span className="text-slate-200 font-medium">{invoice.closingDate ? format(invoice.closingDate, 'dd/MM/yyyy') : '--/--'}</span>
+                                                        <Calendar size={14} /> Fecha: <span className="text-slate-200 font-medium">{(invoice as any).closingDate ? format((invoice as any).closingDate, 'dd/MM/yyyy') : '--/--'}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <AlertCircle size={14} /> Vence: <span className={cn("font-medium", invoice.status === 'overdue' ? 'text-rose-400' : 'text-slate-200')}>{format(parseISO(invoice.date), 'dd/MM/yyyy')}</span>
+                                                        <AlertCircle size={14} /> Vence: <span className={cn("font-medium", (invoice as any).status === 'overdue' ? 'text-rose-400' : 'text-slate-200')}>{format(parseISO(invoice.date), 'dd/MM/yyyy')}</span>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -381,7 +416,7 @@ export const FinancialCards: React.FC = () => {
                                             </div>
                                         ) : (
                                             <div className="text-center py-4 text-slate-500 text-sm">
-                                                Nenhuma fatura em aberto.
+                                                Nenhuma fatura futura gerada ainda.
                                             </div>
                                         )}
                                     </div>

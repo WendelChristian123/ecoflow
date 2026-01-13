@@ -22,3 +22,27 @@ export const formatDate = (date: string | Date | undefined | null, formatStr: st
         return '-';
     }
 };
+
+/**
+ * Parses a date string (YYYY-MM-DD or ISO) into a Date object at Local Midnight.
+ * Effectively ignores input time/timezone and "snaps" the date to the user's local calendar day.
+ * Example: '2026-01-16T00:00:00Z' -> Fri Jan 16 2026 00:00:00 Local
+ */
+export const parseDateLocal = (dateStr: string): Date => {
+    if (!dateStr) return new Date();
+
+    // Extract YYYY-MM-DD part
+    const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = raw.split('-');
+
+    if (parts.length !== 3) {
+        // Fallback for weird formats, though we usually deal with ISO
+        return new Date(dateStr);
+    }
+
+    const year = parseInt(parts[0]);
+    const monthIndex = parseInt(parts[1]) - 1;
+    const day = parseInt(parts[2]);
+
+    return new Date(year, monthIndex, day);
+};

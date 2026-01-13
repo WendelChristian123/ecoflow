@@ -6,6 +6,7 @@ import { Loader, Card, Button } from '../../components/Shared';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Printer, PieChart as PieChartIcon } from 'lucide-react';
 import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths, parseISO, endOfDay } from 'date-fns';
+import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
 
 export const FinancialReports: React.FC = () => {
@@ -41,18 +42,18 @@ export const FinancialReports: React.FC = () => {
 
     if (filterPeriod === 'current') {
         filteredTransactions = baseTransactions.filter(t =>
-            isWithinInterval(new Date(t.date), { start: startOfMonth(now), end: endOfMonth(now) })
+            isWithinInterval(parseDateLocal(t.date), { start: startOfMonth(now), end: endOfMonth(now) })
         );
     } else if (filterPeriod === 'last') {
         const last = subMonths(now, 1);
         filteredTransactions = baseTransactions.filter(t =>
-            isWithinInterval(new Date(t.date), { start: startOfMonth(last), end: endOfMonth(last) })
+            isWithinInterval(parseDateLocal(t.date), { start: startOfMonth(last), end: endOfMonth(last) })
         );
     } else if (filterPeriod === 'custom' && customDate.start && customDate.end) {
         filteredTransactions = transactions.filter(t =>
-            isWithinInterval(new Date(t.date), {
-                start: parseISO(customDate.start),
-                end: endOfDay(parseISO(customDate.end))
+            isWithinInterval(parseDateLocal(t.date), {
+                start: parseDateLocal(customDate.start),
+                end: endOfDay(parseDateLocal(customDate.end))
             })
         );
     }

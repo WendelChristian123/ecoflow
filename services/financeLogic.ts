@@ -1,5 +1,6 @@
 import { FinancialTransaction, CreditCard, TenantSettings } from '../types';
 import { addMonths, format, parseISO, startOfMonth } from 'date-fns';
+import { parseDateLocal } from '../utils/formatters';
 
 export interface ProcessedTransaction extends FinancialTransaction {
     isVirtual?: boolean;
@@ -65,14 +66,18 @@ export const processTransactions = (
         // SIMPLIFICATION: We assume the Payment Transaction has a date aligned with the Invoice it's paying
         // OR we use the same closing day logic to bucket it.
 
-        const txDate = parseISO(t.date);
+        // Fix: Use parseDateLocal to ensure consistent day extraction ignoring Timezones
+        const txDate = parseDateLocal(t.date);
         const day = txDate.getDate();
+
         const dueDay = Number(card.dueDay);
         const closingDay = Number(card.closingDay);
 
         // 1. Determine Invoice Reference Month
+        // OBS: User defined "Closing Day" as "Best Shopping Day".
+        // Therefore, if purchase equals Closing Day, it goes to Next Month.
         let invoiceMonth = txDate;
-        if (day > closingDay) {
+        if (day >= closingDay) {
             invoiceMonth = addMonths(txDate, 1);
         }
 
@@ -82,6 +87,7 @@ export const processTransactions = (
             dueMonth = addMonths(invoiceMonth, 1);
         }
 
+        // Reconstruction safe due date
         const dueDateObj = new Date(dueMonth.getFullYear(), dueMonth.getMonth(), dueDay);
         const dueDateStr = format(dueDateObj, 'yyyy-MM-dd');
 

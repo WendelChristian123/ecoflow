@@ -8,6 +8,7 @@ import { DrilldownModal, TransactionModal } from '../../components/Modals';
 import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, ArrowRightLeft, FileText } from 'lucide-react';
 import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
 import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { parseDateLocal } from '../../utils/formatters';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 
@@ -68,54 +69,73 @@ export const FinancialOverview: React.FC = () => {
         const mode = financeSettings.credit_card_expense_mode || 'competence';
         let processedData = processTransactions(transactions, cards, mode);
 
+        // Force CASH mode for Forecast/Payables widgets (to see Virtual Invoices/Bills)
+        let processedCashData = processTransactions(transactions, cards, 'cash');
+
         let filtered = processedData;
+        let filteredCash = processedCashData;
+
         const now = new Date();
         const todayStart = startOfDay(now);
 
-        // 0. Mandatory Technical Filter
-        filtered = filtered.filter(t =>
-            t.originType !== 'technical' &&
-            !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-            !t.description.includes('Entrada Técnica')
-        );
-
-        if (filters.period === 'today') {
-            filtered = filtered.filter(t => t.date === now.toISOString().split('T')[0]);
-        } else if (filters.period === 'last7') {
-            const last7 = addDays(now, -7);
-            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), { start: last7, end: now }));
-        } else if (filters.period === 'month') {
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), { start: firstDay, end: lastDay }));
-        } else if (filters.period === 'custom' && customDateRange.start && customDateRange.end) {
-            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), {
-                start: parseISO(customDateRange.start),
-                end: endOfDay(parseISO(customDateRange.end))
-            }));
+        // 0. Mandatory Technical Filter & Base Filters
+        const applyBaseFilters = (data: typeof processedData) => {
+            return data.filter(t =>
+                t.originType !== 'technical' &&
+                !t.description.includes('Pagamento Fatura (Crédito Local)') &&
+                !t.description.includes('Entrada Técnica')
+            );
         }
 
-        if (filters.accountId !== 'all') {
-            filtered = filtered.filter(t => t.accountId === filters.accountId);
-        }
+        filtered = applyBaseFilters(filtered);
+        filteredCash = applyBaseFilters(filteredCash);
 
-        if (filters.categoryId !== 'all') {
-            filtered = filtered.filter(t => t.categoryId === filters.categoryId);
-        }
+        const applyDynamicFilters = (data: typeof processedData) => {
+            let res = data;
+            if (filters.period === 'today') {
+                res = res.filter(t => t.date === now.toISOString().split('T')[0]);
+            } else if (filters.period === 'last7') {
+                const last7 = addDays(now, -7);
+                res = res.filter(t => isWithinInterval(parseDateLocal(t.date), { start: last7, end: now }));
+            } else if (filters.period === 'month') {
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                res = res.filter(t => isWithinInterval(parseDateLocal(t.date), { start: firstDay, end: lastDay }));
+            } else if (filters.period === 'custom' && customDateRange.start && customDateRange.end) {
+                res = res.filter(t => isWithinInterval(parseDateLocal(t.date), {
+                    start: parseDateLocal(customDateRange.start),
+                    end: endOfDay(parseDateLocal(customDateRange.end))
+                }));
+            }
 
-        if (filters.type !== 'all') {
-            filtered = filtered.filter(t => t.type === filters.type);
-        }
+            if (filters.accountId !== 'all') {
+                res = res.filter(t => t.accountId === filters.accountId);
+            }
 
-        if (filters.status === 'overdue') {
-            filtered = filtered.filter(t => !t.isPaid && isBefore(parseISO(t.date), todayStart));
-        } else if (filters.status === 'pending') {
-            filtered = filtered.filter(t => !t.isPaid && !isBefore(parseISO(t.date), todayStart));
-        } else if (filters.status === 'paid') {
-            filtered = filtered.filter(t => t.isPaid);
-        }
+            if (filters.categoryId !== 'all') {
+                res = res.filter(t => t.categoryId === filters.categoryId);
+            }
 
-        return filtered;
+            if (filters.type !== 'all') {
+                res = res.filter(t => t.type === filters.type);
+            }
+
+            // Note: Status filter applied later if needed or here?
+            // Existing code applied Status filter here.
+            if (filters.status === 'overdue') {
+                res = res.filter(t => !t.isPaid && isBefore(parseDateLocal(t.date), todayStart));
+            } else if (filters.status === 'pending') {
+                res = res.filter(t => !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart));
+            } else if (filters.status === 'paid') {
+                res = res.filter(t => t.isPaid);
+            }
+            return res;
+        };
+
+        filtered = applyDynamicFilters(filtered);
+        filteredCash = applyDynamicFilters(filteredCash);
+
+        return { filtered, filteredCash };
     };
 
     const handleToggleStatus = async (e: React.MouseEvent, t: FinancialTransaction) => {
@@ -129,7 +149,7 @@ export const FinancialOverview: React.FC = () => {
         }
     }
 
-    const filteredData = getFilteredTransactions();
+    const { filtered: filteredData, filteredCash: filteredCashData } = getFilteredTransactions();
     const todayStart = startOfDay(new Date());
 
     const isCompetenceExpense = (t: FinancialTransaction) => {
@@ -141,6 +161,17 @@ export const FinancialOverview: React.FC = () => {
     const realizedData = filteredData.filter(isCompetenceExpense);
     const realizedIncome = realizedData.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
     const realizedExpense = realizedData.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+
+    // Widget Data Calculations (Cash View for Payables)
+    // We use filteredCashData to ensure we include Virtual Invoices (Bills) and exclude individual card purchases.
+    const payablesData = filteredCashData.filter(t => !t.creditCardId && t.type === 'expense' && !t.isPaid);
+    const receivablesData = filteredData.filter(t => t.type === 'income' && !t.isPaid); // Income usually doesn't have "Virtual Invoices"
+
+    const payablesOverdue = payablesData.filter(t => isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
+    const payablesFuture = payablesData.filter(t => !isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
+
+    const receivablesOverdue = receivablesData.filter(t => isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
+    const receivablesFuture = receivablesData.filter(t => !isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
 
     const getCardInvoice = (cardId: string) => {
         return transactions
@@ -157,8 +188,9 @@ export const FinancialOverview: React.FC = () => {
         return accBalance + account.initialBalance + accountIncome - accountExpense - transfersOut + transfersIn;
     }, 0);
 
-    const openDrilldown = (title: string, filterFn: (t: FinancialTransaction) => boolean) => {
-        const data = filteredData.filter(filterFn);
+    const openDrilldown = (title: string, filterFn: (t: FinancialTransaction) => boolean, useCashData = false) => {
+        const sourceData = useCashData ? filteredCashData : filteredData;
+        const data = sourceData.filter(filterFn);
         setModalState({ isOpen: true, title, data });
     };
 
@@ -180,7 +212,7 @@ export const FinancialOverview: React.FC = () => {
                     isCompetenceExpense(t) &&
                     t.originType !== 'technical' &&
                     !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                    isWithinInterval(parseISO(t.date), { start, end })
+                    isWithinInterval(parseDateLocal(t.date), { start, end })
                 ).reduce((s, t) => s + t.amount, 0);
 
             data.push({ name: 'Mês Anterior', Receitas: calc(lastMonthStart, lastMonthEnd, 'income'), Despesas: calc(lastMonthStart, lastMonthEnd, 'expense') });
@@ -197,7 +229,7 @@ export const FinancialOverview: React.FC = () => {
                         isCompetenceExpense(t) &&
                         t.originType !== 'technical' &&
                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                        isWithinInterval(parseISO(t.date), { start, end })
+                        isWithinInterval(parseDateLocal(t.date), { start, end })
                     ).reduce((s, t) => s + t.amount, 0);
 
                 const label = `${date.getMonth() + 1}/${date.getFullYear().toString().substr(2)}`;
@@ -214,15 +246,15 @@ export const FinancialOverview: React.FC = () => {
                         isCompetenceExpense(t) &&
                         t.originType !== 'technical' &&
                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                        isWithinInterval(parseISO(t.date), { start, end })
+                        isWithinInterval(parseDateLocal(t.date), { start, end })
                     ).reduce((s, t) => s + t.amount, 0);
 
                 const label = `${date.getMonth() + 1}/${date.getFullYear().toString().substr(2)}`;
                 data.push({ name: label, Receitas: calc('income'), Despesas: calc('expense') });
             }
         } else if (comparisonMode === 'custom' && chartCustomRange.start && chartCustomRange.end) {
-            const start = startOfMonth(parseISO(chartCustomRange.start));
-            const end = endOfMonth(parseISO(chartCustomRange.end));
+            const start = startOfMonth(parseDateLocal(chartCustomRange.start));
+            const end = endOfMonth(parseDateLocal(chartCustomRange.end));
             // Iterate months from start to end
             let current = start;
             while (current <= end) {
@@ -234,7 +266,7 @@ export const FinancialOverview: React.FC = () => {
                         isCompetenceExpense(t) &&
                         t.originType !== 'technical' &&
                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                        isWithinInterval(parseISO(t.date), { start: monthStart, end: monthEnd })
+                        isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd })
                     ).reduce((s, t) => s + t.amount, 0);
 
                 const label = `${current.getMonth() + 1}/${current.getFullYear().toString().substr(2)}`;
@@ -439,7 +471,7 @@ export const FinancialOverview: React.FC = () => {
                     {/* PAYABLES OVERDUE - ALARM */}
                     <div
                         className="bg-[#0B0D12] border border-rose-900/30 p-5 rounded-xl cursor-pointer hover:bg-rose-900/10 transition-all group relative overflow-hidden"
-                        onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && !t.creditCardId && isBefore(parseISO(t.date), todayStart))}
+                        onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)}
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-50"></div>
                         <div className="relative z-10 flex flex-col h-full justify-between">
@@ -449,7 +481,7 @@ export const FinancialOverview: React.FC = () => {
                             </div>
                             <div>
                                 <div className="text-2xl font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
-                                    {fmt(filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.creditCardId && isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                                    {fmt(payablesOverdue)}
                                 </div>
                             </div>
                         </div>
@@ -458,21 +490,21 @@ export const FinancialOverview: React.FC = () => {
                     {/* PAYABLES FUTURE - QUIET */}
                     <div
                         className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/60 transition-all group flex flex-col justify-between"
-                        onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && !t.creditCardId && !isBefore(parseISO(t.date), todayStart))}
+                        onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)}
                     >
                         <div className="flex justify-between items-start mb-2">
                             <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pagamentos a Vencer (7d)</span>
                             <Clock size={16} className="text-slate-600 group-hover:text-amber-500 transition-colors" />
                         </div>
                         <div className="text-2xl font-bold text-slate-300 group-hover:text-amber-400 transition-colors">
-                            {fmt(filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.creditCardId && !isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                            {fmt(payablesFuture)}
                         </div>
                     </div>
 
                     {/* RECEIVABLES OVERDUE - ALARM */}
                     <div
                         className="bg-[#0B0D12] border border-rose-900/30 p-5 rounded-xl cursor-pointer hover:bg-rose-900/10 transition-all group relative overflow-hidden"
-                        onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseISO(t.date), todayStart))}
+                        onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))}
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-50"></div>
                         <div className="relative z-10 flex flex-col h-full justify-between">
@@ -481,7 +513,7 @@ export const FinancialOverview: React.FC = () => {
                                 <AlertCircle size={16} className="text-rose-500" />
                             </div>
                             <div className="text-2xl font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
-                                {fmt(filteredData.filter(t => t.type === 'income' && !t.isPaid && isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                                {fmt(receivablesOverdue)}
                             </div>
                         </div>
                     </div>
@@ -489,14 +521,14 @@ export const FinancialOverview: React.FC = () => {
                     {/* RECEIVABLES FUTURE - QUIET */}
                     <div
                         className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/60 transition-all group flex flex-col justify-between"
-                        onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseISO(t.date), todayStart))}
+                        onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))}
                     >
                         <div className="flex justify-between items-start mb-2">
                             <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Recebimentos a Vencer (7d)</span>
                             <Clock size={16} className="text-slate-600 group-hover:text-indigo-500 transition-colors" />
                         </div>
                         <div className="text-2xl font-bold text-slate-300 group-hover:text-indigo-400 transition-colors">
-                            {fmt(filteredData.filter(t => t.type === 'income' && !t.isPaid && !isBefore(parseISO(t.date), todayStart)).reduce((s, t) => s + t.amount, 0))}
+                            {fmt(receivablesFuture)}
                         </div>
                     </div>
                 </div>
@@ -516,9 +548,38 @@ export const FinancialOverview: React.FC = () => {
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             {cards.map(card => {
-                                const invoice = getCardInvoice(card.id);
-                                const available = card.limitAmount - invoice;
-                                const percent = Math.min(100, (invoice / card.limitAmount) * 100);
+                                // 1. Calculate Total Used (All unpaid expenses) for Limit / Available calculation
+                                const totalUsed = transactions
+                                    .filter(t => t.creditCardId === card.id && t.type === 'expense' && !t.isPaid)
+                                    .reduce((acc, t) => acc + t.amount, 0);
+
+                                const available = card.limitAmount - totalUsed;
+                                const percent = Math.min(100, (totalUsed / card.limitAmount) * 100);
+
+                                // 2. Calculate "Current Invoice" Amount for Display (matching Cards.tsx logic)
+                                const processed = processTransactions(transactions, [card], 'cash');
+                                const virtualInvoices = processed.filter(t =>
+                                    (t as ProcessedTransaction).isVirtual &&
+                                    t.id.startsWith(`virtual-invoice-${card.id}`)
+                                ) as ProcessedTransaction[];
+
+                                // Find Overdue Invoices
+                                const today = startOfDay(new Date());
+                                const overdueInvoices = virtualInvoices.filter(inv => {
+                                    const dueDate = parseDateLocal(inv.date);
+                                    return isBefore(dueDate, today) && !inv.isPaid;
+                                });
+                                const overdueSum = overdueInvoices.reduce((acc, inv) => acc + inv.amount, 0);
+
+                                // Find Current Invoice (Today or Future)
+                                const currentInvoice = virtualInvoices.sort((a, b) => parseDateLocal(a.date).getTime() - parseDateLocal(b.date).getTime())
+                                    .find(inv => !isBefore(parseDateLocal(inv.date), today));
+
+                                // If Jan has no expenses, currentInvoice might be null.
+                                // In that case, 0 is correct.
+                                const currentInvoiceAmount = currentInvoice ? currentInvoice.amount : 0;
+                                const totalOpenAmount = overdueSum + currentInvoiceAmount;
+                                const isOverdue = overdueSum > 0;
 
                                 return (
                                     <div key={card.id}
@@ -538,8 +599,12 @@ export const FinancialOverview: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">Fatura Atual</div>
-                                                <div className="text-xl font-bold text-white tracking-tight">{fmt(invoice)}</div>
+                                                <div className={cn("text-xs uppercase font-bold tracking-wider", isOverdue ? "text-rose-500" : "text-slate-500")}>
+                                                    {isOverdue ? "Total em Aberto" : "Fatura Atual"}
+                                                </div>
+                                                <div className={cn("text-xl font-bold tracking-tight", isOverdue ? "text-rose-400" : "text-white")}>
+                                                    {fmt(totalOpenAmount)}
+                                                </div>
                                             </div>
                                         </div>
 

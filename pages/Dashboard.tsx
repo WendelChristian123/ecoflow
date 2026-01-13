@@ -24,7 +24,9 @@ import { DrilldownModal } from '../components/Modals';
 import { api, getErrorMessage } from '../services/api';
 import { DashboardMetrics, Task, CalendarEvent, FinancialTransaction, Quote, User, CreditCard } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { parseISO, isBefore, isSameDay, addDays, isWithinInterval, startOfDay, format, setDate, addMonths, isAfter } from 'date-fns';
+import { processTransactions, ProcessedTransaction } from '../services/financeLogic';
+import { parseDateLocal } from '../utils/formatters';
+import { isBefore, isSameDay, addDays, isWithinInterval, startOfDay, format, setDate, addMonths, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useTenant } from '../context/TenantContext';
 import { useRBAC } from '../context/RBACContext';
@@ -120,11 +122,7 @@ export const Dashboard: React.FC = () => {
         let date: Date;
         try {
             if (typeof dateStr === 'string') {
-                // STRICT DATE FIX: If string contains T, start by extracting date part only to avoid Timezone Shift on Due Dates
-                // This assumes string is ISO. If we parse ISO with 'Z', it shifts to local time (e.g. yesterday).
-                // By taking just YYYY-MM-DD, parseISO parses it as Local Midnight, preserving the calendar date.
-                const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-                date = parseISO(raw);
+                date = parseDateLocal(dateStr);
             } else {
                 date = dateStr;
             }
@@ -159,44 +157,26 @@ export const Dashboard: React.FC = () => {
             return itemAssigneeId === assigneeFilter;
         };
 
-        // 3. Generate Virtual Items for Credit Card Bills
-        const virtualBills: any[] = [];
+        // 3. Generate Virtual Items for Credit Card Bills via Central Logic
+        let matchedFinance: any[] = [];
+
         if (enableFinance) {
-            const today = new Date();
-            cards.forEach(card => {
-                // Generate for current and next month to cover standard horizons
-                [0, 1].forEach(offset => {
-                    const targetMonth = addMonths(today, offset);
-                    // Handle Due Day rollover if day doesn't exist (e.g. Feb 30) - setDate handles it by overflow, usually okay
-                    const dueDate = setDate(targetMonth, card.dueDay);
+            // Force CASH mode to generate Virtual Invoices (Bills)
+            const processedFinancialData = processTransactions(transactions, cards, 'cash');
 
-                    // Sum of all unpaid expenses for this card that are due on or before this bill's due date
-                    const billAmount = transactions
-                        .filter(t =>
-                            t.creditCardId === card.id &&
-                            t.type === 'expense' &&
-                            !t.isPaid &&
-                            isBefore(parseISO(t.date), addDays(dueDate, 1))
-                        )
-                        .reduce((sum, t) => sum + t.amount, 0);
+            matchedFinance = processedFinancialData.filter(t => {
+                if (assigneeFilter !== 'all') return false; // Hide finance when filtering by user
+                if (t.isPaid) return false; // Hide paid items
 
-                    // Only add if it falls in the relevant date logic
-                    const status = getDeadlineStatus(dueDate, false);
-                    if (status === zone) {
-                        virtualBills.push({
-                            id: `bill-${card.id}-${offset}`,
-                            title: `Fatura: ${card.name}`,
-                            description: `Fatura: ${card.name} (Vence dia ${card.dueDay})`, // Use Description for list display
-                            amount: billAmount,
-                            type: 'expense',
-                            date: format(dueDate, 'yyyy-MM-dd'),
-                            isPaid: false,
-                            category: 'Cartão de Crédito',
-                            isVirtualBill: true,
-                            creditCardId: card.id
-                        });
-                    }
-                });
+                // Exclude individual credit card purchases (they should be consolidated in invoices)
+                if (t.creditCardId && !(t as ProcessedTransaction).isVirtual) return false;
+
+                // Exclude income if we only want "bills to pay"? Usually dashboard shows everything.
+                // But usually "Overdue" implies things to PAY or things to RECEIVE.
+                // The ZoneCard logic is generic. Let's include both Income and Expense but zone properly.
+
+                if (!t.date) return false;
+                return getDeadlineStatus(t.date, t.isPaid) === zone;
             });
         }
 
@@ -221,19 +201,7 @@ export const Dashboard: React.FC = () => {
                 getDeadlineStatus(q.validUntil, ['approved', 'rejected', 'expired'].includes(q.status)) === zone;
         }) : [];
 
-        const zoneFinance = enableFinance ? transactions.filter(t => {
-            if (assigneeFilter !== 'all') return false; // Hide finance when filtering by user
-            if (t.isPaid) return false;
-            // Exclude individual credit card purchases from the radar to reduce noise
-            if (t.originType === 'credit_card' || t.creditCardId) return false;
-            if (!t.date) return false;
-            return getDeadlineStatus(t.date, t.isPaid) === zone;
-        }) : [];
-
-        // Merge real finance items with virtual bills
-        const combinedFinance = [...zoneFinance, ...virtualBills];
-
-        return { tasks: zoneTasks, events: zoneEvents, quotes: zoneQuotes, finance: combinedFinance };
+        return { tasks: zoneTasks, events: zoneEvents, quotes: zoneQuotes, finance: matchedFinance };
     };
 
     const overdueItems = filterItems('overdue');

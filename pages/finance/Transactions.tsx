@@ -7,6 +7,7 @@ import { TransactionModal, DrilldownModal, ConfirmationModal, RecurrenceActionMo
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { TrendingUp, TrendingDown, Filter, Plus, Calendar, Search, ArrowRight, DollarSign, MoreVertical, Edit2, Trash2, CheckSquare, Square, ThumbsUp, ThumbsDown, Copy, CreditCard as CardIcon, ChevronLeft, ChevronRight, FileText, ShoppingBag, Briefcase, Zap, Home, Car, Utensils, PiggyBank } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay, addDays, addMonths, subMonths, isBefore } from 'date-fns';
+import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
 
 import { useSearchParams } from 'react-router-dom';
@@ -98,7 +99,7 @@ export const FinancialTransactions: React.FC = () => {
             if (transactionId) {
                 const target = t.find(tx => tx.id === transactionId);
                 if (target) {
-                    setSelectedMonth(parseISO(target.date));
+                    setSelectedMonth(parseDateLocal(target.date));
                     setEditingTransaction(target);
                     setIsModalOpen(true);
                 }
@@ -175,26 +176,33 @@ export const FinancialTransactions: React.FC = () => {
             filtered = filtered.filter(t => t.date === now.toISOString().split('T')[0]);
         } else if (filters.period === 'last7') {
             const last7 = addDays(now, -7);
-            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), { start: last7, end: now }));
+            filtered = filtered.filter(t => isWithinInterval(parseDateLocal(t.date), { start: last7, end: now }));
         } else if (filters.period === 'month') {
             const first = startOfMonth(selectedMonth);
             const last = endOfMonth(selectedMonth);
-            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), { start: first, end: last }));
+            filtered = filtered.filter(t => isWithinInterval(parseDateLocal(t.date), { start: first, end: last }));
         } else if (filters.period === 'custom' && customDateRange.start && customDateRange.end) {
-            filtered = filtered.filter(t => isWithinInterval(parseISO(t.date), {
-                start: parseISO(customDateRange.start),
-                end: endOfDay(parseISO(customDateRange.end))
+            filtered = filtered.filter(t => isWithinInterval(parseDateLocal(t.date), {
+                start: parseDateLocal(customDateRange.start),
+                end: endOfDay(parseDateLocal(customDateRange.end))
             }));
         }
 
-        if (filters.accountId !== 'all') filtered = filtered.filter(t => t.accountId === filters.accountId);
+        if (filters.accountId !== 'all') {
+            if (filters.accountId.startsWith('card_')) {
+                const cardId = filters.accountId.replace('card_', '');
+                filtered = filtered.filter(t => t.creditCardId === cardId);
+            } else {
+                filtered = filtered.filter(t => t.accountId === filters.accountId);
+            }
+        }
         if (filters.categoryId !== 'all') filtered = filtered.filter(t => t.categoryId === filters.categoryId);
         if (filters.type !== 'all') filtered = filtered.filter(t => t.type === filters.type);
 
         if (filters.status !== 'all') {
             if (filters.status === 'paid') filtered = filtered.filter(t => t.isPaid);
             if (filters.status === 'pending') filtered = filtered.filter(t => !t.isPaid);
-            if (filters.status === 'overdue') filtered = filtered.filter(t => !t.isPaid && isBefore(parseISO(t.date), startOfDay(now)));
+            if (filters.status === 'overdue') filtered = filtered.filter(t => !t.isPaid && isBefore(parseDateLocal(t.date), startOfDay(now)));
         }
 
         if (filters.search) {
@@ -212,7 +220,7 @@ export const FinancialTransactions: React.FC = () => {
 
     const sortedData = React.useMemo(() => {
         // Ascending sort (Oldest -> Newest) as per latest request
-        return [...filteredData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        return [...filteredData].sort((a, b) => parseDateLocal(a.date).getTime() - parseDateLocal(b.date).getTime());
     }, [filteredData]);
 
     // Grouping by Date
@@ -402,10 +410,17 @@ export const FinancialTransactions: React.FC = () => {
                         onChange={e => setFilters({ ...filters, accountId: e.target.value })}
                         className="py-2.5 bg-[#0f172a] border-slate-800 text-sm focus:border-emerald-500/50 transition-all rounded-lg text-slate-200 font-medium"
                     >
-                        <option value="all" className="bg-[#0f172a]">Todas Contas</option>
-                        {accounts.map(acc => (
-                            <option key={acc.id} value={acc.id} className="bg-[#0f172a]">{acc.name}</option>
-                        ))}
+                        <option value="all" className="bg-[#0f172a]">Contas e Cartões</option>
+                        <optgroup label="Contas Bancárias">
+                            {accounts.map(acc => (
+                                <option key={acc.id} value={acc.id} className="bg-[#0f172a]">{acc.name}</option>
+                            ))}
+                        </optgroup>
+                        <optgroup label="Cartões de Crédito">
+                            {cards.map(card => (
+                                <option key={card.id} value={`card_${card.id}`} className="bg-[#0f172a]">{card.name}</option>
+                            ))}
+                        </optgroup>
                     </Select>
 
                     <div className="relative group">
@@ -435,7 +450,7 @@ export const FinancialTransactions: React.FC = () => {
                                 {/* Date Header - As Separator */}
                                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-4 mb-2 opacity-80 flex items-center gap-2">
                                     <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                                    {format(parseISO(group.date), "dd/MM - EEEE", { locale: ptBR })}
+                                    {format(parseDateLocal(group.date), "dd/MM - EEEE", { locale: ptBR })}
                                 </div>
                                 {/* Clean Block of Transactions */}
                                 <div className="bg-[#111725] border border-slate-800/40 rounded-lg shadow-sm overflow-hidden">
