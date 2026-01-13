@@ -81,6 +81,21 @@ interface CurrencyInputProps {
 }
 
 export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChange, label, placeholder, className, disabled }) => {
+  // Estado local para gerenciar o valor exibido independentemente do valor numérico
+  // Isso preserva caracteres como a vírgula enquanto o usuário digita
+  const [localValue, setLocalValue] = React.useState<string | undefined>(value?.toString());
+
+  // Sincroniza o estado local APENAS se o valor externo mudar para algo diferente do atual
+  React.useEffect(() => {
+    // Parser simples para comparar o valor numérico atual do input com o valor da prop
+    const currentFloat = localValue ? parseFloat(localValue.replace(/\./g, '').replace(',', '.')) : undefined;
+
+    // Se o valor externo for diferente do interno parseado, atualiza o display (ex: carregamento inicial ou atualização externa)
+    if (value !== currentFloat) {
+      setLocalValue(value ? value.toFixed(2).replace('.', ',') : '');
+    }
+  }, [value]);
+
   return (
     <div className="w-full">
       {label && <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
@@ -89,26 +104,23 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
           <span className="text-sm font-semibold">R$</span>
         </div>
         <CurrencyInputField
-          id="validation-custom-input"
+          id={`currency-input-${label ? label.replace(/\s+/g, '-').toLowerCase() : Math.random().toString(36).substr(2, 9)}`}
           placeholder={placeholder || "0,00"}
-          defaultValue={value}
-          value={value}
+          value={localValue}
           decimalsLimit={2}
           decimalSeparator=","
           groupSeparator="."
-          onValueChange={(val) => {
-            const num = val ? parseFloat(val.replace(',', '.')) : undefined;
-            onValueChange(num);
+          onValueChange={(val, name, values) => {
+            setLocalValue(val);
+            onValueChange(values?.float ?? undefined);
           }}
           className={cn(
             "w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder:text-slate-600 disabled:opacity-50 transition-all font-medium",
             className
           )}
           disabled={disabled}
-          // intlConfig removed to prevent duplicate 'R$' symbol (already rendered by parent div)
           disableGroupSeparators={false}
           disableAbbreviations={true}
-          transformRawValue={(rawValue) => rawValue} // Can be used to validation
         />
       </div>
     </div>

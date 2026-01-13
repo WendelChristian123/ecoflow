@@ -273,6 +273,8 @@ export interface QuoteItem {
 
 export interface Quote {
   id: string;
+  createdAt: string; // Mapped from created_at
+  userId?: string; // Owner/Assignee
   contactId?: string;
   customerName?: string;
   customerPhone?: string;

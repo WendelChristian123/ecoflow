@@ -156,6 +156,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [status, setStatus] = useState<string>('active');
+    const [role, setRole] = useState<string>('user');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -164,11 +165,13 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
             setName(user.name);
             setPhone(user.phone || '');
             setStatus(user.status || 'active');
+            setRole(user.role || 'user');
         } else {
             setPermissions(DEFAULT_USER_PERMISSIONS);
             setName('');
             setPhone('');
             setStatus('active');
+            setRole('user');
         }
     }, [user, isOpen]);
 
@@ -180,7 +183,8 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                 name,
                 phone,
                 status,
-                permissions
+                role,
+                permissions: role === 'user' ? permissions : undefined
             });
             onSuccess();
             onClose();
@@ -213,48 +217,67 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                             onChange={e => setPhone(e.target.value)}
                         />
                     </div>
-                    <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Status do Acesso</label>
-                        <Select
-                            value={status}
-                            onChange={e => setStatus(e.target.value)}
-                        >
-                            <option value="active">Ativo (Acesso Liberado)</option>
-                            <option value="suspended">Suspenso (Login Bloqueado)</option>
-                            <option value="blocked">Banido</option>
-                        </Select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Tipo de Acesso</label>
+                            <Select
+                                value={role}
+                                onChange={e => setRole(e.target.value)}
+                            >
+                                <option value="user">Usuário Padrão</option>
+                                <option value="admin">Administrador</option>
+                            </Select>
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Status do Acesso</label>
+                            <Select
+                                value={status}
+                                onChange={e => setStatus(e.target.value)}
+                            >
+                                <option value="active">Ativo (Acesso Liberado)</option>
+                                <option value="suspended">Suspenso (Login Bloqueado)</option>
+                                <option value="blocked">Banido</option>
+                            </Select>
+                        </div>
                     </div>
                 </div>
 
                 {/* Permissions Block */}
-                <div className="space-y-4 pt-4 border-t border-slate-700/50">
-                    <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Permissões de Acesso</p>
-                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
-                        <PermissionToggleGroup
-                            label="Rotinas & Execução"
-                            values={permissions.routines}
-                            onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
-                        />
-                        <PermissionToggleGroup
-                            label="Comercial"
-                            values={permissions.commercial}
-                            onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
-                        />
-                        <PermissionToggleGroup
-                            label="Financeiro"
-                            values={permissions.finance}
-                            onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
-                        />
-                        <div className="flex items-center justify-between py-1">
-                            <span className="text-sm text-slate-400">Relatórios</span>
-                            <Toggle
-                                checked={permissions.reports.view}
-                                onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
-                                label="Ver"
+                {role === 'user' ? (
+                    <div className="space-y-4 pt-4 border-t border-slate-700/50">
+                        <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Permissões de Acesso</p>
+                        <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
+                            <PermissionToggleGroup
+                                label="Rotinas & Execução"
+                                values={permissions.routines}
+                                onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
                             />
+                            <PermissionToggleGroup
+                                label="Comercial"
+                                values={permissions.commercial}
+                                onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
+                            />
+                            <PermissionToggleGroup
+                                label="Financeiro"
+                                values={permissions.finance}
+                                onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
+                            />
+                            <div className="flex items-center justify-between py-1">
+                                <span className="text-sm text-slate-400">Relatórios</span>
+                                <Toggle
+                                    checked={permissions.reports.view}
+                                    onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
+                                    label="Ver"
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-3 mt-4">
+                        <AlertTriangle className="text-amber-500 shrink-0" size={18} />
+                        <p className="text-xs text-amber-200">Administradores têm acesso irrestrito a todos os módulos, podem excluir registros e gerenciar outros usuários.</p>
+                    </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-700/50">
                     <Button variant="ghost" onClick={onClose}>Cancelar</Button>

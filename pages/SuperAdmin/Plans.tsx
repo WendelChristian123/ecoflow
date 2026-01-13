@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, getErrorMessage } from '../../services/api';
 import { SYSTEM_MODULES } from '../../lib/constants';
 import { SaasPlan } from '../../types';
-import { Loader, Card, Button, Badge, Modal, Input, Select } from '../../components/Shared';
+import { Loader, Card, Button, Badge, Modal, Input, Select, CurrencyInput } from '../../components/Shared';
 import {
     CreditCard, Check, Edit2, Power, Plus, CheckCircle2, Package,
     Users, MoreVertical, Copy, Archive, EyeOff, Building2, Lock, DollarSign
@@ -286,7 +286,7 @@ export const SuperAdminPlans: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Input label="Preço (R$)" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: parseFloat(e.target.value) })} required disabled={formData.type === 'trial'} />
+                        <CurrencyInput label="Preço" value={formData.price} onValueChange={val => setFormData({ ...formData, price: val || 0 })} required disabled={formData.type === 'trial'} />
                         <div>
                             <label className="text-xs text-slate-400 mb-1 block">Ciclo de Cobrança</label>
                             <Select value={formData.billingCycle} onChange={e => setFormData({ ...formData, billingCycle: e.target.value })}>

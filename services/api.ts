@@ -922,6 +922,7 @@ export const api = {
         if (error) throw error;
         return data.map((q: any) => ({
             ...q,
+            createdAt: q.created_at, // Explicit map
             contactId: q.contact_id,
             customerName: q.customer_name,
             customerPhone: q.customer_phone,

@@ -63,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const newTenant = profile.tenant_id || prev.tenantId;
           const newAvatar = profile.avatar_url || prev.avatarUrl;
           const newStatus = profile.status;
+          const newPermissions = profile.permissions;
 
           // Optimization: Only update state if something changed
           if (
@@ -70,7 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             prev.role === newRole &&
             prev.tenantId === newTenant &&
             prev.avatarUrl === newAvatar &&
-            prev.status === newStatus
+            prev.status === newStatus &&
+            JSON.stringify(prev.permissions) === JSON.stringify(newPermissions)
           ) {
             return prev;
           }
@@ -81,7 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: newRole,
             tenantId: newTenant,
             avatarUrl: newAvatar,
-            status: newStatus
+            status: newStatus,
+            permissions: newPermissions
           } as AppUser;
         });
         // console.log('[Auth] Profile synced.');

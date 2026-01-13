@@ -35,6 +35,7 @@ import { ContactsPage } from './pages/commercial/Contacts';
 import { CatalogPage } from './pages/commercial/Catalog';
 import { QuotesPage } from './pages/commercial/Quotes';
 import { RecurringPage } from './pages/commercial/Recurring';
+import { CommercialOverview } from './pages/commercial/Overview';
 
 
 // Routines Pages
@@ -63,6 +64,7 @@ const App: React.FC = () => {
                 <Route path="/agenda" element={<PermissionRoute module="routines" action="view"><Layout><AgendaPage /></Layout></PermissionRoute>} />
 
                 {/* Commercial Routes */}
+                <Route path="/commercial/overview" element={<PermissionRoute module="commercial" action="view"><Layout><CommercialOverview /></Layout></PermissionRoute>} />
                 <Route path="/commercial/contacts" element={<PermissionRoute module="commercial" action="view"><Layout><ContactsPage /></Layout></PermissionRoute>} />
                 <Route path="/commercial/catalog" element={<PermissionRoute module="commercial" action="view"><Layout><CatalogPage /></Layout></PermissionRoute>} />
                 <Route path="/commercial/quotes" element={<PermissionRoute module="commercial" action="view"><Layout><QuotesPage /></Layout></PermissionRoute>} />

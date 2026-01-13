@@ -28,6 +28,7 @@ export const QuotesPage: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [viewAllDates, setViewAllDates] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => { loadData(); }, []);
 
@@ -76,27 +77,54 @@ export const QuotesPage: React.FC = () => {
         const quoteDate = new Date(q.date);
         const matchesDate = viewAllDates || isSameMonth(quoteDate, selectedMonth);
 
-        return matchesStatus && matchesDate;
+        // Search Logic
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch =
+            (q.customerName || '').toLowerCase().includes(searchLower) ||
+            (q.title || '').toLowerCase().includes(searchLower) ||
+            q.id.toLowerCase().includes(searchLower);
+
+        return matchesStatus && matchesDate && matchesSearch;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort desc by date
 
     if (loading) return <Loader />;
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><FileText className="text-emerald-500" /> Orçamentos</h1>
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">Orçamentos</h1>
+                    <p className="text-slate-400 mt-1">Gerencie suas propostas comerciais</p>
+                </div>
 
-                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                    {/* Month Selector */}
-                    <div className={`flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-1 transition-opacity ${viewAllDates ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1 hover:text-white text-slate-400"><ChevronLeft size={20} /></button>
-                        <span className="text-sm font-bold text-white min-w-[120px] text-center capitalize select-none">{format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}</span>
-                        <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1 hover:text-white text-slate-400"><ChevronRight size={20} /></button>
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Search */}
+                    <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            <Filter size={14} />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
+                        />
                     </div>
 
+                    {/* Month Nav */}
+                    <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
+                        <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
+                        <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
+                        <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
+                    </div>
 
-                    {/* Status Filter */}
-                    <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full md:w-40 bg-slate-900 border-slate-800 text-sm">
+                    {/* Status */}
+                    <Select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-36 bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px]"
+                    >
                         <option value="all">Todos Status</option>
                         <option value="draft">Rascunhos</option>
                         <option value="sent">Enviados</option>
@@ -104,28 +132,24 @@ export const QuotesPage: React.FC = () => {
                         <option value="rejected">Rejeitados</option>
                     </Select>
 
-                    <Button className="gap-2 whitespace-nowrap" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Orçamento</Button>
+                    {/* View Toggle */}
+                    <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
+                        <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                            <List size={16} />
+                        </button>
+                        <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                            <LayoutGrid size={16} />
+                        </button>
+                    </div>
+
+                    <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
+                        <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
+                    </Button>
                 </div>
             </div>
 
 
-            <div className="flex justify-between items-center px-1">
-                <button
-                    onClick={() => setViewAllDates(!viewAllDates)}
-                    className={`text-xs font-medium px-3 py-1 rounded-full border transition-all ${viewAllDates ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-transparent text-slate-500 border-slate-700 hover:border-slate-500'}`}
-                >
-                    {viewAllDates ? 'Exibindo: Todas as Datas' : 'Filtrar por Mês'}
-                </button>
 
-                <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-1">
-                    <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
-                        <List size={18} />
-                    </button>
-                    <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
-                        <LayoutGrid size={18} />
-                    </button>
-                </div>
-            </div>
 
             {viewMode === 'kanban' ? (
                 <div className="h-[calc(100vh-220px)]">

@@ -437,6 +437,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                         onToggle={() => toggleGroup('commercial')}
                                         isCollapsed={isCollapsed}
                                     >
+                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/overview" icon={<PieChart size={16} />} label="Visão Geral" onClick={() => setIsMobileMenuOpen(false)} />
                                         <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/contacts" icon={<Users size={16} />} label="Contatos" onClick={() => setIsMobileMenuOpen(false)} />
                                         <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/quotes" icon={<FileText size={16} />} label="Orçamentos" onClick={() => setIsMobileMenuOpen(false)} />
                                         <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/recurring" icon={<RefreshCw size={16} />} label="Contratos" onClick={() => setIsMobileMenuOpen(false)} />

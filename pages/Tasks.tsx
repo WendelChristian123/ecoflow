@@ -37,6 +37,7 @@ export const TasksPage: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const location = useLocation();
 
@@ -167,7 +168,16 @@ export const TasksPage: React.FC = () => {
     filteredTasks = filteredTasks.filter(t => t.priority === filterPriority);
   }
 
-  // 5. Sorting (Date Ascending)
+  // 5. Search Logic (New)
+  if (searchTerm) {
+    const lower = searchTerm.toLowerCase();
+    filteredTasks = filteredTasks.filter(t =>
+      (t.title || '').toLowerCase().includes(lower) ||
+      (t.description || '').toLowerCase().includes(lower)
+    );
+  }
+
+  // 6. Sorting (Date Ascending)
   filteredTasks.sort((a, b) => {
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
@@ -182,123 +192,87 @@ export const TasksPage: React.FC = () => {
   return (
     // FULL HEIGHT CONTAINER
     <div className="h-full flex flex-col gap-4">
-      {/* Controls */}
-      <div className="flex flex-col gap-4 shrink-0">
-
-        {/* Top Row: Navigation & Main Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          {/* Left: View Mode & Date Nav */}
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
-              <button
-                onClick={() => setView('list')}
-                className={`p-2 rounded-md transition-all ${view === 'list' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                title="Lista"
-              >
-                <LayoutList size={18} />
-              </button>
-              <button
-                onClick={() => setView('board')}
-                className={`p-2 rounded-md transition-all ${view === 'board' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                title="Quadro"
-              >
-                <Kanban size={18} />
-              </button>
-            </div>
-
-            {/* Date Filter Toggle & Month Selector */}
-            <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
-              <button
-                onClick={() => setShowMonthFilter(!showMonthFilter)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${showMonthFilter ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : 'text-slate-400 hover:text-white'}`}
-              >
-                {showMonthFilter ? 'Filtrando Mês' : 'Todas as Datas'}
-              </button>
-
-              {showMonthFilter && (
-                <div className="flex items-center h-full pl-2 border-l border-slate-700">
-                  <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1 hover:text-white text-slate-400"><ChevronLeft size={16} /></button>
-                  <span className="text-sm font-bold text-white uppercase w-32 text-center select-none">
-                    {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-                  </span>
-                  <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1 hover:text-white text-slate-400"><ChevronRight size={16} /></button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: New Task */}
-          <div className="w-full md:w-auto flex justify-end">
-            {can('routines', 'create') && (
-              <Button size="sm" className="gap-2" onClick={() => setIsModalOpen(true)}>
-                <Plus size={16} /> Nova Tarefa
-              </Button>
-            )}
-          </div>
+      {/* Standardized Header */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Tarefas</h1>
+          <p className="text-slate-400 mt-1">Gerencie suas atividades diárias</p>
         </div>
 
-        {/* Bottom Row: Detailed Filters */}
-        <div className="flex flex-wrap items-center gap-3 pb-2 border-b border-slate-800/50">
-          <div className="flex items-center gap-2">
-            <Filter size={14} className="text-slate-500" />
-            <span className="text-xs font-medium text-slate-500 uppercase">Filtros:</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search */}
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+              <Filter size={14} />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-40 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
+            />
+          </div>
+
+          {/* Month Nav */}
+          <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
+            <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
+            <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(currentDate, 'MMM/yyyy', { locale: ptBR })}</span>
+            <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
           </div>
 
           {/* Status */}
-          <div className="relative">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="appearance-none bg-slate-800 hover:bg-slate-750 text-xs text-slate-300 py-1.5 pl-3 pr-8 rounded-lg border border-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer"
-            >
-              <option value="all">Status: Todos</option>
-              <option value="todo">A Fazer</option>
-              <option value="in_progress">Em Progresso</option>
-              <option value="review">Revisão</option>
-              <option value="done">Concluído</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none"
+          >
+            <option value="all">Status: Todos</option>
+            <option value="todo">A Fazer</option>
+            <option value="in_progress">Em Progresso</option>
+            <option value="review">Revisão</option>
+            <option value="done">Concluído</option>
+          </select>
 
           {/* Priority */}
-          <div className="relative">
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className={`appearance-none bg-slate-800 hover:bg-slate-750 text-xs py-1.5 pl-3 pr-8 rounded-lg border border-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer ${filterPriority !== 'all' ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}
-            >
-              <option value="all">Prioridade: Todas</option>
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-              <option value="urgent">Urgente</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-          </div>
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none"
+          >
+            <option value="all">Prioridade: Todas</option>
+            <option value="low">Baixa</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+            <option value="urgent">Urgente</option>
+          </select>
 
           {/* Assignee */}
-          <div className="relative">
-            <select
-              value={filterAssignee}
-              onChange={(e) => setFilterAssignee(e.target.value)}
-              className={`appearance-none bg-slate-800 hover:bg-slate-750 text-xs py-1.5 pl-3 pr-8 rounded-lg border border-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none cursor-pointer ${filterAssignee !== 'all' ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}
-            >
-              <option value="all">Responsável: Todos</option>
-              {assignableUsers.map(u => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <select
+            value={filterAssignee}
+            onChange={(e) => setFilterAssignee(e.target.value)}
+            className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none max-w-[140px]"
+          >
+            <option value="all">Resp: Todos</option>
+            {assignableUsers.map(u => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+
+          {/* View Toggle */}
+          <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
+            <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+              <LayoutList size={16} />
+            </button>
+            <button onClick={() => setView('board')} className={`p-1.5 rounded transition-all ${view === 'board' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+              <Kanban size={16} />
+            </button>
           </div>
 
-          {/* Clear Filters Button (only shows if filters active) */}
-          {(filterStatus !== 'all' || filterPriority !== 'all' || filterAssignee !== 'all') && (
-            <button
-              onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterAssignee('all'); }}
-              className="text-[10px] text-slate-500 hover:text-rose-400 underline underline-offset-2 flex items-center gap-1"
-            >
-              <X size={10} /> Limpar
-            </button>
+          {can('routines', 'create') && (
+            <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
+              <Plus size={16} /> <span className="hidden sm:inline">Nova</span>
+            </Button>
           )}
         </div>
       </div>
