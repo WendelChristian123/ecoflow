@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Mail, Shield, ArrowLeft, Plus, Search, LayoutList, Kanban, Edit2, Trash2, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Mail, Shield, ArrowLeft, Plus, Search, LayoutList, Kanban, Edit2, Trash2, ChevronDown, ChevronLeft, ChevronRight, X, Filter } from 'lucide-react';
 import { Card, Avatar, Loader, Badge, Button, TaskTableView } from '../components/Shared';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -362,7 +362,7 @@ export const TeamsPage: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Search */}
-          <div className="relative">
+          <div className="relative mr-auto">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
               <Filter size={14} />
             </div>

@@ -91,60 +91,61 @@ export const QuotesPage: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-white tracking-tight">Orçamentos</h1>
                     <p className="text-slate-400 mt-1">Gerencie suas propostas comerciais</p>
                 </div>
+                <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
+                    <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
+                </Button>
+            </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    {/* Search */}
-                    <div className="relative">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                            <Filter size={14} />
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Buscar..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
-                        />
+            {/* Filters Bar */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+                {/* 1. Search */}
+                <div className="relative mr-auto">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                        <Filter size={14} />
                     </div>
+                    <input
+                        type="text"
+                        placeholder="Buscar..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
+                    />
+                </div>
 
-                    {/* Month Nav */}
-                    <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
-                        <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-                        <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
-                        <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
-                    </div>
+                {/* 2. Month Nav */}
+                <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
+                    <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
+                    <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
+                    <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
+                </div>
 
-                    {/* Status */}
-                    <Select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-36 bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px]"
-                    >
-                        <option value="all">Todos Status</option>
-                        <option value="draft">Rascunhos</option>
-                        <option value="sent">Enviados</option>
-                        <option value="approved">Aprovados</option>
-                        <option value="rejected">Rejeitados</option>
-                    </Select>
+                {/* 3. Status */}
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none w-36"
+                >
+                    <option value="all">Todos Status</option>
+                    <option value="draft">Rascunhos</option>
+                    <option value="sent">Enviados</option>
+                    <option value="approved">Aprovados</option>
+                    <option value="rejected">Rejeitados</option>
+                </select>
 
-                    {/* View Toggle */}
-                    <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
-                        <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
-                            <List size={16} />
-                        </button>
-                        <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
-                            <LayoutGrid size={16} />
-                        </button>
-                    </div>
-
-                    <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
-                        <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
-                    </Button>
+                {/* 4. View Toggle */}
+                <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
+                    <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                        <List size={16} />
+                    </button>
+                    <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                        <LayoutGrid size={16} />
+                    </button>
                 </div>
             </div>
 
