@@ -4,10 +4,10 @@ import { api } from '../../services/api';
 import { Quote, User, Contact, CatalogItem } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { Card, Button, Loader, Badge } from '../../components/Shared';
-import { ShoppingBag, TrendingUp, DollarSign, FileText, Plus, ArrowRight, BarChart2, PieChart, X, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { TrendingUp, DollarSign, FileText, Plus, BarChart2, PieChart, X, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart as RechartsPieChart, Pie } from 'recharts';
+import { Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart as RechartsPieChart, Pie } from 'recharts';
 import { CommercialReportModal } from '../../components/Reports/CommercialReportModal';
 import { QuoteModal } from '../../components/CommercialModals'; // Imported from Modals
 
@@ -291,8 +291,7 @@ export const CommercialOverview: React.FC = () => {
             </div>
 
             {/* Main Content Area (Charts + Activity) - Fills remaining height */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
-
+            <div className="flex-1 min-h-0">
                 {/* Chart Section */}
                 <Card className="flex flex-col h-full overflow-hidden">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 shrink-0">
@@ -326,49 +325,6 @@ export const CommercialOverview: React.FC = () => {
                                 <span className="text-3xl font-bold text-white">{kpiData.totalQuotes}</span>
                                 <div className="text-xs text-slate-500 uppercase tracking-widest">Total</div>
                             </div>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* Recent Activity List - Scrollable within fixed container */}
-                <Card className="p-0 overflow-hidden flex flex-col h-full">
-                    <div className="p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2"><Clock size={18} className="text-slate-400" /> Atividade Recente</h3>
-                        <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/commercial/quotes')}>Ver Tudo <ArrowRight size={14} className="ml-1" /></Button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-                        <div className="space-y-1">
-                            {recentActivity.length === 0 ? (
-                                <div className="p-8 text-center text-slate-500">Nenhuma atividade recente.</div>
-                            ) : (
-                                recentActivity.map(q => (
-                                    <div key={q.id}
-                                        className="p-3 hover:bg-slate-800/50 transition-colors flex items-center justify-between cursor-pointer rounded-lg group"
-                                        onClick={() => { setEditingQuote(q); setIsQuoteModalOpen(true); }}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-9 w-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center group-hover:border-slate-600 transition-colors">
-                                                <ShoppingBag size={16} className="text-slate-500 group-hover:text-slate-300" />
-                                            </div>
-                                            <div>
-                                                <div className="font-medium text-slate-200 text-sm">{q.clientName || 'Cliente sem nome'}</div>
-                                                <div className="text-[10px] text-slate-500 uppercase tracking-wide">{q.title} • {format(parseISO(q.createdAt || q.date), 'dd/MM HH:mm')}</div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-slate-200 text-sm">{formatCurrency(q.totalValue)}</div>
-                                            <div className={cn(
-                                                "text-[10px] font-bold uppercase tracking-wider",
-                                                q.status === 'approved' ? 'text-emerald-500' :
-                                                    q.status === 'rejected' ? 'text-rose-500' :
-                                                        'text-amber-500'
-                                            )}>
-                                                {q.status}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
                         </div>
                     </div>
                 </Card>

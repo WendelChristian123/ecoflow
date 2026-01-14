@@ -320,7 +320,7 @@ export const RoutinesOverview: React.FC = () => {
             </div>
 
             {/* CHARTS ROW */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 {/* Status Distribution */}
                 <Card className="min-h-[350px] flex flex-col">
                     <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
@@ -347,35 +347,6 @@ export const RoutinesOverview: React.FC = () => {
                                 />
                                 <Legend verticalAlign="bottom" height={36} />
                             </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-
-                {/* Priority Distribution */}
-                <Card className="min-h-[350px] flex flex-col">
-                    <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-                        <AlertCircle size={18} className="text-rose-500" /> Tarefas Pendentes por Prioridade
-                    </h3>
-                    <div className="flex-1 w-full min-h-0">
-                        <ResponsiveContainer width="99%" height="100%">
-                            <BarChart data={priorityData} layout="vertical" margin={{ left: 10, right: 30 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
-                                <XAxis type="number" stroke="#94a3b8" hide />
-                                <YAxis dataKey="name" type="category" stroke="#94a3b8" width={60} tick={{ fontSize: 12 }} />
-                                <RechartsTooltip
-                                    cursor={{ fill: '#334155', opacity: 0.4 }}
-                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
-                                />
-                                <Bar dataKey="value" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={24}>
-                                    {priorityData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={
-                                            entry.name === 'Urgente' ? '#f43f5e' :
-                                                entry.name === 'Alta' ? '#f59e0b' :
-                                                    entry.name === 'Média' ? '#6366f1' : '#10b981'
-                                        } />
-                                    ))}
-                                </Bar>
-                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </Card>

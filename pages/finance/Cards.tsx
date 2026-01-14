@@ -4,9 +4,10 @@ import { api } from '../../services/api';
 import { CreditCard, FinancialTransaction, FinancialAccount, FinancialCategory, Contact } from '../../types';
 import { Loader, Card, ProgressBar, cn, Button, Modal, Input, Select, CurrencyInput } from '../../components/Shared';
 import { TransactionModal, DrilldownModal, CardModal, ConfirmationModal } from '../../components/Modals';
+import { CreditCardReportModal } from '../../components/Reports/CreditCardReportModal';
 import { CreditCard as CardIcon, Calendar, Plus, FileText, AlertCircle, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
-import { format, parseISO, isBefore, isAfter, addMonths, startOfDay } from 'date-fns';
+import { format, parseISO, isBefore, isAfter, addMonths, startOfDay, addDays, endOfDay } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
 
@@ -99,7 +100,10 @@ export const FinancialCards: React.FC = () => {
     const [selectedCardForTx, setSelectedCardForTx] = useState<CreditCard | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentModalData, setPaymentModalData] = useState<{ card: CreditCard, amount: number } | null>(null);
+
     const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
+    // Report State
+    const [reportState, setReportState] = useState<{ isOpen: boolean, cardId?: string, stats?: { used: number, available: number, percent: number } }>({ isOpen: false });
 
     // Management States
     const [isCardModalOpen, setIsCardModalOpen] = useState(false);
@@ -437,12 +441,13 @@ export const FinancialCards: React.FC = () => {
                                     <Button
                                         variant="outline"
                                         className="flex-1 text-xs border-slate-700 hover:bg-slate-800 text-slate-300"
-                                        onClick={() => setDrilldownState({
-                                            isOpen: true,
-                                            title: `Extrato: ${card.name}`,
-                                            // Show clean list (no technical)
-                                            data: transactions.filter(t => t.creditCardId === card.id && t.originType !== 'technical' && !t.description.includes('Pagamento Fatura (Crédito Local)'))
-                                        })}
+                                        onClick={() => {
+                                            setReportState({
+                                                isOpen: true,
+                                                cardId: card.id,
+                                                stats: stats // Pass the stats calculated for this card
+                                            });
+                                        }}
                                     >
                                         <FileText size={14} className="mr-2" /> Relatório
                                     </Button>
@@ -499,6 +504,15 @@ export const FinancialCards: React.FC = () => {
                 title={drilldownState.title}
                 type="finance"
                 data={drilldownState.data}
+            />
+
+            <CreditCardReportModal
+                isOpen={reportState.isOpen}
+                onClose={() => setReportState({ isOpen: false })}
+                card={cards.find(c => c.id === reportState.cardId) || null}
+                transactions={transactions}
+                stats={reportState.stats}
+                categories={categories}
             />
 
             <CardModal

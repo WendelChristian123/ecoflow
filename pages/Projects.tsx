@@ -406,46 +406,7 @@ export const ProjectsPage: React.FC = () => {
             />
           </div>
 
-          {/* Month Nav */}
-          <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
-            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-            <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(currentMonth, 'MMM/yyyy', { locale: ptBR })}</span>
-            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
-          </div>
 
-          {/* Status */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none"
-          >
-            <option value="all">Status: Todos</option>
-            <option value="active">Ativo</option>
-            <option value="completed">Concluído</option>
-            <option value="on_hold">Em Espera</option>
-          </select>
-
-          {/* Member */}
-          <select
-            value={memberFilter}
-            onChange={(e) => setMemberFilter(e.target.value)}
-            className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none max-w-[140px]"
-          >
-            <option value="all">Membro: Todos</option>
-            {users.map(u => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
-          </select>
-
-          {/* View Toggle */}
-          <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
-              <LayoutList size={16} />
-            </button>
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
-              <Kanban size={16} />
-            </button>
-          </div>
 
           <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
             <Plus size={16} /> <span className="hidden sm:inline">Novo</span>

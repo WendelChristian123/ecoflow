@@ -375,27 +375,7 @@ export const TeamsPage: React.FC = () => {
             />
           </div>
 
-          {/* Member */}
-          <select
-            value={memberFilter}
-            onChange={(e) => setMemberFilter(e.target.value)}
-            className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none max-w-[140px]"
-          >
-            <option value="all">Membro: Todos</option>
-            {users.map(u => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
-          </select>
 
-          {/* View Toggle */}
-          <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
-              <LayoutList size={16} />
-            </button>
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
-              <Kanban size={16} />
-            </button>
-          </div>
 
           <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
             <Plus size={16} /> <span className="hidden sm:inline">Nova</span>
@@ -411,39 +391,36 @@ export const TeamsPage: React.FC = () => {
               Nenhuma equipe encontrada.
             </div>
           ) : (
-            teams.map(team => (
-              <div key={team.id} className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <div>
-                    <h2
-                      className="text-xl font-bold text-white hover:text-emerald-400 cursor-pointer transition-colors"
-                      onClick={() => setSelectedTeam(team)}
-                    >
-                      {team.name}
-                    </h2>
-                    <p className="text-slate-400 text-sm">{team.description}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedTeam(team)}>
-                      Ver Tarefas da Equipe
-                    </Button>
-                    <Badge variant="neutral">{team.memberIds.length} membros</Badge>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredTeams.map(team => (
+                <Card
+                  key={team.id}
+                  className="p-5 flex flex-col gap-4 hover:bg-slate-800/80 group cursor-pointer transition-all border border-slate-800 hover:border-slate-700"
+                  onClick={() => setSelectedTeam(team)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">
+                        {team.name}
+                      </h2>
+                      <p className="text-slate-400 text-sm line-clamp-2 mt-1">{team.description}</p>
+                    </div>
                     {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
-                      <div className="flex items-center gap-1 border-l border-slate-700 pl-3 ml-2">
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingTeam(team);
                             setIsTeamModalOpen(true);
                           }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                           title="Editar Equipe"
                         >
                           <Edit2 size={14} />
                         </button>
                         <button
                           onClick={(e) => handleDeleteTeam(e, team.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-700"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-700 transition-colors"
                           title="Excluir Equipe"
                         >
                           <Trash2 size={14} />
@@ -451,34 +428,38 @@ export const TeamsPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                  {team.memberIds.map(memberId => {
-                    const member = users.find(u => u.id === memberId);
-                    if (!member) return null;
-                    const isLead = team.leadId === member.id;
-
-                    return (
-                      <Card key={member.id} className="p-4 flex items-center gap-4 hover:bg-slate-800/80 group">
-                        <Avatar size="lg" src={member.avatarUrl} name={member.name} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <h3 className="font-medium text-slate-200 truncate pr-2">{member.name}</h3>
-                            {isLead && <span title="Líder da Equipe"><Shield size={14} className="text-amber-400 shrink-0" /></span>}
-                          </div>
-                          <p className="text-xs text-slate-400 mb-2">{member.role}</p>
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <Mail size={12} />
-                            <span className="truncate">{member.email}</span>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
+                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-800/50">
+                    <div className="flex -space-x-2 overflow-hidden py-1">
+                      {team.memberIds.length === 0 ? (
+                        <span className="text-xs text-slate-500 italic">Sem membros</span>
+                      ) : (
+                        <>
+                          {team.memberIds.slice(0, 5).map(memberId => {
+                            const u = users.find(user => user.id === memberId);
+                            if (!u) return null;
+                            const isLead = team.leadId === u.id;
+                            return (
+                              <div key={u.id} className={`ring-2 ring-slate-900 rounded-full ${isLead ? 'ring-emerald-500/50' : ''}`} title={`${u.name}${isLead ? ' (Líder)' : ''}`}>
+                                <Avatar size="sm" src={u.avatarUrl} name={u.name} />
+                              </div>
+                            );
+                          })}
+                          {team.memberIds.length > 5 && (
+                            <div className="h-8 w-8 rounded-full bg-slate-700 ring-2 ring-slate-900 flex items-center justify-center text-[10px] text-slate-300 font-medium">
+                              +{team.memberIds.length - 5}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-xs ml-auto">
+                      {team.memberIds.length} membros
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
           <TeamModal
             isOpen={isTeamModalOpen}

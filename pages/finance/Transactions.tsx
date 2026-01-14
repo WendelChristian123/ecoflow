@@ -307,18 +307,24 @@ export const FinancialTransactions: React.FC = () => {
                 <div className="flex justify-end items-center gap-1 pr-1" onClick={(e) => e.stopPropagation()}>
                     {!isVirtual && (
                         <>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); toggleStatus(t.id, t.isPaid); }}
-                                className={cn(
-                                    "transition-all p-2 rounded-full hover:bg-slate-800",
-                                    t.isPaid
-                                        ? "text-emerald-500"
-                                        : "text-slate-600 hover:text-emerald-500"
-                                )}
-                                title={t.isPaid ? "Pago" : "Marcar como Pago"}
-                            >
-                                <ThumbsUp size={16} className={cn(t.isPaid && "fill-current")} />
-                            </button>
+                            {t.creditCardId ? (
+                                <div className="p-2 text-slate-500 cursor-help" title="Lançamento no Cartão">
+                                    <CardIcon size={16} />
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleStatus(t.id, t.isPaid); }}
+                                    className={cn(
+                                        "transition-all p-2 rounded-full hover:bg-slate-800",
+                                        t.isPaid
+                                            ? "text-emerald-500"
+                                            : "text-slate-600 hover:text-emerald-500"
+                                    )}
+                                    title={t.isPaid ? "Pago" : "Marcar como Pago"}
+                                >
+                                    <ThumbsUp size={16} className={cn(t.isPaid && "fill-current")} />
+                                </button>
+                            )}
 
                             <button
                                 onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(t.id); }}

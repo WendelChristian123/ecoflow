@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { processTransactions } from '../services/financeLogic';
 import { ChevronLeft, ChevronRight, Clock, Plus, Users as UsersIcon, Calendar as CalendarIcon, CheckCircle2, AlertCircle, DollarSign, CreditCard, FileText, CheckSquare, Search, Filter } from 'lucide-react';
-import { Card, Loader, Button, Badge, Avatar, Input } from '../components/Shared';
+import { Card, Loader, Button, Badge, Avatar, Input, Select } from '../components/Shared';
 import { EventModal, EventDetailModal } from '../components/Modals';
 import { api } from '../services/api';
 import { CalendarEvent, User, CalendarSettings, Task, FinancialTransaction, Quote, CreditCard as ICreditCard, Project, Team } from '../types';
@@ -38,6 +39,7 @@ export const AgendaPage: React.FC = () => {
 
   // UI State
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -115,11 +117,11 @@ export const AgendaPage: React.FC = () => {
               description: t.description,
               startDate: t.dueDate, // Use full ISO to preserve timezone
               endDate: t.dueDate,
-              status: t.status === 'done' ? 'completed' : 'scheduled',
-              type: 'deadline',
+              status: t.status === 'done' ? 'confirmed' : 'pending',
+              type: 'task',
               isTeamEvent: false,
               participants: t.assigneeId ? [t.assigneeId] : [],
-              links: t.links,
+              links: t.links?.map(l => ({ title: 'Link', url: l })) || [],
               origin: 'task',
               metadata: t,
               color: 'bg-blue-500/20 text-blue-300 border-l-4 border-blue-500',
@@ -144,8 +146,8 @@ export const AgendaPage: React.FC = () => {
                 description: `Valor: R$ ${q.totalValue}`,
                 startDate: q.validUntil,
                 endDate: q.validUntil,
-                status: 'scheduled',
-                type: 'deadline',
+                status: 'pending',
+                type: 'reminder',
                 isTeamEvent: false,
                 participants: [],
                 links: [],
@@ -158,87 +160,93 @@ export const AgendaPage: React.FC = () => {
           }));
         }
 
-        // Receivables & Payables (Transactions)
-        if (fin?.receivable !== false || fin?.payable !== false) {
-          promises.push(api.getFinancialTransactions().then(transactions => {
-            transactions.forEach(tr => {
-              if (tr.isPaid) return;
-              if (tr.originType === 'credit_card' || tr.creditCardId) return;
+        // Unified Finance Data Fetching & Processing
+        // We fetch everything if ANY finance module is active to ensure correct calculations (linked transactions etc)
+        if (fin?.receivable !== false || fin?.payable !== false || fin?.credit_card !== false) {
+          const [transactions, cards] = await Promise.all([
+            api.getFinancialTransactions(),
+            api.getCreditCards()
+          ]);
+
+          // Process using Cash Mode logic to get Virtual Invoices and filtered views
+          // Use 'cash' mode to generate Virtual Invoices for Credit Cards
+          const processed = processTransactions(transactions, cards, 'cash');
+
+          processed.forEach(t => {
+            // Filter out internal/technical if needed, or keeping them?
+            // Usually we want to show what the logic returned.
+
+            // 1. Credit Card Invoices (Virtual)
+            if (t.isVirtual && fin?.credit_card !== false) {
+              // Extract Card Name from description "Fatura – [Name]" or use ID mapping if possible.
+              // Logic usually sets description. Let's use it or metadata if available.
+              // Actually, t.description is "Fatura – [CardName]" from logic.
+              newEvents.push({
+                id: t.id, // e.g. virtual-invoice-cardId-date
+                title: `Vencimento: ${t.description.replace('Fatura – ', '')}`,
+                description: `Valor da Fatura`, // Will be shown as metadata amount too
+                startDate: t.date,
+                endDate: t.date,
+                status: 'pending',
+                type: 'reminder',
+                isTeamEvent: false,
+                participants: [],
+                links: [],
+                origin: 'finance_card',
+                metadata: {
+                  ...t,
+                  amount: t.amount // Ensure amount is passed for Card component to render
+                },
+                color: 'bg-rose-500/20 text-rose-300 border-l-4 border-rose-500',
+                icon: <CreditCard size={14} />
+              });
+            }
+            // 2. Real Transactions (Receivables / Payables)
+            else if (!t.isVirtual && !t.isPaid) {
+              // Exclude Credit Card individual purchases if they are hidden (which processTransactions 'cash' mode often does? 
+              // Wait, 'cash' mode HIDES individual card expenses. So we are good.
+              // We only see "Direct" expenses/incomes.
 
               // Receivables
-              if (tr.type === 'income' && fin?.receivable !== false) {
+              if (t.type === 'income' && fin?.receivable !== false) {
                 newEvents.push({
-                  id: `fin-inc-${tr.id}`,
-                  title: `Receber: ${tr.description}`,
-                  description: `Categoria: ${tr.category?.name || 'Geral'}`,
-                  startDate: tr.date?.split('T')[0],
-                  endDate: tr.date?.split('T')[0],
-                  status: 'scheduled',
-                  type: 'deadline',
+                  id: `fin-inc-${t.id}`,
+                  title: `Receber: ${t.description}`,
+                  description: `Categoria: ${t.category?.name || 'Geral'}`,
+                  startDate: t.date.split('T')[0],
+                  endDate: t.date.split('T')[0],
+                  status: 'pending',
+                  type: 'reminder',
                   isTeamEvent: false,
                   participants: [],
-                  links: tr.links,
+                  links: t.links?.map(l => ({ title: 'Link', url: l })) || [],
                   origin: 'finance_receivable',
-                  metadata: tr,
+                  metadata: t,
                   color: 'bg-emerald-500/20 text-emerald-300 border-l-4 border-emerald-500',
                   icon: <DollarSign size={14} />
                 });
               }
               // Payables
-              if (tr.type === 'expense' && fin?.payable !== false) {
+              if (t.type === 'expense' && fin?.payable !== false) {
                 newEvents.push({
-                  id: `fin-exp-${tr.id}`,
-                  title: `Pagar: ${tr.description}`,
-                  description: `Categoria: ${tr.category?.name || 'Geral'}`,
-                  startDate: tr.date?.split('T')[0],
-                  endDate: tr.date?.split('T')[0],
-                  status: 'scheduled',
-                  type: 'deadline',
+                  id: `fin-exp-${t.id}`,
+                  title: `Pagar: ${t.description}`,
+                  description: `Categoria: ${t.category?.name || 'Geral'}`,
+                  startDate: t.date.split('T')[0],
+                  endDate: t.date.split('T')[0],
+                  status: 'pending',
+                  type: 'reminder',
                   isTeamEvent: false,
                   participants: [],
-                  links: tr.links,
+                  links: t.links?.map(l => ({ title: 'Link', url: l })) || [],
                   origin: 'finance_payable',
-                  metadata: tr,
+                  metadata: t,
                   color: 'bg-rose-500/20 text-rose-300 border-l-4 border-rose-500',
                   icon: <AlertCircle size={14} />
                 });
               }
-            });
-          }));
-        }
-
-        // Credit Cards
-        if (fin?.credit_card !== false) {
-          promises.push(api.getCreditCards().then(cards => {
-            [-1, 0, 1].forEach(offset => {
-              const monthDate = addMonths(viewDate, offset);
-              cards.forEach(card => {
-                // Closing Date - Removed as requested
-                // const closingDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), card.closingDay);
-
-                // Due Date
-                const dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), card.dueDay);
-                if (isValid(dueDate)) {
-                  newEvents.push({
-                    id: `card-due-${card.id}-${offset}`,
-                    title: `Vencimento: ${card.name}`,
-                    description: `Dia de vencimento`,
-                    startDate: dueDate.toISOString(),
-                    endDate: dueDate.toISOString(),
-                    status: 'scheduled',
-                    type: 'deadline',
-                    isTeamEvent: false,
-                    participants: [],
-                    links: [],
-                    origin: 'finance_card',
-                    metadata: card,
-                    color: 'bg-rose-500/20 text-rose-300 border-l-4 border-rose-500',
-                    icon: <CreditCard size={14} />
-                  });
-                }
-              });
-            });
-          }));
+            }
+          });
         }
       }
 
@@ -252,6 +260,7 @@ export const AgendaPage: React.FC = () => {
     }
   };
 
+  // UI Handlers
   const handleCreate = () => {
     setEditingEvent(undefined);
     setIsCreateModalOpen(true);
@@ -290,6 +299,14 @@ export const AgendaPage: React.FC = () => {
         e.title.toLowerCase().includes(lowerString) ||
         e.description?.toLowerCase().includes(lowerString)
       );
+    }
+
+    // Filter Assignee (Strict)
+    if (assigneeFilter !== 'all') {
+      filtered = filtered.filter(e => {
+        // Check participants array (which includes task assignee)
+        return e.participants && e.participants.includes(assigneeFilter);
+      });
     }
 
     return filtered;
@@ -337,14 +354,18 @@ export const AgendaPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="relative w-full md:w-56">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-          <Input
-            placeholder="Buscar..."
-            className="pl-8 py-1 text-xs bg-slate-800 border-slate-700 rounded-full focus:ring-emerald-500/50 h-8"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
+        <div className="flex items-center gap-2 w-full md:w-96">
+
+
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+            <Input
+              placeholder="Buscar..."
+              className="pl-8 py-1 text-xs bg-slate-800 border-slate-700 rounded-full focus:ring-emerald-500/50 h-8"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -359,6 +380,18 @@ export const AgendaPage: React.FC = () => {
               <CalendarIcon size={16} className="text-emerald-500" />
               {format(viewDate, 'MMMM yyyy', { locale: ptBR })}
             </h2>
+            <div className="flex items-center gap-2">
+              <Select
+                value={assigneeFilter}
+                onChange={e => setAssigneeFilter(e.target.value)}
+                className="h-7 text-xs py-1 rounded-md bg-slate-800 border-slate-700 w-32 focus:ring-emerald-500/50"
+              >
+                <option value="all">Todos</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </Select>
+            </div>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="sm" onClick={handlePrevMonth} className="rounded-full w-6 h-6 p-0 border-slate-700 hover:bg-slate-800 text-slate-400"><ChevronLeft size={14} /></Button>
               <Button variant="outline" size="sm" onClick={handleToday} className="rounded-full px-2 h-6 border-slate-700 hover:bg-slate-800 text-slate-300 text-[9px] uppercase tracking-wider font-bold">Hoje</Button>

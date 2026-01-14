@@ -5,7 +5,7 @@ import { processTransactions, ProcessedTransaction } from '../../services/financ
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact } from '../../types';
 import { Loader, Card, Badge, cn, Button, Select } from '../../components/Shared';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, ArrowRightLeft, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText } from 'lucide-react';
 import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
 import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
@@ -109,7 +109,7 @@ export const FinancialOverview: React.FC = () => {
             }
 
             if (filters.accountId !== 'all') {
-                res = res.filter(t => t.accountId === filters.accountId);
+                res = res.filter(t => t.accountId === filters.accountId || t.creditCardId === filters.accountId);
             }
 
             if (filters.categoryId !== 'all') {
@@ -347,7 +347,12 @@ export const FinancialOverview: React.FC = () => {
                         className="bg-slate-900 border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg w-full"
                     >
                         <option value="all">Todas Contas</option>
-                        {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        <optgroup label="Contas Bancárias">
+                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </optgroup>
+                        <optgroup label="Cartões de Crédito">
+                            {cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </optgroup>
                     </Select>
 
                     <Select
@@ -627,60 +632,7 @@ export const FinancialOverview: React.FC = () => {
                 )
             }
 
-            {/* BLOCO 4 - ÚLTIMOS LANÇAMENTOS */}
-            <div className="mb-10">
-                <div className="flex items-center gap-3 mb-4 pl-1">
-                    <div className="h-px bg-slate-800 flex-1"></div>
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <ArrowRightLeft size={14} /> Últimas Movimentações
-                    </h3>
-                    <div className="h-px bg-slate-800 flex-1"></div>
-                </div>
 
-                <div className="bg-[#0B0D12] border border-slate-800/40 rounded-2xl overflow-hidden p-1">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-800/40">
-                        {filteredData.slice(0, 9).map((t: any, i: number) => {
-                            const isVirtual = t.isVirtual;
-                            return (
-                                <div key={t.id}
-                                    className={cn(
-                                        "flex items-center justify-between p-4 transition-colors group cursor-pointer",
-                                        isVirtual ? "hover:bg-indigo-500/5" : "hover:bg-slate-800/30",
-                                        t.type === 'expense' && !isVirtual ? "hover:bg-rose-500/5" : "",
-                                        t.type === 'income' && !isVirtual ? "hover:bg-emerald-500/5" : ""
-                                    )}
-                                    // Adicionando borda inferior apenas se não for a última linha (mobile) ou ajustando grid
-                                    style={{ borderBottomWidth: '1px', borderBottomColor: 'rgba(30, 41, 59, 0.4)' }}
-                                    onClick={() => isVirtual && openDrilldown(t.description, (item) => item.creditCardId === t.virtualChildren[0]?.creditCardId && item.type === 'expense' && !item.isPaid)}
-                                >
-                                    <div className="flex items-center gap-4 truncate">
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                                            isVirtual ? "bg-indigo-500/10 text-indigo-500" : (t.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'),
-                                            "group-hover:scale-110"
-                                        )}>
-                                            {isVirtual ? <CardIcon size={14} /> : (t.type === 'income' ? <TrendingUp size={14} /> : <TrendingDown size={14} />)}
-                                        </div>
-                                        <div className="truncate">
-                                            <div className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors truncate">{t.description}</div>
-                                            <div className="text-[10px] text-slate-500">{t.date.split('T')[0].split('-').reverse().join('/')} {isVirtual && `• ${t.virtualChildren?.length} itens`}</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right pl-2">
-                                        <div className={cn("text-sm font-bold tracking-tight", t.type === 'income' ? 'text-emerald-400' : 'text-slate-400 group-hover:text-rose-400 transition-colors')}>
-                                            {t.type === 'expense' ? '-' : '+'}{fmt(t.amount)}
-                                        </div>
-                                        {!isVirtual && !t.isPaid && financeSettings.credit_card_expense_mode !== 'competence' && (
-                                            <div className="text-[10px] text-amber-500/80 font-medium">Pendente</div>
-                                        )}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                        {filteredData.length === 0 && <p className="text-slate-500 text-sm col-span-full text-center py-8 opacity-50">Nenhuma movimentação no período.</p>}
-                    </div>
-                </div>
-            </div>
 
             {/* BLOCO 5 - EVOLUÇÃO */}
             <div className="bg-[#0B0D12] border border-slate-800/40 rounded-2xl p-6 sm:p-8">
@@ -847,6 +799,7 @@ export const FinancialOverview: React.FC = () => {
                 transactions={transactions}
                 accounts={accounts}
                 categories={categories}
+                cards={cards} // NEW
             />
         </div >
     );

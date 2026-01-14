@@ -307,7 +307,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
     const toggleGroup = (group: string) => {
         setOpenGroups(prev =>
-            prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]
+            prev.includes(group) ? [] : [group]
         );
     };
 

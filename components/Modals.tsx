@@ -159,7 +159,13 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
     const navigate = useNavigate();
 
     useEffect(() => {
-        setLocalData(data);
+        if (!data) return;
+        const sorted = [...data].sort((a: any, b: any) => {
+            const dateA = new Date(a.date || a.dueDate || a.startDate || 0).getTime();
+            const dateB = new Date(b.date || b.dueDate || b.startDate || 0).getTime();
+            return dateA - dateB;
+        });
+        setLocalData(sorted);
     }, [data, isOpen]);
 
     // Helper: Safe User Name Getter
@@ -1512,15 +1518,40 @@ export const EventModal: React.FC<EventModalProps> = ({
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-5">
-                        <Input label="Título" placeholder={mode === 'task' ? "Ex: Revisar relatório" : "Ex: Reunião de Pauta"} value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
+                    {/* LEFT COLUMN: Main Info */}
+                    {mode === 'task' ? (
+                        <div className="space-y-4 md:col-span-1 h-full flex flex-col">
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wilder ml-1">Título da Tarefa</label>
+                                <Input
+                                    placeholder="Ex: Criar relatório mensal"
+                                    value={formData.title}
+                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                    required
+                                />
+                            </div>
 
-                        <div className="h-full flex flex-col">
-                            <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Descrição</label>
-                            <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="flex-1 min-h-[120px]" />
+                            <div className="flex-1 flex flex-col space-y-2 min-h-[300px]">
+                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wilder ml-1">Descrição</label>
+                                <Textarea
+                                    placeholder="Detalhes da tarefa..."
+                                    value={formData.description}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    className="flex-1 resize-none p-4"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-5">
+                            <Input label="Título" placeholder="Ex: Reunião de Pauta" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
+                            <div className="h-full flex flex-col">
+                                <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Descrição</label>
+                                <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="flex-1 min-h-[120px]" />
+                            </div>
+                        </div>
+                    )}
 
+                    {/* RIGHT COLUMN: Controls */}
                     <div className="space-y-5">
                         {mode === 'event' ? (
                             <>
@@ -1553,16 +1584,21 @@ export const EventModal: React.FC<EventModalProps> = ({
                                     <label className="text-xs text-slate-400 mb-2 block ml-1">Participantes</label>
                                     <UserMultiSelect users={activeUsers} selectedIds={formData.participants || []} onChange={ids => setFormData({ ...formData, participants: ids })} />
                                 </div>
+                                <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
                             </>
                         ) : (
                             <>
-                                {/* Task Fields */}
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prazo Final</label>
-                                    <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
-                                </div>
-
+                                {/* Task Fields - Redesigned */}
                                 <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Status</label>
+                                        <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
+                                            <option value="todo">A Fazer</option>
+                                            <option value="in_progress">Em Andamento</option>
+                                            <option value="review">Em Revisão</option>
+                                            <option value="done">Concluída</option>
+                                        </Select>
+                                    </div>
                                     <div>
                                         <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prioridade</label>
                                         <Select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })}>
@@ -1570,13 +1606,6 @@ export const EventModal: React.FC<EventModalProps> = ({
                                             <option value="medium">Média</option>
                                             <option value="high">Alta</option>
                                             <option value="urgent">Urgente</option>
-                                        </Select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Projeto</label>
-                                        <Select value={formData.projectId} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
-                                            <option value="">Nenhum</option>
-                                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </Select>
                                     </div>
                                 </div>
@@ -1588,10 +1617,77 @@ export const EventModal: React.FC<EventModalProps> = ({
                                         {activeUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                     </Select>
                                 </div>
+
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prazo</label>
+                                    <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Projeto</label>
+                                        <Select value={formData.projectId} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
+                                            <option value="">Nenhum</option>
+                                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Equipe</label>
+                                        <Select value={formData.teamId} onChange={e => setFormData({ ...formData, teamId: e.target.value })}>
+                                            <option value="">Nenhuma</option>
+                                            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+
+                                <div className="pt-2">
+                                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <input
+                                                type="checkbox"
+                                                id="task-recurrence-toggle"
+                                                checked={recurrence.isRecurring}
+                                                onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })}
+                                                className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-emerald-500"
+                                            />
+                                            <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-slate-200 select-none cursor-pointer">
+                                                Repetir esta tarefa?
+                                            </label>
+                                        </div>
+
+                                        {recurrence.isRecurring && (
+                                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/50">
+                                                <div>
+                                                    <label className="text-xs text-slate-400 mb-1 block">Frequência</label>
+                                                    <Select
+                                                        value={recurrence.frequency}
+                                                        onChange={e => setRecurrence({ ...recurrence, frequency: e.target.value as any })}
+                                                        className="h-8 py-1 text-xs"
+                                                    >
+                                                        <option value="daily">Diário</option>
+                                                        <option value="weekly">Semanal</option>
+                                                        <option value="monthly">Mensal</option>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-slate-400 mb-1 block">Qtd</label>
+                                                    <Input
+                                                        type="number"
+                                                        min="2"
+                                                        max="50"
+                                                        className="h-8"
+                                                        value={recurrence.repeatCount || 0}
+                                                        onChange={e => setRecurrence({ ...recurrence, repeatCount: parseInt(e.target.value) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </>
                         )}
-
-                        <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
                     </div>
                 </div>
 

@@ -170,5 +170,5 @@ export const processTransactions = (
         // The Card "Compromisso" is gone.
     });
 
-    return processed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return processed.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
