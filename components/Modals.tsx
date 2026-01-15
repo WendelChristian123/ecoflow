@@ -4,9 +4,10 @@ import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar,
 import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
-import { CheckCircle2, Clock, Trash2, Edit2, X, Calendar, User as UserIcon, Link as LinkIcon, Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, Copy, FileText, ArrowRight, RotateCcw, PlayCircle, CheckSquare } from 'lucide-react';
+import { CheckCircle2, Clock, Trash2, Edit2, X, Calendar, User as UserIcon, Link as LinkIcon, Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, Copy, FileText, ArrowRight, RotateCcw, PlayCircle, CheckSquare, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { ContactModal } from './CommercialModals';
 
 // --- Helpers: Translation ---
 
@@ -380,6 +381,65 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
 }
 
 // --- Transaction Modal ---
+// --- Category Modal (Moved Up) ---
+interface CategoryModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: (category?: FinancialCategory) => void;
+    initialData?: Partial<FinancialCategory>;
+}
+
+export const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSuccess, initialData }) => {
+    const [formData, setFormData] = useState<Partial<FinancialCategory>>({ name: '', type: 'expense', color: '#64748b' });
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) setFormData(initialData || { name: '', type: 'expense', color: '#64748b' });
+    }, [isOpen, initialData]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            let result: FinancialCategory | undefined;
+            if (initialData?.id) {
+                await api.updateFinancialCategory({ ...initialData, ...formData } as FinancialCategory);
+                result = { ...initialData, ...formData } as FinancialCategory;
+            }
+            else result = await api.addFinancialCategory(formData);
+
+            onSuccess(result); onClose();
+        } catch (e) { console.error(e); alert(`Erro: ${getErrorMessage(e)}`); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Categoria" : "Nova Categoria"}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <Input label="Nome" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Tipo</label>
+                    <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
+                        <option value="expense">Despesa</option>
+                        <option value="income">Receita</option>
+                    </Select>
+                </div>
+                <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Cor (Hex)</label>
+                    <div className="flex gap-2">
+                        <Input type="color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} className="w-12 p-1 h-10" />
+                        <Input value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+                    <Button type="submit" disabled={loading}>Salvar</Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
 interface TransactionModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -402,6 +462,29 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
     const [loading, setLoading] = useState(false);
     const [showRecurrenceScope, setShowRecurrenceScope] = useState(false);
     const [pendingAction, setPendingAction] = useState<'update' | 'delete' | null>(null);
+
+    // Quick Add Modals State
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+    const [localContacts, setLocalContacts] = useState<Contact[]>(contacts);
+    const [localCategories, setLocalCategories] = useState<FinancialCategory[]>(categories);
+
+    useEffect(() => { setLocalContacts(contacts); }, [contacts]);
+    useEffect(() => { setLocalCategories(categories); }, [categories]);
+
+    const handleContactSuccess = (newContact?: Contact) => {
+        if (newContact) {
+            setLocalContacts(prev => [...prev, newContact]);
+            setFormData(prev => ({ ...prev, contactId: newContact.id }));
+        }
+    };
+
+    const handleCategorySuccess = (newCategory?: FinancialCategory) => {
+        if (newCategory) {
+            setLocalCategories(prev => [...prev, newCategory]);
+            setFormData(prev => ({ ...prev, categoryId: newCategory.id }));
+        }
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -510,7 +593,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
         alert("Modo de renovação ativado. Verifique a data e salve para criar a nova série.");
     };
 
-    const filteredContacts = (contacts || []).filter(c => {
+    const filteredContacts = (localContacts || []).filter(c => {
         if (formData.type === 'expense') return c.scope === 'supplier' || c.scope === 'both';
         if (formData.type === 'income') return c.scope === 'client' || c.scope === 'both';
         return false;
@@ -611,22 +694,32 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                             ) : (
                                 <>
                                     {/* CONTACT SELECTION */}
-                                    <div>
-                                        <label className="text-xs text-slate-400 block mb-1.5 ml-1">
-                                            {formData.type === 'expense' ? 'Fornecedor (Opcional)' : 'Cliente (Opcional)'}
-                                        </label>
-                                        <Select value={formData.contactId || ''} onChange={e => setFormData({ ...formData, contactId: e.target.value })}>
-                                            <option value="">Selecione...</option>
-                                            {filteredContacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </Select>
+                                    <div className="flex items-end gap-2">
+                                        <div className="flex-1">
+                                            <label className="text-xs text-slate-400 block mb-1.5 ml-1">
+                                                {formData.type === 'expense' ? 'Fornecedor (Opcional)' : 'Cliente (Opcional)'}
+                                            </label>
+                                            <Select value={formData.contactId || ''} onChange={e => setFormData({ ...formData, contactId: e.target.value })}>
+                                                <option value="">Selecione...</option>
+                                                {filteredContacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            </Select>
+                                        </div>
+                                        <Button type="button" variant="secondary" onClick={() => setIsContactModalOpen(true)} className="h-[42px] w-[42px] p-0 flex items-center justify-center mb-[1px]">
+                                            <Plus size={18} />
+                                        </Button>
                                     </div>
 
-                                    <div>
-                                        <label className="text-xs text-slate-400 block mb-1.5 ml-1">Categoria</label>
-                                        <Select value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
-                                            <option value="">Geral</option>
-                                            {categories.filter(c => c.type === formData.type).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </Select>
+                                    <div className="flex items-end gap-2">
+                                        <div className="flex-1">
+                                            <label className="text-xs text-slate-400 block mb-1.5 ml-1">Categoria</label>
+                                            <Select value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
+                                                <option value="">Geral</option>
+                                                {localCategories.filter(c => c.type === formData.type).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            </Select>
+                                        </div>
+                                        <Button type="button" variant="secondary" onClick={() => setIsCategoryModalOpen(true)} className="h-[42px] w-[42px] p-0 flex items-center justify-center mb-[1px]">
+                                            <Plus size={18} />
+                                        </Button>
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-400 block mb-1.5 ml-1">{formData.type === 'expense' ? 'Conta / Cartão' : 'Conta'}</label>
@@ -708,6 +801,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                     if (pendingAction === 'delete') executeDelete(scope);
                 }}
                 action={pendingAction || 'update'}
+            />
+
+            <ContactModal
+                isOpen={isContactModalOpen}
+                onClose={() => setIsContactModalOpen(false)}
+                onSuccess={handleContactSuccess}
+            />
+
+            <CategoryModal
+                isOpen={isCategoryModalOpen}
+                onClose={() => setIsCategoryModalOpen(false)}
+                onSuccess={handleCategorySuccess}
             />
         </>
     );
@@ -1158,58 +1263,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onS
     );
 };
 
-interface CategoryModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: () => void;
-    initialData?: Partial<FinancialCategory>;
-}
 
-export const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSuccess, initialData }) => {
-    const [formData, setFormData] = useState<Partial<FinancialCategory>>({ name: '', type: 'expense', color: '#64748b' });
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (isOpen) setFormData(initialData || { name: '', type: 'expense', color: '#64748b' });
-    }, [isOpen, initialData]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            if (initialData?.id) await api.updateFinancialCategory({ ...initialData, ...formData } as FinancialCategory);
-            else await api.addFinancialCategory(formData);
-            onSuccess(); onClose();
-        } catch (e) { console.error(e); alert(`Erro: ${getErrorMessage(e)}`); }
-        finally { setLoading(false); }
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Categoria" : "Nova Categoria"}>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <Input label="Nome" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Tipo</label>
-                    <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
-                        <option value="expense">Despesa</option>
-                        <option value="income">Receita</option>
-                    </Select>
-                </div>
-                <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Cor (Hex)</label>
-                    <div className="flex gap-2">
-                        <Input type="color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} className="w-12 p-1 h-10" />
-                        <Input value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} />
-                    </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-                    <Button type="submit" disabled={loading}>Salvar</Button>
-                </div>
-            </form>
-        </Modal>
-    );
-};
 
 interface ProjectModalProps {
     isOpen: boolean;

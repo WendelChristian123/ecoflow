@@ -18,7 +18,7 @@ const getLocalDateISO = () => {
 interface ContactModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: () => void;
+    onSuccess: (contact?: Contact) => void;
     initialData?: Contact;
 }
 
@@ -36,9 +36,14 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, onS
         e.preventDefault();
         setLoading(true);
         try {
-            if (initialData?.id) await api.updateContact({ ...initialData, ...formData } as Contact);
-            else await api.addContact(formData);
-            onSuccess(); onClose();
+            let result: Contact | undefined;
+            if (initialData?.id) {
+                await api.updateContact({ ...initialData, ...formData } as Contact);
+                result = { ...initialData, ...formData } as Contact;
+            }
+            else result = await api.addContact(formData);
+
+            onSuccess(result); onClose();
         } catch (error: any) {
             console.error("FULL ERROR DETAILS:", error);
             alert(`Erro ao salvar contrato: ${error.message || JSON.stringify(error)} `);

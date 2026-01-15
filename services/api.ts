@@ -741,8 +741,10 @@ export const api = {
     },
     addFinancialCategory: async (data: Partial<FinancialCategory>) => {
         const tenantId = getCurrentTenantId();
-        const { error } = await supabase.from('financial_categories').insert([{ ...data, tenant_id: tenantId }]);
+        const { data: retData, error } = await supabase.from('financial_categories').insert([{ ...data, tenant_id: tenantId }]).select();
         if (error) throw error;
+        const ret = retData[0];
+        return { ...ret, tenantId: ret.tenant_id } as FinancialCategory;
     },
     updateFinancialCategory: async (data: FinancialCategory) => {
         const { error } = await supabase.from('financial_categories').update(data).eq('id', data.id);
@@ -819,8 +821,15 @@ export const api = {
             notes: c.notes,
             tenant_id: tenantId
         };
-        const { error } = await supabase.from('contacts').insert([dbContact]);
+        const { data, error } = await supabase.from('contacts').insert([dbContact]).select();
         if (error) throw error;
+        const ret = data[0];
+        return {
+            ...ret,
+            fantasyName: ret.fantasy_name,
+            adminName: ret.admin_name,
+            tenantId: ret.tenant_id
+        } as Contact;
     },
     updateContact: async (c: Contact) => {
         const dbContact = {
