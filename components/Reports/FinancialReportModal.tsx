@@ -47,7 +47,12 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
             // Account / Card Filter
             let accountMatch = true;
             if (accountFilter !== 'all') {
-                accountMatch = t.accountId === accountFilter || t.creditCardId === accountFilter;
+                const isCard = cards.some(c => c.id === accountFilter);
+                if (isCard) {
+                    accountMatch = t.creditCardId === accountFilter;
+                } else {
+                    accountMatch = t.accountId === accountFilter && !t.creditCardId;
+                }
             }
 
             // Category

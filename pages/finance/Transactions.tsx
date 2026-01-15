@@ -193,7 +193,7 @@ export const FinancialTransactions: React.FC = () => {
                 const cardId = filters.accountId.replace('card_', '');
                 filtered = filtered.filter(t => t.creditCardId === cardId);
             } else {
-                filtered = filtered.filter(t => t.accountId === filters.accountId);
+                filtered = filtered.filter(t => t.accountId === filters.accountId && !t.creditCardId);
             }
         }
         if (filters.categoryId !== 'all') filtered = filtered.filter(t => t.categoryId === filters.categoryId);
