@@ -77,7 +77,12 @@ export const processTransactions = (
         // OBS: User defined "Closing Day" as "Best Shopping Day".
         // Therefore, if purchase equals Closing Day, it goes to Next Month.
         let invoiceMonth = txDate;
-        if (day >= closingDay) {
+
+        // FIX: Only EXPENSES shift to next month after closing day.
+        // PAYMENTS (Income) made between Closing Day and Due Date should Apply to the CURRENT bill (not the next one).
+        // By keeping Incomes in the current month, they will naturaly fall into the correct Due Date bucket 
+        // based on the 'dueDay < closingDay' logic below.
+        if (t.type === 'expense' && day >= closingDay) {
             invoiceMonth = addMonths(txDate, 1);
         }
 
