@@ -409,7 +409,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                 description: initialData?.description || '',
                 amount: initialData?.amount || 0,
                 type: initialData?.type || initialType || 'expense',
-                date: initialData?.date || format(new Date(), 'yyyy-MM-dd'),
+                date: initialData?.date ? initialData.date.split('T')[0] : format(new Date(), 'yyyy-MM-dd'),
                 isPaid: initialData?.isPaid || false,
                 accountId: initialData?.accountId || accounts[0]?.id || '',
                 categoryId: initialData?.categoryId || '',
