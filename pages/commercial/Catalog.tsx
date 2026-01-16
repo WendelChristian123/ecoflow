@@ -4,8 +4,10 @@ import { api } from '../../services/api';
 import { CatalogItem } from '../../types';
 import { Loader, Card, Button, Input, Badge } from '../../components/Shared';
 import { CatalogModal } from '../../components/CommercialModals';
+import { CatalogReportModal } from '../../components/Reports/CatalogReportModal';
 import { ConfirmationModal } from '../../components/Modals';
-import { ShoppingBag, Search, Plus, Trash2, Edit2, Tag } from 'lucide-react';
+import { ShoppingBag, Search, Plus, Trash2, Edit2, Tag, FileText } from 'lucide-react';
+import { translateCatalogType } from '../../utils/i18n';
 
 export const CatalogPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -14,6 +16,7 @@ export const CatalogPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<CatalogItem | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     useEffect(() => { loadData(); }, []);
 
@@ -42,7 +45,10 @@ export const CatalogPage: React.FC = () => {
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-white flex items-center gap-3"><ShoppingBag className="text-emerald-500" /> Produtos & Serviços</h1>
-                <Button className="gap-2" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Item</Button>
+                <div className="flex gap-2">
+                    <Button variant="ghost" className="gap-2" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
+                    <Button className="gap-2" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Item</Button>
+                </div>
             </div>
 
             <div className="relative">
@@ -60,8 +66,8 @@ export const CatalogPage: React.FC = () => {
                         <div className="flex items-center gap-4">
                             {/* Type Indicator */}
                             <div className={`h-12 w-12 rounded-lg flex items-center justify-center font-bold text-lg border ${i.type === 'service'
-                                    ? 'bg-slate-800 border-slate-700 text-purple-400'
-                                    : 'bg-slate-800 border-slate-700 text-blue-400'
+                                ? 'bg-slate-800 border-slate-700 text-purple-400'
+                                : 'bg-slate-800 border-slate-700 text-blue-400'
                                 }`}>
                                 {i.type === 'service' ? 'S' : 'P'}
                             </div>
@@ -105,6 +111,7 @@ export const CatalogPage: React.FC = () => {
             </div>
 
             <CatalogModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} initialData={editingItem} />
+            <CatalogReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} items={items} />
             <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={handleDelete} title="Excluir Item" />
         </div>
     );

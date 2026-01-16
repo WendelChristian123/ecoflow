@@ -4,8 +4,10 @@ import { api } from '../../services/api';
 import { Contact } from '../../types';
 import { Loader, Card, Button, Input, Badge, Avatar } from '../../components/Shared';
 import { ContactModal } from '../../components/CommercialModals';
+import { ContactsReportModal } from '../../components/Reports/ContactsReportModal';
+import { translateContactScope, translatePersonType } from '../../utils/i18n';
 import { ConfirmationModal } from '../../components/Modals';
-import { Users, Search, Plus, Phone, Mail, MapPin, Building, User as UserIcon, Trash2, Edit2 } from 'lucide-react';
+import { Users, Search, Plus, Phone, Mail, MapPin, Building, User as UserIcon, Trash2, Edit2, FileText } from 'lucide-react';
 
 export const ContactsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -14,6 +16,7 @@ export const ContactsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     useEffect(() => { loadData(); }, []);
 
@@ -102,7 +105,10 @@ export const ContactsPage: React.FC = () => {
         <div className="h-full flex flex-col overflow-hidden pb-4 pr-2">
             <div className="flex justify-between items-center mb-6 shrink-0">
                 <h1 className="text-2xl font-bold text-white flex items-center gap-3"><Users className="text-emerald-500" /> Contatos</h1>
-                <Button className="gap-2" onClick={() => { setEditingContact(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Contato</Button>
+                <div className="flex gap-2">
+                    <Button variant="ghost" className="gap-2" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
+                    <Button className="gap-2" onClick={() => { setEditingContact(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Contato</Button>
+                </div>
             </div>
 
             <div className="relative mb-6 shrink-0">
@@ -117,6 +123,7 @@ export const ContactsPage: React.FC = () => {
             </div>
 
             <ContactModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} initialData={editingContact} />
+            <ContactsReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} contacts={contacts} />
             <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={handleDelete} title="Excluir Contato" />
         </div>
     );

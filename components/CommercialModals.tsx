@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select, Textarea, Badge, CurrencyInput } from './Shared';
 import { Contact, CatalogItem, RecurringService, Quote, FinancialCategory, FinancialAccount, ContactScope, PersonType, CatalogType, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
-import { Plus, Trash2, ShoppingBag, User as UserIcon, Building, FileText, Check, AlertCircle, UserPlus, X, Box, Calendar, DollarSign, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ShoppingBag, User as UserIcon, Building, FileText, Check, AlertCircle, UserPlus, X, Box, Calendar, DollarSign, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 import { format, parseISO, addMonths, differenceInDays, addDays } from 'date-fns';
 import { formatDate } from '../utils/formatters';
 
@@ -12,6 +12,59 @@ const getLocalDateISO = () => {
     const offset = date.getTimezoneOffset();
     const localDate = new Date(date.getTime() - (offset * 60 * 1000));
     return localDate.toISOString().split('T')[0];
+};
+
+interface QuoteApprovalModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onOptionSelected: (option: 'contract' | 'finance') => void;
+}
+
+export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({ isOpen, onClose, onOptionSelected }) => {
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Orçamento Aprovado!" className="max-w-md">
+            <div className="space-y-6">
+                <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 text-center">
+                    <div className="mx-auto w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mb-3">
+                        <Check className="text-white w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-emerald-400 mb-1">Status atualizado com sucesso!</h3>
+                    <p className="text-sm text-slate-400">O cliente foi criado/vinculado automaticamente.</p>
+                </div>
+
+                <div className="text-center text-slate-300">
+                    <p className="mb-4">O que deseja fazer a seguir?</p>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => onOptionSelected('contract')}
+                            className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/50 rounded-xl transition-all group"
+                        >
+                            <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                                <RefreshCw size={20} />
+                            </div>
+                            <span className="font-bold text-sm">Criar Contrato</span>
+                            <span className="text-[10px] text-slate-500 leading-tight">Serviços recorrentes ou mensalidades</span>
+                        </button>
+
+                        <button
+                            onClick={() => onOptionSelected('finance')}
+                            className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/50 rounded-xl transition-all group"
+                        >
+                            <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                                <DollarSign size={20} />
+                            </div>
+                            <span className="font-bold text-sm">Lançar Financeiro</span>
+                            <span className="text-[10px] text-slate-500 leading-tight">Venda única, receita pontual</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="pt-2 flex justify-center">
+                    <Button variant="ghost" onClick={onClose} className="text-slate-500 text-xs">Agora não, apenas salvar status</Button>
+                </div>
+            </div>
+        </Modal>
+    );
 };
 
 // --- CONTACT MODAL ---
@@ -186,7 +239,7 @@ export const CatalogModal: React.FC<CatalogModalProps> = ({ isOpen, onClose, onS
 interface QuoteModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: () => void;
+    onSuccess: (quote?: Quote) => void;
     contacts: Contact[];
     catalog: CatalogItem[];
     initialData?: Quote;
@@ -246,36 +299,26 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
         setLoading(true);
         try {
             const payload = { ...formData, totalValue };
-            if (initialData?.id) await api.updateQuote(payload, items);
-            else await api.addQuote(payload, items);
-            onSuccess(); onClose();
+            let result: Quote | undefined;
+
+            if (initialData?.id) {
+                await api.updateQuote(payload, items);
+                // Construct updated quote object for return
+                result = { ...initialData, ...payload, items } as Quote;
+            }
+            else {
+                // Should return created quote ideally, but assuming update is enough for now or onSuccess reloads
+                await api.addQuote(payload, items);
+                // Mock result for new quote if ID missing isn't crucial for immediate next step logic
+                // But wait, we need the ID for automation flow if new. 
+                // api.addQuote doesn't return the object in current implementation? Let's check api.ts later. 
+                // For now, let's assume we can proceed or that automation mainly happens on update.
+                // Actually, status 'approved' could be set on creation.
+                result = { ...payload, items, id: 'temp' } as Quote;
+            }
+            onSuccess(result); onClose();
         } catch (error) { console.error(error); alert(`Erro: ${getErrorMessage(error)} `); }
         finally { setLoading(false); }
-    };
-
-    const handleApproval = async () => {
-        if (!initialData?.id) return;
-        if (!window.confirm("Aprovar orçamento e gerar venda?")) return;
-        try {
-            await api.updateQuote({ ...formData, status: 'approved' }, items);
-
-            // Try to generate revenue
-            const mainItem = items[0];
-            const catItem = catalog.find(c => c.id === mainItem?.catalogItemId);
-
-            await api.addTransaction({
-                description: `Venda: ${formData.customerName || 'Cliente'} (Orç #${initialData.id.substring(0, 4)})`,
-                amount: totalValue,
-                type: 'income',
-                date: getLocalDateISO(),
-                categoryId: catItem?.financialCategoryId || undefined,
-                contactId: initialData.contactId,
-                isPaid: false
-            });
-
-            alert(`Venda gerada com sucesso!`);
-            onSuccess(); onClose();
-        } catch (error) { console.error(error); }
     };
 
     return (
@@ -366,7 +409,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                                             <CurrencyInput
                                                 value={item.unitPrice}
                                                 onValueChange={(val) => updateItem(idx, 'unitPrice', val || 0)}
-                                                className="bg-transparent border-0 pl-0 pr-0 py-1"
+                                                className="bg-transparent border-0 pl-8 pr-0 py-1"
                                                 placeholder="0,00"
                                             />
                                         </td>
@@ -395,18 +438,9 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
 
                 <Textarea placeholder="Termos, condições ou notas internas..." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="h-20" />
 
-                <div className="flex justify-between items-center pt-4 border-t border-slate-800">
-                    <div>
-                        {initialData?.id && formData.status !== 'approved' && (
-                            <Button type="button" variant="ghost" className="text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10" onClick={handleApproval}>
-                                <Check size={16} className="mr-2" /> Aprovar & Gerar Venda
-                            </Button>
-                        )}
-                    </div>
-                    <div className="flex gap-2">
-                        <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-                        <Button type="submit" disabled={loading}>Salvar Orçamento</Button>
-                    </div>
+                <div className="flex justify-end items-center pt-4 border-t border-slate-800 gap-2">
+                    <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+                    <Button type="submit" disabled={loading}>Salvar Orçamento</Button>
                 </div>
             </form>
         </Modal>

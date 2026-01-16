@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Quote, Contact, CatalogItem } from '../../types';
 import { Loader, Button, Badge } from '../../components/Shared';
-import { QuoteModal } from '../../components/CommercialModals';
-import { ConfirmationModal } from '../../components/Modals';
+import { QuoteModal, QuoteApprovalModal, RecurringModal } from '../../components/CommercialModals';
+import { ConfirmationModal, TransactionModal } from '../../components/Modals';
 import { FileText, Plus, Trash2, Edit2, User, Calendar, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
 
@@ -12,13 +12,19 @@ import { startOfMonth, endOfMonth, isSameMonth, addMonths, subMonths, format, pa
 import { ptBR } from 'date-fns/locale';
 import { Select } from '../../components/Shared';
 import { QuoteKanban } from '../../components/Commercial/QuoteKanban';
+import { translateQuoteStatus } from '../../utils/i18n';
 import { LayoutGrid, List } from 'lucide-react';
+import { FinancialCategory, FinancialAccount, RecurringService } from '../../types';
 
 export const QuotesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
+
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+    // Data for subsequent modals
+    const [financialCategories, setFinancialCategories] = useState<FinancialCategory[]>([]);
+    const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
 
     // Filters
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,13 +36,27 @@ export const QuotesPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Approval Workflow State
+    const [approvedQuote, setApprovedQuote] = useState<Quote | undefined>(undefined);
+    const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+    const [transactionInitialData, setTransactionInitialData] = useState<any>(undefined);
+    const [recurringInitialData, setRecurringInitialData] = useState<Partial<RecurringService> | undefined>(undefined);
+
     useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const [q, c, cat] = await Promise.all([api.getQuotes(), api.getContacts(), api.getCatalogItems()]);
-            setQuotes(q); setContacts(c); setCatalog(cat);
+            const [q, c, cat, fc, acc] = await Promise.all([
+                api.getQuotes(),
+                api.getContacts(),
+                api.getCatalogItems(),
+                api.getFinancialCategories(),
+                api.getFinancialAccounts()
+            ]);
+            setQuotes(q); setContacts(c); setCatalog(cat); setFinancialCategories(fc); setAccounts(acc);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -49,15 +69,91 @@ export const QuotesPage: React.FC = () => {
         }
     };
 
+
     const handleStatusChange = async (id: string, newStatus: string) => {
         // Optimistic Update
+        const targetQuote = quotes.find(q => q.id === id);
         setQuotes(prev => prev.map(q => q.id === id ? { ...q, status: newStatus as any } : q));
 
         try {
             await api.updateQuote({ id, status: newStatus as any }, null as any);
+
+            // AUTOMATION: If Approved, trigger flow
+            if (newStatus === 'approved' && targetQuote) {
+                handleApprovalFlow({ ...targetQuote, status: 'approved' } as Quote);
+            }
         } catch (e) {
             console.error("Failed to move quote", e);
             loadData(); // Revert on error
+        }
+    };
+
+    const handleApprovalFlow = async (quote: Quote) => {
+        let currentQuote = { ...quote };
+
+        // 1. Check/Create Contact
+        if (!currentQuote.contactId) {
+            try {
+                // Auto-create contact
+                const newContact = await api.addContact({
+                    name: currentQuote.customerName || 'Cliente Novo',
+                    phone: currentQuote.customerPhone,
+                    scope: 'client',
+                    type: 'pj' // Default to PJ or could infer?
+                });
+
+                // Update local state
+                setContacts(prev => [...prev, newContact]);
+
+                // Link contact to quote
+                await api.updateQuote({ id: currentQuote.id, contactId: newContact.id } as any, null as any);
+                currentQuote.contactId = newContact.id;
+                currentQuote.contact = newContact;
+
+                // Update list
+                setQuotes(prev => prev.map(q => q.id === currentQuote.id ? { ...q, contactId: newContact.id, contact: newContact } : q));
+            } catch (error) {
+                console.error("Failed to auto-create contact", error);
+                alert("Erro ao criar contato automaticamente. Verifique os dados do cliente.");
+                return;
+            }
+        }
+
+        // 2. Open Decision Modal
+        setApprovedQuote(currentQuote);
+        setIsApprovalModalOpen(true);
+    };
+
+    const handleApprovalDecision = (option: 'contract' | 'finance') => {
+        setIsApprovalModalOpen(false);
+        if (!approvedQuote) return;
+
+        if (option === 'finance') {
+            // Prepare Transaction Data
+            // Try to find a category from the first item
+            const firstItem = approvedQuote.items?.[0];
+            const catItem = catalog.find(c => c.id === firstItem?.catalogItemId);
+
+            setTransactionInitialData({
+                description: `Venda: ${approvedQuote.contact?.name || approvedQuote.customerName} (Orç #${approvedQuote.id.substring(0, 4)})`,
+                amount: approvedQuote.totalValue,
+                type: 'income',
+                date: new Date().toISOString().split('T')[0], // Today
+                contactId: approvedQuote.contactId,
+                categoryId: catItem?.financialCategoryId || ''
+            });
+            setIsTransactionModalOpen(true);
+        } else {
+            // Prepare Contract Data
+            setRecurringInitialData({
+                contactId: approvedQuote.contactId,
+                startDate: new Date().toISOString().split('T')[0], // Today
+                description: `Contrato Ref. Orçamento #${approvedQuote.id.substring(0, 4)}`,
+                amount: approvedQuote.totalValue,
+                active: true,
+                contractMonths: 12
+            });
+            setIsRecurringModalOpen(true);
         }
     };
 
@@ -168,7 +264,7 @@ export const QuotesPage: React.FC = () => {
                         <div
                             key={q.id}
                             onClick={() => { setEditingQuote(q); setIsModalOpen(true); }}
-                            className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group"
+                            className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative"
                         >
                             <div className="flex items-center gap-6">
                                 {/* Quote ID */}
@@ -215,12 +311,30 @@ export const QuotesPage: React.FC = () => {
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}
                                         </div>
                                     </div>
-                                    <Badge variant={statusMap[q.status].color} className="w-24 justify-center">{statusMap[q.status].label}</Badge>
+                                    <div onClick={(e) => e.stopPropagation()} className="w-32">
+                                        <select
+                                            value={q.status}
+                                            onChange={(e) => handleStatusChange(q.id, e.target.value)}
+                                            className={`
+                                                w-full appearance-none text-xs font-bold px-3 py-1.5 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
+                                                ${q.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' :
+                                                    q.status === 'sent' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' :
+                                                        q.status === 'rejected' || q.status === 'expired' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20' :
+                                                            'bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20'}
+                                            `}
+                                        >
+                                            <option value="draft" className="bg-slate-900 text-slate-400">Rascunho</option>
+                                            <option value="sent" className="bg-slate-900 text-amber-500">Enviado</option>
+                                            <option value="approved" className="bg-slate-900 text-emerald-500">Aprovado</option>
+                                            <option value="rejected" className="bg-slate-900 text-rose-500">Rejeitado</option>
+                                            <option value="expired" className="bg-slate-900 text-rose-500">Expirado</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Actions Overlay */}
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(q.id); }}
                                     className="p-1.5 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-500 rounded transition-colors"
@@ -233,7 +347,48 @@ export const QuotesPage: React.FC = () => {
                 </div>
             )}
 
-            <QuoteModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} contacts={contacts} catalog={catalog} initialData={editingQuote} />
+            <QuoteModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={(savedQuote) => {
+                    loadData();
+                    if (savedQuote && savedQuote.status === 'approved') {
+                        // Small delay to ensure modal close animation allows seeing the new one? Not strictly necessary.
+                        // We pass the savedQuote directly
+                        handleApprovalFlow(savedQuote);
+                    }
+                }}
+                contacts={contacts}
+                catalog={catalog}
+                initialData={editingQuote}
+            />
+
+            <QuoteApprovalModal
+                isOpen={isApprovalModalOpen}
+                onClose={() => setIsApprovalModalOpen(false)}
+                onOptionSelected={handleApprovalDecision}
+            />
+
+            <TransactionModal
+                isOpen={isTransactionModalOpen}
+                onClose={() => setIsTransactionModalOpen(false)}
+                onSuccess={() => { loadData(); /* Maybe navigate to finance? */ }}
+                contacts={contacts}
+                categories={financialCategories}
+                accounts={accounts}
+                initialData={transactionInitialData}
+            />
+
+            <RecurringModal
+                isOpen={isRecurringModalOpen}
+                onClose={() => setIsRecurringModalOpen(false)}
+                onSave={loadData}
+                contacts={contacts}
+                catalog={catalog}
+                financialCategories={financialCategories}
+                bankAccounts={accounts}
+                initialData={recurringInitialData}
+            />
             <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={handleDelete} title="Excluir Orçamento" />
         </div>
     );

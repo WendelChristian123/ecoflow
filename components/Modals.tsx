@@ -8,46 +8,9 @@ import { CheckCircle2, Clock, Trash2, Edit2, X, Calendar, User as UserIcon, Link
 import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ContactModal } from './CommercialModals';
+import { translateStatus, translatePriority, translateTaskStatus, translateContactScope } from '../utils/i18n';
 
-// --- Helpers: Translation ---
-
-const translateStatus = (s: string) => {
-    const map: Record<string, string> = {
-        todo: 'A Fazer',
-        in_progress: 'Em Progresso',
-        review: 'Revisão',
-        done: 'Concluído',
-        scheduled: 'Agendado',
-        completed: 'Concluído',
-        active: 'Ativo',
-        on_hold: 'Em Espera',
-        draft: 'Rascunho',
-        sent: 'Enviado',
-        approved: 'Aprovado',
-        rejected: 'Rejeitado',
-        expired: 'Expirado'
-    };
-    return map[s] || s;
-};
-
-const translatePriority = (p: string) => {
-    const map: Record<string, string> = {
-        low: 'Baixa',
-        medium: 'Média',
-        high: 'Alta',
-        urgent: 'Urgente'
-    };
-    return map[p] || p;
-};
-
-const translateEventType = (t: string) => {
-    const map: Record<string, string> = {
-        meeting: 'Reunião',
-        deadline: 'Prazo',
-        review: 'Revisão'
-    };
-    return map[t] || t;
-};
+// --- Generic Confirmation Modal ---
 
 // ... Rest of the file remains unchanged from ConfirmationModal downwards ...
 // --- Generic Confirmation Modal ---
@@ -446,13 +409,13 @@ interface TransactionModalProps {
     onSuccess: () => void;
     accounts: FinancialAccount[];
     categories: FinancialCategory[];
-    cards: CreditCard[];
+    cards?: CreditCard[];
     contacts: Contact[];
     initialData?: Partial<FinancialTransaction>;
     initialType?: 'income' | 'expense' | 'transfer';
 }
 
-export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSuccess, accounts, categories, cards, contacts, initialData, initialType }) => {
+export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSuccess, accounts, categories, cards = [], contacts, initialData, initialType }) => {
     const [formData, setFormData] = useState<Partial<FinancialTransaction>>({
         description: '', amount: 0, type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), isPaid: false,
         accountId: '', categoryId: '', creditCardId: '', contactId: '', links: []

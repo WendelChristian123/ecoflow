@@ -4,10 +4,12 @@ import { api } from '../../services/api';
 import { RecurringService, Contact, CatalogItem, FinancialCategory, FinancialAccount } from '../../types';
 import { Loader, Card, Button, Badge } from '../../components/Shared';
 import { RecurringModal, ContractDetailModal } from '../../components/CommercialModals';
+import { RecurringReportModal } from '../../components/Reports/RecurringReportModal';
 import { ConfirmationModal } from '../../components/Modals';
 import { RefreshCw, Plus, Trash2, Calendar, Edit2, User, Eye, FileText, MoreHorizontal } from 'lucide-react';
 import { format, parseISO, addMonths, addDays } from 'date-fns';
 import { formatDate } from '../../utils/formatters';
+import { translateFrequency } from '../../utils/i18n';
 
 export const RecurringPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -22,6 +24,7 @@ export const RecurringPage: React.FC = () => {
     const [editingService, setEditingService] = useState<RecurringService | undefined>(undefined);
     const [detailService, setDetailService] = useState<RecurringService | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     useEffect(() => { loadData(); }, []);
 
@@ -59,7 +62,10 @@ export const RecurringPage: React.FC = () => {
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-white flex items-center gap-3"><RefreshCw className="text-emerald-500" /> Contratos Recorrentes</h1>
-                <Button className="gap-2" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
+                <div className="flex gap-2">
+                    <Button variant="ghost" className="gap-2" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
+                    <Button className="gap-2" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
+                </div>
             </div>
 
             <div className="space-y-3">
@@ -162,6 +168,7 @@ export const RecurringPage: React.FC = () => {
                 bankAccounts={bankAccounts}
             />
 
+            <RecurringReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} services={services} />
             <ConfirmationModal
                 isOpen={!!confirmDeleteId}
                 onClose={() => setConfirmDeleteId(null)}
