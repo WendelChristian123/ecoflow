@@ -285,12 +285,16 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    // console.log("Modal is closed (isOpen=false)"); // Too noisy if logged every render
+    return null;
+  }
+  console.log("Modal IS OPEN. Rendering fixed overlay.");
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
       <div className={cn(
-        "relative w-full bg-slate-900 border border-slate-800 rounded-xl shadow-2xl flex flex-col max-h-[96vh] animate-in fade-in zoom-in-95 duration-200",
+        "relative w-full bg-slate-900 border border-slate-800 rounded-xl shadow-2xl flex flex-col max-h-[96vh]",
         className || "max-w-lg"
       )}>
         <div className="flex items-center justify-between p-5 border-b border-slate-800 shrink-0">

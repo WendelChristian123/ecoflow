@@ -165,7 +165,9 @@ export const ProjectsPage: React.FC = () => {
       p.description.toLowerCase().includes(searchQuery.toLowerCase());
 
     // 2. Month (Due Date)
-    const dateMatch = !p.dueDate || isSameMonth(parseISO(p.dueDate), currentMonth);
+    // REMOVED: Projects should be visible regardless of due date in the main list, unless explicitly filtered.
+    // const dateMatch = !p.dueDate || isSameMonth(parseISO(p.dueDate), currentMonth);
+    const dateMatch = true;
 
     // 3. Status
     const statusMatch = statusFilter === 'all' || p.status === statusFilter;

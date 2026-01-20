@@ -167,6 +167,13 @@ export const api = {
     },
     addProject: async (project: Partial<Project>) => {
         const tenantId = getCurrentTenantId();
+        console.log("[API] addProject called. TenantID:", tenantId);
+
+        if (!tenantId) {
+            console.error("[API] Missing Tenant ID");
+            throw new Error("Tenant ID is required but missing from local storage.");
+        }
+
         const { data: userData } = await supabase.auth.getUser();
 
         let members = project.members || [];

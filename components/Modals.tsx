@@ -1262,7 +1262,17 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(initialData || { name: '', description: '', status: 'active', progress: 0, dueDate: '', members: [], links: [] });
+            // Ensure default due date is today in YYYY-MM-DD format if not provided, to prevent input[type=date] issues
+            const defaultDate = new Date().toISOString().split('T')[0];
+            setFormData(initialData || {
+                name: '',
+                description: '',
+                status: 'active',
+                progress: 0,
+                dueDate: defaultDate,
+                members: [],
+                links: []
+            });
         }
     }, [isOpen, initialData]);
 
@@ -1277,9 +1287,9 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
             }
             onSuccess();
             onClose();
-        } catch (e) {
-            console.error(e);
-            alert(`Erro ao salvar projeto: ${getErrorMessage(e)}`);
+        } catch (e: any) {
+            console.error("Error saving project:", e);
+            alert(`Erro ao salvar projeto: ${e.message || getErrorMessage(e)}`);
         } finally { setLoading(false); }
     };
 

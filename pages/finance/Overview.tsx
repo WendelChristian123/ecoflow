@@ -211,6 +211,7 @@ export const FinancialOverview: React.FC = () => {
     const getComparisonData = () => {
         const now = new Date();
         const data = [];
+        const mode = financeSettings.credit_card_expense_mode || 'competence';
 
         if (comparisonMode === 'month') {
             const thisMonthStart = startOfMonth(now);
@@ -219,13 +220,21 @@ export const FinancialOverview: React.FC = () => {
             const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
             const calc = (start: Date, end: Date, type: 'income' | 'expense') =>
-                transactions.filter(t =>
-                    t.type === type &&
-                    t.isPaid &&
-                    t.originType !== 'technical' &&
-                    !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                    isWithinInterval(parseDateLocal(t.date), { start, end })
-                ).reduce((s, t) => s + t.amount, 0);
+                transactions.filter(t => {
+                    const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+
+                    // Mode Logic:
+                    if (mode === 'competence') {
+                        // Competence: Include Purchases, Exclude Bill Payments (to avoid double count)
+                        if (t.description.toLowerCase().includes('pagamento fatura')) return false;
+                        return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                    } else {
+                        // Cash: Exclude Purchases (they are paid via Bill), Include Bill Payments
+                        // If it has creditCardId, it's a purchase -> Hide
+                        if (t.creditCardId) return false;
+                        return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                    }
+                }).reduce((s, t) => s + t.amount, 0);
 
             data.push({ name: 'Mês Anterior', Receitas: calc(lastMonthStart, lastMonthEnd, 'income'), Despesas: calc(lastMonthStart, lastMonthEnd, 'expense') });
             data.push({ name: 'Mês Atual', Receitas: calc(thisMonthStart, thisMonthEnd, 'income'), Despesas: calc(thisMonthStart, thisMonthEnd, 'expense') });
@@ -236,13 +245,16 @@ export const FinancialOverview: React.FC = () => {
                 const start = startOfMonth(date);
                 const end = endOfMonth(date);
                 const calc = (type: 'income' | 'expense') =>
-                    transactions.filter(t =>
-                        t.type === type &&
-                        t.isPaid &&
-                        t.originType !== 'technical' &&
-                        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                        isWithinInterval(parseDateLocal(t.date), { start, end })
-                    ).reduce((s, t) => s + t.amount, 0);
+                    transactions.filter(t => {
+                        const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+                        if (mode === 'competence') {
+                            if (t.description.toLowerCase().includes('pagamento fatura')) return false;
+                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                        } else {
+                            if (t.creditCardId) return false;
+                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                        }
+                    }).reduce((s, t) => s + t.amount, 0);
 
                 const label = `${date.getMonth() + 1}/${date.getFullYear().toString().substr(2)}`;
                 data.push({ name: label, Receitas: calc('income'), Despesas: calc('expense') });
@@ -253,13 +265,16 @@ export const FinancialOverview: React.FC = () => {
                 const start = startOfMonth(date);
                 const end = endOfMonth(date);
                 const calc = (type: 'income' | 'expense') =>
-                    transactions.filter(t =>
-                        t.type === type &&
-                        t.isPaid &&
-                        t.originType !== 'technical' &&
-                        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                        isWithinInterval(parseDateLocal(t.date), { start, end })
-                    ).reduce((s, t) => s + t.amount, 0);
+                    transactions.filter(t => {
+                        const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+                        if (mode === 'competence') {
+                            if (t.description.toLowerCase().includes('pagamento fatura')) return false;
+                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                        } else {
+                            if (t.creditCardId) return false;
+                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                        }
+                    }).reduce((s, t) => s + t.amount, 0);
 
                 const label = `${date.getMonth() + 1}/${date.getFullYear().toString().substr(2)}`;
                 data.push({ name: label, Receitas: calc('income'), Despesas: calc('expense') });
@@ -273,13 +288,16 @@ export const FinancialOverview: React.FC = () => {
                 const monthStart = startOfMonth(current);
                 const monthEnd = endOfMonth(current);
                 const calc = (type: 'income' | 'expense') =>
-                    transactions.filter(t =>
-                        t.type === type &&
-                        t.isPaid &&
-                        t.originType !== 'technical' &&
-                        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                        isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd })
-                    ).reduce((s, t) => s + t.amount, 0);
+                    transactions.filter(t => {
+                        const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+                        if (mode === 'competence') {
+                            if (t.description.toLowerCase().includes('pagamento fatura')) return false;
+                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd });
+                        } else {
+                            if (t.creditCardId) return false;
+                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd });
+                        }
+                    }).reduce((s, t) => s + t.amount, 0);
 
                 const label = `${current.getMonth() + 1}/${current.getFullYear().toString().substr(2)}`;
                 data.push({ name: label, Receitas: calc('income'), Despesas: calc('expense') });
