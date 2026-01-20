@@ -10,9 +10,9 @@ export const FinancialAccounts: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
-    
+
     // Modals
-    const [drilldownState, setDrilldownState] = useState<{isOpen: boolean, title: string, data: any[]}>({ isOpen: false, title: '', data: [] });
+    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<FinancialAccount | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -31,14 +31,26 @@ export const FinancialAccounts: React.FC = () => {
     };
 
     const getAccountBalance = (accountId: string, initialBalance: number) => {
-        const accTrans = transactions.filter(t => t.accountId === accountId && t.isPaid);
-        const income = accTrans.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-        const expense = accTrans.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-        return initialBalance + income - expense;
+        // 1. Transactions directly linked to this account (Income/Expense/Transfer Out)
+        const directTrans = transactions.filter(t => t.accountId === accountId && t.isPaid);
+
+        // 2. Incoming Transfers (where this account is the destination)
+        const incomingTrans = transactions.filter(t => t.toAccountId === accountId && t.isPaid && t.type === 'transfer');
+
+        const income = directTrans.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const expense = directTrans.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+        // Transfers:
+        // Outgoing: Already included in 'directTrans' if type is 'transfer' (needs subtraction)
+        // Incoming: Needs addition
+        const transferOut = directTrans.filter(t => t.type === 'transfer').reduce((s, t) => s + t.amount, 0);
+        const transferIn = incomingTrans.reduce((s, t) => s + t.amount, 0);
+
+        return initialBalance + income - expense - transferOut + transferIn;
     };
 
     const handleCreate = () => { setEditingAccount(undefined); setIsAccountModalOpen(true); };
-    
+
     const handleEdit = (e: React.MouseEvent, account: FinancialAccount) => {
         e.stopPropagation();
         setEditingAccount(account);
@@ -84,14 +96,14 @@ export const FinancialAccounts: React.FC = () => {
                         <span className="text-slate-400 text-sm font-medium uppercase">Total de Contas</span>
                         <div className="text-3xl font-bold text-white mt-1">{accounts.length}</div>
                     </div>
-                    <div className="p-3 bg-slate-700/50 rounded-lg text-slate-400"><Landmark size={24}/></div>
+                    <div className="p-3 bg-slate-700/50 rounded-lg text-slate-400"><Landmark size={24} /></div>
                 </div>
                 <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 flex items-center justify-between">
                     <div>
                         <span className="text-slate-400 text-sm font-medium uppercase">Saldo Total Consolidado</span>
                         <div className="text-3xl font-bold text-emerald-400 mt-1">{fmt(totalBalance)}</div>
                     </div>
-                    <div className="p-3 bg-slate-700/50 rounded-lg text-emerald-400"><DollarSign size={24}/></div>
+                    <div className="p-3 bg-slate-700/50 rounded-lg text-emerald-400"><DollarSign size={24} /></div>
                 </div>
             </div>
 
@@ -100,22 +112,25 @@ export const FinancialAccounts: React.FC = () => {
                 {accounts.map(acc => {
                     const balance = getAccountBalance(acc.id, acc.initialBalance);
                     return (
-                        <Card 
-                            key={acc.id} 
+                        <Card
+                            key={acc.id}
                             onClick={() => {
-                                const accountTransactions = transactions.filter(t => t.accountId === acc.id);
+                                const accountTransactions = transactions.filter(t =>
+                                    t.accountId === acc.id ||
+                                    (t.type === 'transfer' && t.toAccountId === acc.id)
+                                );
                                 setDrilldownState({ isOpen: true, title: `Lançamentos: ${acc.name}`, data: accountTransactions });
                             }}
                             className="flex flex-col justify-between cursor-pointer hover:border-emerald-500/30 transition-all min-h-[160px] group relative"
                         >
-                             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                 <button onClick={(e) => handleEdit(e, acc)} className="text-slate-600 hover:text-white transition-colors">
                                     <Edit2 size={16} />
                                 </button>
                                 <button onClick={(e) => requestDelete(e, acc.id)} className="text-slate-600 hover:text-rose-500 transition-colors">
                                     <Trash2 size={16} />
                                 </button>
-                             </div>
+                            </div>
 
                             <div className="flex justify-between items-start">
                                 <div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-400">
@@ -123,7 +138,7 @@ export const FinancialAccounts: React.FC = () => {
                                 </div>
                                 <Badge variant="success">Ativa</Badge>
                             </div>
-                            
+
                             <div>
                                 <h3 className="text-lg font-semibold text-white mb-1">{acc.name}</h3>
                                 <p className="text-sm text-slate-500 capitalize">{acc.type === 'checking' ? 'Conta Corrente' : acc.type === 'savings' ? 'Poupança' : acc.type === 'investment' ? 'Investimento' : 'Caixa'}</p>
@@ -138,15 +153,15 @@ export const FinancialAccounts: React.FC = () => {
                 })}
             </div>
 
-            <DrilldownModal 
+            <DrilldownModal
                 isOpen={drilldownState.isOpen}
-                onClose={() => setDrilldownState({...drilldownState, isOpen: false})}
+                onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })}
                 title={drilldownState.title}
                 type="finance"
                 data={drilldownState.data}
             />
 
-            <AccountModal 
+            <AccountModal
                 isOpen={isAccountModalOpen}
                 onClose={() => setIsAccountModalOpen(false)}
                 onSuccess={loadData}
