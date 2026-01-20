@@ -28,7 +28,7 @@ export const SettingsPage: React.FC = () => {
     // Modals State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isDelegationOpen, setIsDelegationOpen] = useState(false);
-    const [editingDelegation, setEditingDelegation] = useState<Delegation | null>(null);
+    const [editingDelegations, setEditingDelegations] = useState<Delegation[]>([]); // Changed to Array
     const [editingPermissionsUser, setEditingPermissionsUser] = useState<User | null>(null);
 
     useEffect(() => {
@@ -74,10 +74,15 @@ export const SettingsPage: React.FC = () => {
         }
     };
 
-    const handleDeleteDelegation = async (id: string) => {
-        if (window.confirm("Revogar este acesso?")) {
-            await api.deleteDelegation(id);
-            loadData();
+    const handleDeleteAccess = async (delegations: Delegation[]) => {
+        if (window.confirm(`Revogar TODO o acesso para este usuário? (${delegations.length} permissões)`)) {
+            try {
+                await Promise.all(delegations.map(d => api.deleteDelegation(d.id)));
+                loadData();
+            } catch (e) {
+                console.error(e);
+                alert('Erro ao revogar acesso.');
+            }
         }
     };
 
@@ -97,6 +102,23 @@ export const SettingsPage: React.FC = () => {
         return m;
     };
 
+    // Group Delegations Logic
+    const groupedDelegations = delegations.reduce((acc, del) => {
+        const isOwner = del.ownerId === authUser?.id;
+        // Identify the "Other Person"
+        const otherId = isOwner ? del.delegateId : del.ownerId;
+
+        if (!acc[otherId]) {
+            acc[otherId] = {
+                user: isOwner ? del.delegate : del.owner,
+                delegations: [],
+                isOwner // If current user is owner of these delegations (granted BY me)
+            };
+        }
+        acc[otherId].delegations.push(del);
+        return acc;
+    }, {} as Record<string, { user: User, delegations: Delegation[], isOwner: boolean }>);
+
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -106,7 +128,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* TABS HEADER */}
+            {/* TABS HEADER ... (keeping same) */}
             <div className="flex items-center gap-6 border-b border-slate-800 pb-1">
                 <button
                     onClick={() => setActiveTab('delegation')}
@@ -159,36 +181,33 @@ export const SettingsPage: React.FC = () => {
                                 Usuários listados aqui podem visualizar ou editar seus dados conforme permissão.
                             </p>
                         </div>
-                        <Button variant="secondary" className="gap-2" onClick={() => setIsDelegationOpen(true)}>
+                        <Button variant="secondary" className="gap-2" onClick={() => { setEditingDelegations([]); setIsDelegationOpen(true); }}>
                             <UserPlus size={16} /> Conceder Acesso
                         </Button>
                     </div>
 
-                    {delegations.length === 0 ? (
+                    {Object.keys(groupedDelegations).length === 0 ? (
                         <div className="text-center py-8 border border-dashed border-slate-700 rounded-lg text-slate-500 text-sm">
                             Você não compartilhou acesso com ninguém ainda.
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {delegations.map(del => {
-                                const isOwner = del.ownerId === authUser?.id;
-                                const otherPerson = isOwner ? del.delegate : del.owner;
-                                const avatarSrc = otherPerson?.avatarUrl;
+                            {Object.values(groupedDelegations).map(({ user, delegations, isOwner }) => {
                                 const canManage = isOwner || isAdmin;
 
                                 return (
-                                    <div key={del.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3 relative group hover:border-indigo-500/50 transition-colors">
+                                    <div key={user?.id || 'unknown'} className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex flex-col gap-3 relative group hover:border-indigo-500/50 transition-colors">
                                         {canManage && (
                                             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={() => { setEditingDelegation(del); setIsDelegationOpen(true); }}
+                                                    onClick={() => { setEditingDelegations(delegations); setIsDelegationOpen(true); }}
                                                     className="p-1 text-slate-500 hover:text-indigo-500 transition-colors"
                                                     title="Editar Permissões"
                                                 >
                                                     <Pencil size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteDelegation(del.id)}
+                                                    onClick={() => handleDeleteAccess(delegations)}
                                                     className="p-1 text-slate-500 hover:text-rose-500 transition-colors"
                                                     title="Revogar Acesso"
                                                 >
@@ -198,21 +217,25 @@ export const SettingsPage: React.FC = () => {
                                         )}
 
                                         <div className="flex items-center gap-3">
-                                            <Avatar src={avatarSrc} name={otherPerson?.name || 'Usuário'} />
+                                            <Avatar src={user?.avatarUrl} name={user?.name || 'Usuário'} />
                                             <div className="overflow-hidden">
                                                 <div className="text-xs text-slate-500 mb-0.5">{isOwner ? 'Compartilhado com:' : 'Compartilhado por:'}</div>
-                                                <div className="font-medium text-white truncate">{otherPerson?.name || 'Desconhecido'}</div>
-                                                <div className="text-xs text-slate-500 truncate">{otherPerson?.email}</div>
+                                                <div className="font-medium text-white truncate">{user?.name || 'Desconhecido'}</div>
+                                                <div className="text-xs text-slate-500 truncate">{user?.email}</div>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between pt-2 border-t border-slate-700/50">
-                                            <Badge variant="default">{translateModule(del.module)}</Badge>
-                                            <div className="flex gap-1">
-                                                {del.permissions.view && <span title="Ver" className="text-emerald-400 bg-emerald-500/10 p-1 rounded"><CheckCircle size={12} /></span>}
-                                                {del.permissions.create && <span title="Criar" className="text-blue-400 bg-blue-500/10 p-1 rounded"><Plus size={12} /></span>}
-                                                {del.permissions.edit && <span title="Editar" className="text-amber-400 bg-amber-500/10 p-1 rounded"><Shield size={12} /></span>}
-                                            </div>
+                                        <div className="space-y-2 mt-2 pt-2 border-t border-slate-700/50">
+                                            {delegations.map(del => (
+                                                <div key={del.id} className="flex items-center justify-between text-sm">
+                                                    <Badge variant="neutral" className="px-2 py-0.5 text-xs">{translateModule(del.module)}</Badge>
+                                                    <div className="flex gap-1">
+                                                        {del.permissions.view && <span title="Ver" className="text-emerald-400 bg-emerald-500/10 p-1 rounded"><CheckCircle size={12} /></span>}
+                                                        {del.permissions.create && <span title="Criar" className="text-blue-400 bg-blue-500/10 p-1 rounded"><Plus size={12} /></span>}
+                                                        {del.permissions.edit && <span title="Editar" className="text-amber-400 bg-amber-500/10 p-1 rounded"><Shield size={12} /></span>}
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 );
@@ -414,10 +437,10 @@ export const SettingsPage: React.FC = () => {
 
             <DelegationModal
                 isOpen={isDelegationOpen}
-                onClose={() => { setIsDelegationOpen(false); setEditingDelegation(null); }}
+                onClose={() => { setIsDelegationOpen(false); setEditingDelegations([]); }}
                 onSuccess={loadData}
                 users={usersAvailableToDelegate}
-                initialData={editingDelegation}
+                initialDelegations={editingDelegations}
             />
         </div>
     );

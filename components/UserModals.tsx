@@ -295,10 +295,10 @@ interface DelegationModalProps {
     onClose: () => void;
     onSuccess: () => void;
     users: User[];
-    initialData?: Delegation | null;
+    initialDelegations?: Delegation[];
 }
 
-export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClose, onSuccess, users, initialData }) => {
+export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClose, onSuccess, users, initialDelegations }) => {
     const [delegateId, setDelegateId] = useState('');
     const [permissions, setPermissions] = useState<Record<string, { view: boolean; create: boolean; edit: boolean }>>({
         tasks: { view: false, create: false, edit: false },
@@ -308,22 +308,23 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
 
     useEffect(() => {
         if (isOpen) {
-            setDelegateId(initialData?.delegateId || '');
+            setDelegateId(initialDelegations?.[0]?.delegateId || '');
 
             const reset: Record<string, { view: boolean; create: boolean; edit: boolean }> = {
                 tasks: { view: false, create: false, edit: false },
                 agenda: { view: false, create: false, edit: false },
             };
 
-            if (initialData) {
-                // Pre-fill the specific module being edited
-                if (initialData.module in reset) {
-                    reset[initialData.module] = initialData.permissions;
-                }
+            if (initialDelegations) {
+                initialDelegations.forEach(del => {
+                    if (del.module in reset) {
+                        reset[del.module] = del.permissions;
+                    }
+                });
             }
             setPermissions(reset);
         }
-    }, [isOpen, initialData]);
+    }, [isOpen, initialDelegations]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -333,9 +334,15 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
             // Bulk insert/update
             const promises = Object.entries(permissions).map(async ([mod, perms]: [string, { view: boolean; create: boolean; edit: boolean }]) => {
                 const hasAny = perms.view || perms.create || perms.edit;
+                const existing = initialDelegations?.find(d => d.module === mod);
 
-                if (initialData && initialData.module === mod) {
-                    await api.updateDelegation(initialData.id, perms);
+                if (existing) {
+                    if (hasAny) {
+                        await api.updateDelegation(existing.id, perms);
+                    } else {
+                        // Update with all false (soft revoke for that module)
+                        await api.updateDelegation(existing.id, perms);
+                    }
                 } else if (hasAny) {
                     await api.addDelegation({
                         delegateId: delegateId,
@@ -381,7 +388,7 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
 
                 <div>
                     <label className="text-xs text-slate-400 mb-1 block">Quem receberá o acesso?</label>
-                    <Select value={delegateId} onChange={e => setDelegateId(e.target.value)} required disabled={!!initialData}>
+                    <Select value={delegateId} onChange={e => setDelegateId(e.target.value)} required disabled={!!initialDelegations}>
                         <option value="">Selecione um usuário...</option>
                         {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                     </Select>
