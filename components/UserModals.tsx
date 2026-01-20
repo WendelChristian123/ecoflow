@@ -383,7 +383,7 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
                     <label className="text-xs text-slate-400 mb-1 block">Quem receberá o acesso?</label>
                     <Select value={delegateId} onChange={e => setDelegateId(e.target.value)} required disabled={!!initialData}>
                         <option value="">Selecione um usuário...</option>
-                        {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+                        {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                     </Select>
                 </div>
 

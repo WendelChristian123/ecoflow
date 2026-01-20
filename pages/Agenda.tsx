@@ -24,6 +24,8 @@ interface UnifiedEvent extends CalendarEvent {
 export const AgendaPage: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+
+  console.log('[Agenda] Component Rendering');
   const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   // STRICT:
@@ -55,6 +57,7 @@ export const AgendaPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
+      console.log('[Agenda] loadData started');
       // 1. Fetch Settings & Users (Always needed)
       // Also fetch Delegators strictly
       const [settings, u, p, t, taskDelegators, agendaDelegators] = await Promise.all([
@@ -84,6 +87,8 @@ export const AgendaPage: React.FC = () => {
         setAssignableTaskUsers([]);
         setAssignableEventUsers([]);
       }
+
+      console.log('[Agenda] Basic data loaded');
 
       const calSettings: CalendarSettings = settings?.calendar || {
         commitments: true,
@@ -117,7 +122,7 @@ export const AgendaPage: React.FC = () => {
               description: t.description,
               startDate: t.dueDate, // Use full ISO to preserve timezone
               endDate: t.dueDate,
-              status: t.status === 'done' ? 'confirmed' : 'pending',
+              status: t.status === 'done' ? 'completed' : 'pending',
               type: 'task',
               isTeamEvent: false,
               participants: t.assigneeId ? [t.assigneeId] : [],
@@ -252,8 +257,10 @@ export const AgendaPage: React.FC = () => {
 
       await Promise.all(promises);
       setEvents(newEvents);
+      console.log('[Agenda] Events set:', newEvents.length);
 
     } catch (e) {
+      console.error('[Agenda] loadData Error:', e);
       console.error(e);
     } finally {
       setLoading(false);
@@ -528,6 +535,22 @@ export const AgendaPage: React.FC = () => {
                         {event.icon}
                         {format(parseISO(event.startDate), 'HH:mm')}
                       </div>
+
+                      {/* Assignees / Participants */}
+                      {event.participants && event.participants.length > 0 && (
+                        <div className="flex -space-x-1.5">
+                          {event.participants.slice(0, 3).map(pid => {
+                            const u = users.find(x => x.id === pid);
+                            if (!u) return null;
+                            const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            return (
+                              <div key={pid} className="w-5 h-5 rounded-full border border-slate-900 bg-slate-700 flex items-center justify-center overflow-hidden text-[8px] text-white font-bold" title={u.name}>
+                                {u.avatarUrl ? <img src={u.avatarUrl} alt={u.name} className="w-full h-full object-cover" /> : initials}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* Content */}

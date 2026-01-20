@@ -159,7 +159,7 @@ export interface CalendarEvent {
   recurrence?: RecurrenceConfig;
   recurrenceId?: string;
   type: 'meeting' | 'task' | 'reminder' | 'other';
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   participants: string[]; // JSONB of user IDs
   links?: { title: string; url: string }[];
   isTeamEvent?: boolean;

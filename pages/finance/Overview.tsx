@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../../services/api';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact } from '../../types';
@@ -65,7 +65,7 @@ export const FinancialOverview: React.FC = () => {
         }
     };
 
-    const getFilteredTransactions = () => {
+    const useMemoResult = useMemo(() => {
         const mode = financeSettings.credit_card_expense_mode || 'competence';
         let processedData = processTransactions(transactions, cards, mode);
 
@@ -135,8 +135,10 @@ export const FinancialOverview: React.FC = () => {
         filtered = applyDynamicFilters(filtered);
         filteredCash = applyDynamicFilters(filteredCash);
 
-        return { filtered, filteredCash };
-    };
+        return { filtered, filteredCash, rawCash: processedCashData };
+    }, [transactions, cards, financeSettings, filters, customDateRange]);
+
+    const { filtered: filteredData, filteredCash: filteredCashData } = useMemoResult;
 
     const handleToggleStatus = async (e: React.MouseEvent, t: FinancialTransaction) => {
         e.stopPropagation();
@@ -149,29 +151,39 @@ export const FinancialOverview: React.FC = () => {
         }
     }
 
-    const { filtered: filteredData, filteredCash: filteredCashData } = getFilteredTransactions();
+
     const todayStart = startOfDay(new Date());
 
-    const isCompetenceExpense = (t: FinancialTransaction) => {
-        const mode = financeSettings.credit_card_expense_mode || 'competence';
-        // Realized if Paid OR (Expense Type AND CreditCard AND CompetenceMode)
-        return t.isPaid || (t.type === 'expense' && t.creditCardId && mode === 'competence');
-    };
-
-    const realizedData = filteredData.filter(isCompetenceExpense);
+    // STAGE 2: WIDGET LOGIC - ENFORCE USER RULES
+    // 1. P&L (Receitas/Despesas) -> ONLY PAID (Realized) in the current period (This Month)
+    // "Quero que apareça apenas os numeros que de fato foram pagos"
+    // We use filteredData (which is This Month by default)
+    const realizedData = filteredData.filter(t => t.isPaid);
     const realizedIncome = realizedData.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-    const realizedExpense = realizedData.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+    const realizedExpense = realizedData.filter(t => t.type === 'expense' && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0);
 
-    // Widget Data Calculations (Cash View for Payables)
-    // We use filteredCashData to ensure we include Virtual Invoices (Bills) and exclude individual card purchases.
-    const payablesData = filteredCashData.filter(t => !t.creditCardId && t.type === 'expense' && !t.isPaid);
-    const receivablesData = filteredData.filter(t => t.type === 'income' && !t.isPaid); // Income usually doesn't have "Virtual Invoices"
+    // 2. Forecast (Fluxo de Caixa) -> ONLY OVERDUE and NEXT 7 DAYS
+    // "no fluxo de caixa deixa só os atrasados e o que vai vencer nos proximos 7 d"
+    // We MUST use rawCash (Global) because "Overdue" can be from last month, and "Next 7 Days" might cross month boundary.
+    const { rawCash } = useMemoResult; // Destructure from result
+
+    // Helper for 7 days limit
+    const next7DaysEnd = addDays(todayStart, 7);
+
+    const payablesData = rawCash.filter(t => !t.creditCardId && t.type === 'expense' && !t.isPaid);
+    const receivablesData = rawCash.filter(t => t.type === 'income' && !t.isPaid);
 
     const payablesOverdue = payablesData.filter(t => isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
-    const payablesFuture = payablesData.filter(t => !isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
+    const payablesFuture = payablesData.filter(t => {
+        const d = parseDateLocal(t.date);
+        return !isBefore(d, todayStart) && isBefore(d, next7DaysEnd); // Next 7 Days Inclusive range logic? usually [today, today+7)
+    }).reduce((s, t) => s + t.amount, 0);
 
     const receivablesOverdue = receivablesData.filter(t => isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
-    const receivablesFuture = receivablesData.filter(t => !isBefore(parseDateLocal(t.date), todayStart)).reduce((s, t) => s + t.amount, 0);
+    const receivablesFuture = receivablesData.filter(t => {
+        const d = parseDateLocal(t.date);
+        return !isBefore(d, todayStart) && isBefore(d, next7DaysEnd);
+    }).reduce((s, t) => s + t.amount, 0);
 
     const getCardInvoice = (cardId: string) => {
         return transactions
@@ -209,7 +221,7 @@ export const FinancialOverview: React.FC = () => {
             const calc = (start: Date, end: Date, type: 'income' | 'expense') =>
                 transactions.filter(t =>
                     t.type === type &&
-                    isCompetenceExpense(t) &&
+                    t.isPaid &&
                     t.originType !== 'technical' &&
                     !t.description.includes('Pagamento Fatura (Crédito Local)') &&
                     isWithinInterval(parseDateLocal(t.date), { start, end })
@@ -226,7 +238,7 @@ export const FinancialOverview: React.FC = () => {
                 const calc = (type: 'income' | 'expense') =>
                     transactions.filter(t =>
                         t.type === type &&
-                        isCompetenceExpense(t) &&
+                        t.isPaid &&
                         t.originType !== 'technical' &&
                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
                         isWithinInterval(parseDateLocal(t.date), { start, end })
@@ -243,7 +255,7 @@ export const FinancialOverview: React.FC = () => {
                 const calc = (type: 'income' | 'expense') =>
                     transactions.filter(t =>
                         t.type === type &&
-                        isCompetenceExpense(t) &&
+                        t.isPaid &&
                         t.originType !== 'technical' &&
                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
                         isWithinInterval(parseDateLocal(t.date), { start, end })
@@ -263,7 +275,7 @@ export const FinancialOverview: React.FC = () => {
                 const calc = (type: 'income' | 'expense') =>
                     transactions.filter(t =>
                         t.type === type &&
-                        isCompetenceExpense(t) &&
+                        t.isPaid &&
                         t.originType !== 'technical' &&
                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
                         isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd })
@@ -308,92 +320,7 @@ export const FinancialOverview: React.FC = () => {
                 </div>
             </div>
 
-            {/* Filter Bar */}
-            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800 flex flex-col xl:flex-row items-center gap-3 mb-8 overflow-x-auto">
-                <div className="flex items-center gap-2 px-3 text-slate-400 shrink-0">
-                    <Filter size={16} />
-                    <span className="text-xs font-bold uppercase tracking-wider">Filtros:</span>
-                </div>
 
-                <div className="hidden xl:block h-6 w-px bg-slate-800 mx-2" />
-
-                <div className="flex-1 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 w-full">
-                    <Select
-                        value={filters.period}
-                        onChange={e => setFilters({ ...filters, period: e.target.value as any })}
-                        className="bg-slate-900 border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg w-full focus:ring-emerald-500/50"
-                    >
-                        <option value="today">Hoje</option>
-                        <option value="last7">Últimos 7 Dias</option>
-                        <option value="month">Este Mês</option>
-                        <option value="custom">Personalizado</option>
-                        <option value="all">Todo o Período</option>
-                    </Select>
-
-                    <Select
-                        value={filters.status}
-                        onChange={e => setFilters({ ...filters, status: e.target.value })}
-                        className="bg-slate-900 border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg w-full"
-                    >
-                        <option value="all">Todos Status</option>
-                        <option value="overdue">Vencidos</option>
-                        <option value="pending">A Vencer</option>
-                        <option value="paid">Realizado (Pagos)</option>
-                    </Select>
-
-                    <Select
-                        value={filters.accountId}
-                        onChange={e => setFilters({ ...filters, accountId: e.target.value })}
-                        className="bg-slate-900 border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg w-full"
-                    >
-                        <option value="all">Todas Contas</option>
-                        <optgroup label="Contas Bancárias">
-                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                        </optgroup>
-                        <optgroup label="Cartões de Crédito">
-                            {cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </optgroup>
-                    </Select>
-
-                    <Select
-                        value={filters.categoryId}
-                        onChange={e => setFilters({ ...filters, categoryId: e.target.value })}
-                        className="bg-slate-900 border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg w-full"
-                    >
-                        <option value="all">Todas Categ.</option>
-                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </Select>
-
-                    <Select
-                        value={filters.type}
-                        onChange={e => setFilters({ ...filters, type: e.target.value as any })}
-                        className="bg-slate-900 border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg w-full"
-                    >
-                        <option value="all">Todos Tipos</option>
-                        <option value="income">Receitas</option>
-                        <option value="expense">Despesas</option>
-                        <option value="transfer">Transferências</option>
-                    </Select>
-                </div>
-
-                {filters.period === 'custom' && (
-                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 ml-2">
-                        <input
-                            type="date"
-                            className="bg-transparent text-xs text-slate-200 outline-none w-24"
-                            value={customDateRange.start}
-                            onChange={(e) => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        />
-                        <span className="text-slate-600">-</span>
-                        <input
-                            type="date"
-                            className="bg-transparent text-xs text-slate-200 outline-none w-24"
-                            value={customDateRange.end}
-                            onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        />
-                    </div>
-                )}
-            </div>
 
 
             {/* BLOCO 1 - RESUMO */}
@@ -554,9 +481,19 @@ export const FinancialOverview: React.FC = () => {
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             {cards.map(card => {
                                 // 1. Calculate Total Used (All unpaid expenses) for Limit / Available calculation
-                                const totalUsed = transactions
-                                    .filter(t => t.creditCardId === card.id && t.type === 'expense' && !t.isPaid)
-                                    .reduce((acc, t) => acc + t.amount, 0);
+                                // Calculate Total Used based on Balance (Debits - Credits)
+                                const totalUsed = transactions.reduce((acc, t) => {
+                                    // Debits (Increase usage)
+                                    if (t.creditCardId === card.id) {
+                                        if (t.type === 'expense') return acc + t.amount;
+                                        if (t.type === 'transfer') return acc + t.amount; // Transfer Out
+                                    }
+                                    // Credits (Decrease usage)
+                                    if (t.creditCardId === card.id && t.type === 'income') return acc - t.amount;
+                                    if (t.toAccountId === card.id && t.type === 'transfer') return acc - t.amount; // Transfer In
+
+                                    return acc;
+                                }, 0);
 
                                 const available = card.limitAmount - totalUsed;
                                 const percent = Math.min(100, (totalUsed / card.limitAmount) * 100);
@@ -680,7 +617,7 @@ export const FinancialOverview: React.FC = () => {
                                 const calcPrevious = (start: Date, end: Date) =>
                                     transactions.filter(t =>
                                         t.type === 'income' &&
-                                        isCompetenceExpense(t) &&
+                                        t.isPaid &&
                                         t.originType !== 'technical' &&
                                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
                                         isWithinInterval(parseISO(t.date), { start, end })
@@ -723,7 +660,7 @@ export const FinancialOverview: React.FC = () => {
                                 const calcPrevious = (start: Date, end: Date) =>
                                     transactions.filter(t =>
                                         t.type === 'expense' &&
-                                        isCompetenceExpense(t) &&
+                                        t.isPaid &&
                                         t.originType !== 'technical' &&
                                         !t.description.includes('Pagamento Fatura (Crédito Local)') &&
                                         isWithinInterval(parseISO(t.date), { start, end })
@@ -799,7 +736,8 @@ export const FinancialOverview: React.FC = () => {
                 transactions={transactions}
                 accounts={accounts}
                 categories={categories}
-                cards={cards} // NEW
+                cards={cards}
+                contacts={contacts}
             />
         </div >
     );

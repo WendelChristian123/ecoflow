@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard } from '../../types';
+import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, Contact } from '../../types';
 import { Button, Select, Badge } from '../Shared';
+import { DateRangePicker } from '../DateRangePicker';
+import { DateRange } from 'react-day-picker';
 import { X, Printer, FileText, Filter, DollarSign, TrendingUp, TrendingDown, AlertCircle, Clock } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay, isBefore, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -13,6 +15,7 @@ interface FinancialReportModalProps {
     accounts: FinancialAccount[];
     categories: FinancialCategory[];
     cards: CreditCard[];
+    contacts: Contact[];
     initialFilters?: {
         startDate?: string;
         endDate?: string;
@@ -20,16 +23,20 @@ interface FinancialReportModalProps {
     }
 }
 
-export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOpen, onClose, transactions, accounts, categories, cards, initialFilters }) => {
+export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOpen, onClose, transactions, accounts, categories, cards, contacts, initialFilters }) => {
     if (!isOpen) return null;
 
     // Default Filters
-    const [startDate, setStartDate] = useState(initialFilters?.startDate || format(startOfDay(new Date()), 'yyyy-MM-01'));
-    const [endDate, setEndDate] = useState(initialFilters?.endDate || format(endOfDay(new Date()), 'yyyy-MM-dd'));
+    // Default Filters
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: initialFilters?.startDate ? parseDateLocal(initialFilters.startDate) : startOfDay(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        to: initialFilters?.endDate ? parseDateLocal(initialFilters.endDate) : endOfDay(new Date())
+    });
     const [statusFilter, setStatusFilter] = useState('all'); // all, paid, pending, overdue
     const [accountFilter, setAccountFilter] = useState(initialFilters?.accountId || 'all');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all'); // all, income, expense
+    const [contactFilter, setContactFilter] = useState('all');
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
@@ -39,9 +46,11 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
             // Technical filters
             if (t.originType === 'technical' || t.description.includes('Pagamento Fatura (Crédito Local)')) return false;
 
+            if (!dateRange?.from || !dateRange?.to) return false;
+
             const tDate = parseDateLocal(t.date);
-            const start = startOfDay(parseDateLocal(startDate));
-            const end = endOfDay(parseDateLocal(endDate));
+            const start = startOfDay(dateRange.from);
+            const end = endOfDay(dateRange.to);
             const inRange = isWithinInterval(tDate, { start, end });
 
             // Account / Card Filter
@@ -67,6 +76,12 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 typeMatch = t.type === typeFilter;
             }
 
+            // Contact
+            let contactMatch = true;
+            if (contactFilter !== 'all') {
+                contactMatch = t.contactId === contactFilter;
+            }
+
             // Status
             let statusMatch = true;
             const today = startOfDay(new Date());
@@ -74,9 +89,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
             else if (statusFilter === 'pending') statusMatch = !t.isPaid && !isBefore(tDate, today);
             else if (statusFilter === 'overdue') statusMatch = !t.isPaid && isBefore(tDate, today);
 
-            return inRange && accountMatch && categoryMatch && typeMatch && statusMatch;
+            return inRange && accountMatch && categoryMatch && typeMatch && statusMatch && contactMatch;
         }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [transactions, startDate, endDate, statusFilter, accountFilter, categoryFilter, typeFilter]);
+    }, [transactions, dateRange, statusFilter, accountFilter, categoryFilter, typeFilter, contactFilter]);
 
     // Summary Calculations
     const calculateTotals = () => {
@@ -85,13 +100,22 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
         let expensePaid = 0;
         let expenseToPay = 0;
 
+        let transfersTotal = 0;
+        let cardPaymentsTotal = 0;
+
         filteredData.forEach(t => {
             if (t.type === 'income') {
                 if (t.isPaid) incomeReceived += t.amount;
                 else incomeToReceive += t.amount;
             } else if (t.type === 'expense') {
-                if (t.isPaid) expensePaid += t.amount;
-                else expenseToPay += t.amount;
+                if (t.description.toLowerCase().includes('fatura')) {
+                    cardPaymentsTotal += t.amount;
+                } else {
+                    if (t.isPaid) expensePaid += t.amount;
+                    else expenseToPay += t.amount;
+                }
+            } else if (t.type === 'transfer') {
+                transfersTotal += t.amount;
             }
         });
 
@@ -102,6 +126,8 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
             expensePaid,
             expenseToPay,
             totalExpense: expensePaid + expenseToPay,
+            transfersTotal,
+            cardPaymentsTotal,
             result: (incomeReceived + incomeToReceive) - (expensePaid + expenseToPay)
         };
     };
@@ -110,23 +136,30 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
 
     // Global Balance
     const currentBalance = useMemo(() => {
-        // If specific account/card selected, we could try to calculate its balance.
-        // For simplicity, we just keep the dashboard logic or ignore if complex.
-        // If Card is selected, "balance" is the current invoice amount? 
-        // Let's effectively hide or simplify global balance in report context if filtered logic is complex.
-        return 0; // Simplified for now as it wasn't requested to change deeply.
+        return 0;
     }, [accounts, transactions, accountFilter]);
 
 
     const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || '-';
 
-    // Updated to handle Cards
-    const getAccountName = (transaction: FinancialTransaction) => {
-        if (transaction.creditCardId) {
-            const card = cards.find(c => c.id === transaction.creditCardId);
+    // Updated to handle Cards and Transfers logic for display
+    const renderAccountInfo = (t: FinancialTransaction) => {
+        if (t.type === 'transfer' && t.toAccountId) {
+            const source = accounts.find(a => a.id === t.accountId)?.name || '...';
+            const dest = accounts.find(a => a.id === t.toAccountId)?.name || '...';
+            return (
+                <div className="flex items-center gap-1">
+                    <span>{source}</span>
+                    <TrendingUp size={10} className="rotate-90 text-slate-500" />
+                    <span>{dest}</span>
+                </div>
+            );
+        }
+        if (t.creditCardId) {
+            const card = cards.find(c => c.id === t.creditCardId);
             return card ? `Cartão: ${card.name}` : 'Cartão';
         }
-        return accounts.find(a => a.id === transaction.accountId)?.name || '-';
+        return accounts.find(a => a.id === t.accountId)?.name || '-';
     };
 
     // Print
@@ -154,13 +187,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     .text-emerald { color: #059669; }
                     .text-rose { color: #e11d48; }
                     .text-blue { color: #2563eb; }
+                    .text-yellow { color: #d97706; }
                     
                     .section-title { font-size: 14px; font-weight: 700; color: #334155; text-transform: uppercase; margin: 30px 0 15px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
-                    
-                    .alerts-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
-                    .alert-card { padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
-                    .alert-card.danger { background: #fff1f2; border-color: #fecdd3; }
-                    .alert-card.warn { background: #fffbeb; border-color: #fde68a; }
                     
                     table { width: 100%; border-collapse: collapse; font-size: 11px; }
                     th { text-align: left; padding: 8px; background: #f1f5f9; color: #475569; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; }
@@ -168,8 +197,6 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     tr:nth-child(even) { background: #f8fafc; }
                     
                     .badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; display: inline-block; }
-                    .badge-income { background: #d1fae5; color: #065f46; }
-                    .badge-expense { background: #ffe4e6; color: #9f1239; }
                     
                     .text-right { text-align: right; }
                     
@@ -186,9 +213,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                         <div class="meta"><strong>EcoFlow Systems</strong></div>
                     </div>
                     <div class="meta text-right">
-                        <div><strong>Período:</strong> ${format(parseDateLocal(startDate), 'dd/MM/yyyy')} a ${format(parseDateLocal(endDate), 'dd/MM/yyyy')}</div>
+                        <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
-                        <div><strong>Filtros:</strong> ${accountFilter !== 'all' ? 'Conta Específica' : 'Todas Contas'} • ${categoryFilter !== 'all' ? 'Categoria Específica' : 'Todas Categorias'}</div>
+                        <div><strong>Filtros:</strong> ${accountFilter !== 'all' ? 'Conta Específica' : 'Todas Contas'} • ${categoryFilter !== 'all' ? 'Categoria Específica' : 'Todas Categorias'} • ${contactFilter !== 'all' ? 'Contato Específico' : 'Todos Contatos'}</div>
                     </div>
                 </div>
 
@@ -201,26 +228,34 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                             <th>Categoria</th>
                             <th>Conta</th>
                             <th>Status</th>
-                            <th>Vencimento</th>
                             <th class="text-right">Valor</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${filteredData.map(t => {
             const transactionDate = parseDateLocal(t.date);
-            const accountName = t.creditCardId
+            let accountDisplay = t.creditCardId
                 ? `Cartão: ${cards.find(c => c.id === t.creditCardId)?.name || ''}`
                 : accounts.find(a => a.id === t.accountId)?.name || '-';
+
+            if (t.type === 'transfer' && t.toAccountId) {
+                const source = accounts.find(a => a.id === t.accountId)?.name || '...';
+                const dest = accounts.find(a => a.id === t.toAccountId)?.name || '...';
+                accountDisplay = `${source} -> ${dest}`;
+            }
+
+            const isCardPayment = t.type === 'expense' && t.description.toLowerCase().includes('fatura');
+            const rowClass = t.type === 'transfer' ? 'text-blue' : isCardPayment ? 'text-yellow' : t.type === 'income' ? 'text-emerald' : 'text-rose';
 
             return `
                             <tr>
                                 <td>${format(transactionDate, 'dd/MM/yyyy')}</td>
                                 <td>
                                     <strong>${t.description}</strong>
-                                    <div style="font-size: 9px; color: #64748b;">${t.type === 'income' ? 'Receita' : 'Despesa'}</div>
+                                    <div style="font-size: 9px; color: #64748b;">${t.type === 'income' ? 'Receita' : t.type === 'transfer' ? 'Transferência' : 'Despesa'}</div>
                                 </td>
                                 <td>${getCategoryName(t.categoryId)}</td>
-                                <td>${accountName}</td>
+                                <td>${accountDisplay}</td>
                                 <td>
                                     ${t.isPaid
                     ? '<span style="color: #10b981; font-weight: bold;">Realizado</span>'
@@ -229,10 +264,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                         : '<span style="color: #f59e0b; font-weight: bold;">Pendente</span>'
                 }
                                 </td>
-                                <td>${format(transactionDate, 'dd/MM/yyyy')}</td>
                                 <td class="text-right">
-                                    <span class="${t.type === 'income' ? 'text-emerald' : 'text-rose'}" style="font-weight: 700;">
-                                        ${t.type === 'expense' ? '-' : ''}${fmt(t.amount)}
+                                    <span class="${rowClass}" style="font-weight: 700;">
+                                        ${t.type === 'expense' || t.type === 'transfer' ? '-' : ''}${fmt(t.amount)}
                                     </span>
                                 </td>
                             </tr>
@@ -242,6 +276,14 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
 
                 <div style="margin-top: 30px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
                     <div style="display: flex; justify-content: flex-end; gap: 30px;">
+                        <div style="text-align: right;">
+                            <div style="font-size: 10px; font-weight: 700; color: #3b82f6; text-transform: uppercase;">Transferências</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #0f172a;">${fmt(totals.transfersTotal)}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 10px; font-weight: 700; color: #d97706; text-transform: uppercase;">Pgto. Cartão</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #0f172a;">${fmt(totals.cardPaymentsTotal)}</div>
+                        </div>
                         <div style="text-align: right;">
                             <div style="font-size: 10px; font-weight: 700; color: #10b981; text-transform: uppercase;">Total Receitas</div>
                             <div style="font-size: 16px; font-weight: 700; color: #0f172a;">${fmt(totals.totalIncome)}</div>
@@ -284,50 +326,64 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 </div>
 
                 {/* Filters */}
-                <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-6 gap-3">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Início</label>
-                        <input className="bg-slate-800 border-slate-700 text-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                {/* Filters */}
+                <div className="flex flex-col border-b border-slate-800">
+                    <div className="p-4 bg-slate-900/50 border-b border-slate-800/50">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500">Período</label>
+                            <DateRangePicker
+                                date={dateRange}
+                                setDate={setDateRange}
+                                className="bg-slate-800 border-slate-700 text-slate-200 max-w-[280px]"
+                            />
+                        </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Fim</label>
-                        <input className="bg-slate-800 border-slate-700 text-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Conta/Banco</label>
-                        <Select value={accountFilter} onChange={e => setAccountFilter(e.target.value)} className="h-[30px] text-xs">
-                            <option value="all">Todas Contas</option>
-                            <optgroup label="Contas Bancárias">
-                                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                            </optgroup>
-                            <optgroup label="Cartões de Crédito">
-                                {cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </optgroup>
-                        </Select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Categoria</label>
-                        <Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="h-[30px] text-xs">
-                            <option value="all">Todas</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </Select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Tipo</label>
-                        <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-[30px] text-xs">
-                            <option value="all">Todos</option>
-                            <option value="income">Receitas</option>
-                            <option value="expense">Despesas</option>
-                        </Select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Status</label>
-                        <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-[30px] text-xs">
-                            <option value="all">Todos</option>
-                            <option value="paid">Realizado</option>
-                            <option value="pending">A Vencer</option>
-                            <option value="overdue">Atrasado</option>
-                        </Select>
+
+                    <div className="p-4 bg-slate-900/50 grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500">Conta/Banco</label>
+                            <Select value={accountFilter} onChange={e => setAccountFilter(e.target.value)} className="h-[30px] text-xs">
+                                <option value="all">Todas Contas</option>
+                                <optgroup label="Contas Bancárias">
+                                    {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                </optgroup>
+                                <optgroup label="Cartões de Crédito">
+                                    {[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </optgroup>
+                            </Select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500">Categoria</label>
+                            <Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="h-[30px] text-xs">
+                                <option value="all">Todas</option>
+                                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </Select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500">Cliente/Fornecedor</label>
+                            <Select value={contactFilter} onChange={e => setContactFilter(e.target.value)} className="h-[30px] text-xs">
+                                <option value="all">Todos</option>
+                                {[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </Select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500">Tipo</label>
+                            <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-[30px] text-xs">
+                                <option value="all">Todos</option>
+                                <option value="income">Receitas</option>
+                                <option value="expense">Despesas</option>
+                                <option value="transfer">Transferências</option>
+                            </Select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500">Status</label>
+                            <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-[30px] text-xs">
+                                <option value="all">Todos</option>
+                                <option value="paid">Realizado</option>
+                                <option value="pending">A Vencer</option>
+                                <option value="overdue">Atrasado</option>
+                            </Select>
+                        </div>
                     </div>
                 </div>
 
@@ -357,17 +413,20 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                             <td className="px-4 py-3">{format(parseDateLocal(t.date), 'dd/MM/yyyy')}</td>
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-white">{t.description}</div>
-                                                <div className="text-[10px] text-slate-500">{t.type === 'income' ? 'Receita' : 'Despesa'}</div>
+                                                <div className="text-[10px] text-slate-500">{t.type === 'income' ? 'Receita' : t.type === 'transfer' ? 'Transferência' : 'Despesa'}</div>
                                             </td>
                                             <td className="px-4 py-3">{getCategoryName(t.categoryId)}</td>
-                                            <td className="px-4 py-3">{getAccountName(t)}</td>
+                                            <td className="px-4 py-3">{renderAccountInfo(t)}</td>
                                             <td className="px-4 py-3">
                                                 <Badge variant={t.isPaid ? 'success' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'error' : 'warning'}>
                                                     {t.isPaid ? 'Realizado' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'Atrasado' : 'Pendente'}
                                                 </Badge>
                                             </td>
-                                            <td className={`px-4 py-3 text-right font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                {t.type === 'expense' ? '-' : ''}{fmt(t.amount)}
+                                            <td className={`px-4 py-3 text-right font-bold ${t.type === 'transfer' ? 'text-blue-500' :
+                                                (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? 'text-yellow-500' :
+                                                    t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'
+                                                }`}>
+                                                {t.type === 'expense' || t.type === 'transfer' ? '-' : ''}{fmt(t.amount)}
                                             </td>
                                         </tr>
                                     ))}
@@ -386,7 +445,15 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                         </div>
 
                         {/* Footer Totals Block */}
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-800 pt-4">
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4 border-t border-slate-800 pt-4">
+                            <div className="flex justify-between items-center p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg">
+                                <span className="text-xs font-bold uppercase text-blue-500">Transferências</span>
+                                <span className="text-lg font-bold text-blue-400">{fmt(totals.transfersTotal)}</span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-lg">
+                                <span className="text-xs font-bold uppercase text-yellow-500">Pgto. Cartão</span>
+                                <span className="text-lg font-bold text-yellow-400">{fmt(totals.cardPaymentsTotal)}</span>
+                            </div>
                             <div className="flex justify-between items-center p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg">
                                 <span className="text-xs font-bold uppercase text-emerald-500">Total Receitas</span>
                                 <span className="text-lg font-bold text-emerald-400">{fmt(totals.totalIncome)}</span>

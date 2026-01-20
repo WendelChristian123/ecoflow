@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { RecurringService } from '../../types';
 import { Button, Select, Badge } from '../Shared';
-import { X, Printer, RefreshCw, Calendar, DollarSign } from 'lucide-react';
-import { format, parseISO, addMonths } from 'date-fns';
+import { X, Printer, RefreshCw } from 'lucide-react';
+import { format, parseISO, addMonths, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { translateFrequency } from '../../utils/i18n';
+import { DateRange } from 'react-day-picker';
+import { DateRangePicker } from '../DateRangePicker';
 
 interface RecurringReportModalProps {
     isOpen: boolean;
@@ -15,10 +17,10 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
     if (!isOpen) return null;
 
     const [statusFilter, setStatusFilter] = useState('all');
-    const [dateStart, setDateStart] = useState('');
-    const [dateEnd, setDateEnd] = useState('');
-    const [endFilterStart, setEndFilterStart] = useState('');
-    const [endFilterEnd, setEndFilterEnd] = useState('');
+
+    // TWO Date Ranges
+    const [startDateRange, setStartDateRange] = useState<DateRange | undefined>(undefined);
+    const [endDateRange, setEndDateRange] = useState<DateRange | undefined>(undefined);
 
     const filteredData = useMemo(() => {
         return services.filter(s => {
@@ -27,22 +29,27 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
             if (statusFilter === 'inactive' && s.active) return false;
 
             // 2. Filter by Start Date
-            if (dateStart && s.startDate < dateStart) return false;
-            if (dateEnd && s.startDate > dateEnd) return false;
+            if (startDateRange?.from && startDateRange?.to) {
+                const sDate = parseISO(s.startDate);
+                const start = startOfDay(startDateRange.from);
+                const end = endOfDay(startDateRange.to);
+                if (!isWithinInterval(sDate, { start, end })) return false;
+            }
 
             // 3. Filter by End Date
-            if (endFilterStart || endFilterEnd) {
+            if (endDateRange?.from && endDateRange?.to) {
                 const contractEndDate = s.contractMonths ? addMonths(parseISO(s.startDate), s.contractMonths) : null;
-                const endDateStr = contractEndDate ? format(contractEndDate, 'yyyy-MM-dd') : null;
 
-                if (!endDateStr) return false; // Exclude indeterminate contracts if filtering by end date
-                if (endFilterStart && endDateStr < endFilterStart) return false;
-                if (endFilterEnd && endDateStr > endFilterEnd) return false;
+                if (!contractEndDate) return false; // Exclude indeterminate contracts if filtering by end date
+
+                const start = startOfDay(endDateRange.from);
+                const end = endOfDay(endDateRange.to);
+                if (!isWithinInterval(contractEndDate, { start, end })) return false;
             }
 
             return true;
         }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()); // Sort by Date Ascending
-    }, [services, statusFilter, dateStart, dateEnd, endFilterStart, endFilterEnd]);
+    }, [services, statusFilter, startDateRange, endDateRange]);
 
     const calculateTotals = () => {
         const totalContracts = filteredData.length;
@@ -58,6 +65,14 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
     const handlePrint = () => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
+
+        const startStr = startDateRange?.from && startDateRange?.to
+            ? `${format(startDateRange.from, 'dd/MM/yyyy')} a ${format(startDateRange.to, 'dd/MM/yyyy')}`
+            : 'Todos';
+
+        const endStr = endDateRange?.from && endDateRange?.to
+            ? `${format(endDateRange.from, 'dd/MM/yyyy')} a ${format(endDateRange.to, 'dd/MM/yyyy')}`
+            : 'Todos';
 
         const html = `
             <!DOCTYPE html>
@@ -84,8 +99,8 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                     <div class="meta" style="text-align: right;">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Filtro:</strong> ${statusFilter === 'all' ? 'Todos' : statusFilter === 'active' ? 'Ativos' : 'Inativos'}</div>
-                        <div><strong>Início Contrato:</strong> ${dateStart ? format(parseISO(dateStart), 'dd/MM/yyyy') : 'Início'} até ${dateEnd ? format(parseISO(dateEnd), 'dd/MM/yyyy') : 'Fim'}</div>
-                        <div><strong>Fim Contrato:</strong> ${endFilterStart ? format(parseISO(endFilterStart), 'dd/MM/yyyy') : 'Início'} até ${endFilterEnd ? format(parseISO(endFilterEnd), 'dd/MM/yyyy') : 'Fim'}</div>
+                        <div><strong>Início Contrato:</strong> ${startStr}</div>
+                        <div><strong>Fim Contrato:</strong> ${endStr}</div>
                     </div>
                 </div>
 
@@ -153,8 +168,9 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                     <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={24} /></button>
                 </div>
 
-                <div className="p-4 bg-slate-900/50 border-b border-slate-800 flex items-end gap-3">
-                    <div className="flex flex-col gap-1 w-48">
+                {/* Filters */}
+                <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div className="flex flex-col gap-1">
                         <label className="text-[10px] font-bold uppercase text-slate-500">Filtrar Status</label>
                         <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-[34px] text-xs">
                             <option value="all">Todos</option>
@@ -162,29 +178,32 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                             <option value="inactive">Somente Inativos</option>
                         </Select>
                     </div>
-                    <div className="flex flex-col gap-1 w-40">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">De (Início)</label>
-                        <input type="date" value={dateStart} onChange={e => setDateStart(e.target.value)} className="h-[34px] bg-slate-800 border border-slate-700 rounded-lg px-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
-                    </div>
-                    <div className="flex flex-col gap-1 w-40">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Até (Início)</label>
-                        <input type="date" value={dateEnd} onChange={e => setDateEnd(e.target.value)} className="h-[34px] bg-slate-800 border border-slate-700 rounded-lg px-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
-                    </div>
                 </div>
-                <div className="p-4 bg-slate-900/50 border-b border-t border-slate-800 flex items-end gap-3">
-                    <div className="flex flex-col gap-1 w-48">
-                        <span className="text-xs text-slate-400 italic">Filtro por Data de Fim:</span>
+
+                {/* Date Filters - Separated into two types */}
+                <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Start Date Range */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold uppercase text-slate-500 mb-1">Filtrar por Início de Contrato</label>
+                        <DateRangePicker
+                            date={startDateRange}
+                            setDate={setStartDateRange}
+                            className="bg-slate-800 border-slate-700 text-slate-200"
+                        />
                     </div>
-                    <div className="flex flex-col gap-1 w-40">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">De (Fim)</label>
-                        <input type="date" value={endFilterStart} onChange={e => setEndFilterStart(e.target.value)} className="h-[34px] bg-slate-800 border border-slate-700 rounded-lg px-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
-                    </div>
-                    <div className="flex flex-col gap-1 w-40">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Até (Fim)</label>
-                        <input type="date" value={endFilterEnd} onChange={e => setEndFilterEnd(e.target.value)} className="h-[34px] bg-slate-800 border border-slate-700 rounded-lg px-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+
+                    {/* End Date Range */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold uppercase text-slate-500 mb-1">Filtrar por Fim de Contrato</label>
+                        <DateRangePicker
+                            date={endDateRange}
+                            setDate={setEndDateRange}
+                            className="bg-slate-800 border-slate-700 text-slate-200"
+                        />
                     </div>
                 </div>
 
+                {/* Content */}
                 <div className="flex-1 overflow-auto p-6 space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">

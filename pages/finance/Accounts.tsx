@@ -30,24 +30,36 @@ export const FinancialAccounts: React.FC = () => {
         } finally { setLoading(false); }
     };
 
-    const getAccountBalance = (accountId: string, initialBalance: number) => {
-        // 1. Transactions directly linked to this account (Income/Expense/Transfer Out)
-        const directTrans = transactions.filter(t => t.accountId === accountId && t.isPaid);
+    // Optimized Balance Calculation (O(T) instead of O(A*T))
+    const accountBalances = React.useMemo(() => {
+        const balances: Record<string, number> = {};
 
-        // 2. Incoming Transfers (where this account is the destination)
-        const incomingTrans = transactions.filter(t => t.toAccountId === accountId && t.isPaid && t.type === 'transfer');
+        // Initialize with initial balances
+        accounts.forEach(acc => {
+            balances[acc.id] = acc.initialBalance;
+        });
 
-        const income = directTrans.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-        const expense = directTrans.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+        // Single pass through transactions
+        transactions.forEach(t => {
+            if (!t.isPaid) return;
 
-        // Transfers:
-        // Outgoing: Already included in 'directTrans' if type is 'transfer' (needs subtraction)
-        // Incoming: Needs addition
-        const transferOut = directTrans.filter(t => t.type === 'transfer').reduce((s, t) => s + t.amount, 0);
-        const transferIn = incomingTrans.reduce((s, t) => s + t.amount, 0);
+            // Handle Source Account (Income, Expense, Transfer Out)
+            if (t.accountId && balances[t.accountId] !== undefined) {
+                if (t.type === 'income') balances[t.accountId] += t.amount;
+                if (t.type === 'expense') balances[t.accountId] -= t.amount;
+                if (t.type === 'transfer') balances[t.accountId] -= t.amount;
+            }
 
-        return initialBalance + income - expense - transferOut + transferIn;
-    };
+            // Handle Implied Destination (Transfer In)
+            if (t.type === 'transfer' && t.toAccountId && balances[t.toAccountId] !== undefined) {
+                balances[t.toAccountId] += t.amount;
+            }
+        });
+
+        return balances;
+    }, [accounts, transactions]);
+
+    const getAccountBalance = (accountId: string) => accountBalances[accountId] || 0;
 
     const handleCreate = () => { setEditingAccount(undefined); setIsAccountModalOpen(true); };
 
@@ -76,7 +88,7 @@ export const FinancialAccounts: React.FC = () => {
     if (loading) return <Loader />;
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    const totalBalance = accounts.reduce((sum, acc) => sum + getAccountBalance(acc.id, acc.initialBalance), 0);
+    const totalBalance = accounts.reduce((sum, acc) => sum + getAccountBalance(acc.id), 0);
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
@@ -110,7 +122,7 @@ export const FinancialAccounts: React.FC = () => {
             {/* List */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {accounts.map(acc => {
-                    const balance = getAccountBalance(acc.id, acc.initialBalance);
+                    const balance = getAccountBalance(acc.id);
                     return (
                         <Card
                             key={acc.id}

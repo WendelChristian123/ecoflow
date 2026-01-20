@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Task, Project, User } from '../../types';
 import { Button, Select, Badge, Avatar } from '../Shared';
-import { X, Printer, FileText, Filter, Calendar, Download } from 'lucide-react';
+import { X, Printer, FileText } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay, isBefore, isValid } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { DateRange } from 'react-day-picker';
+import { DateRangePicker } from '../DateRangePicker';
 
 interface RoutineReportModalProps {
     isOpen: boolean;
@@ -17,8 +18,10 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
     if (!isOpen) return null;
 
     // Default to current month
-    const [startDate, setStartDate] = useState(format(startOfDay(new Date()), 'yyyy-MM-01'));
-    const [endDate, setEndDate] = useState(format(endOfDay(new Date()), 'yyyy-MM-dd'));
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: startOfDay(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        to: endOfDay(new Date())
+    });
     const [selectedAssignee, setSelectedAssignee] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
 
@@ -29,34 +32,29 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
             if (!isValid(tDate)) return false;
 
             // Date Range
-            const start = startOfDay(parseISO(startDate));
-            const end = endOfDay(parseISO(endDate));
+            if (!dateRange?.from || !dateRange?.to) return false;
+
+            const start = startOfDay(dateRange.from);
+            const end = endOfDay(dateRange.to);
             const inRange = isWithinInterval(tDate, { start, end });
 
             // Assignee
             const assigneeMatch = selectedAssignee === 'all' || t.assigneeId === selectedAssignee;
 
             // Status
-            // 'pendente', 'em_andamento', 'concluida', 'atrasada'
-            // 'atrasada' is a computed status based on date + not done
             let statusMatch = true;
             const isDone = t.status === 'done';
             const isLate = !isDone && isBefore(tDate, startOfDay(new Date()));
 
-            if (selectedStatus === 'pending') statusMatch = t.status === 'todo'; // "Pendente" usually means To Do or just Not Done? User asked for "Pendente", "Em andamento", "Concluída", "Atrasada". 
-            // "Pendente" often maps to 'todo'.
+            if (selectedStatus === 'pending') statusMatch = t.status === 'todo';
             else if (selectedStatus === 'in_progress') statusMatch = t.status === 'in_progress' || t.status === 'review';
             else if (selectedStatus === 'done') statusMatch = isDone;
             else if (selectedStatus === 'late') statusMatch = isLate;
             else if (selectedStatus === 'all') statusMatch = true;
 
-            // If user selects "Pending", should we exclude "Late"? 
-            // Usually "Late" is a subset of "Not Done".
-            // Let's keep it simple: matches strictly if specific status selected.
-
             return inRange && assigneeMatch && statusMatch;
         }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    }, [tasks, startDate, endDate, selectedAssignee, selectedStatus]);
+    }, [tasks, dateRange, selectedAssignee, selectedStatus]);
 
     // Summary Metrics
     const total = filteredData.length;
@@ -70,6 +68,10 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
     const handlePrint = () => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
+
+        const dateStr = dateRange?.from && dateRange?.to
+            ? `${format(dateRange.from, 'dd/MM/yyyy')} até ${format(dateRange.to, 'dd/MM/yyyy')}`
+            : 'Período inválido';
 
         const htmlContent = `
             <!DOCTYPE html>
@@ -111,7 +113,7 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
             <body>
                 <div class="header">
                     <h1>Relatório de Rotinas e Execução</h1>
-                    <div class="meta"><strong>Período:</strong> ${format(parseISO(startDate), 'dd/MM/yyyy')} até ${format(parseISO(endDate), 'dd/MM/yyyy')}</div>
+                    <div class="meta"><strong>Período:</strong> ${dateStr}</div>
                     <div class="meta"><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                     ${selectedAssignee !== 'all' ? `<div class="meta"><strong>Responsável:</strong> ${getUser(selectedAssignee)?.name}</div>` : ''}
                 </div>
@@ -208,29 +210,19 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
 
                 {/* Filters */}
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-slate-500">Início</label>
-                        <input
-                            type="date"
-                            className="bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-slate-500">Fim</label>
-                        <input
-                            type="date"
-                            className="bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                            value={endDate}
-                            onChange={e => setEndDate(e.target.value)}
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                        <label className="text-xs font-semibold text-slate-500">Período</label>
+                        <DateRangePicker
+                            date={dateRange}
+                            setDate={setDateRange}
+                            className="bg-slate-800 border-slate-700 text-slate-200 max-w-[280px]"
                         />
                     </div>
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-semibold text-slate-500">Responsável</label>
                         <Select value={selectedAssignee} onChange={e => setSelectedAssignee(e.target.value)}>
                             <option value="all">Todos</option>
-                            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </Select>
                     </div>
                     <div className="flex flex-col gap-1">

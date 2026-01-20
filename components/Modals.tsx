@@ -643,14 +643,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                     <div>
                                         <label className="text-xs text-slate-400 block mb-1.5 ml-1">Conta Origem</label>
                                         <Select value={formData.accountId} onChange={e => setFormData({ ...formData, accountId: e.target.value })} required>
-                                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                            {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                         </Select>
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-400 block mb-1.5 ml-1">Conta Destino</label>
                                         <Select value={formData.toAccountId} onChange={e => setFormData({ ...formData, toAccountId: e.target.value })} required>
                                             <option value="">Selecione...</option>
-                                            {accounts.filter(a => a.id !== formData.accountId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                            {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).filter(a => a.id !== formData.accountId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                         </Select>
                                     </div>
                                 </>
@@ -664,7 +664,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                             </label>
                                             <Select value={formData.contactId || ''} onChange={e => setFormData({ ...formData, contactId: e.target.value })}>
                                                 <option value="">Selecione...</option>
-                                                {filteredContacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                {filteredContacts.sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                             </Select>
                                         </div>
                                         <Button type="button" variant="secondary" onClick={() => setIsContactModalOpen(true)} className="h-[42px] w-[42px] p-0 flex items-center justify-center mb-[1px]">
@@ -677,7 +677,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                             <label className="text-xs text-slate-400 block mb-1.5 ml-1">Categoria</label>
                                             <Select value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
                                                 <option value="">Geral</option>
-                                                {localCategories.filter(c => c.type === formData.type).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                {localCategories.filter(c => c.type === formData.type).sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                             </Select>
                                         </div>
                                         <Button type="button" variant="secondary" onClick={() => setIsCategoryModalOpen(true)} className="h-[42px] w-[42px] p-0 flex items-center justify-center mb-[1px]">
@@ -695,11 +695,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                             }}
                                         >
                                             <optgroup label="Contas">
-                                                {accounts.map(a => <option key={a.id} value={`acc:${a.id}`}>{a.name}</option>)}
+                                                {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={`acc:${a.id}`}>{a.name}</option>)}
                                             </optgroup>
                                             {formData.type === 'expense' && cards.length > 0 && (
                                                 <optgroup label="Cartões de Crédito">
-                                                    {cards.map(c => <option key={c.id} value={`card:${c.id}`}>{c.name}</option>)}
+                                                    {[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={`card:${c.id}`}>{c.name}</option>)}
                                                 </optgroup>
                                             )}
                                         </Select>
@@ -801,8 +801,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(initialData ? { ...initialData, dueDate: initialData.dueDate ? initialData.dueDate.substring(0, 16) : '', links: initialData.links || [] } : {
-                title: '', description: '', status: 'todo', priority: 'medium', assigneeId: users[0]?.id || '', projectId: '', teamId: '', dueDate: new Date().toISOString().substring(0, 16), links: []
+            // Helper to get local string for input
+            const toLocalString = (isoStr?: string) => {
+                const d = isoStr ? new Date(isoStr) : new Date();
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            setFormData(initialData ? {
+                ...initialData,
+                dueDate: initialData.dueDate ? toLocalString(initialData.dueDate) : '',
+                links: initialData.links || []
+            } : {
+                title: '', description: '', status: 'todo', priority: 'medium', assigneeId: users[0]?.id || '', projectId: '', teamId: '',
+                dueDate: toLocalString(new Date().toISOString()),
+                links: []
             });
 
             if (initialData?.recurrence) {
@@ -819,15 +832,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
         e.preventDefault();
         setLoading(true);
         try {
+            const finalFormData = {
+                ...formData,
+                dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : formData.dueDate
+            };
+
             if (initialData?.id) {
-                await api.updateTask({ ...initialData, ...formData } as Task);
+                await api.updateTask({ ...initialData, ...finalFormData } as Task);
             } else {
                 const finalRecurrence = recurrence.isRecurring ? {
                     frequency: recurrence.frequency,
                     interval: 1,
                     occurrences: isIndefinite ? 12 : (recurrence.repeatCount > 0 ? recurrence.repeatCount : undefined)
                 } : undefined;
-                await api.addTask(formData as Task, finalRecurrence);
+                await api.addTask(finalFormData as Task, finalRecurrence);
             }
             onSuccess();
             onClose();
@@ -881,7 +899,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                             <label className="text-xs text-slate-400 mb-1.5 block ml-1">Responsável</label>
                             <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
                                 <option value="">Selecione...</option>
-                                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                                {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                             </Select>
                         </div>
                         <div>
@@ -894,14 +912,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                                 <label className="text-xs text-slate-400 mb-1.5 block ml-1">Projeto</label>
                                 <Select value={formData.projectId || ''} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
                                     <option value="">Nenhum</option>
-                                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    {[...projects].sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </Select>
                             </div>
                             <div>
                                 <label className="text-xs text-slate-400 mb-1.5 block ml-1">Equipe</label>
                                 <Select value={formData.teamId || ''} onChange={e => setFormData({ ...formData, teamId: e.target.value })}>
                                     <option value="">Nenhuma</option>
-                                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    {[...teams].sort((a, b) => a.name.localeCompare(b.name)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                 </Select>
                             </div>
                         </div>
@@ -1418,8 +1436,16 @@ export const EventModal: React.FC<EventModalProps> = ({
             const isTask = initialData?.origin === 'task';
             setMode(isTask ? 'task' : 'event');
 
-            const start = initialData?.startDate || new Date().toISOString().substring(0, 16);
-            const end = initialData?.endDate || new Date().toISOString().substring(0, 16);
+            // Helper to get local string for input
+            const toLocalString = (isoStr?: string) => {
+                const d = isoStr ? new Date(isoStr) : new Date();
+                // Return YYYY-MM-DDTHH:mm in local time
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            const start = toLocalString(initialData?.startDate); // Initialize with Local Time
+            const end = toLocalString(initialData?.endDate || (initialData?.startDate ? undefined : new Date(Date.now() + 3600000).toISOString())); // Add 1h for default end
 
             setFormData(initialData ? {
                 ...initialData,
@@ -1453,11 +1479,14 @@ export const EventModal: React.FC<EventModalProps> = ({
         e.preventDefault();
         setLoading(true);
         try {
+            // Convert Local Input Strings back to UTC ISO for saving
+            const toUTC = (localStr: string) => new Date(localStr).toISOString();
+
             if (mode === 'task') {
                 const taskData: Partial<Task> = {
                     title: formData.title,
                     description: formData.description,
-                    dueDate: formData.startDate, // Use StartDate as DueDate
+                    dueDate: toUTC(formData.startDate), // Convert to UTC
                     priority: formData.priority,
                     status: formData.status === 'scheduled' ? 'todo' : formData.status, // Map status
                     assigneeId: formData.assigneeId,
@@ -1482,8 +1511,8 @@ export const EventModal: React.FC<EventModalProps> = ({
                 const eventData: Partial<CalendarEvent> = {
                     title: formData.title,
                     description: formData.description,
-                    startDate: formData.startDate,
-                    endDate: formData.endDate,
+                    startDate: toUTC(formData.startDate), // Convert to UTC
+                    endDate: toUTC(formData.endDate),     // Convert to UTC
                     type: formData.type,
                     isTeamEvent: formData.isTeamEvent,
                     participants: formData.participants,
@@ -1737,6 +1766,20 @@ interface EventDetailModalProps {
     onEdit: () => void;
 }
 
+const translateEventType = (type: string | undefined): string => {
+    if (!type) return 'Evento';
+    const map: Record<string, string> = {
+        'meeting': 'Reunião',
+        'call': 'Ligação',
+        'task': 'Tarefa',
+        'reminder': 'Lembrete',
+        'event': 'Evento',
+        'blocked': 'Bloqueado',
+        'other': 'Outro'
+    };
+    return map[type.toLowerCase()] || type;
+};
+
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onClose, onSuccess, event, users, onEdit }) => {
     const [loading, setLoading] = useState(false);
 
@@ -1890,12 +1933,16 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                             <div>
                                 <span className="text-slate-500 block mb-1">Responsável</span>
                                 <div className="flex items-center gap-2 text-slate-200">
-                                    {event.metadata?.assignee ? (
-                                        <>
-                                            <Avatar name={event.metadata.assignee.name} src={event.metadata.assignee.avatarUrl} size="sm" />
-                                            <span className="font-medium text-slate-300">{event.metadata.assignee.name}</span>
-                                        </>
-                                    ) : <span className="text-slate-400">-</span>}
+                                    {(() => {
+                                        const assigneeId = event.metadata?.assigneeId;
+                                        const assigneeUser = users.find(u => u.id === assigneeId);
+                                        return assigneeUser ? (
+                                            <>
+                                                <Avatar name={assigneeUser.name} src={assigneeUser.avatarUrl} size="sm" />
+                                                <span className="font-medium text-slate-300">{assigneeUser.name}</span>
+                                            </>
+                                        ) : <span className="text-slate-400">-</span>;
+                                    })()}
                                 </div>
                             </div>
                             <div>
@@ -1934,11 +1981,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                     <div className="mt-4">
                         <span className="text-slate-500 block mb-2 text-sm">Links Anexados</span>
                         <div className="space-y-1">
-                            {event.links.map((link: string, i: number) => (
-                                <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 hover:underline transition-colors">
-                                    <LinkIcon size={12} /> {link}
-                                </a>
-                            ))}
+                            {event.links.map((link: any, i: number) => {
+                                const url = typeof link === 'string' ? link : link.url;
+                                const title = typeof link === 'string' ? link : (link.title || link.url);
+                                return (
+                                    <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 hover:underline transition-colors">
+                                        <LinkIcon size={12} /> {title}
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -1974,7 +2025,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                             // Let's rely on the policy failing if unauthorized, but show the button.
                             <Button
                                 variant="danger"
-                                variantType="outline"
                                 onClick={async () => {
                                     if (!window.confirm("Tem certeza que deseja excluir este item?")) return;
                                     setLoading(true);

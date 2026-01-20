@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Quote } from '../../types';
 import { Button, Select, Badge } from '../Shared';
-import { X, Printer, FileText, Filter, DollarSign, TrendingUp, Briefcase } from 'lucide-react';
-import { format, isWithinInterval, parseISO, startOfDay, endOfDay, isBefore } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { X, Printer, FileText } from 'lucide-react';
+import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { DateRange } from 'react-day-picker';
+import { DateRangePicker } from '../DateRangePicker';
 
 interface CommercialReportModalProps {
     isOpen: boolean;
@@ -16,8 +17,10 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
     if (!isOpen) return null;
 
     // Default Filters
-    const [startDate, setStartDate] = useState(format(startOfDay(new Date()), 'yyyy-MM-01'));
-    const [endDate, setEndDate] = useState(format(endOfDay(new Date()), 'yyyy-MM-dd'));
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: startOfDay(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        to: endOfDay(new Date())
+    });
     const [statusFilter, setStatusFilter] = useState('all');
     const [assigneeFilter, setAssigneeFilter] = useState('all');
 
@@ -27,9 +30,13 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
     const filteredData = useMemo(() => {
         return quotes.filter(q => {
             if (!q.createdAt) return false;
-            const qDate = parseISO(q.createdAt); // Using Created Date for report
-            const start = startOfDay(parseISO(startDate));
-            const end = endOfDay(parseISO(endDate));
+
+            // Date Range
+            if (!dateRange?.from || !dateRange?.to) return false;
+
+            const qDate = parseISO(q.createdAt);
+            const start = startOfDay(dateRange.from);
+            const end = endOfDay(dateRange.to);
             const inRange = isWithinInterval(qDate, { start, end });
 
             // Status
@@ -41,18 +48,12 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
             // Assignee
             let assigneeMatch = true;
             if (assigneeFilter !== 'all') {
-                // Assuming quote has assigneeId? Quote type usually has userId or similar.
-                // Let's check type definition if needed, but standard is userId or assigneeId.
-                // Looking at Quotes.tsx previously, we might need to assume 'userId' if not assigneeId.
-                // Let's assume 'userId' based on typical schema, can fix if it errors.
-                // Actually looking at Quote type in memory... let's stick to generic check or verify.
-                // Code below checks generic "userId" or "assigneeId".
                 assigneeMatch = (q.userId === assigneeFilter) || ((q as any).assigneeId === assigneeFilter);
             }
 
             return inRange && statusMatch && assigneeMatch;
         }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }, [quotes, startDate, endDate, statusFilter, assigneeFilter]);
+    }, [quotes, dateRange, statusFilter, assigneeFilter]);
 
     // Summary Calculations
     const calculateTotals = () => {
@@ -91,6 +92,10 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
+        const dateStr = dateRange?.from && dateRange?.to
+            ? `${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}`
+            : 'Período inválido';
+
         const html = `
             <!DOCTYPE html>
             <html>
@@ -124,7 +129,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                         <div class="meta"><strong>EcoFlow Systems</strong></div>
                     </div>
                     <div class="meta text-right">
-                        <div><strong>Período:</strong> ${format(parseISO(startDate), 'dd/MM/yyyy')} a ${format(parseISO(endDate), 'dd/MM/yyyy')}</div>
+                        <div><strong>Período:</strong> ${dateStr}</div>
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Status:</strong> ${statusFilter === 'all' ? 'Todos' : statusFilter.toUpperCase()}</div>
                     </div>
@@ -206,13 +211,13 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
 
                 {/* Filters */}
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Início</label>
-                        <input className="bg-slate-800 border-slate-700 text-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Fim</label>
-                        <input className="bg-slate-800 border-slate-700 text-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                        <label className="text-[10px] font-bold uppercase text-slate-500">Período</label>
+                        <DateRangePicker
+                            date={dateRange}
+                            setDate={setDateRange}
+                            className="bg-slate-800 border-slate-700 text-slate-200 max-w-[280px]"
+                        />
                     </div>
                     <div className="flex flex-col gap-1">
                         <label className="text-[10px] font-bold uppercase text-slate-500">Status</label>
@@ -228,7 +233,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                         <label className="text-[10px] font-bold uppercase text-slate-500">Responsável</label>
                         <Select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)} className="h-[30px] text-xs">
                             <option value="all">Todos</option>
-                            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </Select>
                     </div>
                 </div>

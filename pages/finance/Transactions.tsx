@@ -268,7 +268,9 @@ export const FinancialTransactions: React.FC = () => {
                 {/* 1. Icon - Minimalist with subtle colored bg */}
                 <div className={cn(
                     "w-9 h-9 rounded-full flex items-center justify-center transition-colors shadow-inner",
-                    t.type === 'income' ? "bg-emerald-500/10 text-emerald-500" : "bg-indigo-500/10 text-indigo-400"
+                    t.type === 'transfer' ? "bg-blue-500/10 text-blue-400" :
+                        (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? "bg-yellow-500/10 text-yellow-500" :
+                            t.type === 'income' ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
                 )}>
                     {getCategoryIcon(category?.name)}
                 </div>
@@ -290,15 +292,25 @@ export const FinancialTransactions: React.FC = () => {
 
                 {/* 4. Account - Uppercase, very subtle, dark badge look */}
                 <div className="hidden md:block text-right">
-                    <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50">
-                        {isVirtual || t.creditCardId ? (card?.name || 'CARTÃO') : accountName}
+                    <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 flex items-center justify-end gap-1">
+                        {t.type === 'transfer' && t.toAccountId ? (
+                            <>
+                                {accountName}
+                                <ArrowRight size={10} className="text-slate-600" />
+                                {accounts.find(a => a.id === t.toAccountId)?.name || '...'}
+                            </>
+                        ) : (
+                            isVirtual || t.creditCardId ? (card?.name || 'CARTÃO') : accountName
+                        )}
                     </span>
                 </div>
 
                 {/* 5. Value - Hierarchical Focus: Bold, Colored */}
                 <div className={cn(
                     "text-sm md:text-base font-bold whitespace-nowrap text-right tracking-tight",
-                    t.type === 'income' ? "text-emerald-500" : "text-rose-500" // STRICT: Red for expenses
+                    t.type === 'transfer' ? "text-blue-500" :
+                        (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? "text-yellow-500" :
+                            t.type === 'income' ? "text-emerald-500" : "text-rose-500"
                 )}>
                     {t.type === 'income' ? '+' : '-'} {fmt(t.amount)}
                 </div>
@@ -398,6 +410,7 @@ export const FinancialTransactions: React.FC = () => {
                         <option value="all" className="bg-[#0f172a]">Todas Operações</option>
                         <option value="income" className="bg-[#0f172a]">Receitas</option>
                         <option value="expense" className="bg-[#0f172a]">Despesas</option>
+                        <option value="transfer" className="bg-[#0f172a]">Transferências</option>
                     </Select>
 
                     <Select
@@ -468,41 +481,73 @@ export const FinancialTransactions: React.FC = () => {
 
                     {/* Static Footer (End of List) */}
                     {filteredData.length > 0 && (
-                        <div className="mt-8 mb-4 bg-[#0f172a]/50 border border-slate-800/60 rounded-2xl px-8 py-6 grid grid-cols-2 gap-12">
+                        <div className="mt-8 mb-4 bg-[#0f172a]/50 border border-slate-800/60 rounded-2xl px-8 py-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
                             {/* Income Summary */}
-                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-r border-slate-800/50 pr-12">
+                            <div className="flex flex-col gap-2 border-r border-slate-800/50 pr-6">
                                 <div>
                                     <div className="text-emerald-500/80 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"></div>
                                         Receitas
                                     </div>
-                                    <div className="text-emerald-400 font-bold text-3xl tracking-tight">
+                                    <div className="text-emerald-400 font-bold text-2xl tracking-tight">
                                         {fmt(filteredData.filter(t => t.type === 'income' && t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
-                                <div className="text-left sm:text-right">
+                                <div className="text-left">
                                     <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">A Receber</div>
-                                    <div className="text-slate-400 font-medium text-sm">
+                                    <div className="text-slate-400 font-medium text-xs">
                                         {fmt(filteredData.filter(t => t.type === 'income' && !t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Expense Summary */}
-                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                            {/* Expense Summary (Excluding Card Payments) */}
+                            <div className="flex flex-col gap-2 border-r border-slate-800/50 pr-6">
                                 <div>
                                     <div className="text-rose-500/80 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]"></div>
                                         Despesas
                                     </div>
-                                    <div className="text-rose-500 font-bold text-3xl tracking-tight">
-                                        {fmt(filteredData.filter(t => t.type === 'expense' && t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
+                                    <div className="text-rose-500 font-bold text-2xl tracking-tight">
+                                        {fmt(filteredData.filter(t => t.type === 'expense' && t.isPaid && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
-                                <div className="text-left sm:text-right">
+                                <div className="text-left">
                                     <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">A Pagar</div>
-                                    <div className="text-slate-400 font-medium text-sm">
-                                        {fmt(filteredData.filter(t => t.type === 'expense' && !t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
+                                    <div className="text-slate-400 font-medium text-xs">
+                                        {fmt(filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Transfers Summary */}
+                            <div className="flex flex-col gap-2 border-r border-slate-800/50 pr-6">
+                                <div>
+                                    <div className="text-blue-500/80 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]"></div>
+                                        Transferências
+                                    </div>
+                                    <div className="text-blue-400 font-bold text-2xl tracking-tight">
+                                        {fmt(filteredData.filter(t => t.type === 'transfer').reduce((acc, t) => acc + t.amount, 0))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card Payments Summary */}
+                            <div className="flex flex-col gap-2">
+                                <div>
+                                    <div className="text-yellow-500/80 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.6)]"></div>
+                                        Pgto. Cartão
+                                    </div>
+                                    <div className="text-yellow-400 font-bold text-2xl tracking-tight">
+                                        {fmt(filteredData.filter(t => t.type === 'expense' && t.description.toLowerCase().includes('fatura') && t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
+                                    </div>
+                                </div>
+                                <div className="text-left">
+                                    <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">A Pagar</div>
+                                    <div className="text-slate-400 font-medium text-xs">
+                                        {fmt(filteredData.filter(t => t.type === 'expense' && t.description.toLowerCase().includes('fatura') && !t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
                             </div>
