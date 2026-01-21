@@ -42,10 +42,15 @@ serve(async (req) => {
             throw new Error('Only Admins can create users');
         }
 
-        const tenantId = adminProfile.tenant_id;
+        let tenantId = adminProfile.tenant_id;
 
         // 3. Parse Request
-        const { email, password, name, phone, role, permissions } = await req.json();
+        const { email, password, name, phone, role, permissions, tenantId: reqTenantId } = await req.json();
+
+        // Allow Super Admin to set tenant_id explicitly
+        if (adminProfile.role === 'super_admin' && reqTenantId) {
+            tenantId = reqTenantId;
+        }
 
         if (!email || !password || !name) throw new Error('Missing fields');
 

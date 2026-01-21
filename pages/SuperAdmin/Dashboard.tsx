@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { api, getErrorMessage } from '../../services/api';
-import { Tenant } from '../../types';
-import { maskCNPJ, maskPhone } from '../../utils/masks';
+import { Tenant, SaasPlan } from '../../types';
+import { maskCNPJ, maskPhone, maskCPF } from '../../utils/masks';
 import { useRBAC } from '../../context/RBACContext';
 import { useTenant } from '../../context/TenantContext';
 import { useAuth } from '../../context/AuthContext';
@@ -34,14 +34,22 @@ export const SuperAdminDashboard: React.FC = () => {
 
     // Modals State
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [createTab, setCreateTab] = useState<'data' | 'modules'>('data');
-    const [newTenant, setNewTenant] = useState({ name: '', ownerEmail: '', phone: '', document: '', adminName: '', password: '', status: 'active' });
+    const [createTab, setCreateTab] = useState<'data' | 'plans' | 'modules'>('data');
+    const [newTenant, setNewTenant] = useState({
+        name: '', ownerEmail: '', phone: '', document: '', adminName: '', password: '', status: 'active',
+        planId: '', billingCycle: 'monthly', subscriptionStart: '', subscriptionEnd: ''
+    });
     const [draftModules, setDraftModules] = useState<string[]>(['mod_tasks']);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
     const [tempPassword, setTempPassword] = useState('');
     const [userCreationError, setUserCreationError] = useState<string | null>(null);
     const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+    const [docType, setDocType] = useState<'CNPJ' | 'CPF'>('CNPJ');
+
+    // New Plans State
+    const [availablePlans, setAvailablePlans] = useState<SaasPlan[]>([]);
+    const [customLimits, setCustomLimits] = useState({ maxUsers: 5 });
 
     // Click outside to close menu
     React.useEffect(() => {
@@ -64,6 +72,8 @@ export const SuperAdminDashboard: React.FC = () => {
             const s = await api.getGlobalStats();
             setStats(s);
             await refreshTenants();
+            const plans = await api.getSaasPlans(); // Fetch plans
+            setAvailablePlans(plans.filter(p => p.status === 'active' || p.status === 'hidden'));
         } catch (e: any) {
             console.error(e);
         } finally {
@@ -80,6 +90,7 @@ export const SuperAdminDashboard: React.FC = () => {
         setTempPassword('');
         setUserCreationError(null);
         setCreateTab('data');
+        setDocType('CNPJ');
         setIsModalOpen(true);
     };
 
@@ -100,6 +111,16 @@ export const SuperAdminDashboard: React.FC = () => {
         if (!modules.includes('mod_tasks')) modules.push('mod_tasks');
         setDraftModules(modules);
         setCreateTab(mode);
+        setCreateTab(mode);
+
+        // Auto-detect Document Type for Edit
+        const cleanDoc = (tenant.cnpj || '').replace(/\D/g, '');
+        if (cleanDoc.length > 11) {
+            setDocType('CNPJ');
+        } else {
+            setDocType('CPF');
+        }
+
         setIsModalOpen(true);
     };
 
@@ -108,12 +129,58 @@ export const SuperAdminDashboard: React.FC = () => {
         navigate('/dashboard'); // Go to dashboard as that tenant
     };
 
+    const calculateDates = (cycle: string) => {
+        const start = new Date();
+        const end = new Date();
+        if (cycle === 'monthly') end.setMonth(end.getMonth() + 1);
+        else if (cycle === 'semiannually') end.setMonth(end.getMonth() + 6);
+        else if (cycle === 'yearly') end.setFullYear(end.getFullYear() + 1);
+
+        return {
+            start: start.toISOString(),
+            end: end.toISOString()
+        };
+    };
+
+    const selectPlan = (plan: SaasPlan | 'custom', cycle: string = 'monthly') => {
+        const dates = calculateDates(cycle);
+
+        if (plan === 'custom') {
+            setNewTenant(prev => ({
+                ...prev,
+                planId: 'custom',
+                billingCycle: cycle,
+                subscriptionStart: dates.start,
+                subscriptionEnd: dates.end
+            }));
+            // Set custom limits?
+        } else {
+            setNewTenant(prev => ({
+                ...prev,
+                planId: plan.id,
+                billingCycle: cycle,
+                subscriptionStart: dates.start,
+                subscriptionEnd: dates.end
+            }));
+            // Auto-fill modules logic could go here if we want to enforce it
+            if (plan.features) {
+                // Logic to set draftModules based on plan?
+                // For now user can override in next step
+                setDraftModules(plan.allowedModules || ['mod_tasks']);
+            }
+        }
+    };
+
     const handleDelete = async (tenantId: string) => {
-        if (confirm('Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita (Soft Delete).')) {
-            // Mock delete for now as API might not support it fully yet or requires update
-            alert('Funcionalidade de exclusão enviada.');
-            // await api.deleteTenant(tenantId);
-            loadData();
+        if (confirm('Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita (Hard Delete).')) {
+            try {
+                await api.deleteTenant(tenantId);
+                alert('Empresa excluída com sucesso.');
+                loadData();
+            } catch (error: any) {
+                console.error(error);
+                alert('Erro ao excluir: ' + (error.message || 'Verifique se existem registros vinculados.'));
+            }
         }
     };
 
@@ -121,6 +188,14 @@ export const SuperAdminDashboard: React.FC = () => {
         e.preventDefault();
 
         if (createTab === 'data') {
+            setCreateTab('plans');
+            return;
+        }
+        if (createTab === 'plans') {
+            if (!newTenant.planId) {
+                alert("Selecione um plano para continuar.");
+                return;
+            }
             setCreateTab('modules');
             return;
         }
@@ -138,29 +213,15 @@ export const SuperAdminDashboard: React.FC = () => {
                 setIsModalOpen(false);
             } else {
                 const tenantId = await api.createTenant({
-                    name: newTenant.name, ownerEmail: newTenant.ownerEmail, cnpj: newTenant.document, phone: newTenant.phone, adminName: newTenant.adminName, modules: draftModules
+                    name: newTenant.name, ownerEmail: newTenant.ownerEmail, cnpj: newTenant.document, phone: newTenant.phone, adminName: newTenant.adminName,
+                    modules: draftModules, password: newTenant.password,
+                    planId: newTenant.planId, billingCycle: newTenant.billingCycle,
+                    subscriptionStart: newTenant.subscriptionStart, subscriptionEnd: newTenant.subscriptionEnd
                 });
 
                 await refreshTenants();
                 await api.getGlobalStats().then(setStats);
-
-                try {
-                    await api.createUser({
-                        name: newTenant.adminName,
-                        email: newTenant.ownerEmail,
-                        password: newTenant.password,
-                        phone: newTenant.phone,
-                        role: 'admin'
-                    }, tenantId);
-                    setTempPassword(newTenant.password);
-                } catch (userError: any) {
-                    console.error("User creation failed:", userError);
-                    if (userError?.code === '23505' || userError?.message?.includes('duplicate key')) {
-                        setTempPassword(newTenant.password);
-                    } else {
-                        setUserCreationError("Empresa criada, mas falha ao criar usuário automático. Verifique o banco de dados.");
-                    }
-                }
+                setTempPassword(newTenant.password);
             }
 
             if (editingId) closeAndReset();
@@ -440,15 +501,42 @@ export const SuperAdminDashboard: React.FC = () => {
                 ) : (
                     <>
                         <div className="flex gap-4 border-b border-slate-700 mb-6">
-                            <button onClick={() => setCreateTab('data')} className={`pb-2 text-sm font-medium transition-colors border-b-2 ${createTab === 'data' ? 'text-indigo-400 border-indigo-500' : 'text-slate-400 border-transparent hover:text-white'}`} type="button">1. Dados & Licença</button>
-                            <button onClick={() => setCreateTab('modules')} className={`pb-2 text-sm font-medium transition-colors border-b-2 ${createTab === 'modules' ? 'text-indigo-400 border-indigo-500' : 'text-slate-400 border-transparent hover:text-white'}`} type="button">2. Gestão de Módulos</button>
+                            <button type="button" onClick={() => setCreateTab('data')} className={`pb-2 text-sm font-medium transition-colors border-b-2 ${createTab === 'data' ? 'text-indigo-400 border-indigo-500' : 'text-slate-400 border-transparent hover:text-white'}`}>1. Dados & Licença</button>
+                            <button type="button" onClick={() => setCreateTab('plans')} className={`pb-2 text-sm font-medium transition-colors border-b-2 ${createTab === 'plans' ? 'text-indigo-400 border-indigo-500' : 'text-slate-400 border-transparent hover:text-white'}`}>2. Seleção de Plano</button>
+                            <button type="button" onClick={() => setCreateTab('modules')} className={`pb-2 text-sm font-medium transition-colors border-b-2 ${createTab === 'modules' ? 'text-indigo-400 border-indigo-500' : 'text-slate-400 border-transparent hover:text-white'}`}>3. Gestão de Módulos</button>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {createTab === 'data' ? (
                                 <div className="space-y-4">
                                     <Input label="Nome da Empresa" placeholder="Ex: Acme Corp" value={newTenant.name} onChange={e => setNewTenant({ ...newTenant, name: e.target.value })} required />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <Input label="CNPJ" placeholder="00.000.000/0001-00" value={newTenant.document} onChange={e => setNewTenant({ ...newTenant, document: maskCNPJ(e.target.value) })} required />
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex justify-between items-center px-1">
+                                                <label className="text-xs font-bold text-slate-400 uppercase">Documento</label>
+                                                <div className="flex bg-slate-800 rounded p-0.5 border border-slate-700">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDocType('CNPJ')}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${docType === 'CNPJ' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                                                    >
+                                                        CNPJ
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDocType('CPF')}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${docType === 'CPF' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                                                    >
+                                                        CPF
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <Input
+                                                placeholder={docType === 'CNPJ' ? "00.000.000/0001-00" : "000.000.000-00"}
+                                                value={newTenant.document}
+                                                onChange={e => setNewTenant({ ...newTenant, document: docType === 'CNPJ' ? maskCNPJ(e.target.value) : maskCPF(e.target.value) })}
+                                                required
+                                            />
+                                        </div>
                                         <Input label="Telefone" placeholder="(00) 00000-0000" value={newTenant.phone} onChange={e => setNewTenant({ ...newTenant, phone: maskPhone(e.target.value) })} required />
                                     </div>
                                     <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 mt-2">
@@ -467,6 +555,84 @@ export const SuperAdminDashboard: React.FC = () => {
                                                 <option value="suspended">Suspensa (Inadimplência)</option>
                                                 <option value="inactive">Cancelada/Inativa</option>
                                             </Select>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : createTab === 'plans' ? (
+                                <div className="space-y-6">
+                                    <div className="flex justify-center">
+                                        <div className="inline-flex bg-slate-900 rounded-lg p-1 border border-slate-700">
+                                            {['monthly', 'semiannually', 'yearly'].map(cycle => (
+                                                <button
+                                                    key={cycle}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const currentPlan = availablePlans.find(p => p.id === newTenant.planId) || (newTenant.planId === 'custom' ? 'custom' : null);
+                                                        if (currentPlan) selectPlan(currentPlan, cycle);
+                                                        else setNewTenant(prev => ({ ...prev, billingCycle: cycle }));
+                                                    }}
+                                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${newTenant.billingCycle === cycle ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                                >
+                                                    {cycle === 'monthly' ? 'Mensal' : cycle === 'semiannually' ? 'Semestral' : 'Anual'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto pr-1">
+                                        {availablePlans.map(plan => {
+                                            const isSelected = newTenant.planId === plan.id;
+                                            const price = newTenant.billingCycle === 'monthly' ? plan.priceMonthly : newTenant.billingCycle === 'semiannually' ? plan.priceSemiannually : plan.priceYearly;
+                                            return (
+                                                <div
+                                                    key={plan.id}
+                                                    onClick={() => selectPlan(plan, newTenant.billingCycle)}
+                                                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700 bg-slate-800 hover:border-slate-600'}`}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className={`font-bold ${isSelected ? 'text-white' : 'text-slate-200'}`}>{plan.name}</h4>
+                                                            <div className="flex items-baseline gap-1 mt-1">
+                                                                <span className="text-lg font-bold text-emerald-400">R$ {price?.toFixed(2)}</span>
+                                                                <span className="text-xs text-slate-500">/{newTenant.billingCycle === 'monthly' ? 'mês' : newTenant.billingCycle === 'semiannually' ? 'semestre' : 'ano'}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-xs text-slate-400">Usuários: <span className="text-white">{plan.maxUsers}</span></div>
+                                                            <div className="text-xs text-slate-400">Módulos: <span className="text-white">{plan.allowedModules?.length}</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        <div
+                                            onClick={() => selectPlan('custom', newTenant.billingCycle)}
+                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${newTenant.planId === 'custom' ? 'border-amber-500 bg-amber-500/10' : 'border-slate-700 bg-slate-800 hover:border-slate-600'}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500"><UserCog size={20} /></div>
+                                                <div>
+                                                    <h4 className={`font-bold ${newTenant.planId === 'custom' ? 'text-white' : 'text-slate-200'}`}>Personalizado</h4>
+                                                    <p className="text-xs text-slate-400">Definir limites manualmente</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {newTenant.planId && newTenant.subscriptionStart && (
+                                        <div className="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Resumo da Assinatura</h4>
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <span className="text-slate-400 block">Início</span>
+                                                    <span className="text-white">{new Date(newTenant.subscriptionStart).toLocaleDateString()}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-400 block">Renovação</span>
+                                                    <span className="text-white">{new Date(newTenant.subscriptionEnd).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -500,7 +666,11 @@ export const SuperAdminDashboard: React.FC = () => {
                             <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
                                 <Button type="button" variant="ghost" onClick={closeAndReset}>Cancelar</Button>
                                 {createTab === 'data' ? (
-                                    <Button key="btn-next" type="submit" disabled={!newTenant.name || !newTenant.document}>
+                                    <Button key="btn-next-plan" type="submit" disabled={!newTenant.name || !newTenant.document}>
+                                        Próximo: Planos
+                                    </Button>
+                                ) : createTab === 'plans' ? (
+                                    <Button key="btn-next-mod" type="submit" disabled={!newTenant.planId}>
                                         Próximo: Módulos
                                     </Button>
                                 ) : (
@@ -513,6 +683,6 @@ export const SuperAdminDashboard: React.FC = () => {
                     </>
                 )}
             </Modal>
-        </div>
+        </div >
     );
 };

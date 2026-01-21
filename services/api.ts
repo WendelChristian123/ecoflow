@@ -269,6 +269,12 @@ export const api = {
         const { error } = await supabase.from('teams').delete().eq('id', id);
         if (error) throw error;
     },
+    deleteTenant: async (id: string) => {
+        const { error } = await supabase.functions.invoke('admin-delete-tenant', {
+            body: { tenantId: id }
+        });
+        if (error) throw error;
+    },
 
     // --- USERS ---
     getUsers: async (tenantId?: string) => {
@@ -309,7 +315,7 @@ export const api = {
     },
     createUser: async (userData: any, tenantId?: string) => {
         const { data, error } = await supabase.functions.invoke('admin-create-user', {
-            body: userData
+            body: { ...userData, tenantId }
         });
 
         if (error) {
@@ -1342,7 +1348,12 @@ export const api = {
                 adminName: data.adminName,
                 password: data.password,
                 planId: data.planId,
-                modules: data.modules
+                billingCycle: data.billingCycle,
+                subscriptionStart: data.subscriptionStart,
+                subscriptionEnd: data.subscriptionEnd,
+                modules: data.modules,
+                cnpj: data.cnpj,
+                phone: data.phone
             }
         });
 
@@ -1387,32 +1398,49 @@ export const api = {
         const { error } = await supabase.from('tenants').update({ calendar_settings: settings }).eq('id', tenantId);
         if (error) throw error;
     },
+
     getSaasPlans: async () => {
         const { data } = await supabase.from('saas_plans').select('*');
         return data?.map((p: any) => ({
             ...p,
-            billingCycle: p.billing_cycle,
+            priceMonthly: p.price_monthly,
+            priceSemiannually: p.price_semiannually,
+            priceYearly: p.price_yearly,
             allowedModules: p.allowed_modules,
             maxUsers: p.max_users
         })) as SaasPlan[] || [];
     },
     createSaasPlan: async (data: any) => {
         const dbData = {
-            ...data,
-            billing_cycle: data.billingCycle,
+            name: data.name,
+            price_monthly: data.priceMonthly,
+            price_semiannually: data.priceSemiannually,
+            price_yearly: data.priceYearly,
             allowed_modules: data.allowedModules,
-            max_users: data.maxUsers
+            max_users: data.maxUsers,
+            type: data.type,
+            status: data.status,
+            active: data.active
         };
         await supabase.from('saas_plans').insert([dbData]);
     },
     updateSaasPlan: async (data: any) => {
         const dbData = {
-            ...data,
-            billing_cycle: data.billingCycle,
+            name: data.name,
+            price_monthly: data.priceMonthly,
+            price_semiannually: data.priceSemiannually,
+            price_yearly: data.priceYearly,
             allowed_modules: data.allowedModules,
-            max_users: data.maxUsers
+            max_users: data.maxUsers,
+            type: data.type,
+            status: data.status,
+            active: data.active
         };
         await supabase.from('saas_plans').update(dbData).eq('id', data.id);
+    },
+    deleteSaasPlan: async (id: string) => {
+        const { error } = await supabase.from('saas_plans').delete().eq('id', id);
+        if (error) throw error;
     },
     getGlobalStats: async (): Promise<GlobalStats> => {
         const { count: tenantCount } = await supabase.from('tenants').select('*', { count: 'exact', head: true });

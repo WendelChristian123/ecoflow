@@ -20,8 +20,9 @@ export const SuperAdminPlans: React.FC = () => {
     const [editingPlan, setEditingPlan] = useState<SaasPlan | null>(null);
     const [formData, setFormData] = useState({
         name: '',
-        price: 0,
-        billingCycle: 'monthly',
+        priceMonthly: 0,
+        priceSemiannually: 0,
+        priceYearly: 0,
         maxUsers: 5,
         type: 'public',
         status: 'active',
@@ -29,53 +30,32 @@ export const SuperAdminPlans: React.FC = () => {
         modules: {} as Record<string, 'included' | 'locked' | 'extra'>
     });
 
-    useEffect(() => {
-        loadPlans();
-    }, []);
-
-    // Click outside to close menu
-    React.useEffect(() => {
-        const handleClickOutside = () => setActiveMenuId(null);
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, []);
-
     const loadPlans = async () => {
-        setLoading(true);
         try {
             const data = await api.getSaasPlans();
-
-            // Normalize module config if missing
-            const normalized = data.map(p => {
-                let modConfig = p.moduleConfig || {};
-                // If empty, try to derive from allowedModules for legacy
-                if (Object.keys(modConfig).length === 0 && p.allowedModules) {
-                    SYSTEM_MODULES.forEach(m => {
-                        modConfig[m.id] = p.allowedModules.includes(m.id) ? 'included' : 'locked';
-                    });
-                }
-                return { ...p, moduleConfig: modConfig };
-            });
-
-            setPlans(normalized);
+            setPlans(data);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
-    }
+    };
+
+    useEffect(() => {
+        loadPlans();
+    }, []);
 
     const handleOpenCreate = () => {
         setEditingPlan(null);
-
         // Default module config
         const defaultMods: Record<string, 'included' | 'locked' | 'extra'> = {};
         SYSTEM_MODULES.forEach(m => defaultMods[m.id] = m.id === 'mod_tasks' ? 'included' : 'locked');
 
         setFormData({
             name: '',
-            price: 0,
-            billingCycle: 'monthly',
+            priceMonthly: 0,
+            priceSemiannually: 0,
+            priceYearly: 0,
             maxUsers: 5,
             type: 'public',
             status: 'active',
@@ -88,12 +68,13 @@ export const SuperAdminPlans: React.FC = () => {
         setEditingPlan(plan);
         setFormData({
             name: plan.name,
-            price: plan.price,
-            billingCycle: plan.billingCycle,
+            priceMonthly: plan.priceMonthly || 0,
+            priceSemiannually: plan.priceSemiannually || 0,
+            priceYearly: plan.priceYearly || 0,
             maxUsers: plan.maxUsers,
             type: plan.type,
             status: plan.status,
-            modules: plan.moduleConfig
+            modules: plan.moduleConfig || {}
         });
         setActiveMenuId(null);
         setIsModalOpen(true);
@@ -103,7 +84,6 @@ export const SuperAdminPlans: React.FC = () => {
         e.preventDefault();
         setLoading(true);
 
-        // Convert enriched module config back to simple array for legacy backend compatibility
         const allowedModules = Object.entries(formData.modules)
             .filter(([_, status]) => status === 'included' || status === 'extra')
             .map(([id]) => id);
@@ -111,14 +91,16 @@ export const SuperAdminPlans: React.FC = () => {
         const planData = {
             id: editingPlan?.id,
             name: formData.name,
-            price: formData.price,
-            billingCycle: formData.billingCycle as 'monthly' | 'yearly',
+            priceMonthly: formData.priceMonthly,
+            priceSemiannually: formData.priceSemiannually,
+            priceYearly: formData.priceYearly,
             maxUsers: formData.maxUsers,
-            active: formData.status === 'active', // Map status back to simple boolean
+            active: formData.status === 'active',
             allowedModules: allowedModules,
-            features: allowedModules
+            features: allowedModules,
+            type: formData.type,
+            status: formData.status
         };
-
         try {
             if (editingPlan) {
                 await api.updateSaasPlan(planData);
@@ -130,9 +112,10 @@ export const SuperAdminPlans: React.FC = () => {
         } catch (error: any) {
             console.error("Erro detalhado:", error);
             alert("Erro ao salvar plano: " + getErrorMessage(error));
+        } finally {
             setLoading(false);
         }
-    }
+    };
 
     const cycleModuleStatus = (modId: string) => {
         if (modId === 'mod_tasks') return; // Core mandatory
@@ -192,7 +175,6 @@ export const SuperAdminPlans: React.FC = () => {
                 )}
                 {plans.map(plan => (
                     <Card key={plan.id} className={`flex flex-col border-t-4 relative group transition-colors ${plan.status === 'archived' ? 'border-t-slate-600 opacity-75 grayscale-[0.5]' : 'border-t-indigo-500 hover:border-indigo-400'}`}>
-                        {/* Actions Menu */}
                         <div className="absolute top-4 right-4 z-10">
                             <div className="relative inline-block">
                                 <button
@@ -216,30 +198,32 @@ export const SuperAdminPlans: React.FC = () => {
                                             </button>
                                         )}
                                         {plan.status !== 'archived' && (
-                                            <button onClick={() => alert("Arquivar simulado")} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
-                                                <Archive size={14} /> Arquivar (Hard Block)
+                                            <button onClick={() => {
+                                                if (window.confirm("⚠️ Tem certeza que deseja excluir este plano permanentemente? Essa ação não pode ser desfeita.")) {
+                                                    api.deleteSaasPlan(plan.id).then(() => {
+                                                        alert("Plano excluído com sucesso!");
+                                                        loadPlans();
+                                                    }).catch(err => {
+                                                        alert("Erro ao excluir: " + getErrorMessage(err));
+                                                    });
+                                                }
+                                            }} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
+                                                <Archive size={14} /> Excluir (Permanente)
                                             </button>
                                         )}
                                     </div>
                                 )}
                             </div>
                         </div>
-
                         <div className="mb-4 pr-10">
                             <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-                            <div className="flex items-baseline gap-1 mt-2 mb-3">
-                                <span className="text-2xl font-bold text-emerald-400">
-                                    {plan.price === 0 ? 'Grátis' : `R$ ${plan.price.toFixed(2)}`}
-                                </span>
-                                {plan.price > 0 && (
-                                    <span className="text-sm text-slate-500">/{plan.billingCycle === 'monthly' ? 'mês' : 'ano'}</span>
-                                )}
+                            <div className="flex flex-col gap-1 mt-2 mb-3">
+                                <div className="text-sm text-slate-400">Mensal: <span className="text-emerald-400 font-bold">R$ {plan.priceMonthly?.toFixed(2)}</span></div>
+                                <div className="text-sm text-slate-400">Semestral: <span className="text-emerald-400 font-bold">R$ {plan.priceSemiannually?.toFixed(2)}</span></div>
+                                <div className="text-sm text-slate-400">Anual: <span className="text-emerald-400 font-bold">R$ {plan.priceYearly?.toFixed(2)}</span></div>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {getPlanTypeBadge(plan.type)}
-                                <Badge variant="neutral" className="bg-slate-800 border-slate-700">
-                                    {plan.billingCycle === 'monthly' ? 'Mensal' : 'Anual'}
-                                </Badge>
                             </div>
                         </div>
 
@@ -264,9 +248,9 @@ export const SuperAdminPlans: React.FC = () => {
                             </Badge>
                             <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">ID: {plan.id.slice(0, 6)}</span>
                         </div>
-                    </Card>
+                    </Card >
                 ))}
-            </div>
+            </div >
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingPlan ? "Editar Plano" : "Configurar Novo Plano"}>
                 <form onSubmit={handleSave} className="space-y-5">
@@ -285,15 +269,10 @@ export const SuperAdminPlans: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <CurrencyInput label="Preço" value={formData.price} onValueChange={val => setFormData({ ...formData, price: val || 0 })} required disabled={formData.type === 'trial'} />
-                        <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Ciclo de Cobrança</label>
-                            <Select value={formData.billingCycle} onChange={e => setFormData({ ...formData, billingCycle: e.target.value })}>
-                                <option value="monthly">Mensal</option>
-                                <option value="yearly">Anual</option>
-                            </Select>
-                        </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <CurrencyInput label="Preço Mensal" value={formData.priceMonthly} onValueChange={val => setFormData({ ...formData, priceMonthly: val || 0 })} disabled={formData.type === 'trial'} />
+                        <CurrencyInput label="Preço Semestral" value={formData.priceSemiannually} onValueChange={val => setFormData({ ...formData, priceSemiannually: val || 0 })} disabled={formData.type === 'trial'} />
+                        <CurrencyInput label="Preço Anual" value={formData.priceYearly} onValueChange={val => setFormData({ ...formData, priceYearly: val || 0 })} disabled={formData.type === 'trial'} />
                     </div>
 
                     <Input label="Limite de Usuários (Seats)" type="number" value={formData.maxUsers} onChange={e => setFormData({ ...formData, maxUsers: parseInt(e.target.value) })} required />
@@ -362,6 +341,6 @@ export const SuperAdminPlans: React.FC = () => {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </div >
     );
 };

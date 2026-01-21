@@ -61,6 +61,9 @@ export interface SaasPlan {
   id: string;
   name: string;
   price: number;
+  priceMonthly?: number;
+  priceSemiannually?: number;
+  priceYearly?: number;
   billingCycle: 'monthly' | 'yearly';
   features: string[]; // JSONB in DB - kept for legacy/simple lists
   allowedModules: string[]; // JSONB in DB - kept for backend validation

@@ -27,7 +27,15 @@ export const SuperAdminTenants: React.FC = () => {
     const [selectedModules, setSelectedModules] = useState<string[]>(['mod_tasks', 'mod_finance', 'mod_commercial']);
 
     // Status State for Edit
+    const [docType, setDocType] = useState<'CNPJ' | 'CPF'>('CNPJ');
     const [tenantStatus, setTenantStatus] = useState<'active' | 'inactive'>('active');
+
+    // ... (inside openCreateModal)
+    // Add logic to reset docType
+    // I need to use MultiReplace because openCreateModal and openEditModal are far apart from the JSX.
+    // Instead, I will use replace_file_content to insert the state at top, and then another call to replace the Input area.
+    // Wait, let's do multi_replace.
+
 
     const [creating, setCreating] = useState(false);
 
@@ -46,6 +54,7 @@ export const SuperAdminTenants: React.FC = () => {
         setNewTenantAdminName('');
         setNewTenantPassword('');
         setTenantStatus('active');
+        setDocType('CNPJ');
         setSelectedModules(['mod_tasks', 'mod_finance', 'mod_commercial']);
         setIsModalOpen(true);
     };
@@ -59,6 +68,18 @@ export const SuperAdminTenants: React.FC = () => {
         setNewTenantAdminName(tenant.adminName || '');
         setNewTenantPassword(''); // Don't enforce password on edit unless changing
         setTenantStatus(tenant.status === 'active' ? 'active' : 'inactive'); // Ensure strict typing
+
+        // Auto-detect Document Type
+        const doc = tenant.cnpj || '';
+        // Simple heuristic: CNPJ matches XX.XXX.XXX/XXXX-XX (18 chars)
+        // CPF matches XXX.XXX.XXX-XX (14 chars)
+        // Unformatted: CNPJ 14 digits, CPF 11 digits
+        const digits = doc.replace(/\D/g, '');
+        if (digits.length <= 11) {
+            setDocType('CPF');
+        } else {
+            setDocType('CNPJ');
+        }
 
         // Load modules
         if (tenant.contractedModules && Array.isArray(tenant.contractedModules)) {
@@ -251,13 +272,33 @@ export const SuperAdminTenants: React.FC = () => {
                         required
                     />
                     <div className="grid grid-cols-2 gap-4">
-                        <Input
-                            label="CNPJ"
-                            placeholder="00.000.000/0001-00"
-                            value={newTenantCnpj}
-                            onChange={e => setNewTenantCnpj(e.target.value)}
-                            required
-                        />
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-3 mb-1">
+                                <label className="text-[10px] uppercase font-bold text-slate-400">Tipo de Documento</label>
+                                <div className="flex bg-slate-800 rounded p-0.5 border border-slate-700">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDocType('CNPJ')}
+                                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${docType === 'CNPJ' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        CNPJ
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDocType('CPF')}
+                                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${docType === 'CPF' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        CPF
+                                    </button>
+                                </div>
+                            </div>
+                            <Input
+                                placeholder={docType === 'CNPJ' ? "00.000.000/0001-00" : "000.000.000-00"}
+                                value={newTenantCnpj}
+                                onChange={e => setNewTenantCnpj(e.target.value)}
+                                required
+                            />
+                        </div>
                         <Input
                             label="Telefone"
                             placeholder="(00) 0000-0000"
