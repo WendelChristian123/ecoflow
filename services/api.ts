@@ -441,9 +441,24 @@ export const api = {
     },
 
     logAuthEvent: async (action: 'LOGIN' | 'LOGOUT', description: string) => {
+        let finalDesc = description;
+        try {
+            // Attempt to capture IP client-side (public IP) with 2s timeout
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 2000);
+            const res = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+            clearTimeout(id);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.ip) finalDesc += ` [IP: ${data.ip}]`;
+            }
+        } catch (e) {
+            // Ignore IP fetch errors to avoid blocking auth flow
+        }
+
         const { error } = await supabase.rpc('log_auth_event', {
             p_action: action,
-            p_description: description
+            p_description: finalDesc
         });
         if (error) console.error("Failed to log auth event", error);
     },

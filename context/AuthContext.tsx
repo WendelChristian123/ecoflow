@@ -114,6 +114,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false); // <--- CRITICAL: Unblock UI immediately
           }
 
+          // AUDIT: Check for Auto-Login (Session Restore) vs Page Reload
+          if (!sessionStorage.getItem('ecoflow_session_logged')) {
+            sessionStorage.setItem('ecoflow_session_logged', 'true');
+            // Log the auto-login event
+            import('../services/api').then(m =>
+              m.api.logAuthEvent('LOGIN', 'Acesso Automático (Sessão Restaurada)')
+            ).catch(err => console.error('[Auth] Failed to log auto-login:', err));
+          }
+
           // THEN fetch profile in background
           fetchUserProfile(basicUser);
         } else {
