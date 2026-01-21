@@ -899,7 +899,30 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                             <label className="text-xs text-slate-400 mb-1.5 block ml-1">Responsável</label>
                             <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
                                 <option value="">Selecione...</option>
-                                {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                                {(() => {
+                                    let filtered = users;
+
+                                    // Filter by Team
+                                    if (formData.teamId) {
+                                        const team = teams.find(t => t.id === formData.teamId);
+                                        if (team && team.memberIds && team.memberIds.length > 0) {
+                                            filtered = filtered.filter(u => team.memberIds.includes(u.id));
+                                        }
+                                    }
+
+                                    // Filter by Project
+                                    if (formData.projectId) {
+                                        const project = projects.find(p => p.id === formData.projectId);
+                                        // Strict filtering: If project has members defined, use them.
+                                        if (project && project.members && project.members.length > 0) {
+                                            filtered = filtered.filter(u => project.members.includes(u.id));
+                                        }
+                                    }
+
+                                    return filtered.sort((a, b) => a.name.localeCompare(b.name)).map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ));
+                                })()}
                             </Select>
                         </div>
                         <div>
