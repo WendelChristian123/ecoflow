@@ -151,9 +151,9 @@ export const RoutinesOverview: React.FC = () => {
 
     // --- Filtering Logic (RBAC + Delegation + Filters) ---
     const getVisibleData = () => {
-        if (!user) return { visibleTasks: [], visibleProjects: [] };
+        if (!user) return { scopedTasks: [], visibleTasks: [], visibleProjects: [] };
 
-        let visibleTasks = tasks;
+        let scopedTasks = tasks;
         let visibleProjects = projects;
 
         // 1. RBAC & Delegation Scope
@@ -164,30 +164,31 @@ export const RoutinesOverview: React.FC = () => {
                     allowedUserIds.push(del.ownerId);
                 }
             });
-            visibleTasks = tasks.filter(t => allowedUserIds.includes(t.assigneeId));
+            scopedTasks = tasks.filter(t => allowedUserIds.includes(t.assigneeId));
             visibleProjects = projects.filter(p => p.members.includes(user.id));
         }
 
         // 2. Assignee Filter
         if (selectedAssignee !== 'all') {
-            visibleTasks = visibleTasks.filter(t => t.assigneeId === selectedAssignee);
+            scopedTasks = scopedTasks.filter(t => t.assigneeId === selectedAssignee);
             visibleProjects = visibleProjects.filter(p => p.members.includes(selectedAssignee));
         }
 
-        // 3. Apply Time Period Filter
+        // 3. Apply Time Period Filter (For Dashboard Display Only)
+        let visibleTasks = scopedTasks;
         const now = new Date();
         if (period === 'today') {
-            visibleTasks = visibleTasks.filter(t => isToday(parseISO(t.dueDate)));
+            visibleTasks = scopedTasks.filter(t => isToday(parseISO(t.dueDate)));
         } else if (period === 'week') {
-            visibleTasks = visibleTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfWeek(now), end: endOfWeek(now) }));
+            visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfWeek(now), end: endOfWeek(now) }));
         } else if (period === 'month') {
-            visibleTasks = visibleTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfMonth(now), end: endOfMonth(now) }));
+            visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfMonth(now), end: endOfMonth(now) }));
         }
 
-        return { visibleTasks, visibleProjects };
+        return { scopedTasks, visibleTasks, visibleProjects };
     };
 
-    const { visibleTasks, visibleProjects } = getVisibleData();
+    const { scopedTasks, visibleTasks, visibleProjects } = getVisibleData();
 
     // --- Metrics Calculations ---
     const totalPending = visibleTasks.filter(t => t.status !== 'done').length;
@@ -430,7 +431,7 @@ export const RoutinesOverview: React.FC = () => {
             <RoutineReportModal
                 isOpen={isReportModalOpen}
                 onClose={() => setIsReportModalOpen(false)}
-                tasks={visibleTasks} // Pass all visible tasks (respecting RBAC/Delegation) to the report, it will verify date filters itself
+                tasks={scopedTasks} // Pass SCOPED tasks (ignoring dashboard period) so the Report can do its own date filtering
                 projects={projects}
                 users={usersList}
             />
