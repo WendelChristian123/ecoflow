@@ -194,10 +194,11 @@ export const TasksPage: React.FC = () => {
     <div className="h-full flex flex-col gap-4">
       {/* Standardized Header */}
       {/* Standardized Header */}
+      {/* Standardized Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Tarefas</h1>
-          <p className="text-slate-400 mt-1">Gerencie suas atividades diárias</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Tarefas</h1>
+          <p className="text-muted-foreground mt-1">Gerencie suas atividades diárias</p>
         </div>
         {can('routines', 'create') && (
           <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
@@ -210,7 +211,7 @@ export const TasksPage: React.FC = () => {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {/* 1. Search */}
         <div className="relative mr-auto">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             <Filter size={14} />
           </div>
           <input
@@ -218,22 +219,22 @@ export const TasksPage: React.FC = () => {
             placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-40 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
+            className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-40 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
           />
         </div>
 
         {/* 2. Month Nav */}
-        <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
-          <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-          <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(currentDate, 'MMM/yyyy', { locale: ptBR })}</span>
-          <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
+        <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
+          <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
+          <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(currentDate, 'MMM/yyyy', { locale: ptBR })}</span>
+          <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
         </div>
 
         {/* 3. Status */}
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none"
+          className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none"
         >
           <option value="all">Status: Todos</option>
           <option value="todo">A Fazer</option>
@@ -246,7 +247,7 @@ export const TasksPage: React.FC = () => {
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
-          className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none"
+          className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none"
         >
           <option value="all">Prioridade: Todas</option>
           <option value="low">Baixa</option>
@@ -259,7 +260,7 @@ export const TasksPage: React.FC = () => {
         <select
           value={filterAssignee}
           onChange={(e) => setFilterAssignee(e.target.value)}
-          className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none max-w-[140px]"
+          className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none max-w-[140px]"
         >
           <option value="all">Resp: Todos</option>
           {assignableUsers.map(u => (
@@ -268,11 +269,11 @@ export const TasksPage: React.FC = () => {
         </select>
 
         {/* 6. View Toggle */}
-        <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
-          <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+        <div className="flex bg-card border border-border rounded-lg p-0.5">
+          <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
             <LayoutList size={16} />
           </button>
-          <button onClick={() => setView('board')} className={`p-1.5 rounded transition-all ${view === 'board' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+          <button onClick={() => setView('board')} className={`p-1.5 rounded transition-all ${view === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
             <Kanban size={16} />
           </button>
         </div>
@@ -282,7 +283,7 @@ export const TasksPage: React.FC = () => {
       {view === 'board' ? (
         <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden bg-transparent rounded-xl">
           {filteredTasks.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-slate-500 border border-dashed border-slate-700 rounded-xl">
+            <div className="h-full flex items-center justify-center text-muted-foreground border border-dashed border-border rounded-xl">
               Nenhuma tarefa encontrada com os filtros atuais.
             </div>
           ) : (
@@ -300,7 +301,7 @@ export const TasksPage: React.FC = () => {
       ) : (
         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2 pb-4">
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Tarefas Ativas ({activeTasks.length})</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Tarefas Ativas ({activeTasks.length})</h3>
             <TaskTableView
               tasks={activeTasks}
               users={users}
@@ -313,7 +314,7 @@ export const TasksPage: React.FC = () => {
           <div>
             <button
               onClick={() => setShowCompleted(!showCompleted)}
-              className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors font-medium"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors font-medium"
             >
               {showCompleted ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
               Tarefas Concluídas ({completedTasks.length})

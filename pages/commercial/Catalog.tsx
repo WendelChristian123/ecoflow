@@ -42,9 +42,9 @@ export const CatalogPage: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background text-foreground">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><ShoppingBag className="text-emerald-500" /> Produtos & Serviços</h1>
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3"><ShoppingBag className="text-emerald-500" /> Produtos & Serviços</h1>
                 <div className="flex gap-2">
                     <Button variant="ghost" className="gap-2" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
                     <Button className="gap-2" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Item</Button>
@@ -52,8 +52,8 @@ export const CatalogPage: React.FC = () => {
             </div>
 
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                <Input placeholder="Buscar no catálogo..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                <Input placeholder="Buscar no catálogo..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-card border-border text-foreground focus:border-primary" />
             </div>
 
             <div className="space-y-3">
@@ -61,13 +61,13 @@ export const CatalogPage: React.FC = () => {
                     <div
                         key={i.id}
                         onClick={() => { setEditingItem(i); setIsModalOpen(true); }}
-                        className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group"
+                        className="bg-card border border-border hover:border-primary/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group shadow-sm"
                     >
                         <div className="flex items-center gap-4">
                             {/* Type Indicator */}
                             <div className={`h-12 w-12 rounded-lg flex items-center justify-center font-bold text-lg border ${i.type === 'service'
-                                ? 'bg-slate-800 border-slate-700 text-purple-400'
-                                : 'bg-slate-800 border-slate-700 text-blue-400'
+                                ? 'bg-secondary border-border text-primary'
+                                : 'bg-secondary border-border text-blue-500'
                                 }`}>
                                 {i.type === 'service' ? 'S' : 'P'}
                             </div>
@@ -75,16 +75,16 @@ export const CatalogPage: React.FC = () => {
                             {/* Info */}
                             <div>
                                 <div className="flex items-center gap-2 mb-0.5">
-                                    <h3 className="font-bold text-white text-base">{i.name}</h3>
+                                    <h3 className="font-bold text-foreground text-base">{i.name}</h3>
                                     {!i.active && <Badge variant="error">Inativo</Badge>}
                                 </div>
-                                <p className="text-xs text-slate-500 line-clamp-1">{i.description || 'Sem descrição'}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{i.description || 'Sem descrição'}</p>
                             </div>
                         </div>
 
                         {/* Right Side */}
                         <div className="flex items-center gap-6">
-                            <span className="text-sm font-bold text-emerald-400 whitespace-nowrap">
+                            <span className="text-sm font-bold text-emerald-500 whitespace-nowrap">
                                 R$ {i.price.toFixed(2)}
                             </span>
 
@@ -92,14 +92,14 @@ export const CatalogPage: React.FC = () => {
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setEditingItem(i); setIsModalOpen(true); }}
-                                    className="p-1.5 rounded-md hover:bg-slate-800 text-slate-500 hover:text-white transition-colors"
+                                    className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                                     title="Editar"
                                 >
                                     <Edit2 size={16} />
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(i.id); }}
-                                    className="p-1.5 rounded-md hover:bg-slate-800 text-slate-500 hover:text-rose-500 transition-colors"
+                                    className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors"
                                     title="Excluir"
                                 >
                                     <Trash2 size={16} />

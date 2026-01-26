@@ -229,26 +229,26 @@ export const ProjectsPage: React.FC = () => {
                 <ArrowLeft size={16} />
               </Button>
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
                   {selectedProject.name}
                   <Badge variant={selectedProject.status === 'active' ? 'success' : 'neutral'}>
                     {translateStatus(selectedProject.status)}
                   </Badge>
-                  <button onClick={handleEdit} className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" title="Editar Projeto">
+                  <button onClick={handleEdit} className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Editar Projeto">
                     <Edit2 size={16} />
                   </button>
                   {user?.role === 'admin' && (
                     <>
                       <button
                         onClick={(e) => handleCompleteProject(e, selectedProject)}
-                        className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-emerald-400 transition-colors"
+                        className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-emerald-500 transition-colors"
                         title="Concluir Projeto (e todas tarefas)"
                       >
                         <CheckCircle size={16} />
                       </button>
                       <button
                         onClick={(e) => handleDeleteProject(e, selectedProject)}
-                        className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
+                        className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors"
                         title="Excluir Projeto"
                       >
                         <Trash2 size={16} />
@@ -267,7 +267,7 @@ export const ProjectsPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {/* 1. Search - Pushed to Left */}
             <div className="relative mr-auto">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 <Search size={14} />
               </div>
               <input
@@ -275,22 +275,22 @@ export const ProjectsPage: React.FC = () => {
                 placeholder="Buscar tarefas..."
                 value={detailSearch}
                 onChange={(e) => setDetailSearch(e.target.value)}
-                className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-64 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
+                className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-64 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
               />
             </div>
 
             {/* 2. Month Nav */}
-            <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
-              <button onClick={() => setDetailDate(subMonths(detailDate, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-              <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(detailDate, 'MMM/yyyy', { locale: ptBR })}</span>
-              <button onClick={() => setDetailDate(addMonths(detailDate, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
+            <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
+              <button onClick={() => setDetailDate(subMonths(detailDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
+              <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(detailDate, 'MMM/yyyy', { locale: ptBR })}</span>
+              <button onClick={() => setDetailDate(addMonths(detailDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
             </div>
 
             {/* 3. Status */}
             <select
               value={detailFilterStatus}
               onChange={(e) => setDetailFilterStatus(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none"
+              className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="all">Status: Todos</option>
               <option value="todo">A Fazer</option>
@@ -303,7 +303,7 @@ export const ProjectsPage: React.FC = () => {
             <select
               value={detailFilterPriority}
               onChange={(e) => setDetailFilterPriority(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none"
+              className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none"
             >
               <option value="all">Prioridade: Todas</option>
               <option value="low">Baixa</option>
@@ -316,7 +316,7 @@ export const ProjectsPage: React.FC = () => {
             <select
               value={detailFilterAssignee}
               onChange={(e) => setDetailFilterAssignee(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none max-w-[140px]"
+              className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none max-w-[140px]"
             >
               <option value="all">Resp: Todos</option>
               {users.map(u => (
@@ -325,11 +325,11 @@ export const ProjectsPage: React.FC = () => {
             </select>
 
             {/* 6. View Toggle */}
-            <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
-              <button onClick={() => setDetailViewMode('list')} className={`p-1.5 rounded transition-all ${detailViewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+            <div className="flex bg-card border border-border rounded-lg p-0.5">
+              <button onClick={() => setDetailViewMode('list')} className={`p-1.5 rounded transition-all ${detailViewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                 <LayoutList size={16} />
               </button>
-              <button onClick={() => setDetailViewMode('board')} className={`p-1.5 rounded transition-all ${detailViewMode === 'board' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+              <button onClick={() => setDetailViewMode('board')} className={`p-1.5 rounded transition-all ${detailViewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                 <Kanban size={16} />
               </button>
             </div>
@@ -389,14 +389,14 @@ export const ProjectsPage: React.FC = () => {
       {/* Standardized Header */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Projetos</h1>
-          <p className="text-slate-400 mt-1">Gerencie seus projetos e entregas</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Projetos</h1>
+          <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Search */}
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Filter size={14} />
             </div>
             <input
@@ -404,11 +404,9 @@ export const ProjectsPage: React.FC = () => {
               placeholder="Buscar projetos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
+              className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
             />
           </div>
-
-
 
           <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
             <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
@@ -419,9 +417,9 @@ export const ProjectsPage: React.FC = () => {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
           {filteredProjects.map(project => (
-            <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-emerald-500/30 transition-all cursor-pointer">
+            <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
               <div className="flex justify-between items-start mb-4">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-lg">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-lg">
                   {project.name.charAt(0)}
                 </div>
                 {user?.role === 'admin' && (
@@ -432,21 +430,21 @@ export const ProjectsPage: React.FC = () => {
                         setEditingProject(project);
                         setIsModalOpen(true);
                       }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"
                       title="Editar"
                     >
                       <Edit2 size={14} />
                     </button>
                     <button
                       onClick={(e) => handleCompleteProject(e, project)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-700"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-500 hover:bg-secondary"
                       title="Concluir"
                     >
                       <CheckCircle size={14} />
                     </button>
                     <button
                       onClick={(e) => handleDeleteProject(e, project)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-700"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-secondary"
                       title="Excluir"
                     >
                       <Trash2 size={14} />
@@ -455,28 +453,28 @@ export const ProjectsPage: React.FC = () => {
                 )}
               </div>
 
-              <h3 className="text-lg font-semibold text-white mb-2">{project.name}</h3>
-              <p className="text-sm text-slate-400 mb-6 line-clamp-2 flex-1">{project.description}</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{project.name}</h3>
+              <p className="text-sm text-muted-foreground mb-6 line-clamp-2 flex-1">{project.description}</p>
 
               <div className="space-y-4">
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Progresso</span>
-                  <span className="text-white font-medium">{project.progress}%</span>
+                  <span className="text-muted-foreground">Progresso</span>
+                  <span className="text-foreground font-medium">{project.progress}%</span>
                 </div>
                 <ProgressBar progress={project.progress} />
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div className="flex -space-x-2">
                     {project.members.slice(0, 3).map(memberId => {
                       const u = users.find(user => user.id === memberId);
                       return u ? (
-                        <div key={u.id} className="ring-2 ring-slate-800 rounded-full">
+                        <div key={u.id} className="ring-2 ring-card rounded-full">
                           <Avatar size="sm" src={u.avatarUrl} name={u.name} />
                         </div>
                       ) : null;
                     })}
                     {project.members.length > 3 && (
-                      <div className="h-6 w-6 rounded-full bg-slate-700 ring-2 ring-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-medium">
+                      <div className="h-6 w-6 rounded-full bg-secondary ring-2 ring-card flex items-center justify-center text-[10px] text-muted-foreground font-medium">
                         +{project.members.length - 3}
                       </div>
                     )}
@@ -489,17 +487,17 @@ export const ProjectsPage: React.FC = () => {
             </Card>
           ))}
 
-          <button onClick={handleCreate} className="border border-dashed border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all h-full min-h-[250px] gap-3 group">
-            <div className="h-12 w-12 rounded-full bg-slate-800 group-hover:bg-emerald-500/20 flex items-center justify-center transition-colors">
+          <button onClick={handleCreate} className="border border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all h-full min-h-[250px] gap-3 group">
+            <div className="h-12 w-12 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
               <Plus size={24} />
             </div>
             <span className="font-medium">Criar Novo Projeto</span>
           </button>
         </div>
       ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-left text-sm text-slate-400">
-            <thead className="bg-slate-950 text-slate-200 font-medium uppercase text-xs">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <table className="w-full text-left text-sm text-muted-foreground">
+            <thead className="bg-secondary text-foreground font-medium uppercase text-xs">
               <tr>
                 <th className="p-4">Projeto</th>
                 <th className="p-4">Status</th>
@@ -509,10 +507,10 @@ export const ProjectsPage: React.FC = () => {
                 <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-border">
               {filteredProjects.map(p => (
-                <tr key={p.id} onClick={() => setSelectedProject(p)} className="hover:bg-slate-800/50 cursor-pointer transition-colors">
-                  <td className="p-4 font-medium text-white">{p.name}</td>
+                <tr key={p.id} onClick={() => setSelectedProject(p)} className="hover:bg-muted/50 cursor-pointer transition-colors">
+                  <td className="p-4 font-medium text-foreground">{p.name}</td>
                   <td className="p-4">
                     <Badge variant={p.status === 'active' ? 'success' : p.status === 'completed' ? 'default' : 'neutral'}>
                       {translateStatus(p.status)}
@@ -530,25 +528,25 @@ export const ProjectsPage: React.FC = () => {
                       {p.members.slice(0, 3).map(memberId => {
                         const u = users.find(user => user.id === memberId);
                         return u ? (
-                          <div key={u.id} className="ring-2 ring-slate-900 rounded-full">
+                          <div key={u.id} className="ring-2 ring-card rounded-full">
                             <Avatar size="sm" src={u.avatarUrl} name={u.name} />
                           </div>
                         ) : null;
                       })}
                       {p.members.length > 3 && (
-                        <div className="h-6 w-6 rounded-full bg-slate-700 ring-2 ring-slate-900 flex items-center justify-center text-[10px] text-slate-300 font-medium">
+                        <div className="h-6 w-6 rounded-full bg-secondary ring-2 ring-card flex items-center justify-center text-[10px] text-muted-foreground font-medium">
                           +{p.members.length - 3}
                         </div>
                       )}
                     </div>
                   </td>
                   <td className="p-4 text-right">
-                    <button className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white"><ChevronRight size={16} /></button>
+                    <button className="p-2 hover:bg-secondary rounded text-muted-foreground hover:text-foreground"><ChevronRight size={16} /></button>
                   </td>
                 </tr>
               ))}
               {filteredProjects.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-slate-500">Nenhum projeto encontrado.</td></tr>
+                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Nenhum projeto encontrado.</td></tr>
               )}
             </tbody>
           </table>

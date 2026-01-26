@@ -33,15 +33,15 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, onClick, dep
                 isCollapsed ? "justify-center px-2" : "px-4",
                 (!isCollapsed && depth > 0) && "pl-11",
                 isActive
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/10"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                    ? "bg-primary/10 text-primary border border-primary/10"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             )}
         >
             <div className="shrink-0">{icon}</div>
             {!isCollapsed && <span>{label}</span>}
 
             {isCollapsed && (
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-slate-800 text-white text-xs px-2 py-1 rounded border border-slate-700 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded border border-border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-md">
                     {label}
                 </div>
             )}
@@ -69,16 +69,16 @@ const SidebarGroup: React.FC<{
             >
                 <div className={cn(
                     "w-full flex items-center justify-center py-2.5 rounded-lg transition-colors cursor-pointer",
-                    highlight ? "text-indigo-400 hover:bg-indigo-500/10" : "text-slate-400 hover:bg-slate-800"
+                    highlight ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-secondary"
                 )}>
                     {icon}
                 </div>
 
                 <div className={cn(
-                    "absolute left-full top-0 ml-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-xl p-2 z-50 transition-all duration-200 origin-left",
+                    "absolute left-full top-0 ml-2 w-48 bg-popover border border-border rounded-xl shadow-xl p-2 z-50 transition-all duration-200 origin-left",
                     isHovered ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
                 )}>
-                    <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase border-b border-slate-800 mb-2">
+                    <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase border-b border-border mb-2">
                         {label}
                     </div>
                     {children}
@@ -93,7 +93,7 @@ const SidebarGroup: React.FC<{
                 onClick={onToggle}
                 className={cn(
                     "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors",
-                    highlight ? "text-indigo-300 hover:bg-indigo-500/10" : "text-slate-300 hover:bg-slate-800"
+                    highlight ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-secondary"
                 )}
             >
                 <div className="flex items-center gap-3">
@@ -342,63 +342,53 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         return 'EcoFlow';
     };
 
+
     // Helper to check if the current tenant has contracted a specific module
     const hasModule = (moduleKey: string) => {
-        // Super Admin viewing generic area or global dashboard sees all? 
-        // Or should respect the VIEWED tenant?
-        // Logic: If I am "impersonating" a tenant (switchTenant), I should see what THEY see.
-        // If I am in my own context (Super Admin), I have everything.
-
         if (isSuperAdmin && !currentTenant) return true; // Safety
 
-        // If tenant has no modules array defined (legacy), show all or none? 
-        // Better to be permissive if undefined to avoid lockouts during migration, 
-        // OR restrictive if correct. Assuming new tenants have it.
-        // Let's check if array exists.
         if (currentTenant?.contractedModules) {
             const mods = currentTenant.contractedModules;
-            // Check for specific module key
             return mods.includes(moduleKey);
         }
 
-        // Default: If no list found, show YES (Legacy compatibility)
         return true;
     };
 
     return (
-        <div className="h-screen w-full bg-slate-950 flex text-slate-100 font-sans selection:bg-emerald-500/30 overflow-hidden">
+        <div className="h-screen w-full bg-background flex text-foreground font-sans selection:bg-primary/30 overflow-hidden transition-colors duration-300">
 
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
 
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 bg-slate-900 border-r border-slate-800 transition-all duration-300 flex flex-col h-full",
+                "fixed inset-y-0 left-0 z-50 bg-card/85 backdrop-blur-xl border-r border-border/50 transition-all duration-300 flex flex-col h-full shadow-2xl",
                 "lg:static",
                 isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
                 (!isMobileMenuOpen && isCollapsed) ? "lg:w-20" : "lg:w-64"
             )}>
                 <div className="h-full flex flex-col">
-                    <div className={cn("h-16 flex items-center border-b border-slate-800 transition-all px-4 shrink-0", isCollapsed ? "justify-center" : "justify-between")}>
+                    <div className={cn("h-16 flex items-center border-b border-white/5 transition-all px-4 shrink-0 bg-white/5", isCollapsed ? "justify-center" : "justify-between")}>
                         {!isCollapsed ? (
                             <div className="flex items-center gap-2">
-                                <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", isSuperAdminArea ? "bg-indigo-600" : "bg-emerald-500")}>
+                                <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg glow", isSuperAdminArea ? "bg-indigo-600" : "bg-gradient-to-br from-primary to-emerald-500")}>
                                     {isSuperAdminArea ? <Globe className="h-5 w-5 text-white" /> : <LayoutDashboard className="h-5 w-5 text-white" />}
                                 </div>
-                                <span className="text-lg font-bold tracking-tight text-white whitespace-nowrap overflow-hidden">
+                                <span className="text-lg font-bold tracking-tight text-foreground whitespace-nowrap overflow-hidden drop-shadow-sm">
                                     {isSuperAdminArea ? 'EcoFlow Admin' : 'EcoFlow'}
                                 </span>
                             </div>
                         ) : (
-                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", isSuperAdminArea ? "bg-indigo-600" : "bg-emerald-500")}>
+                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg", isSuperAdminArea ? "bg-indigo-600" : "bg-gradient-to-br from-primary to-emerald-500")}>
                                 {isSuperAdminArea ? <Globe className="h-5 w-5 text-white" /> : <LayoutDashboard className="h-5 w-5 text-white" />}
                             </div>
                         )}
-                        <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-slate-400"><X size={20} /></button>
-                        <button onClick={toggleSidebar} className="hidden lg:flex text-slate-500 hover:text-white transition-colors">
+                        <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-muted-foreground"><X size={20} /></button>
+                        <button onClick={toggleSidebar} className="hidden lg:flex text-muted-foreground hover:text-foreground transition-colors">
                             {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
                         </button>
                     </div>
@@ -412,21 +402,21 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         {isSuperAdminArea ? (
                             <>
                                 <div className="mb-2 px-3">
-                                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-2">Gestão Global</div>
+                                    <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-2">Gestão Global</div>
                                 </div>
                                 <SidebarItem isCollapsed={isCollapsed} to="/super-admin/dashboard" icon={<LayoutDashboard size={18} />} label="Dashboard Admin" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem isCollapsed={isCollapsed} to="/super-admin/users" icon={<Users size={18} />} label="Usuários" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem isCollapsed={isCollapsed} to="/super-admin/admins" icon={<ShieldCheck size={18} />} label="Super Admins" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem isCollapsed={isCollapsed} to="/super-admin/plans" icon={<CreditCard size={18} />} label="Planos & Preços" onClick={() => setIsMobileMenuOpen(false)} />
 
-                                <div className="my-4 border-t border-slate-800/50"></div>
+                                <div className="my-4 border-t border-white/5"></div>
                                 <SidebarItem isCollapsed={isCollapsed} to="/" icon={<ArrowLeftCircle size={18} />} label="Voltar ao App" onClick={() => setIsMobileMenuOpen(false)} />
                             </>
                         ) : (
                             /* CLIENT MENU */
                             <>
                                 <SidebarItem isCollapsed={isCollapsed} to="/" icon={<LayoutDashboard size={18} />} label="Painel Principal" onClick={() => setIsMobileMenuOpen(false)} />
-                                <div className="my-4 border-t border-slate-800/50"></div>
+                                <div className="my-4 border-t border-white/10"></div>
 
                                 {/* Commercial Module */}
                                 {can('commercial', 'view') && hasModule('mod_commercial') && (
@@ -483,7 +473,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         )}
                     </div>
 
-                    <div className="p-4 border-t border-slate-800 shrink-0 space-y-1">
+                    <div className="p-4 border-t border-white/10 shrink-0 space-y-1">
                         {!isSuperAdminArea && <SidebarItem isCollapsed={isCollapsed} to="/settings" icon={<Settings size={18} />} label="Configurações" onClick={() => setIsMobileMenuOpen(false)} />}
                         {isSuperAdmin && !isSuperAdminArea && (
                             <SidebarItem isCollapsed={isCollapsed} to="/super-admin/dashboard" icon={<Globe size={18} />} label="Área Super Admin" onClick={() => setIsMobileMenuOpen(false)} />
@@ -492,23 +482,23 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-                <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-30">
+            <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-background">
+                <header className="h-16 border-b border-border/40 bg-background/60 backdrop-blur-xl px-6 flex items-center justify-between shrink-0 z-30 sticky top-0">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-slate-400 hover:text-white"><Menu size={24} /></button>
+                        <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>
                         <div className="flex flex-col">
-                            <h1 className="text-xl font-semibold text-slate-100 leading-tight">{getPageTitle()}</h1>
+                            <h1 className="text-xl font-semibold text-foreground leading-tight">{getPageTitle()}</h1>
                             {currentTenant && !isSuperAdminArea && (
-                                <span className="text-xs text-emerald-400 font-medium">{currentTenant.name}</span>
+                                <span className="text-xs text-primary font-medium">{currentTenant.name}</span>
                             )}
                         </div>
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="relative">
-                            <Bell size={20} className="text-slate-400 hover:text-white cursor-pointer transition-colors" />
-                            <span className="absolute -top-1 -right-1 h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            <Bell size={20} className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors" />
+                            <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full animate-pulse"></span>
                         </div>
-                        <div className="h-6 w-px bg-slate-800"></div>
+                        <div className="h-6 w-px bg-border"></div>
                         <UserDropdown onOpenProfile={handleOpenProfile} />
                     </div>
                 </header>
@@ -530,3 +520,4 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
     );
 };
+

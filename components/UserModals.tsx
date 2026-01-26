@@ -82,7 +82,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                 />
 
                 <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Tipo de Acesso</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Tipo de Acesso</label>
                     <Select
                         value={formData.role}
                         onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
@@ -93,8 +93,8 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                 </div>
 
                 {formData.role === 'user' && (
-                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
-                        <div className="flex items-center gap-2 text-slate-300 text-sm font-semibold border-b border-slate-700 pb-2">
+                    <div className="bg-secondary/30 p-4 rounded-lg border border-border space-y-4">
+                        <div className="flex items-center gap-2 text-foreground text-sm font-semibold border-b border-border pb-2">
                             <Shield size={14} className="text-emerald-500" />
                             Permissões de Acesso
                         </div>
@@ -118,7 +118,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                         />
 
                         <div className="flex items-center justify-between py-1">
-                            <span className="text-sm text-slate-400">Relatórios</span>
+                            <span className="text-sm text-muted-foreground">Relatórios</span>
                             <Toggle
                                 checked={permissions.reports.view}
                                 onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
@@ -131,7 +131,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                 {formData.role === 'admin' && (
                     <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-3">
                         <AlertTriangle className="text-amber-500 shrink-0" size={18} />
-                        <p className="text-xs text-amber-200">Administradores têm acesso irrestrito a todos os módulos, podem excluir registros e gerenciar outros usuários.</p>
+                        <p className="text-xs text-amber-500">Administradores têm acesso irrestrito a todos os módulos, podem excluir registros e gerenciar outros usuários.</p>
                     </div>
                 )}
 
@@ -204,7 +204,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
 
                 {/* Basic Info Block */}
                 <div className="space-y-4">
-                    <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Informações Básicas</p>
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Informações Básicas</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
                             label="Nome"
@@ -219,7 +219,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Tipo de Acesso</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Tipo de Acesso</label>
                             <Select
                                 value={role}
                                 onChange={e => setRole(e.target.value)}
@@ -229,7 +229,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                             </Select>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Status do Acesso</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Status do Acesso</label>
                             <Select
                                 value={status}
                                 onChange={e => setStatus(e.target.value)}
@@ -244,9 +244,9 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
 
                 {/* Permissions Block */}
                 {role === 'user' ? (
-                    <div className="space-y-4 pt-4 border-t border-slate-700/50">
-                        <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Permissões de Acesso</p>
-                        <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
+                    <div className="space-y-4 pt-4 border-t border-border">
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Permissões de Acesso</p>
+                        <div className="bg-secondary/30 p-4 rounded-lg border border-border space-y-4">
                             <PermissionToggleGroup
                                 label="Rotinas & Execução"
                                 values={permissions.routines}
@@ -263,7 +263,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                                 onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
                             />
                             <div className="flex items-center justify-between py-1">
-                                <span className="text-sm text-slate-400">Relatórios</span>
+                                <span className="text-sm text-muted-foreground">Relatórios</span>
                                 <Toggle
                                     checked={permissions.reports.view}
                                     onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
@@ -275,11 +275,11 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                 ) : (
                     <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-3 mt-4">
                         <AlertTriangle className="text-amber-500 shrink-0" size={18} />
-                        <p className="text-xs text-amber-200">Administradores têm acesso irrestrito a todos os módulos, podem excluir registros e gerenciar outros usuários.</p>
+                        <p className="text-xs text-amber-500">Administradores têm acesso irrestrito a todos os módulos, podem excluir registros e gerenciar outros usuários.</p>
                     </div>
                 )}
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-700/50">
+                <div className="flex justify-end gap-2 pt-2 border-t border-border">
                     <Button variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button onClick={handleSubmit} disabled={loading}>Salvar Alterações</Button>
                 </div>
@@ -380,29 +380,29 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-lg flex items-start gap-3">
                     <UserCheck className="text-indigo-500 shrink-0" size={18} />
-                    <p className="text-xs text-indigo-200">
+                    <p className="text-xs text-indigo-400">
                         Você está concedendo permissão para outro usuário visualizar ou gerenciar <b>seus</b> dados.
                         Eles não poderão excluir registros, apenas visualizar, criar ou editar conforme definido.
                     </p>
                 </div>
 
                 <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Quem receberá o acesso?</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Quem receberá o acesso?</label>
                     <Select value={delegateId} onChange={e => setDelegateId(e.target.value)} required disabled={!!initialDelegations}>
                         <option value="">Selecione um usuário...</option>
                         {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                     </Select>
                 </div>
 
-                <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
-                    <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+                <div className="bg-secondary/30 rounded-lg border border-border p-4">
+                    <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
                         <Shield size={16} className="text-emerald-500" /> Permissões de Acesso
                     </h3>
 
                     <div className="space-y-4">
                         {modules.map(mod => (
-                            <div key={mod.key} className="border-b border-slate-700/50 pb-4 last:border-0 last:pb-0">
-                                <label className="text-sm text-slate-400 mb-2 block">{mod.label}</label>
+                            <div key={mod.key} className="border-b border-border pb-4 last:border-0 last:pb-0">
+                                <label className="text-sm text-muted-foreground mb-2 block">{mod.label}</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <button
                                         type="button"
@@ -411,7 +411,7 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
                                             "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
                                             permissions[mod.key].view
                                                 ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
-                                                : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600"
+                                                : "bg-background border-border text-muted-foreground hover:border-primary/50"
                                         )}
                                     >
                                         {permissions[mod.key].view ? <CheckSquare size={14} /> : <Square size={14} />}
@@ -424,7 +424,7 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
                                             "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
                                             permissions[mod.key].create
                                                 ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
-                                                : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600"
+                                                : "bg-background border-border text-muted-foreground hover:border-primary/50"
                                         )}
                                     >
                                         {permissions[mod.key].create ? <CheckSquare size={14} /> : <Square size={14} />}
@@ -437,7 +437,7 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
                                             "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
                                             permissions[mod.key].edit
                                                 ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
-                                                : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600"
+                                                : "bg-background border-border text-muted-foreground hover:border-primary/50"
                                         )}
                                     >
                                         {permissions[mod.key].edit ? <CheckSquare size={14} /> : <Square size={14} />}
@@ -554,9 +554,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                         label="E-mail (Somente leitura)"
                         value={user.email}
                         disabled
-                        className="opacity-60 cursor-not-allowed bg-slate-900 border-slate-800"
+                        className="opacity-60 cursor-not-allowed bg-secondary/50 border-border"
                     />
-                    <div className="text-xs text-slate-500 -mt-2 mb-2 flex items-center gap-1">
+                    <div className="text-xs text-muted-foreground -mt-2 mb-2 flex items-center gap-1">
                         <Lock size={10} /> O e-mail não pode ser alterado. Contate o administrador.
                     </div>
 
@@ -573,20 +573,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                     />
                 </div>
 
-                <div className="pt-4 border-t border-slate-800">
+                <div className="pt-4 border-t border-border">
                     <div className="flex items-center gap-2 mb-4">
                         <input
                             type="checkbox"
                             id="changePass"
                             checked={changePassword}
                             onChange={e => setChangePassword(e.target.checked)}
-                            className="rounded bg-slate-800 border-slate-700"
+                            className="rounded bg-secondary border-border"
                         />
-                        <label htmlFor="changePass" className="text-sm font-medium text-slate-300 cursor-pointer select-none">Alterar Senha</label>
+                        <label htmlFor="changePass" className="text-sm font-medium text-foreground cursor-pointer select-none">Alterar Senha</label>
                     </div>
 
                     {changePassword && (
-                        <div className="space-y-3 bg-slate-900/50 p-4 rounded-lg border border-slate-800">
+                        <div className="space-y-3 bg-secondary/20 p-4 rounded-lg border border-border">
                             {/* Note: Supabase Auth client often handles 'update user' without old password if logged in, but for good UX we just ask for new. */}
                             <Input
                                 type="password"
@@ -623,8 +623,8 @@ const PermissionToggleGroup: React.FC<{
     onChange: (vals: { view: boolean; create: boolean; edit: boolean }) => void;
 }> = ({ label, values, onChange }) => {
     return (
-        <div className="space-y-2 border-b border-slate-700/50 pb-3 last:border-0">
-            <p className="text-sm font-medium text-slate-300">{label}</p>
+        <div className="space-y-2 border-b border-border pb-3 last:border-0">
+            <p className="text-sm font-medium text-foreground">{label}</p>
             <div className="grid grid-cols-3 gap-2">
                 <Toggle checked={values.view} onChange={v => onChange({ ...values, view: v })} label="Ver" />
                 <Toggle checked={values.create} onChange={v => onChange({ ...values, create: v })} label="Criar" />
@@ -639,8 +639,8 @@ const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label
         type="button"
         onClick={() => onChange(!checked)}
         className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded text-xs font-medium border transition-all ${checked
-            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-            : 'bg-slate-700/50 text-slate-500 border-slate-700'
+            ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30'
+            : 'bg-secondary/50 text-muted-foreground border-border'
             }`}
     >
         {checked ? <Check size={12} /> : <X size={12} />}

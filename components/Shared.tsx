@@ -13,15 +13,16 @@ export function cn(...inputs: ClassValue[]) {
 
 // --- Button ---
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
 }
 export const Button: React.FC<ButtonProps> = ({ className, variant = 'primary', size = 'md', ...props }) => {
   const variants = {
-    primary: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-900/20',
-    secondary: 'bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600',
-    ghost: 'bg-transparent text-slate-400 hover:text-slate-100 hover:bg-slate-800',
-    danger: 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20',
+    primary: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-input',
+    ghost: 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent',
+    danger: 'bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20',
+    outline: 'bg-transparent border border-input hover:bg-accent text-foreground',
   };
   const sizes = {
     sm: 'px-3 py-1.5 text-xs',
@@ -32,7 +33,7 @@ export const Button: React.FC<ButtonProps> = ({ className, variant = 'primary', 
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed',
         variants[variant],
         sizes[size],
         className
@@ -49,16 +50,16 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 export const Input: React.FC<InputProps> = ({ className, label, leftIcon, ...props }) => (
   <div className="w-full">
-    {label && <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
+    {label && <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
     <div className="relative group">
       {leftIcon && (
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-500 transition-colors">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
           {leftIcon}
         </div>
       )}
       <input
         className={cn(
-          "w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder:text-slate-600 disabled:opacity-50 transition-all font-medium",
+          "w-full bg-input/50 md:bg-input/20 border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium",
           leftIcon && "pl-10",
           className
         )}
@@ -81,16 +82,10 @@ interface CurrencyInputProps {
 }
 
 export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChange, label, placeholder, className, disabled }) => {
-  // Estado local para gerenciar o valor exibido independentemente do valor numérico
-  // Isso preserva caracteres como a vírgula enquanto o usuário digita
   const [localValue, setLocalValue] = React.useState<string | undefined>(value?.toString());
 
-  // Sincroniza o estado local APENAS se o valor externo mudar para algo diferente do atual
   React.useEffect(() => {
-    // Parser simples para comparar o valor numérico atual do input com o valor da prop
     const currentFloat = localValue ? parseFloat(localValue.replace(/\./g, '').replace(',', '.')) : undefined;
-
-    // Se o valor externo for diferente do interno parseado, atualiza o display (ex: carregamento inicial ou atualização externa)
     if (value !== currentFloat) {
       setLocalValue(value ? value.toFixed(2).replace('.', ',') : '');
     }
@@ -98,9 +93,9 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
 
   return (
     <div className="w-full">
-      {label && <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
+      {label && <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
       <div className="relative group">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-500 transition-colors">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
           <span className="text-sm font-semibold">R$</span>
         </div>
         <CurrencyInputField
@@ -115,7 +110,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
             onValueChange(values?.float ?? undefined);
           }}
           className={cn(
-            "w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none placeholder:text-slate-600 disabled:opacity-50 transition-all font-medium",
+            "w-full bg-input/50 md:bg-input/20 border border-input text-foreground rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium",
             className
           )}
           disabled={disabled}
@@ -132,12 +127,12 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
   <div className="relative w-full">
     <select
       className={cn(
-        "w-full appearance-none bg-slate-800 border border-slate-700 text-slate-100 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none disabled:opacity-50 transition-all cursor-pointer",
+        "w-full appearance-none bg-card border border-input text-foreground rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-ring focus:border-primary outline-none disabled:opacity-50 transition-all cursor-pointer shadow-sm",
         className
       )}
       {...props}
     />
-    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
       <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
     </div>
   </div>
@@ -146,7 +141,7 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
 export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = ({ className, ...props }) => (
   <textarea
     className={cn(
-      "w-full bg-slate-800 border border-slate-700 text-slate-100 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none placeholder:text-slate-500 disabled:opacity-50 min-h-[100px] transition-all resize-none",
+      "w-full bg-input/50 md:bg-input/20 border border-input text-foreground rounded-lg px-4 py-2 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 min-h-[100px] transition-all resize-none",
       className
     )}
     {...props}
@@ -177,14 +172,14 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
 
   return (
     <div className="space-y-2">
-      <label className="text-xs text-slate-400 block ml-1">Links & Recursos</label>
+      <label className="text-xs text-muted-foreground block ml-1">Links & Recursos</label>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+          <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
           <input
             type="url"
             placeholder="Adicionar URL (https://...)"
-            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:border-emerald-500"
+            className="w-full bg-input/50 md:bg-input/20 border border-input text-foreground text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:border-primary"
             value={tempLink}
             onChange={(e) => setTempLink(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -194,7 +189,7 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
           type="button"
           onClick={handleAdd}
           disabled={!tempLink}
-          className="bg-slate-700 text-white p-2 rounded-lg hover:bg-slate-600 disabled:opacity-50 transition-colors"
+          className="bg-secondary text-secondary-foreground p-2 rounded-lg hover:bg-secondary/80 disabled:opacity-50 transition-colors border border-input"
         >
           <Plus size={18} />
         </button>
@@ -203,14 +198,14 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
       {links.length > 0 && (
         <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
           {links.map((link, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-2 bg-slate-800/50 px-3 py-2 rounded-md border border-slate-700/50 group">
-              <a href={link} target="_blank" rel="noreferrer" className="text-xs text-emerald-400 hover:underline truncate flex-1 block">
+            <div key={idx} className="flex items-center justify-between gap-2 bg-card px-3 py-2 rounded-md border border-border group">
+              <a href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate flex-1 block">
                 {link}
               </a>
               <button
                 type="button"
                 onClick={() => handleRemove(idx)}
-                className="text-slate-500 hover:text-rose-500 transition-colors"
+                className="text-muted-foreground hover:text-destructive transition-colors"
               >
                 <Trash2 size={14} />
               </button>
@@ -224,13 +219,14 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
 
 
 // --- Badge ---
-export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral'; className?: string }> = ({ children, variant = 'default', className }) => {
+export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral' | 'outline'; className?: string }> = ({ children, variant = 'default', className }) => {
   const styles = {
-    default: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-    success: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    error: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-    neutral: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+    default: 'bg-primary/10 text-primary border-primary/20',
+    success: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    warning: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    error: 'bg-destructive/10 text-destructive border-destructive/20',
+    neutral: 'bg-muted text-muted-foreground border-border',
+    outline: 'bg-transparent text-muted-foreground border-border',
   };
   return (
     <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border', styles[variant], className)}>
@@ -238,21 +234,13 @@ export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 
     </span>
   );
 };
-
-// --- Card ---
-export const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void } & React.HTMLAttributes<HTMLDivElement>> = ({ children, className, onClick, ...props }) => (
-  <div onClick={onClick} className={cn('bg-slate-800 border border-slate-700/50 rounded-xl p-5 shadow-sm transition-all hover:border-slate-600', className)} {...props}>
-    {children}
-  </div>
-);
-
 // --- Avatar ---
 export const Avatar: React.FC<{ src?: string; name: string; size?: 'sm' | 'md' | 'lg' }> = ({ src, name, size = 'md' }) => {
   const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const sizes = { sm: 'h-6 w-6 text-[10px]', md: 'h-9 w-9 text-xs', lg: 'h-12 w-12 text-sm' };
 
   return (
-    <div className={cn('relative inline-flex items-center justify-center rounded-full overflow-hidden bg-slate-700 border border-slate-600 text-slate-300 font-semibold', sizes[size])} title={name}>
+    <div className={cn('relative inline-flex items-center justify-center rounded-full overflow-hidden bg-muted border border-border text-muted-foreground font-semibold', sizes[size])} title={name}>
       {src ? <img src={src} alt={name} className="h-full w-full object-cover" /> : initials}
     </div>
   );
@@ -261,19 +249,46 @@ export const Avatar: React.FC<{ src?: string; name: string; size?: 'sm' | 'md' |
 // --- Loading Spinner ---
 export const Loader: React.FC = () => (
   <div className="flex justify-center items-center py-12">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
   </div>
 );
 
 // --- ProgressBar ---
 export const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => (
-  <div className="w-full bg-slate-700 rounded-full h-2">
+  <div className="w-full bg-secondary rounded-full h-2">
     <div
-      className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+      className="bg-primary h-2 rounded-full transition-all duration-500"
       style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
     />
   </div>
 );
+// --- Card ---
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'glass' | 'solid' | 'outline';
+  noPadding?: boolean;
+}
+
+export const Card: React.FC<CardProps> = ({ children, className, variant = 'solid', noPadding = false, onClick, ...props }) => {
+  // EcoFlow Card Standard 2.2 - Unified Style
+  // Dark: bg-slate-950 (via --card) + border-white/10
+  // Light: bg-white (via --card) + border-slate-200
+  // No distinct variants allowed anymore.
+
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        "rounded-xl transition-all duration-200 bg-card border border-border shadow-sm", // The Absolute Standard
+        !noPadding && "p-5 md:p-6",
+        onClick && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
 
 // --- Modal ---
 interface ModalProps {
@@ -285,22 +300,19 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className }) => {
-  if (!isOpen) {
-    // console.log("Modal is closed (isOpen=false)"); // Too noisy if logged every render
-    return null;
-  }
-  console.log("Modal IS OPEN. Rendering fixed overlay.");
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
       <div className={cn(
-        "relative w-full bg-slate-900 border border-slate-800 rounded-xl shadow-2xl flex flex-col max-h-[96vh]",
+        "relative w-full bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200",
         className || "max-w-lg"
       )}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-800 shrink-0">
-          <h3 className="text-xl font-bold text-white">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-            <X size={20} />
+        <div className="flex items-center justify-between p-5 border-b border-border/40 shrink-0 bg-muted/20 rounded-t-2xl">
+          <h3 className="text-lg font-bold text-foreground tracking-tight">{title}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+            <X size={18} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
@@ -322,7 +334,7 @@ export const UserMultiSelect: React.FC<{ users: User[], selectedIds: string[], o
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border border-slate-700 rounded-lg bg-slate-900/50">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border border-border rounded-lg bg-secondary/30">
       {users.map(user => (
         <div
           key={user.id}
@@ -330,19 +342,19 @@ export const UserMultiSelect: React.FC<{ users: User[], selectedIds: string[], o
           className={cn(
             "flex items-center gap-3 p-2 rounded-lg cursor-pointer border transition-all",
             selectedIds.includes(user.id)
-              ? "bg-emerald-500/10 border-emerald-500/30"
-              : "bg-slate-800 border-slate-700/50 hover:bg-slate-700"
+              ? "bg-primary/10 border-primary/30"
+              : "bg-card border-border hover:bg-accent"
           )}
         >
           <div className={cn(
             "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
-            selectedIds.includes(user.id) ? "bg-emerald-500 border-emerald-500" : "border-slate-500"
+            selectedIds.includes(user.id) ? "bg-primary border-primary" : "border-muted-foreground"
           )}>
-            {selectedIds.includes(user.id) && <div className="w-2 h-2 bg-white rounded-full" />}
+            {selectedIds.includes(user.id) && <div className="w-2 h-2 bg-primary-foreground rounded-full" />}
           </div>
           <div className="flex items-center gap-2 overflow-hidden">
             <Avatar src={user.avatarUrl} name={user.name} size="sm" />
-            <span className={cn("text-xs truncate", selectedIds.includes(user.id) ? "text-emerald-300" : "text-slate-300")}>{user.name}</span>
+            <span className={cn("text-xs truncate", selectedIds.includes(user.id) ? "text-primary" : "text-card-foreground")}>{user.name}</span>
           </div>
         </div>
       ))}
@@ -381,17 +393,17 @@ export const TaskTableView: React.FC<{
   };
 
   const getRowClass = (task: Task) => {
-    if (task.status === 'done') return 'border-l-4 border-l-emerald-500/30 opacity-60 bg-slate-800/50';
+    if (task.status === 'done') return 'border-l-4 border-l-primary/30 opacity-60 bg-muted/30';
     const dueDate = parseISO(task.dueDate);
     const now = new Date();
     if (isPast(dueDate) && !isToday(dueDate)) {
-      return 'border-l-4 border-l-rose-500 bg-rose-500/5 hover:bg-rose-500/10';
+      return 'border-l-4 border-l-destructive bg-destructive/5 hover:bg-destructive/10';
     }
     const diff = differenceInDays(dueDate, now);
     if (diff <= 3 && diff >= 0) {
       return 'border-l-4 border-l-amber-500 bg-amber-500/5 hover:bg-amber-500/10';
     }
-    return 'border-l-4 border-l-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10';
+    return 'border-l-4 border-l-primary bg-primary/5 hover:bg-primary/10';
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>, taskId: string) => {
@@ -401,9 +413,9 @@ export const TaskTableView: React.FC<{
   };
 
   return (
-    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-sm">
-      <table className="w-full text-left text-sm text-slate-400">
-        <thead className="bg-slate-900/80 text-slate-200 uppercase text-xs font-bold tracking-wider">
+    <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
+      <table className="w-full text-left text-sm text-muted-foreground">
+        <thead className="bg-muted/50 text-foreground uppercase text-xs font-bold tracking-wider">
           <tr>
             <th className="px-6 py-4">Título</th>
             <th className="px-6 py-4">Status</th>
@@ -413,10 +425,10 @@ export const TaskTableView: React.FC<{
             <th className="px-6 py-4 text-right">Ações</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-700/50">
+        <tbody className="divide-y divide-border">
           {tasks.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">
+              <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
                 Nenhuma tarefa encontrada.
               </td>
             </tr>
@@ -432,9 +444,9 @@ export const TaskTableView: React.FC<{
                   )}
                   onClick={() => onTaskClick && onTaskClick(task)}
                 >
-                  <td className="px-6 py-4 font-medium text-slate-200">
+                  <td className="px-6 py-4 font-medium text-foreground">
                     <div className={task.status === 'done' ? 'line-through opacity-60' : ''}>{task.title}</div>
-                    {task.description && <div className="text-xs text-slate-500 truncate max-w-[200px] mt-0.5">{task.description}</div>}
+                    {task.description && <div className="text-xs text-muted-foreground truncate max-w-[200px] mt-0.5">{task.description}</div>}
                   </td>
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <div className="relative w-36">
@@ -442,16 +454,16 @@ export const TaskTableView: React.FC<{
                         value={task.status}
                         onChange={(e) => handleStatusChange(e, task.id)}
                         className={cn(
-                          "appearance-none w-full text-xs font-semibold px-3 py-1.5 rounded-md border outline-none cursor-pointer pr-8 transition-colors",
-                          task.status === 'done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' :
-                            task.status === 'todo' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20' :
-                              'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
+                          "appearance-none w-full text-xs font-semibold px-3 py-1.5 rounded-md border outline-none cursor-pointer pr-8 transition-colors shadow-sm",
+                          task.status === 'done' ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' :
+                            task.status === 'todo' ? 'bg-card text-muted-foreground border-input hover:bg-secondary' :
+                              'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:bg-indigo-500/20'
                         )}
                       >
-                        <option value="todo" className="bg-slate-800 text-slate-300">A Fazer</option>
-                        <option value="in_progress" className="bg-slate-800 text-slate-300">Em Progresso</option>
-                        <option value="review" className="bg-slate-800 text-slate-300">Revisão</option>
-                        <option value="done" className="bg-slate-800 text-slate-300">Concluído</option>
+                        <option value="todo" className="bg-popover text-popover-foreground">A Fazer</option>
+                        <option value="in_progress" className="bg-popover text-popover-foreground">Em Progresso</option>
+                        <option value="review" className="bg-popover text-popover-foreground">Revisão</option>
+                        <option value="done" className="bg-popover text-popover-foreground">Concluído</option>
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-current opacity-50">
                         <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
@@ -467,15 +479,15 @@ export const TaskTableView: React.FC<{
                         <Avatar size="sm" src={assignee.avatarUrl} name={assignee.name} />
                         <span className="truncate max-w-[120px]">{assignee.name}</span>
                       </div>
-                    ) : <span className="text-slate-600 italic">--</span>}
+                    ) : <span className="text-muted-foreground italic">--</span>}
                   </td>
-                  <td className="px-6 py-4 text-xs font-medium text-slate-300">
-                    {new Date(task.dueDate).toLocaleDateString('pt-BR')} <span className="text-slate-500 ml-1">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <td className="px-6 py-4 text-xs font-medium text-foreground">
+                    {new Date(task.dueDate).toLocaleDateString('pt-BR')} <span className="text-muted-foreground ml-1">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-                      className="p-1.5 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       title="Excluir Tarefa"
                     >
                       <Trash2 size={16} />

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { FinancialCategory, FinancialTransaction } from '../../types';
-import { Loader, Badge, Button } from '../../components/Shared';
+import { Loader, Badge, Button, Card } from '../../components/Shared';
 import { DrilldownModal, CategoryModal, ConfirmationModal } from '../../components/Modals';
 import { Tags, ArrowUpCircle, ArrowDownCircle, Plus, Trash2, Edit2, ChevronRight } from 'lucide-react';
 
@@ -71,7 +71,7 @@ export const FinancialCategories: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                     <Tags className="text-emerald-500" /> Categorias
                 </h1>
                 <Button className="gap-2" onClick={handleCreate}>
@@ -81,64 +81,64 @@ export const FinancialCategories: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Income Column */}
-                <div className="bg-slate-800/50 rounded-xl border border-slate-800 p-6">
-                    <h2 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2 pb-4 border-b border-slate-700/50">
-                        <ArrowUpCircle size={18} className="text-emerald-400" /> Receitas
+                <Card className="rounded-xl border border-border p-6" variant="solid">
+                    <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2 pb-4 border-b border-border">
+                        <ArrowUpCircle size={18} className="text-emerald-500" /> Receitas
                     </h2>
                     <div className="space-y-3">
                         {incomeCats.map(cat => (
                             <div
                                 key={cat.id}
                                 onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id) })}
-                                className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-700/50 transition-all group"
+                                className="flex items-center justify-between p-3 rounded-lg bg-card border border-border cursor-pointer hover:border-emerald-500/50 hover:bg-secondary/50 transition-all group shadow-sm"
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color || '#10b981' }}></div>
-                                    <span className="font-medium text-slate-200">{cat.name}</span>
+                                    <span className="font-medium text-foreground">{cat.name}</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="font-bold text-slate-300 text-sm">{fmt(getCategoryTotal(cat.id))}</span>
+                                    <span className="font-bold text-muted-foreground text-sm">{fmt(getCategoryTotal(cat.id))}</span>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={(e) => handleEdit(e, cat)} className="text-slate-500 hover:text-white p-1"><Edit2 size={14} /></button>
-                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-slate-500 hover:text-rose-500 p-1"><Trash2 size={14} /></button>
+                                        <button onClick={(e) => handleEdit(e, cat)} className="text-muted-foreground hover:text-primary p-1"><Edit2 size={14} /></button>
+                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 size={14} /></button>
                                     </div>
-                                    <ChevronRight size={16} className="text-slate-600" />
+                                    <ChevronRight size={16} className="text-muted-foreground" />
                                 </div>
                             </div>
                         ))}
-                        {incomeCats.length === 0 && <p className="text-slate-500 text-sm italic text-center py-4">Nenhuma categoria cadastrada.</p>}
+                        {incomeCats.length === 0 && <p className="text-muted-foreground text-sm italic text-center py-4">Nenhuma categoria cadastrada.</p>}
                     </div>
-                </div>
+                </Card>
 
                 {/* Expense Column */}
-                <div className="bg-slate-800/50 rounded-xl border border-slate-800 p-6">
-                    <h2 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2 pb-4 border-b border-slate-700/50">
-                        <ArrowDownCircle size={18} className="text-rose-400" /> Despesas
+                <Card className="rounded-xl border border-border p-6" variant="solid">
+                    <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2 pb-4 border-b border-border">
+                        <ArrowDownCircle size={18} className="text-rose-500" /> Despesas
                     </h2>
                     <div className="space-y-3">
                         {expenseCats.map(cat => (
                             <div
                                 key={cat.id}
                                 onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id) })}
-                                className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer hover:border-rose-500/50 hover:bg-slate-700/50 transition-all group"
+                                className="flex items-center justify-between p-3 rounded-lg bg-card border border-border cursor-pointer hover:border-rose-500/50 hover:bg-secondary/50 transition-all group shadow-sm"
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color || '#f43f5e' }}></div>
-                                    <span className="font-medium text-slate-200">{cat.name}</span>
+                                    <span className="font-medium text-foreground">{cat.name}</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="font-bold text-slate-300 text-sm">{fmt(getCategoryTotal(cat.id))}</span>
+                                    <span className="font-bold text-muted-foreground text-sm">{fmt(getCategoryTotal(cat.id))}</span>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={(e) => handleEdit(e, cat)} className="text-slate-500 hover:text-white p-1"><Edit2 size={14} /></button>
-                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-slate-500 hover:text-rose-500 p-1"><Trash2 size={14} /></button>
+                                        <button onClick={(e) => handleEdit(e, cat)} className="text-muted-foreground hover:text-primary p-1"><Edit2 size={14} /></button>
+                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 size={14} /></button>
                                     </div>
-                                    <ChevronRight size={16} className="text-slate-600" />
+                                    <ChevronRight size={16} className="text-muted-foreground" />
                                 </div>
                             </div>
                         ))}
-                        {expenseCats.length === 0 && <p className="text-slate-500 text-sm italic text-center py-4">Nenhuma categoria cadastrada.</p>}
+                        {expenseCats.length === 0 && <p className="text-muted-foreground text-sm italic text-center py-4">Nenhuma categoria cadastrada.</p>}
                     </div>
-                </div>
+                </Card>
             </div>
 
             <DrilldownModal

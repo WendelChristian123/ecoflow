@@ -314,10 +314,11 @@ export const FinancialOverview: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-                        <DollarSign className="text-emerald-500" size={28} /> Visão Geral
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                        <DollarSign className="text-primary" size={28} /> Visão Geral
+                        <span className="text-sm font-normal text-muted-foreground ml-2 hidden md:inline">| Financeiro</span>
                     </h1>
                 </div>
 
@@ -325,12 +326,12 @@ export const FinancialOverview: React.FC = () => {
                     <Button
                         variant="ghost"
                         onClick={() => setIsReportModalOpen(true)}
-                        className="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200 gap-2"
+                        className="bg-secondary/50 border border-border hover:bg-secondary text-foreground gap-2"
                     >
-                        <FileText size={18} className="text-indigo-400" /> Relatórios
+                        <FileText size={18} className="text-primary" /> Relatórios
                     </Button>
                     <Button
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
+                        className="px-6 gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-105"
                         onClick={() => setIsTransactionModalOpen(true)}
                     >
                         <Plus size={18} /> Novo Lançamento
@@ -344,18 +345,18 @@ export const FinancialOverview: React.FC = () => {
             {/* BLOCO 1 - RESUMO */}
             {/* BLOCO 1 - KPIS (HIERARQUIA: SALDO > FLUXO > RESULTADO) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
-                {/* SALDO - PROTAGONISTA */}
-                <div className="lg:col-span-4 bg-[#0B0D12] border border-slate-800/40 p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Wallet size={80} className="text-emerald-500" />
+                {/* SALDO - PROTAGONISTA (PREMIUM CARD) */}
+                <div className="lg:col-span-4 bg-card border border-border p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-sm transition-all hover:shadow-md">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Wallet size={120} className="text-foreground" />
                     </div>
                     <div>
-                        <span className="text-slate-400 text-sm font-medium uppercase tracking-wide opacity-80">Saldo Atual</span>
-                        <div className="mt-4 text-4xl xl:text-5xl font-bold text-white tracking-tighter">
+                        <span className="text-muted-foreground text-sm font-bold uppercase tracking-wider">Saldo Atual</span>
+                        <div className="mt-4 text-4xl xl:text-5xl font-black text-foreground tracking-tighter">
                             {fmt(currentBalance)}
                         </div>
                     </div>
-                    <div className="mt-8 flex items-center gap-2 text-sm text-slate-500">
+                    <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
                         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                         <span>Soma de todas as contas</span>
                     </div>
@@ -363,124 +364,128 @@ export const FinancialOverview: React.FC = () => {
 
                 {/* FLUXO - SECUNDÁRIO */}
                 <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div
-                        className="bg-[#0B0D12] border border-slate-800/40 p-6 rounded-2xl flex flex-col justify-center cursor-pointer hover:bg-emerald-500/5 hover:border-emerald-500/20 transition-all group"
+                    <Card
+                        variant="solid"
+                        className="flex flex-col justify-center cursor-pointer hover:border-emerald-500/30 group relative overflow-hidden"
                         onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)}
                     >
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 rounded-lg bg-emerald-500/5 text-emerald-500 group-hover:bg-emerald-500/10 transition-colors">
+                        <div className="flex items-center gap-3 mb-2 relative z-10">
+                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500/20 transition-colors">
                                 <TrendingUp size={18} />
                             </div>
-                            <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Receitas</span>
+                            <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Receitas</span>
                         </div>
-                        <div className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 transition-colors tracking-tight">
+                        <div className="text-2xl font-bold text-foreground group-hover:text-emerald-500 transition-colors tracking-tight relative z-10">
                             {fmt(realizedIncome)}
                         </div>
-                    </div>
+                    </Card>
 
-                    <div
-                        className="bg-[#0B0D12] border border-slate-800/40 p-6 rounded-2xl flex flex-col justify-center cursor-pointer hover:bg-rose-500/5 hover:border-rose-500/20 transition-all group"
+                    <Card
+                        variant="solid"
+                        className="flex flex-col justify-center cursor-pointer hover:border-rose-500/30 group relative overflow-hidden"
                         onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)}
                     >
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 rounded-lg bg-rose-500/5 text-rose-500 group-hover:bg-rose-500/10 transition-colors">
+                        <div className="flex items-center gap-3 mb-2 relative z-10">
+                            <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500 group-hover:bg-rose-500/20 transition-colors">
                                 <TrendingDown size={18} />
                             </div>
-                            <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Despesas</span>
+                            <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Despesas</span>
                         </div>
-                        <div className="text-2xl font-bold text-slate-200 group-hover:text-rose-400 transition-colors tracking-tight">
+                        <div className="text-2xl font-bold text-foreground group-hover:text-rose-500 transition-colors tracking-tight relative z-10">
                             {fmt(realizedExpense)}
                         </div>
-                    </div>
+                    </Card>
 
-                    <div className="bg-[#0B0D12] border border-slate-800/40 p-6 rounded-2xl flex flex-col justify-center">
+                    <Card variant="solid" className="flex flex-col justify-center">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className={cn("p-2 rounded-lg bg-slate-800/50 transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-400" : "text-amber-400")}>
+                            <div className={cn("p-2 rounded-lg bg-secondary transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-500" : "text-amber-500")}>
                                 <DollarSign size={18} />
                             </div>
-                            <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Resultado</span>
+                            <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Resultado</span>
                         </div>
-                        <div className={cn("text-2xl font-bold tracking-tight transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-300" : "text-amber-300")}>
+                        <div className={cn("text-2xl font-bold tracking-tight transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-600 dark:text-indigo-400" : "text-amber-600 dark:text-amber-400")}>
                             {fmt(realizedIncome - realizedExpense)}
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
 
             {/* BLOCO 2 - RISCO (ATRASADOS vs FUTUROS) */}
             <div className="mb-10">
                 <div className="flex items-center gap-3 mb-4 pl-1">
-                    <div className="h-px bg-slate-800 flex-1"></div>
-                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <div className="h-px bg-border flex-1"></div>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                         <AlertCircle size={14} /> Fluxo de Caixa Previsto
                     </h2>
-                    <div className="h-px bg-slate-800 flex-1"></div>
+                    <div className="h-px bg-border flex-1"></div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* PAYABLES OVERDUE - ALARM */}
-                    <div
-                        className="bg-[#0B0D12] border border-rose-900/30 p-5 rounded-xl cursor-pointer hover:bg-rose-900/10 transition-all group relative overflow-hidden"
+                    <Card
+                        variant="solid"
+                        className="cursor-pointer hover:border-rose-500/40 group relative overflow-hidden border-l-4 border-l-destructive"
                         onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-50"></div>
                         <div className="relative z-10 flex flex-col h-full justify-between">
                             <div className="flex justify-between items-start mb-2">
-                                <span className="text-rose-400/80 text-[10px] font-bold uppercase tracking-wider">Pagamentos em Atraso</span>
+                                <span className="text-rose-500 text-[10px] font-bold uppercase tracking-wider">Pagamentos em Atraso</span>
                                 <AlertCircle size={16} className="text-rose-500" />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
+                                <div className="text-2xl font-black text-rose-600 dark:text-rose-400 group-hover:scale-105 transition-transform origin-left">
                                     {fmt(payablesOverdue)}
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* PAYABLES FUTURE - QUIET */}
-                    <div
-                        className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/60 transition-all group flex flex-col justify-between"
+                    <Card
+                        variant="solid"
+                        className="cursor-pointer hover:border-amber-500/40 group flex flex-col justify-between"
                         onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)}
                     >
                         <div className="flex justify-between items-start mb-2">
-                            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pagamentos a Vencer (7d)</span>
-                            <Clock size={16} className="text-slate-600 group-hover:text-amber-500 transition-colors" />
+                            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pagamentos a Vencer (7d)</span>
+                            <Clock size={16} className="text-muted-foreground group-hover:text-amber-500 transition-colors" />
                         </div>
-                        <div className="text-2xl font-bold text-slate-300 group-hover:text-amber-400 transition-colors">
+                        <div className="text-2xl font-bold text-foreground group-hover:text-amber-500 transition-colors">
                             {fmt(payablesFuture)}
                         </div>
-                    </div>
+                    </Card>
 
                     {/* RECEIVABLES OVERDUE - ALARM */}
-                    <div
-                        className="bg-[#0B0D12] border border-rose-900/30 p-5 rounded-xl cursor-pointer hover:bg-rose-900/10 transition-all group relative overflow-hidden"
+                    <Card
+                        variant="solid"
+                        className="cursor-pointer hover:border-rose-500/40 group relative overflow-hidden border-l-4 border-l-destructive"
                         onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-50"></div>
                         <div className="relative z-10 flex flex-col h-full justify-between">
                             <div className="flex justify-between items-start mb-2">
-                                <span className="text-rose-400/80 text-[10px] font-bold uppercase tracking-wider">Recebimentos em Atraso</span>
+                                <span className="text-rose-500 text-[10px] font-bold uppercase tracking-wider">Recebimentos em Atraso</span>
                                 <AlertCircle size={16} className="text-rose-500" />
                             </div>
-                            <div className="text-2xl font-bold text-rose-400 group-hover:text-rose-300 transition-colors">
+                            <div className="text-2xl font-black text-rose-600 dark:text-rose-400 group-hover:scale-105 transition-transform origin-left">
                                 {fmt(receivablesOverdue)}
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* RECEIVABLES FUTURE - QUIET */}
-                    <div
-                        className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/60 transition-all group flex flex-col justify-between"
+                    <Card
+                        variant="solid"
+                        className="cursor-pointer hover:border-indigo-500/40 group flex flex-col justify-between"
                         onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))}
                     >
                         <div className="flex justify-between items-start mb-2">
-                            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Recebimentos a Vencer (7d)</span>
-                            <Clock size={16} className="text-slate-600 group-hover:text-indigo-500 transition-colors" />
+                            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Recebimentos a Vencer (7d)</span>
+                            <Clock size={16} className="text-muted-foreground group-hover:text-indigo-500 transition-colors" />
                         </div>
-                        <div className="text-2xl font-bold text-slate-300 group-hover:text-indigo-400 transition-colors">
+                        <div className="text-2xl font-bold text-foreground group-hover:text-indigo-500 transition-colors">
                             {fmt(receivablesFuture)}
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
 

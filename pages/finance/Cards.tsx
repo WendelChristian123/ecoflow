@@ -276,7 +276,7 @@ export const FinancialCards: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                     <CardIcon className="text-emerald-500" /> Cartões de Crédito
                 </h1>
                 <Button className="gap-2" onClick={handleCreate}>
@@ -285,12 +285,12 @@ export const FinancialCards: React.FC = () => {
             </div>
 
             {cards.length === 0 ? (
-                <div className="p-12 text-center border border-dashed border-slate-700 rounded-xl">
-                    <div className="bg-slate-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600">
+                <div className="p-12 text-center border border-dashed border-border rounded-xl">
+                    <div className="bg-muted h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 text-muted-foreground">
                         <CardIcon size={32} />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-300">Nenhum cartão encontrado</h3>
-                    <p className="text-slate-500 mb-4">Cadastre seus cartões para acompanhar limites e faturas.</p>
+                    <h3 className="text-lg font-medium text-foreground">Nenhum cartão encontrado</h3>
+                    <p className="text-muted-foreground mb-4">Cadastre seus cartões para acompanhar limites e faturas.</p>
                     <Button variant="outline" onClick={handleCreate}>Cadastrar Primeiro Cartão</Button>
                 </div>
             ) : (
@@ -304,34 +304,34 @@ export const FinancialCards: React.FC = () => {
                         const totalOverdue = overdue.reduce((acc, inv) => acc + inv.amount, 0);
 
                         return (
-                            <Card key={card.id} className="p-0 overflow-hidden bg-slate-900 border-slate-800 group relative">
+                            <Card key={card.id} className="p-0 overflow-hidden group relative" variant="solid">
                                 {/* Edit/Delete Overlay */}
                                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    <button onClick={(e) => handleEdit(e, card)} className="p-1.5 bg-slate-800 rounded-full text-slate-400 hover:text-white border border-slate-700 shadow-lg">
+                                    <button onClick={(e) => handleEdit(e, card)} className="p-1.5 bg-background rounded-full text-muted-foreground hover:text-foreground border border-input shadow-sm">
                                         <Edit2 size={14} />
                                     </button>
-                                    <button onClick={(e) => requestDelete(e, card.id)} className="p-1.5 bg-slate-800 rounded-full text-slate-400 hover:text-rose-500 border border-slate-700 shadow-lg">
+                                    <button onClick={(e) => requestDelete(e, card.id)} className="p-1.5 bg-background rounded-full text-muted-foreground hover:text-destructive border border-input shadow-sm">
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
 
                                 {/* Card Header */}
-                                <div className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700/50 flex justify-between items-start">
+                                <div className="p-6 bg-muted/30 border-b border-border flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <div className="bg-slate-700 p-3 rounded-xl transform rotate-3">
-                                            <CardIcon size={32} className="text-slate-200" />
+                                        <div className="bg-background p-3 rounded-xl transform rotate-3 border border-border">
+                                            <CardIcon size={32} className="text-primary" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-bold text-white">{card.name}</h3>
-                                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                                                <span className="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Final ****</span>
+                                            <h3 className="text-xl font-bold text-foreground">{card.name}</h3>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                                <span className="bg-background px-2 py-0.5 rounded border border-border">Final ****</span>
                                                 <span>Crédito</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Limite Total</div>
-                                        <div className="text-lg text-slate-200 font-bold">{fmt(card.limitAmount)}</div>
+                                        <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Limite Total</div>
+                                        <div className="text-lg text-foreground font-bold">{fmt(card.limitAmount)}</div>
                                     </div>
                                 </div>
 
@@ -339,29 +339,29 @@ export const FinancialCards: React.FC = () => {
                                     {/* Limit Bar */}
                                     <div>
                                         <div className="flex justify-between text-xs mb-2">
-                                            <span className="text-rose-400 font-medium">Em uso: {fmt(stats.used)}</span>
-                                            <span className="text-emerald-400 font-medium">Disponível: {fmt(stats.available)}</span>
+                                            <span className="text-rose-500 font-medium">Em uso: {fmt(stats.used)}</span>
+                                            <span className="text-emerald-500 font-medium">Disponível: {fmt(stats.available)}</span>
                                         </div>
                                         <ProgressBar progress={stats.percent} className="h-2" colorClass={stats.percent > 90 ? 'bg-rose-500' : 'bg-emerald-500'} />
                                     </div>
 
                                     {/* Overdue Warning Block */}
                                     {overdue.length > 0 && (
-                                        <div className="bg-rose-950/30 rounded-xl border border-rose-900/50 p-4 mb-4 animate-in fade-in slide-in-from-top-2">
+                                        <div className="bg-destructive/10 rounded-xl border border-destructive/20 p-4 mb-4 animate-in fade-in slide-in-from-top-2">
                                             <div className="flex justify-between items-start">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-rose-500/10 rounded-lg text-rose-500">
+                                                    <div className="p-2 bg-destructive/10 rounded-lg text-destructive">
                                                         <AlertCircle size={18} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-rose-400 uppercase">Faturas em Atraso</h4>
-                                                        <p className="text-[10px] text-rose-300/70">{overdue.length} fatura(s) pendente(s)</p>
+                                                        <h4 className="text-sm font-bold text-destructive uppercase">Faturas em Atraso</h4>
+                                                        <p className="text-[10px] text-destructive/70">{overdue.length} fatura(s) pendente(s)</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-lg font-bold text-rose-400">{fmt(totalOverdue)}</div>
+                                                    <div className="text-lg font-bold text-destructive">{fmt(totalOverdue)}</div>
                                                     <button
-                                                        className="text-[10px] text-rose-300 hover:text-rose-200 underline mt-1"
+                                                        className="text-[10px] text-destructive hover:underline mt-1"
                                                         onClick={() => setDrilldownState({
                                                             isOpen: true,
                                                             title: `Faturas em Atraso: ${card.name}`,
@@ -376,17 +376,17 @@ export const FinancialCards: React.FC = () => {
                                     )}
 
                                     {/* Current Invoice Block */}
-                                    <div className="bg-slate-950/50 rounded-xl border border-slate-800 p-4">
+                                    <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
                                         <div className="flex justify-between items-center mb-4">
-                                            <h4 className="text-sm font-bold text-slate-100 uppercase flex items-center gap-2">
-                                                <FileText size={16} className="text-indigo-400" /> Fatura Atual
+                                            <h4 className="text-sm font-bold text-foreground uppercase flex items-center gap-2">
+                                                <FileText size={16} className="text-primary" /> Fatura Atual
                                             </h4>
                                             {invoice && (
                                                 <span className={cn(
                                                     "text-[10px] font-bold px-2 py-1 rounded uppercase",
-                                                    (invoice as any).status === 'open' ? "bg-blue-500/10 text-blue-400" :
-                                                        (invoice as any).status === 'closed' ? "bg-amber-500/10 text-amber-400" :
-                                                            "bg-rose-500/10 text-rose-400"
+                                                    (invoice as any).status === 'open' ? "bg-blue-500/10 text-blue-500" :
+                                                        (invoice as any).status === 'closed' ? "bg-amber-500/10 text-amber-500" :
+                                                            "bg-destructive/10 text-destructive"
                                                 )}>
                                                     {(invoice as any).status === 'open' ? 'Aberta' : (invoice as any).status === 'closed' ? 'Fechada' : 'Vencida'}
                                                 </span>
@@ -395,20 +395,20 @@ export const FinancialCards: React.FC = () => {
 
                                         {invoice ? (
                                             <div className="flex justify-between items-end">
-                                                <div className="space-y-1 text-sm text-slate-400">
+                                                <div className="space-y-1 text-sm text-muted-foreground">
                                                     <div className="flex items-center gap-2">
-                                                        <Calendar size={14} /> Fecha: <span className="text-slate-200 font-medium">{(invoice as any).closingDate ? format((invoice as any).closingDate, 'dd/MM/yyyy') : '--/--'}</span>
+                                                        <Calendar size={14} /> Fecha: <span className="text-foreground font-medium">{(invoice as any).closingDate ? format((invoice as any).closingDate, 'dd/MM/yyyy') : '--/--'}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <AlertCircle size={14} /> Vence: <span className={cn("font-medium", (invoice as any).status === 'overdue' ? 'text-rose-400' : 'text-slate-200')}>{format(parseISO(invoice.date), 'dd/MM/yyyy')}</span>
+                                                        <AlertCircle size={14} /> Vence: <span className={cn("font-medium", (invoice as any).status === 'overdue' ? 'text-destructive' : 'text-foreground')}>{format(parseISO(invoice.date), 'dd/MM/yyyy')}</span>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-xs text-slate-500 mb-1">Valor da Fatura</div>
-                                                    <div className="text-2xl font-bold text-white mb-3">{fmt(invoice.amount)}</div>
+                                                    <div className="text-xs text-muted-foreground mb-1">Valor da Fatura</div>
+                                                    <div className="text-2xl font-bold text-foreground mb-3">{fmt(invoice.amount)}</div>
                                                     <Button
                                                         size="sm"
-                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white w-full shadow-lg shadow-indigo-500/20"
+                                                        className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
                                                         onClick={() => {
                                                             setPaymentModalData({ card, amount: invoice.amount });
                                                             setIsPaymentModalOpen(true);
@@ -419,7 +419,7 @@ export const FinancialCards: React.FC = () => {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="text-center py-4 text-slate-500 text-sm">
+                                            <div className="text-center py-4 text-muted-foreground text-sm">
                                                 Nenhuma fatura futura gerada ainda.
                                             </div>
                                         )}
@@ -427,10 +427,10 @@ export const FinancialCards: React.FC = () => {
                                 </div>
 
                                 {/* Actions Footer */}
-                                <div className="bg-slate-900/50 p-4 border-t border-slate-800 flex gap-2">
+                                <div className="bg-muted/30 p-4 border-t border-border flex gap-2">
                                     <Button
                                         variant="outline"
-                                        className="flex-1 text-xs border-slate-700 hover:bg-slate-800 text-slate-300"
+                                        className="flex-1 text-xs"
                                         onClick={() => {
                                             setSelectedCardForTx(card);
                                             setIsTransactionModalOpen(true);
@@ -440,7 +440,7 @@ export const FinancialCards: React.FC = () => {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className="flex-1 text-xs border-slate-700 hover:bg-slate-800 text-slate-300"
+                                        className="flex-1 text-xs"
                                         onClick={() => {
                                             setReportState({
                                                 isOpen: true,
@@ -453,7 +453,7 @@ export const FinancialCards: React.FC = () => {
                                     </Button>
                                     <Button
                                         variant="ghost"
-                                        className="px-2 text-slate-500 hover:text-emerald-500 hover:bg-slate-800"
+                                        className="px-2 text-muted-foreground hover:text-primary"
                                         title="Corrigir Saldo (Limpar Dados Antigos)"
                                         onClick={async (e) => {
                                             e.stopPropagation();

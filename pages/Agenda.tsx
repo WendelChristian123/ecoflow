@@ -343,7 +343,7 @@ export const AgendaPage: React.FC = () => {
     <div className="h-full flex flex-col space-y-3">
       {/* TOP BAR: FILTERS & SEARCH - Compacted */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 shrink-0">
-        <div className="flex bg-slate-800 rounded-full p-0.5 border border-slate-700/50">
+        <div className="flex bg-secondary/50 rounded-full p-0.5 border border-border/50">
           {[
             { id: 'all', label: 'Todos', icon: CheckCircle2 },
             { id: 'agenda', label: 'Compromissos', icon: CalendarIcon },
@@ -353,7 +353,7 @@ export const AgendaPage: React.FC = () => {
             <button
               key={filter.id}
               onClick={() => setActiveFilter(filter.id as FilterType)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${activeFilter === filter.id ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'}`}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${activeFilter === filter.id ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'}`}
             >
               {filter.id === activeFilter && <filter.icon size={12} />}
               {filter.label}
@@ -365,10 +365,10 @@ export const AgendaPage: React.FC = () => {
 
 
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
             <Input
               placeholder="Buscar..."
-              className="pl-8 py-1 text-xs bg-slate-800 border-slate-700 rounded-full focus:ring-emerald-500/50 h-8"
+              className="pl-8 py-1 text-xs bg-card border-border rounded-full focus:ring-emerald-500/50 h-8"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -380,10 +380,10 @@ export const AgendaPage: React.FC = () => {
       <div className="flex-1 flex gap-3 overflow-hidden min-h-0">
 
         {/* LEFT: CALENDAR GRID */}
-        <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+        <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-lg">
           {/* Header Month/Nav - Compacted */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 shrink-0 bg-slate-900/50">
-            <h2 className="text-lg font-bold text-white capitalize flex items-center gap-2">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 bg-secondary/30">
+            <h2 className="text-lg font-bold text-foreground capitalize flex items-center gap-2">
               <CalendarIcon size={16} className="text-emerald-500" />
               {format(viewDate, 'MMMM yyyy', { locale: ptBR })}
             </h2>
@@ -391,7 +391,7 @@ export const AgendaPage: React.FC = () => {
               <Select
                 value={assigneeFilter}
                 onChange={e => setAssigneeFilter(e.target.value)}
-                className="h-7 text-xs py-1 rounded-md bg-slate-800 border-slate-700 w-32 focus:ring-emerald-500/50"
+                className="h-7 text-xs py-1 rounded-md bg-secondary border-border w-32 focus:ring-emerald-500/50"
               >
                 <option value="all">Todos</option>
                 {users.map(u => (
@@ -400,21 +400,21 @@ export const AgendaPage: React.FC = () => {
               </Select>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm" onClick={handlePrevMonth} className="rounded-full w-6 h-6 p-0 border-slate-700 hover:bg-slate-800 text-slate-400"><ChevronLeft size={14} /></Button>
-              <Button variant="outline" size="sm" onClick={handleToday} className="rounded-full px-2 h-6 border-slate-700 hover:bg-slate-800 text-slate-300 text-[9px] uppercase tracking-wider font-bold">Hoje</Button>
-              <Button variant="outline" size="sm" onClick={handleNextMonth} className="rounded-full w-6 h-6 p-0 border-slate-700 hover:bg-slate-800 text-slate-400"><ChevronRight size={14} /></Button>
+              <Button variant="outline" size="sm" onClick={handlePrevMonth} className="rounded-full w-6 h-6 p-0 text-muted-foreground"><ChevronLeft size={14} /></Button>
+              <Button variant="outline" size="sm" onClick={handleToday} className="rounded-full px-2 h-6 text-muted-foreground hover:text-foreground text-[9px] uppercase tracking-wider font-bold">Hoje</Button>
+              <Button variant="outline" size="sm" onClick={handleNextMonth} className="rounded-full w-6 h-6 p-0 text-muted-foreground"><ChevronRight size={14} /></Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-800/30 shrink-0">
+          <div className="grid grid-cols-7 border-b border-border bg-secondary/30 shrink-0">
             {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(day => (
-              <div key={day} className="py-2 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+              <div key={day} className="py-2 text-center text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
                 {day}
               </div>
             ))}
           </div>
 
-          <div className="flex-1 grid grid-cols-7 grid-rows-6 h-full min-h-0 divide-x divide-y divide-slate-800 border-l border-t border-slate-800 bg-slate-900">
+          <div className="flex-1 grid grid-cols-7 grid-rows-6 h-full min-h-0 divide-x divide-y divide-border border-l border-t border-border bg-card">
             {eachDayOfInterval({
               start: startOfWeek(startOfMonth(viewDate)),
               end: endOfWeek(endOfMonth(viewDate))
@@ -433,13 +433,13 @@ export const AgendaPage: React.FC = () => {
                   key={day.toISOString()}
                   onClick={() => setSelectedDate(day)}
                   className={`relative p-1 transition-all cursor-pointer group flex flex-col gap-0.5 overflow-hidden 
-                                        ${!isCurrentMonth ? 'bg-slate-900/40 text-slate-700' : 'bg-slate-900'}
-                                        ${isSelected ? 'bg-slate-800/80 shadow-[inset_0_0_0_2px_rgba(16,185,129,0.5)]' : 'hover:bg-slate-800/20'}
+                                        ${!isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-card'}
+                                        ${isSelected ? 'bg-secondary/80 shadow-[inset_0_0_0_2px_rgba(16,185,129,0.5)]' : 'hover:bg-secondary/20'}
                                     `}
                 >
                   <div className="flex justify-start items-start mb-0.5">
                     <span className={`text-[10px] h-5 w-5 flex items-center justify-center rounded-full shrink-0 transition-colors font-bold
-                                            ${isTodayDate ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : (isSelected ? 'text-emerald-400' : (isCurrentMonth ? 'text-slate-300' : 'text-slate-600'))}
+                                            ${isTodayDate ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : (isSelected ? 'text-emerald-500' : (isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'))}
                                         `}>
                       {format(day, 'd')}
                     </span>
@@ -453,7 +453,7 @@ export const AgendaPage: React.FC = () => {
                           key={event.id}
                           className={`px-1.5 py-0.5 rounded-[2px] text-[9px] font-medium truncate w-full shadow-sm leading-tight
                                                       ${getEventPillClass(event)}
-                                                      ${isCompleted ? 'line-through opacity-60 decoration-slate-400' : ''}
+                                                      ${isCompleted ? 'line-through opacity-60 decoration-muted-foreground' : ''}
                                                   `}
                           title={event.title}
                           onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
@@ -464,7 +464,7 @@ export const AgendaPage: React.FC = () => {
                     })}
                     {hiddenCount > 0 && (
                       <div className="px-1 text-center">
-                        <span className="text-[8px] leading-none text-slate-500 font-medium hover:text-slate-300 transition-colors">+ {hiddenCount}</span>
+                        <span className="text-[8px] leading-none text-muted-foreground font-medium hover:text-foreground transition-colors">+ {hiddenCount}</span>
                       </div>
                     )}
                   </div>
@@ -475,13 +475,13 @@ export const AgendaPage: React.FC = () => {
         </div>
 
         {/* RIGHT: SIDEBAR - Ultra Compacted */}
-        <div className="w-72 flex flex-col bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden shrink-0">
-          <div className="p-3 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/50">
+        <div className="w-72 flex flex-col bg-card border border-border rounded-xl shadow-xl overflow-hidden shrink-0">
+          <div className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-secondary/30">
             <div>
-              <h3 className="text-sm font-bold text-white capitalize leading-tight">
+              <h3 className="text-sm font-bold text-foreground capitalize leading-tight">
                 {format(selectedDate, 'EEEE, d', { locale: ptBR })}
               </h3>
-              <p className="text-[10px] text-slate-400 capitalize">
+              <p className="text-[10px] text-muted-foreground capitalize">
                 {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
               </p>
             </div>
@@ -507,11 +507,11 @@ export const AgendaPage: React.FC = () => {
 
             <div className="flex items-center gap-1.5 mb-1 opacity-70">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Agenda do Dia</span>
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Agenda do Dia</span>
             </div>
 
             {selectedDayEvents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-32 text-slate-500 border border-dashed border-slate-800 rounded-lg bg-slate-900/30">
+              <div className="flex flex-col items-center justify-center h-32 text-muted-foreground border border-dashed border-border rounded-lg bg-secondary/30">
                 <Clock size={20} className="mb-1 opacity-50" />
                 <p className="text-[10px]">Nada agendado</p>
               </div>
@@ -526,12 +526,12 @@ export const AgendaPage: React.FC = () => {
                     key={event.id}
                     onClick={() => setSelectedEvent(event)}
                     className={`relative p-3 border-0 cursor-pointer hover:translate-x-1 transition-transform group
-                                          ${event.color || 'bg-slate-800/40 hover:bg-slate-800 border-l-[3px] border-slate-500'}
+                                          ${event.color || 'bg-secondary/40 hover:bg-secondary border-l-[3px] border-muted-foreground'}
                                       `}
                   >
                     {/* Header: Time */}
                     <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold opacity-80 text-white">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold opacity-80 text-foreground">
                         {event.icon}
                         {format(parseISO(event.startDate), 'HH:mm')}
                       </div>
@@ -544,7 +544,7 @@ export const AgendaPage: React.FC = () => {
                             if (!u) return null;
                             const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                             return (
-                              <div key={pid} className="w-5 h-5 rounded-full border border-slate-900 bg-slate-700 flex items-center justify-center overflow-hidden text-[8px] text-white font-bold" title={u.name}>
+                              <div key={pid} className="w-5 h-5 rounded-full border border-background bg-secondary flex items-center justify-center overflow-hidden text-[8px] text-muted-foreground font-bold" title={u.name}>
                                 {u.avatarUrl ? <img src={u.avatarUrl} alt={u.name} className="w-full h-full object-cover" /> : initials}
                               </div>
                             );
@@ -554,25 +554,25 @@ export const AgendaPage: React.FC = () => {
                     </div>
 
                     {/* Content */}
-                    <h4 className={`font-bold text-xs text-white mb-1 leading-snug ${event.status === 'completed' ? 'line-through opacity-50' : ''}`}>
+                    <h4 className={`font-bold text-xs text-foreground mb-1 leading-snug ${event.status === 'completed' ? 'line-through opacity-50' : ''}`}>
                       {event.title}
                     </h4>
 
                     {isFinance && event.metadata?.amount && (
-                      <div className="text-[10px] font-medium text-slate-300 mb-0.5">
+                      <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
                         Valor: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata.amount)}
                       </div>
                     )}
 
                     {event.description && (
-                      <p className="text-[9px] text-slate-500 line-clamp-1 mb-2 leading-relaxed">
+                      <p className="text-[9px] text-muted-foreground line-clamp-1 mb-2 leading-relaxed">
                         {event.description}
                       </p>
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-1 border-t border-white/5 mt-auto">
-                      <span className="text-[8px] uppercase tracking-wider font-bold opacity-50 flex items-center gap-1">
+                    <div className="flex items-center justify-between pt-1 border-t border-border/10 mt-auto">
+                      <span className="text-[8px] uppercase tracking-wider font-bold opacity-50 flex items-center gap-1 text-muted-foreground">
                         {event.origin === 'agenda' ? 'AGENDA' :
                           isPayable ? 'PAYABLE' :
                             isReceivable ? 'RECEIVABLE' :
@@ -593,9 +593,9 @@ export const AgendaPage: React.FC = () => {
             {/* Quick Add Placeholder */}
             <div
               onClick={handleCreate}
-              className="py-1.5 rounded-lg border border-dashed border-slate-800 text-center opacity-20 hover:opacity-60 transition-opacity cursor-pointer group"
+              className="py-1.5 rounded-lg border border-dashed border-border text-center opacity-20 hover:opacity-60 transition-opacity cursor-pointer group"
             >
-              <div className="flex items-center justify-center gap-1 text-[9px] text-slate-500 group-hover:text-slate-300">
+              <div className="flex items-center justify-center gap-1 text-[9px] text-muted-foreground group-hover:text-foreground">
                 <Plus size={8} /> Adicionar
               </div>
             </div>

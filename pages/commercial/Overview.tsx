@@ -21,30 +21,33 @@ const KpiCard: React.FC<{
     onClick?: () => void;
 }> = ({ title, value, icon, color, subtitle, onClick }) => {
     const colors = {
-        emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-        rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-        amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-        indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-        slate: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+        emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'hover:border-emerald-500/50' },
+        rose: { bg: 'bg-rose-500/10', text: 'text-rose-500', border: 'hover:border-rose-500/50' },
+        amber: { bg: 'bg-amber-500/10', text: 'text-amber-500', border: 'hover:border-amber-500/50' },
+        indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-500', border: 'hover:border-indigo-500/50' },
+        slate: { bg: 'bg-secondary', text: 'text-muted-foreground', border: 'hover:border-border' },
     };
 
+    const theme = colors[color];
+
     return (
-        <div
+        <Card
+            variant="solid"
             onClick={onClick}
             className={cn(
-                "bg-slate-800 border border-slate-700/50 p-6 rounded-xl relative overflow-hidden flex flex-col justify-between h-full transition-all group",
-                onClick ? "cursor-pointer hover:border-slate-500 hover:shadow-lg hover:-translate-y-1" : ""
+                "relative overflow-hidden flex flex-col justify-between h-full transition-all group",
+                onClick ? `cursor-pointer hover:shadow-lg hover:-translate-y-1 ${theme.border}` : ""
             )}
         >
             <div className="flex justify-between items-start mb-4 relative z-10">
-                <span className="text-slate-400 text-sm font-medium uppercase tracking-wide group-hover:text-slate-300 transition-colors">{title}</span>
-                <div className={cn("p-2 rounded-lg", colors[color])}>{icon}</div>
+                <span className="text-muted-foreground text-sm font-bold uppercase tracking-wide group-hover:text-foreground transition-colors">{title}</span>
+                <div className={cn("p-2 rounded-lg transition-colors", theme.bg, theme.text)}>{icon}</div>
             </div>
             <div className="relative z-10">
-                <div className="text-2xl font-bold text-white tracking-tight">{value}</div>
-                {subtitle && <div className="text-xs text-slate-500 mt-1 group-hover:text-slate-400 transition-colors">{subtitle}</div>}
+                <div className="text-2xl font-black text-foreground tracking-tight">{value}</div>
+                {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
             </div>
-        </div>
+        </Card>
     );
 };
 
@@ -65,35 +68,38 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-            <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-white">{title}</h3>
-                    <button onClick={onClose} className="text-slate-500 hover:text-white"><X size={20} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+            <div className="bg-card border border-border rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="p-5 border-b border-border flex justify-between items-center bg-muted/20 rounded-t-xl">
+                    <h3 className="text-lg font-bold text-foreground">{title}</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"><X size={20} /></button>
                 </div>
                 <div className="flex-1 overflow-auto p-4 custom-scrollbar">
                     {quotes.length === 0 ? (
-                        <div className="text-center py-10 text-slate-500">Nenhum orçamento encontrado nesta categoria.</div>
+                        <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
+                            <FileText size={32} className="opacity-20" />
+                            <span>Nenhum orçamento encontrado nesta categoria.</span>
+                        </div>
                     ) : (
                         <div className="space-y-2">
                             {quotes.map(q => (
                                 <div key={q.id}
                                     onClick={() => onQuoteClick(q)}
-                                    className="bg-slate-800/50 border border-slate-700/50 p-4 rounded-lg flex items-center justify-between hover:bg-slate-800 hover:border-emerald-500/30 cursor-pointer transition-all"
+                                    className="bg-card border border-border p-4 rounded-lg flex items-center justify-between hover:border-primary/30 hover:shadow-sm cursor-pointer transition-all group"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 font-mono text-xs text-slate-400">
+                                        <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center border border-border font-mono text-xs text-muted-foreground group-hover:text-foreground group-hover:border-primary/20 transition-colors">
                                             #{q.id.substring(0, 4)}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-white">{q.clientName || 'Cliente sem nome'} ({q.title})</div>
-                                            <div className="text-xs text-slate-400 flex items-center gap-2">
+                                            <div className="font-bold text-foreground">{q.clientName || 'Cliente sem nome'} ({q.title})</div>
+                                            <div className="text-xs text-muted-foreground flex items-center gap-2">
                                                 {format(parseISO(q.createdAt || q.date), 'dd/MM/yyyy')} • {getUserName(q.userId)}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="font-bold text-emerald-400 text-lg">{fmt(q.totalValue)}</div>
+                                        <div className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">{fmt(q.totalValue)}</div>
                                         <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : 'warning'}>
                                             {q.status.toUpperCase()}
                                         </Badge>
@@ -228,19 +234,19 @@ export const CommercialOverview: React.FC = () => {
     const drilldownInfo = getDrilldownData();
 
     return (
-        <div className="h-[calc(100vh-64px)] bg-slate-950 text-slate-100 p-4 md:p-6 overflow-hidden flex flex-col gap-6">
+        <div className="h-[calc(100vh-64px)] bg-background text-foreground p-6 overflow-hidden flex flex-col gap-6 custom-scrollbar">
 
             {/* Header */}
             <div className="flex justify-between items-center shrink-0">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard Comercial</h1>
-                    <p className="text-slate-400 text-sm">Visão geral de performance.</p>
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard Comercial</h1>
+                    <p className="text-muted-foreground text-sm">Visão geral de performance.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="gap-2 border-slate-700 hover:bg-slate-800 text-slate-300 h-9 text-sm" onClick={() => setIsReportModalOpen(true)}>
-                        <FileText size={16} /> Relatórios
+                    <Button variant="secondary" className="gap-2 h-9 text-sm" onClick={() => setIsReportModalOpen(true)}>
+                        <FileText size={16} className="text-primary" /> Relatórios
                     </Button>
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-9 text-sm" onClick={() => { setEditingQuote(undefined); setIsQuoteModalOpen(true); }}>
+                    <Button className="h-9 text-sm gap-2 shadow-lg shadow-emerald-500/20" onClick={() => { setEditingQuote(undefined); setIsQuoteModalOpen(true); }}>
                         <Plus size={16} /> Novo Orçamento
                     </Button>
                 </div>
@@ -290,12 +296,12 @@ export const CommercialOverview: React.FC = () => {
                 />
             </div>
 
-            {/* Main Content Area (Charts + Activity) - Fills remaining height */}
+            {/* Main Content Area (Chart) */}
             <div className="flex-1 min-h-0">
                 {/* Chart Section */}
-                <Card className="flex flex-col h-full overflow-hidden">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 shrink-0">
-                        <PieChart size={18} className="text-indigo-400" /> Distribuição por Status
+                <Card variant="solid" className="flex flex-col h-full overflow-hidden">
+                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2 shrink-0">
+                        <PieChart size={18} className="text-primary" /> Distribuição por Status
                     </h3>
                     <div className="flex-1 w-full min-h-0 relative">
                         <ResponsiveContainer width="99%" height="100%">
@@ -310,20 +316,20 @@ export const CommercialOverview: React.FC = () => {
                                     dataKey="value"
                                 >
                                     {statusDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0.2)" />
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />
                                     ))}
                                 </Pie>
                                 <RechartsTooltip
-                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
-                                    itemStyle={{ color: '#fff' }}
+                                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--foreground)' }}
+                                    itemStyle={{ color: 'var(--foreground)' }}
                                 />
                             </RechartsPieChart>
                         </ResponsiveContainer>
                         {/* Center Label */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center">
-                                <span className="text-3xl font-bold text-white">{kpiData.totalQuotes}</span>
-                                <div className="text-xs text-slate-500 uppercase tracking-widest">Total</div>
+                                <span className="text-4xl font-black text-foreground">{kpiData.totalQuotes}</span>
+                                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total</div>
                             </div>
                         </div>
                     </div>
@@ -350,14 +356,14 @@ export const CommercialOverview: React.FC = () => {
                 }}
             />
 
+            {/* Note: QuoteModal is complex, assuming it adapts or has its own internal styles. 
+                We might need to check it if it uses hardcoded colors. */}
             <QuoteModal
                 isOpen={isQuoteModalOpen}
                 onClose={() => setIsQuoteModalOpen(false)}
                 onSuccess={() => {
                     loadData();
                     setIsQuoteModalOpen(false);
-                    // Optionally keep drilldown open, or close it. 
-                    // Let's keep drilldown open so they can edit multiple.
                 }}
                 contacts={contacts}
                 catalog={catalog}

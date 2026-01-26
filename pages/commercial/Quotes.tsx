@@ -186,12 +186,12 @@ export const QuotesPage: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background text-foreground">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">Orçamentos</h1>
-                    <p className="text-slate-400 mt-1">Gerencie suas propostas comerciais</p>
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Orçamentos</h1>
+                    <p className="text-muted-foreground mt-1">Gerencie suas propostas comerciais</p>
                 </div>
                 <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
                     <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
@@ -202,7 +202,7 @@ export const QuotesPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2 mb-4">
                 {/* 1. Search */}
                 <div className="relative mr-auto">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                         <Filter size={14} />
                     </div>
                     <input
@@ -210,22 +210,22 @@ export const QuotesPage: React.FC = () => {
                         placeholder="Buscar..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-500"
+                        className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
                     />
                 </div>
 
                 {/* 2. Month Nav */}
-                <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5 items-center">
-                    <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-                    <span className="text-xs font-bold text-slate-300 uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
-                    <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
+                <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
+                    <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
+                    <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
+                    <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
                 </div>
 
                 {/* 3. Status */}
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="bg-slate-800 border-slate-700 text-slate-200 text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-emerald-500 outline-none w-36"
+                    className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none w-36"
                 >
                     <option value="all">Todos Status</option>
                     <option value="draft">Rascunhos</option>
@@ -235,11 +235,11 @@ export const QuotesPage: React.FC = () => {
                 </select>
 
                 {/* 4. View Toggle */}
-                <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
-                    <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                <div className="flex bg-card border border-border rounded-lg p-0.5">
+                    <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                         <List size={16} />
                     </button>
-                    <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                    <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                         <LayoutGrid size={16} />
                     </button>
                 </div>
@@ -259,27 +259,27 @@ export const QuotesPage: React.FC = () => {
             ) : (
                 <div className="space-y-3">
                     {filteredQuotes.length === 0 ? (
-                        <div className="text-center py-10 text-slate-500">Nenhum orçamento encontrado.</div>
+                        <div className="text-center py-10 text-muted-foreground">Nenhum orçamento encontrado.</div>
                     ) : filteredQuotes.map(q => (
                         <div
                             key={q.id}
                             onClick={() => { setEditingQuote(q); setIsModalOpen(true); }}
-                            className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative"
+                            className="bg-card border border-border hover:border-primary/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative shadow-sm"
                         >
                             <div className="flex items-center gap-6">
                                 {/* Quote ID */}
-                                <div className="flex flex-col items-center justify-center h-12 w-16 bg-slate-800 rounded text-slate-400 font-mono text-xs border border-slate-700">
-                                    <span className="text-[10px] uppercase text-slate-500">COD</span>
-                                    <span className="font-bold text-slate-300">#{q.id.substring(0, 4)}</span>
+                                <div className="flex flex-col items-center justify-center h-12 w-16 bg-secondary rounded text-muted-foreground font-mono text-xs border border-border">
+                                    <span className="text-[10px] uppercase text-muted-foreground">COD</span>
+                                    <span className="font-bold text-foreground">#{q.id.substring(0, 4)}</span>
                                 </div>
 
                                 {/* Client Name */}
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2 mb-0.5">
-                                        <span className="text-xs text-slate-500 font-medium uppercase">Cliente</span>
+                                        <span className="text-xs text-muted-foreground font-medium uppercase">Cliente</span>
                                         {!q.contactId && <Badge variant="neutral" className="py-0 px-1 text-[10px]">Convidado</Badge>}
                                     </div>
-                                    <h3 className="font-bold text-white text-lg leading-none truncate max-w-[200px] md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
+                                    <h3 className="font-bold text-foreground text-lg leading-none truncate max-w-[200px] md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
                                 </div>
                             </div>
 
@@ -287,16 +287,16 @@ export const QuotesPage: React.FC = () => {
                                 {/* Dates */}
                                 <div className="hidden md:flex items-center gap-6 text-sm">
                                     <div className="flex flex-col items-start">
-                                        <span className="text-xs text-slate-500 uppercase">Emissão</span>
-                                        <div className="flex items-center gap-1.5 text-slate-300">
+                                        <span className="text-xs text-muted-foreground uppercase">Emissão</span>
+                                        <div className="flex items-center gap-1.5 text-foreground">
                                             <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                                             {formatDate(q.date)}
                                         </div>
                                     </div>
-                                    <div className="h-8 w-px bg-slate-800"></div>
+                                    <div className="h-8 w-px bg-border"></div>
                                     <div className="flex flex-col items-start">
-                                        <span className="text-xs text-slate-500 uppercase">Vencimento</span>
-                                        <div className="flex items-center gap-1.5 text-slate-300">
+                                        <span className="text-xs text-muted-foreground uppercase">Vencimento</span>
+                                        <div className="flex items-center gap-1.5 text-foreground">
                                             <Calendar className="w-3.5 h-3.5 text-rose-500" />
                                             {formatDate(q.validUntil)}
                                         </div>
@@ -306,8 +306,8 @@ export const QuotesPage: React.FC = () => {
                                 {/* Value & Status */}
                                 <div className="flex items-center gap-4">
                                     <div className="text-right">
-                                        <div className="text-xs text-slate-500 uppercase">{q.items?.length || 0} itens</div>
-                                        <div className="text-lg font-bold text-emerald-400">
+                                        <div className="text-xs text-muted-foreground uppercase">{q.items?.length || 0} itens</div>
+                                        <div className="text-lg font-bold text-emerald-500">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}
                                         </div>
                                     </div>
@@ -317,17 +317,17 @@ export const QuotesPage: React.FC = () => {
                                             onChange={(e) => handleStatusChange(q.id, e.target.value)}
                                             className={`
                                                 w-full appearance-none text-xs font-bold px-3 py-1.5 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
-                                                ${q.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' :
-                                                    q.status === 'sent' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' :
-                                                        q.status === 'rejected' || q.status === 'expired' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20' :
-                                                            'bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20'}
+                                                ${q.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' :
+                                                    q.status === 'sent' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' :
+                                                        q.status === 'rejected' || q.status === 'expired' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' :
+                                                            'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}
                                             `}
                                         >
-                                            <option value="draft" className="bg-slate-900 text-slate-400">Rascunho</option>
-                                            <option value="sent" className="bg-slate-900 text-amber-500">Enviado</option>
-                                            <option value="approved" className="bg-slate-900 text-emerald-500">Aprovado</option>
-                                            <option value="rejected" className="bg-slate-900 text-rose-500">Rejeitado</option>
-                                            <option value="expired" className="bg-slate-900 text-rose-500">Expirado</option>
+                                            <option value="draft" className="bg-popover text-muted-foreground">Rascunho</option>
+                                            <option value="sent" className="bg-popover text-amber-500">Enviado</option>
+                                            <option value="approved" className="bg-popover text-emerald-500">Aprovado</option>
+                                            <option value="rejected" className="bg-popover text-rose-500">Rejeitado</option>
+                                            <option value="expired" className="bg-popover text-rose-500">Expirado</option>
                                         </select>
                                     </div>
                                 </div>
@@ -337,7 +337,7 @@ export const QuotesPage: React.FC = () => {
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(q.id); }}
-                                    className="p-1.5 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-500 rounded transition-colors"
+                                    className="p-1.5 bg-secondary hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500 rounded transition-colors"
                                 >
                                     <Trash2 size={14} />
                                 </button>

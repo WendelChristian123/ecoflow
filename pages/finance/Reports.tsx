@@ -86,33 +86,33 @@ export const FinancialReports: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 print:p-0">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                     <PieChartIcon className="text-emerald-500" /> Relatórios
                 </h1>
 
                 <div className="flex items-center gap-2">
                     <select
-                        className="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm outline-none"
+                        className="bg-card border border-input text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring shadow-sm"
                         value={filterPeriod}
                         onChange={(e) => setFilterPeriod(e.target.value as any)}
                     >
-                        <option value="current">Este Mês</option>
-                        <option value="last">Mês Passado</option>
-                        <option value="custom">Personalizado</option>
-                        <option value="all">Todo o Período</option>
+                        <option value="current" className="bg-card text-foreground">Este Mês</option>
+                        <option value="last" className="bg-card text-foreground">Mês Passado</option>
+                        <option value="custom" className="bg-card text-foreground">Personalizado</option>
+                        <option value="all" className="bg-card text-foreground">Todo o Período</option>
                     </select>
                     {filterPeriod === 'custom' && (
                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
                             <input
                                 type="date"
-                                className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                                className="bg-card border border-input rounded-lg px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                                 value={customDate.start}
                                 onChange={e => setCustomDate({ ...customDate, start: e.target.value })}
                             />
-                            <span className="text-slate-500">-</span>
+                            <span className="text-muted-foreground">-</span>
                             <input
                                 type="date"
-                                className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                                className="bg-card border border-input rounded-lg px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                                 value={customDate.end}
                                 onChange={e => setCustomDate({ ...customDate, end: e.target.value })}
                             />
@@ -126,22 +126,23 @@ export const FinancialReports: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Bar Chart */}
-                <Card className="min-h-[400px] flex flex-col min-w-0">
-                    <h3 className="text-lg font-semibold text-white mb-4">Receitas x Despesas</h3>
+                <Card className="min-h-[400px] flex flex-col min-w-0" variant="solid">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Receitas x Despesas</h3>
                     {filteredTransactions.length === 0 ? (
-                        <div className="flex-1 flex items-center justify-center text-slate-500">Sem dados no período.</div>
+                        <div className="flex-1 flex items-center justify-center text-muted-foreground">Sem dados no período.</div>
                     ) : (
                         <div className="flex-1 w-full min-h-0">
                             <ResponsiveContainer width="99%" height="100%">
                                 <BarChart data={barData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                                    <XAxis dataKey="name" stroke="#94a3b8" />
-                                    <YAxis stroke="#94a3b8" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="currentColor" className="text-muted-foreground text-xs" tickLine={false} axisLine={false} />
+                                    <YAxis stroke="currentColor" className="text-muted-foreground text-xs" tickLine={false} axisLine={false} />
                                     <RechartsTooltip
-                                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
+                                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)', borderRadius: '8px' }}
                                         formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
+                                        cursor={{ fill: 'var(--muted)' }}
                                     />
-                                    <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]}>
+                                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                                         {barData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.name === 'Receitas' ? '#10b981' : '#f43f5e'} />
                                         ))}
@@ -153,10 +154,10 @@ export const FinancialReports: React.FC = () => {
                 </Card>
 
                 {/* Pie Chart */}
-                <Card className="min-h-[400px] flex flex-col min-w-0">
-                    <h3 className="text-lg font-semibold text-white mb-4">Despesas por Categoria</h3>
+                <Card className="min-h-[400px] flex flex-col min-w-0" variant="solid">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Despesas por Categoria</h3>
                     {pieData.length === 0 ? (
-                        <div className="flex-1 flex items-center justify-center text-slate-500">Sem despesas categorizadas no período.</div>
+                        <div className="flex-1 flex items-center justify-center text-muted-foreground">Sem despesas categorizadas no período.</div>
                     ) : (
                         <div className="flex-1 w-full min-h-0">
                             <ResponsiveContainer width="99%" height="100%">
@@ -175,7 +176,7 @@ export const FinancialReports: React.FC = () => {
                                         ))}
                                     </Pie>
                                     <RechartsTooltip
-                                        contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
+                                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)', borderRadius: '8px' }}
                                         formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
                                     />
                                     <Legend />

@@ -263,12 +263,12 @@ export const FinancialTransactions: React.FC = () => {
             <div
                 key={t.id}
                 onClick={handleRowClick}
-                className="grid grid-cols-[40px_1fr_auto_auto_auto_80px] md:grid-cols-[48px_1fr_150px_150px_130px_80px] items-center gap-4 px-4 py-3.5 cursor-pointer border-b border-slate-800/40 hover:bg-slate-800/20 transition-all group lg:first:rounded-t-lg lg:last:rounded-b-lg lg:last:border-0"
+                className="grid grid-cols-[40px_1fr_auto_auto_auto_80px] md:grid-cols-[48px_1fr_150px_150px_130px_80px] items-center gap-4 px-4 py-3.5 cursor-pointer border-b border-border hover:bg-secondary/30 transition-all group lg:first:rounded-t-lg lg:last:rounded-b-lg lg:last:border-0"
             >
                 {/* 1. Icon - Minimalist with subtle colored bg */}
                 <div className={cn(
                     "w-9 h-9 rounded-full flex items-center justify-center transition-colors shadow-inner",
-                    t.type === 'transfer' ? "bg-blue-500/10 text-blue-400" :
+                    t.type === 'transfer' ? "bg-blue-500/10 text-blue-500" :
                         (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? "bg-yellow-500/10 text-yellow-500" :
                             t.type === 'income' ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
                 )}>
@@ -277,26 +277,26 @@ export const FinancialTransactions: React.FC = () => {
 
                 {/* 2. Description - Clean Font, High Contrast */}
                 <div className="flex flex-col min-w-0 pr-2">
-                    <span className={cn("text-sm font-medium text-slate-200 group-hover:text-white transition-colors truncate tracking-tight", isVirtual && "italic text-slate-400")}>
+                    <span className={cn("text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate tracking-tight", isVirtual && "italic text-muted-foreground")}>
                         {t.description}
                     </span>
-                    {isVirtual && <span className="text-[10px] text-slate-500">Agrupado</span>}
+                    {isVirtual && <span className="text-[10px] text-muted-foreground">Agrupado</span>}
                 </div>
 
                 {/* 3. Category - Subtle, low contrast */}
                 <div className="hidden md:block truncate">
-                    <span className="text-xs text-slate-500 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs text-muted-foreground font-medium opacity-80 group-hover:opacity-100 transition-opacity">
                         {category?.name || 'Geral'}
                     </span>
                 </div>
 
                 {/* 4. Account - Uppercase, very subtle, dark badge look */}
                 <div className="hidden md:block text-right">
-                    <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 flex items-center justify-end gap-1">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground bg-secondary/50 px-2 py-1 rounded border border-border flex items-center justify-end gap-1">
                         {t.type === 'transfer' && t.toAccountId ? (
                             <>
                                 {accountName}
-                                <ArrowRight size={10} className="text-slate-600" />
+                                <ArrowRight size={10} className="text-muted-foreground" />
                                 {accounts.find(a => a.id === t.toAccountId)?.name || '...'}
                             </>
                         ) : (
@@ -320,17 +320,17 @@ export const FinancialTransactions: React.FC = () => {
                     {!isVirtual && (
                         <>
                             {t.creditCardId ? (
-                                <div className="p-2 text-slate-500 cursor-help" title="Lançamento no Cartão">
+                                <div className="p-2 text-muted-foreground cursor-help" title="Lançamento no Cartão">
                                     <CardIcon size={16} />
                                 </div>
                             ) : (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); toggleStatus(t.id, t.isPaid); }}
                                     className={cn(
-                                        "transition-all p-2 rounded-full hover:bg-slate-800",
+                                        "transition-all p-2 rounded-full hover:bg-secondary",
                                         t.isPaid
                                             ? "text-emerald-500"
-                                            : "text-slate-600 hover:text-emerald-500"
+                                            : "text-muted-foreground hover:text-emerald-500"
                                     )}
                                     title={t.isPaid ? "Pago" : "Marcar como Pago"}
                                 >
@@ -340,7 +340,7 @@ export const FinancialTransactions: React.FC = () => {
 
                             <button
                                 onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(t.id); }}
-                                className="transition-all p-2 rounded-full text-slate-600 hover:text-rose-500 hover:bg-rose-500/10"
+                                className="transition-all p-2 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
                                 title="Excluir"
                             >
                                 <Trash2 size={16} />
@@ -355,7 +355,7 @@ export const FinancialTransactions: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full flex flex-col overflow-hidden relative bg-[#0b0f19] text-slate-200 font-sans"> {/* Premium Dark Background */}
+        <div className="h-full flex flex-col overflow-hidden relative bg-background text-foreground font-sans"> {/* Premium Semantic Background */}
             <style>{scrollbarStyles}</style>
 
             {/* Page Header Area */}
@@ -364,7 +364,7 @@ export const FinancialTransactions: React.FC = () => {
                 {/* Title Row */}
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Lançamentos</h1>
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Lançamentos</h1>
                         <button
                             onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
                             className="w-10 h-10 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-105"
@@ -373,14 +373,14 @@ export const FinancialTransactions: React.FC = () => {
                         </button>
                         {/* Dropdown Menu */}
                         {isAddMenuOpen && (
-                            <div className="absolute top-16 left-8 w-52 bg-[#1e293b] border border-slate-700/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                <button onClick={() => handleCreate('expense')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:text-white hover:bg-slate-700/50 transition-colors text-left border-b border-slate-700/50 last:border-0">
+                            <div className="absolute top-16 left-8 w-52 bg-popover border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                <button onClick={() => handleCreate('expense')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-secondary/50 transition-colors text-left border-b border-border last:border-0">
                                     <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div> Nova Despesa
                                 </button>
-                                <button onClick={() => handleCreate('income')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:text-white hover:bg-slate-700/50 transition-colors text-left border-b border-slate-700/50 last:border-0">
+                                <button onClick={() => handleCreate('income')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-secondary/50 transition-colors text-left border-b border-border last:border-0">
                                     <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div> Nova Receita
                                 </button>
-                                <button onClick={() => handleCreate('transfer')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:text-white hover:bg-slate-700/50 transition-colors text-left">
+                                <button onClick={() => handleCreate('transfer')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-secondary/50 transition-colors text-left">
                                     <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div> Nova Transferência
                                 </button>
                             </div>
@@ -388,14 +388,14 @@ export const FinancialTransactions: React.FC = () => {
                     </div>
 
                     {/* Month Nav */}
-                    <div className="flex items-center bg-slate-900/50 rounded-full p-1 border border-slate-800 shadow-sm">
-                        <button onClick={() => setSelectedMonth(prev => subMonths(prev, 1))} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                    <div className="flex items-center bg-card rounded-full p-1 border border-border shadow-sm">
+                        <button onClick={() => setSelectedMonth(prev => subMonths(prev, 1))} className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                             <ChevronLeft size={16} />
                         </button>
-                        <span className="text-sm font-semibold capitalize w-36 text-center text-slate-200 select-none">
+                        <span className="text-sm font-semibold capitalize w-36 text-center text-foreground select-none">
                             {format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
                         </span>
-                        <button onClick={() => setSelectedMonth(prev => addMonths(prev, 1))} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                        <button onClick={() => setSelectedMonth(prev => addMonths(prev, 1))} className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                             <ChevronRight size={16} />
                         </button>
                     </div>
@@ -405,49 +405,49 @@ export const FinancialTransactions: React.FC = () => {
                     <Select
                         value={filters.type}
                         onChange={e => setFilters({ ...filters, type: e.target.value as any })}
-                        className="py-2.5 bg-[#0f172a] border-slate-800 text-sm focus:border-emerald-500/50 transition-all rounded-lg text-slate-200 font-medium"
+                        className="py-2.5 bg-card border-border text-sm focus:border-primary transition-all rounded-lg text-foreground font-medium"
                     >
-                        <option value="all" className="bg-[#0f172a]">Todas Operações</option>
-                        <option value="income" className="bg-[#0f172a]">Receitas</option>
-                        <option value="expense" className="bg-[#0f172a]">Despesas</option>
-                        <option value="transfer" className="bg-[#0f172a]">Transferências</option>
+                        <option value="all" className="bg-card">Todas Operações</option>
+                        <option value="income" className="bg-card">Receitas</option>
+                        <option value="expense" className="bg-card">Despesas</option>
+                        <option value="transfer" className="bg-card">Transferências</option>
                     </Select>
 
                     <Select
                         value={filters.status}
                         onChange={e => setFilters({ ...filters, status: e.target.value })}
-                        className="py-2.5 bg-[#0f172a] border-slate-800 text-sm focus:border-emerald-500/50 transition-all rounded-lg text-slate-200 font-medium"
+                        className="py-2.5 bg-card border-border text-sm focus:border-primary transition-all rounded-lg text-foreground font-medium"
                     >
-                        <option value="all" className="bg-[#0f172a]">Todos Status</option>
-                        <option value="paid" className="bg-[#0f172a]">Pagos</option>
-                        <option value="pending" className="bg-[#0f172a]">Pendentes</option>
-                        <option value="overdue" className="bg-[#0f172a]">Vencidos</option>
+                        <option value="all" className="bg-card">Todos Status</option>
+                        <option value="paid" className="bg-card">Pagos</option>
+                        <option value="pending" className="bg-card">Pendentes</option>
+                        <option value="overdue" className="bg-card">Vencidos</option>
                     </Select>
 
                     <Select
                         value={filters.accountId}
                         onChange={e => setFilters({ ...filters, accountId: e.target.value })}
-                        className="py-2.5 bg-[#0f172a] border-slate-800 text-sm focus:border-emerald-500/50 transition-all rounded-lg text-slate-200 font-medium"
+                        className="py-2.5 bg-card border-border text-sm focus:border-primary transition-all rounded-lg text-foreground font-medium"
                     >
-                        <option value="all" className="bg-[#0f172a]">Contas e Cartões</option>
+                        <option value="all" className="bg-card">Contas e Cartões</option>
                         <optgroup label="Contas Bancárias">
                             {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id} className="bg-[#0f172a]">{acc.name}</option>
+                                <option key={acc.id} value={acc.id} className="bg-card">{acc.name}</option>
                             ))}
                         </optgroup>
                         <optgroup label="Cartões de Crédito">
                             {cards.map(card => (
-                                <option key={card.id} value={`card_${card.id}`} className="bg-[#0f172a]">{card.name}</option>
+                                <option key={card.id} value={`card_${card.id}`} className="bg-card">{card.name}</option>
                             ))}
                         </optgroup>
                     </Select>
 
                     <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={16} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={16} />
                         <input
                             type="text"
                             placeholder="Buscar..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-[#0f172a] border border-slate-800 rounded-lg text-sm text-slate-200 focus:border-emerald-500/50 focus:bg-[#0f172a] focus:outline-none transition-all placeholder:text-slate-600 font-medium"
+                            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground focus:border-primary focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground font-medium"
                             value={filters.search}
                             onChange={e => setFilters({ ...filters, search: e.target.value })}
                         />
@@ -459,7 +459,7 @@ export const FinancialTransactions: React.FC = () => {
             <div className="flex-1 overflow-y-scroll transaction-scroll relative w-full px-4 md:px-8 pb-8">
                 <div className="max-w-6xl mx-auto space-y-8 mt-2">
                     {groupedTransactions.length === 0 ? (
-                        <div className="h-40 flex flex-col items-center justify-center text-slate-500 bg-slate-900/20 rounded-xl border border-slate-800/20 border-dashed">
+                        <div className="h-40 flex flex-col items-center justify-center text-muted-foreground bg-secondary/20 rounded-xl border border-border border-dashed">
                             <FileText size={24} className="mb-2 opacity-30" />
                             <span className="text-sm font-medium">Nenhum lançamento encontrado</span>
                         </div>
@@ -467,12 +467,12 @@ export const FinancialTransactions: React.FC = () => {
                         groupedTransactions.map(group => (
                             <div key={group.date}>
                                 {/* Date Header - As Separator */}
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-4 mb-2 opacity-80 flex items-center gap-2">
-                                    <span className="w-1 h-1 rounded-full bg-slate-600"></span>
+                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-4 mb-2 opacity-80 flex items-center gap-2">
+                                    <span className="w-1 h-1 rounded-full bg-muted-foreground"></span>
                                     {format(parseDateLocal(group.date), "dd/MM - EEEE", { locale: ptBR })}
                                 </div>
                                 {/* Clean Block of Transactions */}
-                                <div className="bg-[#111725] border border-slate-800/40 rounded-lg shadow-sm overflow-hidden">
+                                <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
                                     {group.items.map(t => renderTransactionItem(t))}
                                 </div>
                             </div>

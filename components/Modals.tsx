@@ -32,10 +32,10 @@ export const ConfirmationModal: React.FC<{
                         <AlertTriangle size={24} />
                     </div>
                     <div>
-                        <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
+                        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
                     </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/50">
+                <div className="flex justify-end gap-3 pt-4 border-t border-border">
                     <Button variant="ghost" onClick={onClose}>{cancelText}</Button>
                     <Button variant={variant} onClick={() => { onConfirm(); onClose(); }}>{confirmText}</Button>
                 </div>
@@ -55,26 +55,26 @@ export const RecurrenceActionModal: React.FC<{
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={action === 'update' ? "Editar Recorrência" : "Excluir Recorrência"}>
             <div className="space-y-4">
-                <p className="text-slate-300 text-sm">Este é um lançamento recorrente. Como deseja aplicar esta ação?</p>
+                <p className="text-muted-foreground text-sm">Este é um lançamento recorrente. Como deseja aplicar esta ação?</p>
                 <div className="grid gap-3">
                     <button
                         onClick={() => onConfirm('single')}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors text-left"
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left"
                     >
-                        <div className="bg-slate-700 p-2 rounded text-slate-300"><Calendar size={18} /></div>
+                        <div className="bg-secondary p-2 rounded text-foreground"><Calendar size={18} /></div>
                         <div>
-                            <div className="font-semibold text-white text-sm">Apenas este lançamento</div>
-                            <div className="text-xs text-slate-500">Alterar somente a data/valor deste item específico.</div>
+                            <div className="font-semibold text-foreground text-sm">Apenas este lançamento</div>
+                            <div className="text-xs text-muted-foreground">Alterar somente a data/valor deste item específico.</div>
                         </div>
                     </button>
                     <button
                         onClick={() => onConfirm('future')}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors text-left"
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left"
                     >
-                        <div className="bg-slate-700 p-2 rounded text-slate-300"><Copy size={18} /></div>
+                        <div className="bg-secondary p-2 rounded text-foreground"><Copy size={18} /></div>
                         <div>
-                            <div className="font-semibold text-white text-sm">Este e os próximos</div>
-                            <div className="text-xs text-slate-500">{action === 'update' ? 'Atualizar informações de todos os futuros.' : 'Excluir este e todos os lançamentos futuros.'}</div>
+                            <div className="font-semibold text-foreground text-sm">Este e os próximos</div>
+                            <div className="text-xs text-muted-foreground">{action === 'update' ? 'Atualizar informações de todos os futuros.' : 'Excluir este e todos os lançamentos futuros.'}</div>
                         </div>
                     </button>
                 </div>
@@ -177,7 +177,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
             <div className="mt-2 space-y-2">
                 {(!localData || localData.length === 0) ? (
-                    <div className="text-center py-8 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+                    <div className="text-center py-8 text-muted-foreground border border-dashed border-border rounded-lg">
                         Nenhum registro encontrado.
                     </div>
                 ) : (
@@ -194,22 +194,22 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-700 hover:border-slate-600 transition-all group"
+                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
-                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2 truncate">
+                                        <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2 truncate">
                                             {item.title || 'Sem título'}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
                                         <div className="flex items-center gap-3 mt-1.5">
-                                            <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/50">
-                                                <Calendar size={10} className="text-slate-500" />
-                                                <span className="text-xs text-slate-400 font-mono">{formatDate(item.dueDate)}</span>
+                                            <div className="flex items-center gap-1.5 bg-secondary/50 px-2 py-0.5 rounded border border-border">
+                                                <Calendar size={10} className="text-muted-foreground" />
+                                                <span className="text-xs text-muted-foreground font-mono">{formatDate(item.dueDate)}</span>
                                             </div>
                                             {assigneeName && (
                                                 <div className="flex items-center gap-1.5" title={`Responsável: ${assigneeName}`}>
                                                     <Avatar name={assigneeName} size="xs" />
-                                                    <span className="text-xs text-slate-400 truncate max-w-[100px]">{firstName}</span>
+                                                    <span className="text-xs text-muted-foreground truncate max-w-[100px]">{firstName}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -232,25 +232,25 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-700 hover:border-slate-600 transition-all group"
+                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
-                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2 truncate">
+                                        <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2 truncate">
                                             {item.title || 'Evento'}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
                                         <div className="flex items-center gap-3 mt-1.5">
-                                            <div className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/50">
-                                                <Calendar size={10} className="text-slate-500" />
-                                                <span className="text-xs text-slate-400 font-mono">{formatDate(item.startDate)}</span>
+                                            <div className="flex items-center gap-1.5 bg-secondary/50 px-2 py-0.5 rounded border border-border">
+                                                <Calendar size={10} className="text-muted-foreground" />
+                                                <span className="text-xs text-muted-foreground font-mono">{formatDate(item.startDate)}</span>
                                             </div>
                                             {participants.length > 0 && (
                                                 <div className="flex -space-x-1.5">
                                                     {participants.slice(0, 3).map((u: any, i: number) => (
-                                                        <Avatar key={i} name={u.name} src={u.avatarUrl} size="xs" className="border border-slate-800 w-5 h-5 text-[9px]" />
+                                                        <Avatar key={i} name={u.name} src={u.avatarUrl} size="xs" className="border border-background w-5 h-5 text-[9px]" />
                                                     ))}
                                                     {participants.length > 3 && (
-                                                        <div className="w-5 h-5 rounded-full bg-slate-700 border border-slate-800 flex items-center justify-center text-[8px] text-slate-300">+{participants.length - 3}</div>
+                                                        <div className="w-5 h-5 rounded-full bg-secondary border border-background flex items-center justify-center text-[8px] text-muted-foreground">+{participants.length - 3}</div>
                                                     )}
                                                 </div>
                                             )}
@@ -272,14 +272,14 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-700 hover:border-slate-600 transition-all group"
+                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
                                 >
                                     <div>
-                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2">
+                                        <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2">
                                             {t.description || 'Transação'}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50" />
                                         </div>
-                                        <div className="text-xs text-slate-500">{displayDate}</div>
+                                        <div className="text-xs text-muted-foreground">{displayDate}</div>
                                     </div>
                                     <div className="text-right flex items-center gap-3">
                                         <div className={cn("font-bold", t.type === 'expense' ? 'text-rose-400' : 'text-emerald-400')}>
@@ -292,7 +292,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                                     "p-1 rounded transition-colors",
                                                     t.isPaid
                                                         ? "text-emerald-500 hover:bg-emerald-500/10"
-                                                        : "text-slate-500 hover:text-emerald-500 hover:bg-slate-700"
+                                                        : "text-muted-foreground hover:text-emerald-500 hover:bg-accent"
                                                 )}
                                                 title={t.isPaid ? "Marcar como não pago" : "Marcar como pago"}
                                             >
@@ -314,20 +314,20 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:bg-slate-700 hover:border-slate-600 transition-all group"
+                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
                                 >
                                     <div>
-                                        <div className="font-medium text-slate-200 group-hover:text-white flex items-center gap-2">
+                                        <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2">
                                             <FileText size={14} className="text-emerald-500" />
                                             {clientName}
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50" />
                                         </div>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="text-xs text-muted-foreground">
                                             {formatDate(q.date, 'dd/MM/yyyy')} • #{q.id?.substring(0, 6) || '???'}
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="font-bold text-slate-200 text-sm">
+                                        <div className="font-bold text-foreground text-sm">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue || 0)}
                                         </div>
                                         <Badge variant={statusColor} className="mt-1 text-[10px] py-0">{translateStatus(q.status || 'draft')}</Badge>
@@ -381,14 +381,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, o
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Nome" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                 <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Tipo</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
                     <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
                         <option value="expense">Despesa</option>
                         <option value="income">Receita</option>
                     </Select>
                 </div>
                 <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Cor (Hex)</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Cor (Hex)</label>
                     <div className="flex gap-2">
                         <Input type="color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} className="w-12 p-1 h-10" />
                         <Input value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} />
@@ -568,13 +568,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                 <form onSubmit={handlePreSubmit} className="space-y-4">
                     {/* Header Controls */}
                     <div className="flex flex-col md:flex-row gap-4 mb-4">
-                        <div className="flex gap-2 bg-slate-800 p-1 rounded-lg flex-1">
+                        <div className="flex gap-2 bg-secondary p-1 rounded-lg flex-1 border border-border">
                             {['expense', 'income', 'transfer'].map(t => (
                                 <button
                                     key={t}
                                     type="button"
                                     onClick={() => setFormData({ ...formData, type: t as any })}
-                                    className={cn("flex-1 py-2 text-sm rounded transition-colors capitalize", formData.type === t ? (t === 'expense' ? 'bg-rose-500 text-white' : t === 'income' ? 'bg-emerald-500 text-white' : 'bg-indigo-500 text-white') : 'text-slate-400 hover:text-white')}
+                                    className={cn("flex-1 py-2 text-sm rounded transition-colors capitalize font-medium",
+                                        formData.type === t
+                                            ? (t === 'expense' ? 'bg-rose-500 text-white shadow-sm' : t === 'income' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-indigo-500 text-white shadow-sm')
+                                            : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                                    )}
                                 >
                                     {t === 'expense' ? 'Despesa' : t === 'income' ? 'Receita' : 'Transf.'}
                                 </button>
@@ -582,11 +586,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                         </div>
                         {formData.totalInstallments && formData.installmentIndex && formData.installmentIndex === formData.totalInstallments && (
                             <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1 text-amber-400 text-xs">
+                                <div className="flex items-center gap-1 text-amber-500 text-xs">
                                     <AlertTriangle size={14} />
                                     <span>Última parcela ({formData.installmentIndex}/{formData.totalInstallments}).</span>
                                 </div>
-                                <Button type="button" size="sm" variant="secondary" onClick={handleRenew} className="text-xs h-6 px-2 gap-1">
+                                <Button type="button" size="sm" variant="secondary" onClick={handleRenew} className="text-xs h-6 px-2 gap-1 text-amber-500 border-amber-500/30 hover:bg-amber-500/10">
                                     <RefreshCw size={10} /> Renovar
                                 </Button>
                             </div>
@@ -615,8 +619,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                     <div className="pt-6">
                                         <div
                                             className={cn(
-                                                "flex items-center gap-3 h-[42px] px-3 border border-slate-700/50 rounded-lg bg-slate-800/50 transition-colors",
-                                                formData.creditCardId ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-slate-700/50"
+                                                "flex items-center gap-3 h-[42px] px-3 border border-border rounded-lg bg-secondary/30 transition-colors",
+                                                formData.creditCardId ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-secondary/50"
                                             )}
                                             onClick={() => !formData.creditCardId && setFormData({ ...formData, isPaid: !formData.isPaid })}
                                         >
@@ -625,9 +629,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                                 checked={formData.isPaid}
                                                 onChange={e => !formData.creditCardId && setFormData({ ...formData, isPaid: e.target.checked })}
                                                 disabled={!!formData.creditCardId}
-                                                className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-emerald-500 disabled:cursor-not-allowed"
+                                                className="w-4 h-4 rounded bg-background border-input accent-emerald-500 disabled:cursor-not-allowed"
                                             />
-                                            <span className="text-sm text-slate-300 select-none">
+                                            <span className="text-sm text-foreground select-none">
                                                 {formData.creditCardId ? 'Pendente (Fatura)' : (formData.isPaid ? 'Pago / Recebido' : 'Pendente')}
                                             </span>
                                         </div>
@@ -641,13 +645,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                             {formData.type === 'transfer' ? (
                                 <>
                                     <div>
-                                        <label className="text-xs text-slate-400 block mb-1.5 ml-1">Conta Origem</label>
+                                        <label className="text-xs text-muted-foreground block mb-1.5 ml-1">Conta Origem</label>
                                         <Select value={formData.accountId} onChange={e => setFormData({ ...formData, accountId: e.target.value })} required>
                                             {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                         </Select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-400 block mb-1.5 ml-1">Conta Destino</label>
+                                        <label className="text-xs text-muted-foreground block mb-1.5 ml-1">Conta Destino</label>
                                         <Select value={formData.toAccountId} onChange={e => setFormData({ ...formData, toAccountId: e.target.value })} required>
                                             <option value="">Selecione...</option>
                                             {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).filter(a => a.id !== formData.accountId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -659,7 +663,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                     {/* CONTACT SELECTION */}
                                     <div className="flex items-end gap-2">
                                         <div className="flex-1">
-                                            <label className="text-xs text-slate-400 block mb-1.5 ml-1">
+                                            <label className="text-xs text-muted-foreground block mb-1.5 ml-1">
                                                 {formData.type === 'expense' ? 'Fornecedor (Opcional)' : 'Cliente (Opcional)'}
                                             </label>
                                             <Select value={formData.contactId || ''} onChange={e => setFormData({ ...formData, contactId: e.target.value })}>
@@ -674,7 +678,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
                                     <div className="flex items-end gap-2">
                                         <div className="flex-1">
-                                            <label className="text-xs text-slate-400 block mb-1.5 ml-1">Categoria</label>
+                                            <label className="text-xs text-muted-foreground block mb-1.5 ml-1">Categoria</label>
                                             <Select value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
                                                 <option value="">Geral</option>
                                                 {localCategories.filter(c => c.type === formData.type).sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -685,7 +689,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                         </Button>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-400 block mb-1.5 ml-1">{formData.type === 'expense' ? 'Conta / Cartão' : 'Conta'}</label>
+                                        <label className="text-xs text-muted-foreground block mb-1.5 ml-1">{formData.type === 'expense' ? 'Conta / Cartão' : 'Conta'}</label>
                                         <Select
                                             value={formData.creditCardId ? `card:${formData.creditCardId}` : `acc:${formData.accountId}`}
                                             onChange={e => {
@@ -712,10 +716,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
                             {/* Recurrence Block inside Right Column */}
                             {!initialData?.id && (
-                                <div className="bg-slate-800 p-3 rounded-lg space-y-2 border border-slate-700 mt-2">
+                                <div className="bg-secondary/20 p-3 rounded-lg space-y-2 border border-border mt-2">
                                     <div className="flex items-center gap-2">
-                                        <input type="checkbox" checked={recurrence.isRecurring} onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })} className="accent-emerald-500" />
-                                        <span className="text-sm font-medium text-slate-300">Repetir?</span>
+                                        <input type="checkbox" checked={recurrence.isRecurring} onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })} className="accent-emerald-500 h-4 w-4" />
+                                        <span className="text-sm font-medium text-foreground">Repetir?</span>
                                     </div>
                                     {recurrence.isRecurring && (
                                         <div className="grid grid-cols-2 gap-2 pt-2">
@@ -734,8 +738,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                                 disabled={isIndefinite}
                                             />
                                             <div className="col-span-2 flex items-center gap-2 pt-1">
-                                                <input type="checkbox" checked={isIndefinite} onChange={e => setIsIndefinite(e.target.checked)} className="rounded bg-slate-700 border-slate-600 accent-emerald-500" />
-                                                <span className="text-xs text-slate-400">Sem data limite (fixar 12x)</span>
+                                                <input type="checkbox" checked={isIndefinite} onChange={e => setIsIndefinite(e.target.checked)} className="rounded bg-background border-input accent-emerald-500" />
+                                                <span className="text-xs text-muted-foreground">Sem data limite (fixar 12x)</span>
                                             </div>
                                         </div>
                                     )}
@@ -744,7 +748,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                         </div>
                     </div>
 
-                    <div className="flex justify-between gap-2 pt-4 border-t border-slate-800 mt-4">
+                    <div className="flex justify-between gap-2 pt-4 border-t border-border mt-4">
                         {initialData?.id && (
                             <Button type="button" variant="danger" onClick={handlePreDelete} disabled={loading}><Trash2 size={16} /></Button>
                         )}
@@ -867,7 +871,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     <div className="space-y-4">
                         <Input label="Título da Tarefa" placeholder="Ex: Criar relatório mensal" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
                         <div className="h-full flex flex-col">
-                            <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Descrição</label>
+                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
                             <Textarea placeholder="Detalhes da tarefa..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="flex-1 min-h-[160px]" />
                         </div>
                     </div>
@@ -876,7 +880,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Status</label>
+                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
                                 <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as Status })}>
                                     <option value="todo">A Fazer</option>
                                     <option value="in_progress">Em Progresso</option>
@@ -885,7 +889,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                                 </Select>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prioridade</label>
+                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prioridade</label>
                                 <Select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value as Priority })}>
                                     <option value="low">Baixa</option>
                                     <option value="medium">Média</option>
@@ -896,7 +900,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                         </div>
 
                         <div>
-                            <label className="text-xs text-slate-400 mb-1.5 block ml-1">Responsável</label>
+                            <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Responsável</label>
                             <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
                                 <option value="">Selecione...</option>
                                 {(() => {
@@ -926,20 +930,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                             </Select>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prazo</label>
+                            <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
                             <Input type="datetime-local" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} required />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Projeto</label>
+                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Projeto</label>
                                 <Select value={formData.projectId || ''} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
                                     <option value="">Nenhum</option>
                                     {[...projects].sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </Select>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Equipe</label>
+                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Equipe</label>
                                 <Select value={formData.teamId || ''} onChange={e => setFormData({ ...formData, teamId: e.target.value })}>
                                     <option value="">Nenhuma</option>
                                     {[...teams].sort((a, b) => a.name.localeCompare(b.name)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -951,24 +955,24 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
                         {/* Recurrence Section (New) */}
                         {!initialData?.id && (
-                            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                            <div className="bg-secondary/20 p-3 rounded-lg border border-border">
                                 <div className="flex items-center gap-2 mb-2">
                                     <input
                                         type="checkbox"
                                         id="task-recurrence-toggle"
                                         checked={recurrence.isRecurring}
                                         onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })}
-                                        className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-emerald-500"
+                                        className="w-4 h-4 rounded bg-background border-input accent-emerald-500"
                                     />
-                                    <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-slate-200 select-none cursor-pointer">
+                                    <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-foreground select-none cursor-pointer">
                                         Repetir esta tarefa?
                                     </label>
                                 </div>
 
                                 {recurrence.isRecurring && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-700/50">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-border">
                                         <div>
-                                            <label className="text-xs text-slate-400 mb-1 block">Frequência</label>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Frequência</label>
                                             <Select
                                                 value={recurrence.frequency}
                                                 onChange={e => setRecurrence({ ...recurrence, frequency: e.target.value as any })}
@@ -981,7 +985,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                                         </div>
                                         <div className="flex items-end gap-2">
                                             <div className="flex-1">
-                                                <label className="text-xs text-slate-400 mb-1 block">Fim</label>
+                                                <label className="text-xs text-muted-foreground mb-1 block">Fim</label>
                                                 <Select
                                                     value={isIndefinite ? 'indefinite' : 'count'}
                                                     onChange={e => setIsIndefinite(e.target.value === 'indefinite')}
@@ -992,7 +996,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                                             </div>
                                             {!isIndefinite && (
                                                 <div className="w-16">
-                                                    <label className="text-xs text-slate-400 mb-1 block">Qtd</label>
+                                                    <label className="text-xs text-muted-foreground mb-1 block">Qtd</label>
                                                     <Input
                                                         type="number"
                                                         min="2"
@@ -1010,9 +1014,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center gap-2 pt-4 border-t border-slate-800">
+                <div className="flex justify-between items-center gap-2 pt-4 border-t border-border">
                     {initialData?.id && formData.status !== 'done' ? (
-                        <button type="button" onClick={handleQuickComplete} className="text-emerald-500 hover:text-emerald-400 text-sm font-medium flex items-center gap-2 px-2">
+                        <button type="button" onClick={handleQuickComplete} className="text-emerald-500 hover:text-emerald-600 text-sm font-medium flex items-center gap-2 px-2 hover:bg-emerald-500/10 rounded-md transition-colors h-9">
                             <CheckCircle2 size={16} /> Marcar como Concluída
                         </button>
                     ) : <div></div>}
@@ -1073,8 +1077,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
             <Modal isOpen={isOpen && !isEditing} onClose={onClose} title="Detalhes da Tarefa" className="max-w-2xl">
                 <div className="space-y-6">
                     <div className="flex justify-between items-start">
-                        <h2 className="text-xl font-bold text-white">{task.title}</h2>
-                        <button onClick={() => setIsEditing(true)} className="text-slate-500 hover:text-white"><Edit2 size={18} /></button>
+                        <h2 className="text-xl font-bold text-foreground">{task.title}</h2>
+                        <button onClick={() => setIsEditing(true)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-accent rounded"><Edit2 size={18} /></button>
                     </div>
                     {/* ... Rest of Task Detail Modal ... */}
                     <div className="flex flex-wrap gap-2">
@@ -1084,13 +1088,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                         {team && <Badge variant="neutral">{team.name}</Badge>}
                     </div>
 
-                    <div className="bg-slate-800 p-4 rounded-lg text-slate-300 text-sm whitespace-pre-wrap border border-slate-700 min-h-[100px]">
+                    <div className="bg-card p-4 rounded-lg text-foreground text-sm whitespace-pre-wrap border border-border min-h-[100px]">
                         {task.description || "Sem descrição."}
                     </div>
 
                     {/* Action Buttons Row - Workflow */}
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
-                        <label className="text-xs text-slate-500 block mb-2 font-semibold uppercase tracking-wider">Mover para Etapa</label>
+                    <div className="bg-muted p-3 rounded-xl border border-border">
+                        <label className="text-xs text-muted-foreground block mb-2 font-semibold uppercase tracking-wider">Mover para Etapa</label>
                         <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
                             {['todo', 'in_progress', 'review'].map((st) => (
                                 <button
@@ -1100,14 +1104,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                                     className={cn(
                                         "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap",
                                         task.status === st
-                                            ? "bg-indigo-500 text-white border-indigo-500 cursor-default"
-                                            : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white"
+                                            ? "bg-primary text-primary-foreground border-primary cursor-default"
+                                            : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground"
                                     )}
                                 >
                                     {translateStatus(st)}
                                 </button>
                             ))}
-                            <div className="w-px h-6 bg-slate-700 mx-2 hidden sm:block"></div>
+                            <div className="w-px h-6 bg-border mx-2 hidden sm:block"></div>
                             <Button
                                 size="sm"
                                 className={cn("gap-2 ml-auto sm:ml-0", task.status === 'done' ? "opacity-50 cursor-not-allowed" : "")}
@@ -1122,15 +1126,15 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
 
                     <div className="grid grid-cols-2 gap-4 text-sm pt-2">
                         <div>
-                            <span className="text-slate-500 block mb-1">Responsável</span>
-                            <div className="flex items-center gap-2 text-slate-200">
+                            <span className="text-muted-foreground block mb-1">Responsável</span>
+                            <div className="flex items-center gap-2 text-foreground">
                                 {assignee && <Avatar size="sm" src={assignee.avatarUrl} name={assignee.name} />}
                                 <span>{assignee?.name || 'N/A'}</span>
                             </div>
                         </div>
                         <div>
-                            <span className="text-slate-500 block mb-1">Prazo</span>
-                            <div className="flex items-center gap-2 text-slate-200">
+                            <span className="text-muted-foreground block mb-1">Prazo</span>
+                            <div className="flex items-center gap-2 text-foreground">
                                 <Calendar size={16} />
                                 <span>{new Date(task.dueDate).toLocaleString()}</span>
                             </div>
@@ -1139,10 +1143,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
 
                     {task.links && task.links.length > 0 && (
                         <div>
-                            <span className="text-slate-500 block mb-2 text-sm">Links Anexados</span>
+                            <span className="text-muted-foreground block mb-2 text-sm">Links Anexados</span>
                             <div className="space-y-1">
                                 {task.links.map((link, i) => (
-                                    <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-400 hover:underline">
+                                    <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-500 hover:underline">
                                         <LinkIcon size={12} /> {link}
                                     </a>
                                 ))}
@@ -1249,7 +1253,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onS
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Nome da Conta" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                 <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Tipo</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
                     <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
                         <option value="checking">Conta Corrente</option>
                         <option value="savings">Poupança</option>
@@ -1324,14 +1328,14 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                     <div className="space-y-5">
                         <Input label="Nome do Projeto" placeholder="Ex: Redesign do Site" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                         <div>
-                            <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Descrição</label>
+                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
                             <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-40" />
                         </div>
                     </div>
                     <div className="space-y-5">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Status</label>
+                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
                                 <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
                                     <option value="active">Ativo</option>
                                     <option value="on_hold">Em Espera</option>
@@ -1339,23 +1343,23 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                                 </Select>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prazo</label>
+                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
                                 <Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} required />
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1.5 block ml-1">Progresso ({formData.progress}%)</label>
+                            <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Progresso ({formData.progress}%)</label>
                             <input type="range" min="0" max="100" value={formData.progress} onChange={e => setFormData({ ...formData, progress: parseInt(e.target.value) })} className="w-full accent-emerald-500" />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-2 block ml-1">Membros</label>
+                            <label className="text-xs text-muted-foreground mb-2 block ml-1">Membros</label>
                             <UserMultiSelect users={users} selectedIds={formData.members || []} onChange={ids => setFormData({ ...formData, members: ids })} />
                         </div>
                         <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
+                <div className="flex justify-end gap-2 pt-4 border-t border-border">
                     <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button type="submit" disabled={loading}>Salvar</Button>
                 </div>
@@ -1404,19 +1408,19 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
                     <div className="space-y-5">
                         <Input label="Nome da Equipe" placeholder="Ex: Marketing" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                         <div>
-                            <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Descrição</label>
+                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
                             <Textarea placeholder="Função da equipe..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-40" />
                         </div>
                     </div>
                     <div>
                         <div className="mb-4">
-                            <label className="text-xs text-slate-400 mb-2 block ml-1">Membros da Equipe</label>
+                            <label className="text-xs text-muted-foreground mb-2 block ml-1">Membros da Equipe</label>
                             <UserMultiSelect users={users} selectedIds={formData.memberIds || []} onChange={ids => setFormData({ ...formData, memberIds: ids })} />
                         </div>
                         <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
                     </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
+                <div className="flex justify-end gap-2 pt-4 border-t border-border">
                     <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button type="submit" disabled={loading}>Salvar</Button>
                 </div>
@@ -1578,18 +1582,18 @@ export const EventModal: React.FC<EventModalProps> = ({
 
                 {/* Type Switcher */}
                 {!isEditing && (
-                    <div className="flex bg-slate-800 p-1 rounded-lg w-full max-w-sm mx-auto mb-6">
+                    <div className="flex bg-secondary p-1 rounded-lg w-full max-w-sm mx-auto mb-6">
                         <button
                             type="button"
                             onClick={() => setMode('event')}
-                            className={cn("flex-1 py-2 text-sm font-medium rounded transition-all", mode === 'event' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-white")}
+                            className={cn("flex-1 py-2 text-sm font-medium rounded transition-all", mode === 'event' ? "bg-emerald-600 text-white shadow-lg" : "text-muted-foreground hover:text-foreground")}
                         >
                             Evento da Agenda
                         </button>
                         <button
                             type="button"
                             onClick={() => setMode('task')}
-                            className={cn("flex-1 py-2 text-sm font-medium rounded transition-all", mode === 'task' ? "bg-indigo-500 text-white shadow-lg" : "text-slate-400 hover:text-white")}
+                            className={cn("flex-1 py-2 text-sm font-medium rounded transition-all", mode === 'task' ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground")}
                         >
                             Tarefa
                         </button>
@@ -1601,7 +1605,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                     {mode === 'task' ? (
                         <div className="space-y-4 md:col-span-1 h-full flex flex-col">
                             <div className="space-y-2">
-                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wilder ml-1">Título da Tarefa</label>
+                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wilder ml-1">Título da Tarefa</label>
                                 <Input
                                     placeholder="Ex: Criar relatório mensal"
                                     value={formData.title}
@@ -1611,7 +1615,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                             </div>
 
                             <div className="flex-1 flex flex-col space-y-2 min-h-[300px]">
-                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wilder ml-1">Descrição</label>
+                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wilder ml-1">Descrição</label>
                                 <Textarea
                                     placeholder="Detalhes da tarefa..."
                                     value={formData.description}
@@ -1624,7 +1628,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                         <div className="space-y-5">
                             <Input label="Título" placeholder="Ex: Reunião de Pauta" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
                             <div className="h-full flex flex-col">
-                                <label className="block text-xs text-slate-400 mb-1.5 font-medium ml-1">Descrição</label>
+                                <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
                                 <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="flex-1 min-h-[120px]" />
                             </div>
                         </div>
@@ -1637,17 +1641,17 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 {/* Event Fields */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Início</label>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Início</label>
                                         <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Fim</label>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Fim</label>
                                         <Input type="datetime-local" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} required />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Tipo</label>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Tipo</label>
                                         <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
                                             <option value="meeting">Reunião</option>
                                             <option value="deadline">Prazo</option>
@@ -1655,12 +1659,12 @@ export const EventModal: React.FC<EventModalProps> = ({
                                         </Select>
                                     </div>
                                     <div className="flex items-center gap-2 pt-6 px-1">
-                                        <input type="checkbox" checked={formData.isTeamEvent} onChange={e => setFormData({ ...formData, isTeamEvent: e.target.checked })} className="rounded bg-slate-700 border-slate-600 accent-emerald-500 w-4 h-4" />
-                                        <span className="text-sm text-slate-300">Evento de Equipe?</span>
+                                        <input type="checkbox" checked={formData.isTeamEvent} onChange={e => setFormData({ ...formData, isTeamEvent: e.target.checked })} className="rounded bg-muted border-border accent-emerald-500 w-4 h-4" />
+                                        <span className="text-sm text-muted-foreground">Evento de Equipe?</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-2 block ml-1">Participantes</label>
+                                    <label className="text-xs text-muted-foreground mb-2 block ml-1">Participantes</label>
                                     <UserMultiSelect users={activeUsers} selectedIds={formData.participants || []} onChange={ids => setFormData({ ...formData, participants: ids })} />
                                 </div>
                                 <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
@@ -1670,7 +1674,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 {/* Task Fields - Redesigned */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Status</label>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
                                         <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
                                             <option value="todo">A Fazer</option>
                                             <option value="in_progress">Em Andamento</option>
@@ -1679,7 +1683,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                                         </Select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prioridade</label>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prioridade</label>
                                         <Select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })}>
                                             <option value="low">Baixa</option>
                                             <option value="medium">Média</option>
@@ -1690,7 +1694,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 </div>
 
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1.5 block ml-1">Responsável</label>
+                                    <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Responsável</label>
                                     <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
                                         <option value="">Selecione...</option>
                                         {activeUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -1698,20 +1702,20 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 </div>
 
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1.5 block ml-1">Prazo</label>
+                                    <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
                                     <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Projeto</label>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Projeto</label>
                                         <Select value={formData.projectId} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
                                             <option value="">Nenhum</option>
                                             {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </Select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1.5 block ml-1">Equipe</label>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Equipe</label>
                                         <Select value={formData.teamId} onChange={e => setFormData({ ...formData, teamId: e.target.value })}>
                                             <option value="">Nenhuma</option>
                                             {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1722,24 +1726,24 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
 
                                 <div className="pt-2">
-                                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                                    <div className="bg-secondary/20 p-3 rounded-lg border border-border">
                                         <div className="flex items-center gap-2 mb-2">
                                             <input
                                                 type="checkbox"
                                                 id="task-recurrence-toggle"
                                                 checked={recurrence.isRecurring}
                                                 onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })}
-                                                className="w-4 h-4 rounded bg-slate-800 border-slate-700 accent-emerald-500"
+                                                className="w-4 h-4 rounded bg-background border-input accent-emerald-500"
                                             />
-                                            <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-slate-200 select-none cursor-pointer">
+                                            <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-foreground select-none cursor-pointer">
                                                 Repetir esta tarefa?
                                             </label>
                                         </div>
 
                                         {recurrence.isRecurring && (
-                                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/50">
+                                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
                                                 <div>
-                                                    <label className="text-xs text-slate-400 mb-1 block">Frequência</label>
+                                                    <label className="text-xs text-muted-foreground mb-1 block">Frequência</label>
                                                     <Select
                                                         value={recurrence.frequency}
                                                         onChange={e => setRecurrence({ ...recurrence, frequency: e.target.value as any })}
@@ -1751,7 +1755,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                                                     </Select>
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs text-slate-400 mb-1 block">Qtd</label>
+                                                    <label className="text-xs text-muted-foreground mb-1 block">Qtd</label>
                                                     <Input
                                                         type="number"
                                                         min="2"
@@ -1770,7 +1774,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
+                <div className="flex justify-end gap-2 pt-4 border-t border-border">
                     <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button type="submit" disabled={loading}>Salvar</Button>
                 </div>
@@ -1846,7 +1850,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
     // Task Specific UI Components
     const renderTaskBadges = () => (
         <div className="flex flex-wrap items-center gap-2 mt-1">
-            <div className="px-2.5 py-0.5 rounded border border-slate-600 text-xs font-medium text-slate-300">
+            <div className="px-2.5 py-0.5 rounded border border-border text-xs font-medium text-muted-foreground">
                 {translateStatus(event.metadata?.status || 'todo')}
             </div>
             {event.metadata?.priority && (
@@ -1865,12 +1869,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
     const renderTaskStageMover = () => {
         const currentStatus = event.metadata?.status || 'todo';
         return (
-            <div className="mt-4 border border-slate-800 bg-slate-900/50 rounded-lg p-4">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-3">
+            <div className="mt-4 border border-border bg-muted/50 rounded-lg p-4">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-3">
                     Mover para Etapa
                 </span>
                 <div className="flex items-center justify-between gap-4">
-                    <div className="flex bg-slate-800 rounded-lg p-1 gap-1">
+                    <div className="flex bg-secondary rounded-lg p-1 gap-1">
                         {['todo', 'in_progress', 'review'].map((status) => (
                             <button
                                 key={status}
@@ -1878,8 +1882,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                                 disabled={loading}
                                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all
                                     ${currentStatus === status
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'}
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'}
                                 `}
                             >
                                 {translateStatus(status)}
@@ -1912,16 +1916,16 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                 {/* Header */}
                 <div className="flex justify-between items-start gap-4">
                     <div>
-                        <h2 className="text-xl font-bold text-white leading-tight">{event.title}</h2>
+                        <h2 className="text-xl font-bold text-foreground leading-tight">{event.title}</h2>
                         {isFinance && (
-                            <p className="text-sm text-slate-400 mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                                 {event.metadata?.category?.name || 'Geral'} • {event.metadata?.account?.name || 'Conta Padrão'}
                             </p>
                         )}
                         {/* Task specific subtitle/badges moved below */}
                     </div>
                     {/* Edit Actions */}
-                    <button onClick={onEdit} className="text-slate-500 hover:text-white shrink-0"><Edit2 size={18} /></button>
+                    <button onClick={onEdit} className="text-muted-foreground hover:text-foreground shrink-0"><Edit2 size={18} /></button>
                 </div>
 
                 {/* Badges */}
@@ -1942,16 +1946,16 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
 
                 {/* Finance Amount */}
                 {isFinance && event.metadata?.amount && (
-                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 flex items-center justify-between">
-                        <span className="text-slate-400 text-sm">Valor</span>
-                        <span className={`text-2xl font-bold ${event.origin === 'finance_receivable' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <div className="bg-secondary/20 p-4 rounded-lg border border-border flex items-center justify-between">
+                        <span className="text-muted-foreground text-sm">Valor</span>
+                        <span className={`text-2xl font-bold ${event.origin === 'finance_receivable' ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata.amount)}
                         </span>
                     </div>
                 )}
 
                 {/* Description */}
-                <div className="bg-slate-800 p-3 rounded-lg text-slate-300 text-sm whitespace-pre-wrap border border-slate-700 min-h-[80px]">
+                <div className="bg-card p-3 rounded-lg text-muted-foreground text-sm whitespace-pre-wrap border border-border min-h-[80px]">
                     {event.description || "Sem descrição."}
                 </div>
 
@@ -1964,23 +1968,23 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                     {isTask ? (
                         <>
                             <div>
-                                <span className="text-slate-500 block mb-1">Responsável</span>
-                                <div className="flex items-center gap-2 text-slate-200">
+                                <span className="text-muted-foreground block mb-1">Responsável</span>
+                                <div className="flex items-center gap-2 text-foreground">
                                     {(() => {
                                         const assigneeId = event.metadata?.assigneeId;
                                         const assigneeUser = users.find(u => u.id === assigneeId);
                                         return assigneeUser ? (
                                             <>
                                                 <Avatar name={assigneeUser.name} src={assigneeUser.avatarUrl} size="sm" />
-                                                <span className="font-medium text-slate-300">{assigneeUser.name}</span>
+                                                <span className="font-medium text-foreground">{assigneeUser.name}</span>
                                             </>
-                                        ) : <span className="text-slate-400">-</span>;
+                                        ) : <span className="text-muted-foreground">-</span>;
                                     })()}
                                 </div>
                             </div>
                             <div>
-                                <span className="text-slate-500 block mb-1">Prazo</span>
-                                <div className="flex items-center gap-2 text-slate-200">
+                                <span className="text-muted-foreground block mb-1">Prazo</span>
+                                <div className="flex items-center gap-2 text-foreground">
                                     <Calendar size={16} />
                                     <span>{new Date(event.startDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}</span>
                                 </div>
@@ -1990,16 +1994,16 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                         // Standard Agenda/Finance Footer
                         <>
                             <div>
-                                <span className="text-slate-500 block mb-1">Início / Vencimento</span>
-                                <div className="flex items-center gap-2 text-slate-200">
+                                <span className="text-muted-foreground block mb-1">Início / Vencimento</span>
+                                <div className="flex items-center gap-2 text-foreground">
                                     <Calendar size={16} />
                                     <span>{new Date(event.startDate).toLocaleDateString()} {new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                             </div>
                             {isAgenda && (
                                 <div>
-                                    <span className="text-slate-500 block mb-1">Fim</span>
-                                    <div className="flex items-center gap-2 text-slate-200">
+                                    <span className="text-muted-foreground block mb-1">Fim</span>
+                                    <div className="flex items-center gap-2 text-foreground">
                                         <Clock size={16} />
                                         <span>{new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
@@ -2012,13 +2016,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                 {/* Task Links */}
                 {isTask && event.links && event.links.length > 0 && (
                     <div className="mt-4">
-                        <span className="text-slate-500 block mb-2 text-sm">Links Anexados</span>
+                        <span className="text-muted-foreground block mb-2 text-sm">Links Anexados</span>
                         <div className="space-y-1">
                             {event.links.map((link: any, i: number) => {
                                 const url = typeof link === 'string' ? link : link.url;
                                 const title = typeof link === 'string' ? link : (link.title || link.url);
                                 return (
-                                    <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 hover:underline transition-colors">
+                                    <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-500 hover:text-emerald-400 hover:underline transition-colors">
                                         <LinkIcon size={12} /> {title}
                                     </a>
                                 );
@@ -2031,12 +2035,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                 {/* Participants (Agenda) */}
                 {isAgenda && event.participants && event.participants.length > 0 && (
                     <div>
-                        <span className="text-slate-500 block mb-2 text-sm">Participantes</span>
+                        <span className="text-muted-foreground block mb-2 text-sm">Participantes</span>
                         <div className="flex flex-wrap gap-2">
                             {event.participants.map((pid: string) => {
                                 const u = users.find(user => user.id === pid);
                                 return u ? (
-                                    <div key={pid} className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded text-xs text-slate-300 border border-slate-700">
+                                    <div key={pid} className="flex items-center gap-1 bg-secondary/20 px-2 py-1 rounded text-xs text-muted-foreground border border-border">
                                         <Avatar src={u.avatarUrl} name={u.name} size="sm" />
                                         <span>{u.name}</span>
                                     </div>
@@ -2048,7 +2052,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
 
                 {/* Footer Buttons (Non-Task) */}
                 {!isTask && (
-                    <div className="pt-4 border-t border-slate-800 flex justify-between gap-3">
+                    <div className="pt-4 border-t border-border flex justify-between gap-3">
                         {/* DELETE BUTTON - Admin/Owner Only */}
                         {(users.find(u => u.id === event.participants?.[0])?.role === 'admin' || true) && (
                             // NOTE: Ideally check actual user role from context, but for now filtering by existence. 

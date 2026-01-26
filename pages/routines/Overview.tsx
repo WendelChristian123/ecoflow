@@ -54,32 +54,32 @@ const StatCard: React.FC<{
     onClick?: () => void;
 }> = ({ title, value, icon, color, subtitle, onClick }) => {
     const colors = {
-        emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-        rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-        amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-        indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-        slate: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+        emerald: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+        rose: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+        amber: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+        indigo: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+        slate: 'bg-secondary text-muted-foreground border-border',
     };
 
     return (
         <div
             onClick={onClick}
             className={cn(
-                "bg-slate-800 border border-slate-700/50 p-6 rounded-xl relative overflow-hidden flex flex-col justify-between h-full transition-all group",
-                onClick && "cursor-pointer hover:bg-slate-700/50 hover:border-slate-600"
+                "bg-card border border-border p-6 rounded-xl relative overflow-hidden flex flex-col justify-between h-full transition-all group shadow-sm",
+                onClick && "cursor-pointer hover:bg-secondary/30 hover:border-primary/50"
             )}
         >
             <div className="flex justify-between items-start mb-4 relative z-10">
-                <span className="text-slate-400 text-sm font-medium uppercase tracking-wide">{title}</span>
+                <span className="text-muted-foreground text-sm font-medium uppercase tracking-wide">{title}</span>
                 <div className={cn("p-2 rounded-lg", colors[color])}>{icon}</div>
             </div>
             <div className="relative z-10">
-                <div className="text-2xl font-bold text-white tracking-tight">{value}</div>
-                {subtitle && <div className="text-xs text-slate-500 mt-1">{subtitle}</div>}
+                <div className="text-2xl font-bold text-foreground tracking-tight">{value}</div>
+                {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
             </div>
             {onClick && (
                 <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight size={18} className="text-slate-400" />
+                    <ArrowRight size={18} className="text-muted-foreground" />
                 </div>
             )}
         </div>
@@ -227,13 +227,13 @@ export const RoutinesOverview: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2 bg-background text-foreground">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <CheckSquare className="text-emerald-500" /> Dashboard de Rotinas
                     </h1>
-                    <p className="text-slate-400 text-sm">
+                    <p className="text-muted-foreground text-sm">
                         {isAdmin ? 'Visão global administrativa' : 'Acompanhamento de tarefas e projetos'}
                     </p>
                 </div>
@@ -243,20 +243,20 @@ export const RoutinesOverview: React.FC = () => {
                     <Button
                         variant="ghost"
                         onClick={() => setIsReportModalOpen(true)}
-                        className="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200"
+                        className="bg-card border border-border hover:bg-secondary text-foreground"
                     >
-                        <FileText size={16} className="mr-2 text-indigo-400" /> Relatórios
+                        <FileText size={16} className="mr-2 text-indigo-500" /> Relatórios
                     </Button>
 
                     {/* User Filter */}
-                    <div className="bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 flex items-center gap-2">
-                        <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase flex items-center gap-2">
+                    <div className="bg-card p-1.5 rounded-xl border border-border flex items-center gap-2">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2">
                             <Users size={14} /> Resp.
                         </div>
                         <select
                             value={selectedAssignee}
                             onChange={(e) => setSelectedAssignee(e.target.value)}
-                            className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-emerald-500 max-w-[150px]"
+                            className="bg-card border border-border text-foreground text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-primary max-w-[150px]"
                         >
                             <option value="all">Todos</option>
                             {availableUsers.map(u => (
@@ -266,14 +266,14 @@ export const RoutinesOverview: React.FC = () => {
                     </div>
 
                     {/* Period Filter */}
-                    <div className="bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 flex items-center gap-2">
-                        <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase flex items-center gap-2">
+                    <div className="bg-card p-1.5 rounded-xl border border-border flex items-center gap-2">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2">
                             <Filter size={14} /> Período
                         </div>
                         <select
                             value={period}
                             onChange={(e) => setPeriod(e.target.value as any)}
-                            className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-emerald-500"
+                            className="bg-card border border-border text-foreground text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-primary"
                         >
                             <option value="today">Hoje</option>
                             <option value="week">Esta Semana</option>
@@ -323,8 +323,8 @@ export const RoutinesOverview: React.FC = () => {
             {/* CHARTS ROW */}
             <div className="grid grid-cols-1 gap-6">
                 {/* Status Distribution */}
-                <Card className="min-h-[350px] flex flex-col">
-                    <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                <Card className="min-h-[350px] flex flex-col" variant="solid">
+                    <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
                         <BarChart2 size={18} className="text-indigo-500" /> Distribuição por Status
                     </h3>
                     <div className="flex-1 w-full min-h-0">
@@ -344,7 +344,8 @@ export const RoutinesOverview: React.FC = () => {
                                     ))}
                                 </Pie>
                                 <RechartsTooltip
-                                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
+                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
+                                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                                 />
                                 <Legend verticalAlign="bottom" height={36} />
                             </PieChart>
@@ -354,14 +355,14 @@ export const RoutinesOverview: React.FC = () => {
             </div>
 
             {/* UPCOMING TASKS LIST */}
-            <Card className="p-0 overflow-hidden">
-                <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-white">Próximas Entregas</h3>
+            <Card className="p-0 overflow-hidden" variant="solid">
+                <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/20">
+                    <h3 className="text-lg font-bold text-foreground">Próximas Entregas</h3>
                     <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/tasks')}>Ver Tudo <ArrowRight size={14} className="ml-1" /></Button>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-400">
-                        <thead className="bg-slate-900/50 text-slate-200 uppercase text-xs font-semibold">
+                    <table className="w-full text-left text-sm text-muted-foreground">
+                        <thead className="bg-secondary/50 text-foreground uppercase text-xs font-semibold">
                             <tr>
                                 <th className="px-6 py-4">Tarefa</th>
                                 <th className="px-6 py-4">Responsável</th>
@@ -369,10 +370,10 @@ export const RoutinesOverview: React.FC = () => {
                                 <th className="px-6 py-4 text-right">Prioridade</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/50">
+                        <tbody className="divide-y divide-border/50">
                             {upcomingTasks.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-slate-500 italic">
+                                    <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground italic">
                                         Nenhuma tarefa pendente no período selecionado.
                                     </td>
                                 </tr>
@@ -384,12 +385,12 @@ export const RoutinesOverview: React.FC = () => {
                                     return (
                                         <tr
                                             key={task.id}
-                                            className="hover:bg-slate-800/50 transition-colors cursor-pointer"
+                                            className="hover:bg-secondary/30 transition-colors cursor-pointer"
                                             onClick={() => navigate('/tasks', { state: { taskId: task.id } })}
                                         >
                                             <td className="px-6 py-4">
-                                                <div className="font-medium text-slate-200">{task.title}</div>
-                                                <div className="text-xs text-slate-500 truncate max-w-[200px]">{task.description}</div>
+                                                <div className="font-medium text-foreground">{task.title}</div>
+                                                <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.description}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 {assignee ? (
@@ -400,7 +401,7 @@ export const RoutinesOverview: React.FC = () => {
                                                 ) : <span className="text-xs italic">--</span>}
                                             </td>
                                             <td className="px-6 py-4 font-mono text-xs">
-                                                <div className={isOverdue ? 'text-rose-400 font-bold flex items-center gap-1' : 'text-slate-300'}>
+                                                <div className={isOverdue ? 'text-rose-500 font-bold flex items-center gap-1' : 'text-foreground'}>
                                                     {isOverdue && <AlertCircle size={12} />}
                                                     {new Date(task.dueDate).toLocaleDateString('pt-BR')}
                                                 </div>

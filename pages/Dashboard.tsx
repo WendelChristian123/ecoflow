@@ -220,48 +220,43 @@ export const Dashboard: React.FC = () => {
         }
     };
 
+
     // --- Component Definitions ---
     const ZoneCard = ({ title, count, icon, type, variant, onClick }: { title: string, count: number, icon: React.ReactNode, type: string, variant: 'danger' | 'warning' | 'info', onClick: () => void }) => {
         if (count === 0) return null;
 
-        // Premium Dark Cards - Compact
-        const activeClasses = "bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 hover:bg-slate-800/60 hover:border-slate-600 transition-all shadow-sm group";
-
-        const countColors = {
-            danger: "text-rose-400 drop-shadow-[0_2px_10px_rgba(251,113,133,0.15)]",
-            warning: "text-orange-400 drop-shadow-[0_2px_10px_rgba(251,146,60,0.15)]",
-            info: "text-amber-200 drop-shadow-[0_2px_10px_rgba(253,230,138,0.15)]"
+        // Semantic Colors only for Icons and Text
+        const colorMap = {
+            danger: { text: "text-destructive", bg: "bg-destructive/10", border: "group-hover:border-destructive/30" },
+            warning: { text: "text-amber-500", bg: "bg-amber-500/10", border: "group-hover:border-amber-500/30" },
+            info: { text: "text-primary", bg: "bg-primary/10", border: "group-hover:border-primary/30" }
         };
 
-        const iconClasses = cn(
-            "transition-colors duration-300",
-            variant === 'danger' ? "text-rose-500/80 group-hover:text-rose-400" :
-                variant === 'warning' ? "text-orange-500/80 group-hover:text-orange-400" :
-                    "text-indigo-400/80 group-hover:text-indigo-300"
-        );
+        const theme = colorMap[variant];
 
+        // Standard Card Structure
         return (
             <div
                 onClick={onClick}
                 className={cn(
-                    "relative overflow-hidden rounded-xl p-4 flex flex-col justify-between cursor-pointer h-24 select-none",
-                    activeClasses
+                    "bg-card border border-border shadow-sm rounded-xl p-5 flex flex-col justify-between cursor-pointer h-32 select-none group transition-all duration-200 hover:-translate-y-1 hover:shadow-md",
+                    theme.border // Subtle border interaction
                 )}
             >
-                <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-300 transition-colors">
+                <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
                         {title}
                     </span>
-                    <div className={cn("p-1.5 rounded-md bg-slate-900/50", iconClasses)}>
+                    <div className={cn("p-2 rounded-lg transition-colors", theme.bg, theme.text)}>
                         {icon}
                     </div>
                 </div>
 
-                <div className="mt-auto flex items-baseline gap-2">
-                    <span className={cn("text-3xl font-black tracking-tighter", countColors[variant])}>
+                <div className="mt-auto">
+                    <div className={cn("text-3xl font-black tracking-tighter leading-none mb-1", theme.text)}>
                         {count}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Pendentes</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Pendentes</span>
                 </div>
             </div>
         );
@@ -278,48 +273,36 @@ export const Dashboard: React.FC = () => {
     }) => {
         const hasItems = items.tasks.length > 0 || items.events.length > 0 || items.finance.length > 0 || items.quotes.length > 0;
 
-        // Refined Block Styles
-        // darker background, full border, cleaner look
-        const sectionBase = "relative p-5 rounded-xl border border-slate-800/40 mb-6 bg-[#0B0D12]";
-        const borderColors = {
-            danger: "border-l-4 border-l-rose-500 shadow-[inset_4px_0_0_0_rgba(244,63,94,0.1)]",
-            warning: "border-l-4 border-l-orange-500 shadow-[inset_4px_0_0_0_rgba(249,115,22,0.1)]",
-            info: "border-l-4 border-l-amber-300 shadow-[inset_4px_0_0_0_rgba(252,211,77,0.1)]"
-        };
-
-        const titleColors = {
-            danger: "text-rose-400",
-            warning: "text-orange-400",
-            info: "text-amber-200"
-        };
-
-        const emptyText = {
-            danger: "Excelente! Nenhum item vencido.",
-            warning: "Agenda livre por hoje.",
-            info: "Sem pendências para os próximos dias."
+        // Semantic Accents
+        const accents = {
+            danger: "text-destructive border-l-destructive",
+            warning: "text-amber-500 border-l-amber-500",
+            info: "text-primary border-l-primary"
         };
 
         const EmptyState = () => (
-            <div className="flex items-center gap-3 text-slate-500 italic text-sm py-4 px-4 border border-slate-800/30 rounded-lg bg-slate-900/30">
-                <CheckCircle2 size={16} />
-                {emptyText[variant]}
+            <div className="flex items-center gap-3 text-muted-foreground italic text-sm py-4 px-4 border border-dashed border-border rounded-xl bg-secondary/20">
+                <CheckCircle2 size={18} className="opacity-50" />
+                <span>{variant === 'danger' ? "Excelente! Nenhum item vencido." : variant === 'warning' ? "Agenda livre por hoje." : "Sem pendências para os próximos dias."}</span>
             </div>
         );
 
         return (
-            <section className={cn(sectionBase, borderColors[variant])}>
-                <div className="flex items-center gap-3 mb-5">
-                    <div className={cn("text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2", titleColors[variant])}>
+            <section className="mb-8">
+                <div className="flex items-center gap-3 mb-4 pl-1">
+                    <div className={cn("w-1 h-4 rounded-full", variant === 'danger' ? 'bg-destructive' : variant === 'warning' ? 'bg-amber-500' : 'bg-primary')}></div>
+                    <div className={cn("text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-destructive' : variant === 'warning' ? 'text-amber-500' : 'text-primary')}>
                         {title}
                     </div>
+                    <div className="h-px bg-border flex-1 ml-2"></div>
                 </div>
 
                 {hasItems ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-4">
-                        <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={18} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />
-                        <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={18} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />
-                        <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={18} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />
-                        <ZoneCard title="Orçamentos" count={items.quotes.length} icon={<FileText size={18} />} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-5">
+                        <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={20} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />
+                        <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={20} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />
+                        <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={20} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />
+                        <ZoneCard title="Orçamentos" count={items.quotes.length} icon={<FileText size={20} />} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />
                     </div>
                 ) : (
                     <EmptyState />
@@ -335,17 +318,17 @@ export const Dashboard: React.FC = () => {
     if (!currentTenant && isSuperAdmin) {
         return (
             <div className="flex flex-col items-center justify-center h-full space-y-6 text-center animate-in fade-in zoom-in-95 duration-300">
-                <div className="p-6 bg-slate-800 rounded-full border-4 border-slate-700 shadow-2xl">
-                    <Building2 size={64} className="text-indigo-400" />
+                <div className="p-6 bg-card rounded-full border-4 border-border shadow-2xl">
+                    <Building2 size={64} className="text-primary" />
                 </div>
                 <div className="max-w-md space-y-2">
-                    <h2 className="text-3xl font-bold text-white">Bem-vindo, Super Admin</h2>
-                    <p className="text-slate-400">
+                    <h2 className="text-3xl font-bold text-foreground">Bem-vindo, Super Admin</h2>
+                    <p className="text-muted-foreground">
                         Você ainda não selecionou uma empresa para gerenciar. Escolha uma existente no menu lateral ou crie uma nova.
                     </p>
                 </div>
                 <div className="flex gap-4">
-                    <Button onClick={() => navigate('/super-admin/dashboard')} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                    <Button onClick={() => navigate('/super-admin/dashboard')} className="gap-2 bg-primary hover:bg-primary/90">
                         <Plus size={18} /> Criar / Gerenciar Empresas
                     </Button>
                 </div>
@@ -357,9 +340,9 @@ export const Dashboard: React.FC = () => {
     if (!currentTenant) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center">
-                <AlertCircle size={48} className="text-slate-500 mb-4" />
-                <h3 className="text-xl font-bold text-white">Nenhuma empresa vinculada</h3>
-                <p className="text-slate-400 mt-2">Contate o administrador para liberar seu acesso.</p>
+                <AlertCircle size={48} className="text-muted-foreground mb-4" />
+                <h3 className="text-xl font-bold text-foreground">Nenhuma empresa vinculada</h3>
+                <p className="text-muted-foreground mt-2">Contate o administrador para liberar seu acesso.</p>
             </div>
         );
     }
@@ -367,12 +350,12 @@ export const Dashboard: React.FC = () => {
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-                <div className="p-4 bg-rose-500/10 rounded-full text-rose-500">
+                <div className="p-4 bg-destructive/10 rounded-full text-destructive">
                     <AlertTriangle size={48} />
                 </div>
                 <div className="text-center max-w-lg">
-                    <h3 className="text-xl font-bold text-white mb-2">Erro ao carregar Dashboard</h3>
-                    <div className="text-slate-400 text-sm font-mono bg-slate-900 p-4 rounded-lg border border-slate-800 break-words max-h-48 overflow-y-auto custom-scrollbar">
+                    <h3 className="text-xl font-bold text-foreground mb-2">Erro ao carregar Dashboard</h3>
+                    <div className="text-muted-foreground text-sm font-mono bg-secondary p-4 rounded-lg border border-border break-words max-h-48 overflow-y-auto custom-scrollbar">
                         {error}
                     </div>
                 </div>
@@ -388,8 +371,8 @@ export const Dashboard: React.FC = () => {
         const moduleNames: Record<string, string> = { tasks: 'Tarefas', events: 'Agenda', finance: 'Financeiro', quotes: 'Orçamentos' };
 
         return (
-            <div className="sticky top-0 z-30 bg-[#05060A]/95 backdrop-blur-md py-4 -mx-6 px-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-                <div className="flex items-center gap-2 text-slate-400 flex-wrap py-1">
+            <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md py-4 -mx-6 px-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm border-b border-border/50">
+                <div className="flex items-center gap-2 text-muted-foreground flex-wrap py-1">
                     <Filter size={14} />
                     <span className="text-[10px] font-bold uppercase tracking-wider mr-2">Filtros</span>
 
@@ -397,9 +380,9 @@ export const Dashboard: React.FC = () => {
                     <div className="relative">
                         <button
                             onClick={() => setIsModulesOpen(!isModulesOpen)}
-                            className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all"
+                            className="flex items-center gap-2 bg-secondary/50 border border-border hover:bg-secondary text-foreground px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all"
                         >
-                            <Layers size={14} className="text-indigo-400" />
+                            <Layers size={14} className="text-primary" />
                             <span>Módulos ({selectedModules.length})</span>
                             <ChevronDown size={12} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -407,8 +390,8 @@ export const Dashboard: React.FC = () => {
                         {isModulesOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsModulesOpen(false)} />
-                                <div className="absolute top-full left-0 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-lg shadow-xl z-50 p-2 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2 pt-1">Exibir Módulos</div>
+                                <div className="absolute top-full left-0 mt-2 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 p-2 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-2 pt-1">Exibir Módulos</div>
                                     <div className="space-y-1">
                                         {['tasks', 'events', 'finance', 'quotes'].map(m => (
                                             <button
@@ -416,7 +399,7 @@ export const Dashboard: React.FC = () => {
                                                 onClick={() => toggleModule(m)}
                                                 className={cn(
                                                     "w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-colors",
-                                                    selectedModules.includes(m) ? "bg-indigo-500/10 text-indigo-400" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                    selectedModules.includes(m) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                                                 )}
                                             >
                                                 <span className="font-medium">{moduleNames[m]}</span>
@@ -429,17 +412,17 @@ export const Dashboard: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="w-px h-4 bg-slate-800 mx-1" />
+                    <div className="w-px h-4 bg-border mx-1" />
 
                     {/* Horizon Toggle */}
-                    <div className="flex bg-slate-900 rounded-md p-0.5 border border-slate-800 gap-0.5">
+                    <div className="flex bg-secondary rounded-md p-0.5 border border-border gap-0.5">
                         {[3, 7, 15, 30].map(d => (
                             <button
                                 key={d}
                                 onClick={() => setHorizon(d as any)}
                                 className={cn(
                                     "px-3 py-1 text-[10px] rounded-[4px] transition-all font-bold",
-                                    horizon === d ? "bg-emerald-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+                                    horizon === d ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                                 )}
                             >
                                 {d}d
@@ -451,31 +434,31 @@ export const Dashboard: React.FC = () => {
                 {/* Right Side: Assignee & Date */}
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                        <UserCircle size={14} className="text-slate-500" />
+                        <UserCircle size={14} className="text-muted-foreground" />
                         <select
                             value={assigneeFilter}
                             onChange={(e) => setAssigneeFilter(e.target.value)}
-                            className="bg-slate-900 border-none text-slate-300 text-[10px] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 uppercase tracking-wide font-medium cursor-pointer hover:bg-slate-800 transition-colors"
+                            className="bg-card border border-border text-foreground text-[10px] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring uppercase tracking-wide font-medium cursor-pointer hover:bg-secondary transition-colors shadow-sm"
                         >
-                            <option value="all">Resp: Todos</option>
+                            <option value="all" className="bg-card text-foreground">Resp: Todos</option>
                             {assignees.map(u => (
-                                <option key={u.id} value={u.id}>{u.name.split(' ')[0]}</option>
+                                <option key={u.id} value={u.id} className="bg-card text-foreground">{u.name.split(' ')[0]}</option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="h-4 w-px bg-slate-800" />
+                    <div className="h-4 w-px bg-border" />
 
                     <div className="text-right flex flex-col leading-none">
-                        <span className="text-sm font-bold text-slate-200 tracking-tighter">
+                        <span className="text-sm font-bold text-foreground tracking-tighter">
                             {format(new Date(), 'dd/MM', { locale: ptBR })}
                         </span>
-                        <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">
+                        <span className="text-[9px] text-primary font-bold uppercase tracking-widest">
                             {format(new Date(), 'EEE', { locale: ptBR }).replace('.', '')}
                         </span>
                     </div>
 
-                    <Button onClick={loadDashboard} variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-slate-800 text-slate-400">
+                    <Button onClick={loadDashboard} variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-secondary text-muted-foreground">
                         <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
                     </Button>
                 </div>
@@ -484,7 +467,7 @@ export const Dashboard: React.FC = () => {
     }
 
     return (
-        <div className="h-full w-full bg-[#05060A] flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="h-full w-full bg-background flex flex-col overflow-y-auto custom-scrollbar">
             {/* Main Area */}
             <div className="p-6 pt-0 w-full animate-in fade-in duration-500">
 
@@ -510,3 +493,4 @@ export const Dashboard: React.FC = () => {
         </div>
     );
 };
+
