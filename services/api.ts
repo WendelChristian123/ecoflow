@@ -314,8 +314,14 @@ export const api = {
         } as User;
     },
     createUser: async (userData: any, tenantId?: string) => {
+        // Force get latest session to ensure token is fresh
+        const { data: { session } } = await supabase.auth.getSession();
+
         const { data, error } = await supabase.functions.invoke('admin-create-user', {
-            body: { ...userData, tenantId }
+            body: { ...userData, tenantId },
+            headers: session?.access_token
+                ? { Authorization: `Bearer ${session.access_token}` }
+                : undefined
         });
 
         if (error) {
