@@ -76,6 +76,45 @@ serve(async (req) => {
             return new Response(JSON.stringify({ error: 'Missing required fields (email, password, name)' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
+        // 5.5 Validate User Limits
+        const { data: tenantData, error: tenantError } = await supabaseAdmin
+            .from('tenants')
+            .select(`
+                id,
+                saas_plans (id, max_users, config),
+                tenant_addons (addon_type, quantity, active)
+            `)
+            .eq('id', tenantId)
+            .single();
+
+        if (tenantData) {
+            // Calculate Limit
+            const plan = tenantData.saas_plans as any;
+            const addons = (tenantData.tenant_addons || []) as any[];
+
+            const baseLimit = plan?.config?.max_users ?? plan?.max_users ?? 1;
+            const addonLimit = addons
+                .filter((a: any) => a.addon_type === 'user_slot' && a.active)
+                .reduce((sum: number, a: any) => sum + (a.quantity || 0), 0);
+
+            const maxUsers = baseLimit + addonLimit;
+
+            // Count Current Users
+            const { count: currentCount } = await supabaseAdmin
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('tenant_id', tenantId);
+
+            if ((currentCount || 0) >= maxUsers) {
+                return new Response(JSON.stringify({
+                    error: `Limite de usuários atingido (${currentCount}/${maxUsers}). Faça upgrade do plano.`
+                }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+        }
+
         // 6. Create User (Supabase Auth Admin)
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,

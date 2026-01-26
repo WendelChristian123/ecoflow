@@ -317,6 +317,15 @@ export const api = {
         // Force get latest session to ensure token is fresh
         const { data: { session } } = await supabase.auth.getSession();
 
+        // Check limits first
+        if (tenantId) {
+            const { checkUserLimit } = await import('./limits');
+            const limitStatus = await checkUserLimit(tenantId);
+            if (!limitStatus.allowed) {
+                throw new Error(`Limite de usuários atingido (${limitStatus.used}/${limitStatus.max}). Atualize seu plano.`);
+            }
+        }
+
         const { data, error } = await supabase.functions.invoke('admin-create-user', {
             body: { ...userData, tenantId },
             headers: session?.access_token

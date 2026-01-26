@@ -37,6 +37,7 @@ export interface Tenant {
   financialStatus?: 'ok' | 'overdue';
   lastActiveAt?: string;
   settings?: TenantSettings;
+  addons?: TenantAddon[]; // Joined data
 }
 
 export interface TenantSettings {
@@ -73,6 +74,11 @@ export interface SaasPlan {
   type: 'trial' | 'public' | 'internal' | 'custom';
   status: 'active' | 'hidden' | 'archived';
   moduleConfig?: Record<string, 'included' | 'locked' | 'extra'>; // JSONB
+  config?: {
+    max_users?: number;
+    max_storage_gb?: number;
+    [key: string]: any;
+  }; // New flexible config
 }
 
 export interface Delegation {
@@ -229,6 +235,15 @@ export interface CreditCard {
   closingDay: number;
   dueDay: number;
   tenantId?: string;
+}
+
+export interface TenantAddon {
+  id: string;
+  tenantId: string;
+  addonType: 'user_slot' | 'storage_gb';
+  quantity: number;
+  active: boolean;
+  createdAt: string;
 }
 
 // --- Tipos Comerciais (Novo Módulo) ---

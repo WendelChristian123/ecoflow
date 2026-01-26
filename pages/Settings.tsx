@@ -9,6 +9,7 @@ import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon
 import { CreateUserModal, EditUserModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
+import { checkUserLimit, UserLimitStatus } from '../services/limits';
 
 export const SettingsPage: React.FC = () => {
     const { user: authUser } = useAuth();
@@ -20,6 +21,7 @@ export const SettingsPage: React.FC = () => {
     const [financeSettings, setFinanceSettings] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [userLimits, setUserLimits] = useState<UserLimitStatus | null>(null);
 
     // UI State
     const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'audit'>('delegation');
@@ -38,15 +40,17 @@ export const SettingsPage: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [usersData, delegationsData, settingsData] = await Promise.all([
+            const [usersData, delegationsData, settingsData, limitsData] = await Promise.all([
                 api.getUsers(authUser?.tenantId),
                 api.getMyDelegations(),
-                api.getTenantSettings()
+                api.getTenantSettings(),
+                authUser?.tenantId ? checkUserLimit(authUser.tenantId) : Promise.resolve(null)
             ]);
             setUsers(usersData);
             setDelegations(delegationsData);
             setFinanceSettings(settingsData || {});
             setPendingMode(settingsData?.credit_card_expense_mode || 'competence');
+            if (limitsData) setUserLimits(limitsData);
         } catch (error) {
             console.error(error);
         } finally {
@@ -273,6 +277,33 @@ export const SettingsPage: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    {userLimits && (
+                        <div className="mb-6 bg-secondary/10 p-4 rounded-lg border border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="w-full sm:w-1/2">
+                                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                    <span>Uso de Usuários do Plano</span>
+                                    <span className={!userLimits.allowed ? 'text-rose-500 font-bold' : ''}>
+                                        {userLimits.used} / {userLimits.max} utilizados
+                                    </span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-500 ${!userLimits.allowed ? 'bg-rose-500' : 'bg-primary'}`}
+                                        style={{ width: `${Math.min((userLimits.used / userLimits.max) * 100, 100)}%` }}
+                                    />
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    Base: {userLimits.planLimit} | Extras: {userLimits.addonLimit}
+                                </div>
+                            </div>
+                            {!userLimits.allowed && (
+                                <Button size="sm" variant="primary" onClick={() => alert('Funcionalidade de Upgrade em breve!')}>
+                                    Fazer Upgrade
+                                </Button>
+                            )}
+                        </div>
+                    )}
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-muted-foreground">
