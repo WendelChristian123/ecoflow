@@ -18,7 +18,7 @@ export const supabase = createClient(
     auth: {
       detectSessionInUrl: false,
       persistSession: true,
-      autoRefreshToken: false,
+      autoRefreshToken: true,
     },
     global: {
       headers: { 'x-client-info': 'ecoflow-web' }
