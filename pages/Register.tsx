@@ -91,7 +91,7 @@ export const RegisterPage: React.FC = () => {
           <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-500/20 mb-4 transform hover:scale-105 transition-transform duration-300">
             <LayoutDashboard className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">EcoFlow</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Contazze</h1>
           <p className="text-slate-400 text-sm">Gerencie seu negócio com inteligência</p>
         </div>
 

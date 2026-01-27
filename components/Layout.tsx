@@ -339,7 +339,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         if (path.startsWith('/finance')) return 'Financeiro';
         if (path.startsWith('/settings')) return 'Configurações';
         if (path.startsWith('/super-admin')) return 'Backoffice Admin';
-        return 'EcoFlow';
+        return 'Contazze';
     };
 
 
@@ -379,7 +379,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                     {isSuperAdminArea ? <Globe className="h-5 w-5 text-white" /> : <LayoutDashboard className="h-5 w-5 text-white" />}
                                 </div>
                                 <span className="text-lg font-bold tracking-tight text-foreground whitespace-nowrap overflow-hidden drop-shadow-sm">
-                                    {isSuperAdminArea ? 'EcoFlow Admin' : 'EcoFlow'}
+                                    {isSuperAdminArea ? 'Contazze Admin' : 'Contazze'}
                                 </span>
                             </div>
                         ) : (

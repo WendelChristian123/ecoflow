@@ -78,7 +78,7 @@ export const LoginPage: React.FC = () => {
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 transform hover:scale-105 transition-transform duration-300">
               <LayoutDashboard className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">EcoFlow</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Contazze</h1>
           </div>
           <p className="text-slate-400 text-sm">Gerencie seu negócio com inteligência</p>
         </div>
