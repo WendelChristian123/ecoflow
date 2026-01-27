@@ -94,6 +94,13 @@ interface DrilldownModalProps {
     type: 'tasks' | 'events' | 'finance' | 'quotes';
     data: any[];
     users: User[];
+    // Optional for finance drilldown
+    accountSummary?: {
+        initialBalance: number;
+        totalIncome: number;
+        totalExpense: number;
+        finalBalance: number;
+    };
 }
 
 // --- Refactored & Robust Drilldown Modal ---
@@ -118,7 +125,7 @@ interface DrilldownItem {
     metadata?: any;
 }
 
-export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [] }) => {
+export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const navigate = useNavigate();
 
@@ -173,8 +180,32 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
         else if (type === 'quotes') navigate('/commercial/quotes');
     };
 
+    const fmtMoney = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
+            {accountSummary && (
+                <div className="bg-slate-900/50 p-4 rounded-lg mb-4 border border-slate-800 grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <div className="text-xs text-slate-500 uppercase font-semibold">Saldo Inicial</div>
+                        <div className="text-slate-300 font-mono font-medium">{fmtMoney(accountSummary.initialBalance)}</div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-emerald-500/70 uppercase font-semibold">Entradas</div>
+                        <div className="text-emerald-400 font-mono font-medium">+{fmtMoney(accountSummary.totalIncome)}</div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-rose-500/70 uppercase font-semibold">Saídas</div>
+                        <div className="text-rose-400 font-mono font-medium">{fmtMoney(accountSummary.totalExpense)}</div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-slate-400 uppercase font-semibold">Saldo Final</div>
+                        <div className={cn("font-mono font-bold text-lg", accountSummary.finalBalance >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                            {fmtMoney(accountSummary.finalBalance)}
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="mt-2 space-y-2">
                 {(!localData || localData.length === 0) ? (
                     <div className="text-center py-8 text-muted-foreground border border-dashed border-border rounded-lg">

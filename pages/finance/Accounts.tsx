@@ -12,7 +12,12 @@ export const FinancialAccounts: React.FC = () => {
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
 
     // Modals
-    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
+    const [drilldownState, setDrilldownState] = useState<{
+        isOpen: boolean,
+        title: string,
+        data: any[],
+        summary?: { initialBalance: number, totalIncome: number, totalExpense: number, finalBalance: number }
+    }>({ isOpen: false, title: '', data: [] });
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<FinancialAccount | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -128,10 +133,34 @@ export const FinancialAccounts: React.FC = () => {
                             key={acc.id}
                             onClick={() => {
                                 const accountTransactions = transactions.filter(t =>
-                                    t.accountId === acc.id ||
-                                    (t.type === 'transfer' && t.toAccountId === acc.id)
+                                    (t.accountId === acc.id || (t.type === 'transfer' && t.toAccountId === acc.id))
                                 );
-                                setDrilldownState({ isOpen: true, title: `Lançamentos: ${acc.name}`, data: accountTransactions });
+
+                                // Calculate Drilldown Summary
+                                let income = 0;
+                                let expense = 0;
+                                accountTransactions.forEach(t => {
+                                    if (!t.isPaid) return;
+                                    // Income: Type income on account OR Transfer IN to account
+                                    if (t.accountId === acc.id && t.type === 'income') income += t.amount;
+                                    if (t.toAccountId === acc.id && t.type === 'transfer') income += t.amount;
+
+                                    // Expense: Type expense on account OR Transfer OUT from account
+                                    if (t.accountId === acc.id && t.type === 'expense') expense += t.amount;
+                                    if (t.accountId === acc.id && t.type === 'transfer') expense += t.amount;
+                                });
+
+                                setDrilldownState({
+                                    isOpen: true,
+                                    title: `Lançamentos: ${acc.name}`,
+                                    data: accountTransactions,
+                                    summary: {
+                                        initialBalance: acc.initialBalance,
+                                        totalIncome: income,
+                                        totalExpense: expense,
+                                        finalBalance: balance
+                                    }
+                                });
                             }}
                             className="flex flex-col justify-between cursor-pointer hover:border-emerald-500/30 transition-all min-h-[160px] group relative"
                         >
@@ -171,6 +200,7 @@ export const FinancialAccounts: React.FC = () => {
                 title={drilldownState.title}
                 type="finance"
                 data={drilldownState.data}
+                accountSummary={drilldownState.summary}
             />
 
             <AccountModal
