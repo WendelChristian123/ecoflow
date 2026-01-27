@@ -102,7 +102,6 @@ export const SuperAdminDashboard: React.FC = () => {
             phone: tenant.phone || '',
             document: tenant.cnpj || '',
             adminName: tenant.adminName || '',
-            adminName: tenant.adminName || '',
             password: '',
             status: tenant.status,
             planId: tenant.planId || '',
@@ -224,6 +223,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     subscriptionEnd: newTenant.subscriptionEnd || undefined
                 });
                 alert('Empresa atualizada com sucesso!');
+                await loadData(); // Changed: Refresh data to show changes instantly
                 setIsModalOpen(false);
             } else {
                 const tenantId = await api.createTenant({
