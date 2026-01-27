@@ -19,7 +19,7 @@ export const LoginPage: React.FC = () => {
   // Watch for successful auth state to redirect
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [user, authLoading, navigate]);
 

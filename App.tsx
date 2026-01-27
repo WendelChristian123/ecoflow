@@ -15,6 +15,8 @@ import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';
 import { ProtectedRoute, PermissionRoute } from './components/ProtectedRoute';
 import { SettingsPage } from './pages/Settings';
+import { LandingPage } from './pages/Landing/LandingPage';
+import { CheckoutPage } from './pages/Checkout/CheckoutPage';
 
 // Super Admin Pages
 import { SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
@@ -49,12 +51,14 @@ const App: React.FC = () => {
           <ThemeProvider>
             <Router>
               <Routes>
-                {/* Rotas Públicas */}
+                {/* Public Routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
                 {/* Rotas Protegidas */}
-                <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
 
                 {/* Routines & Execution */}
                 <Route path="/routines/overview" element={<PermissionRoute module="routines" action="view"><Layout><RoutinesOverview /></Layout></PermissionRoute>} />

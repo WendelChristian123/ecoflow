@@ -410,12 +410,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 <SidebarItem isCollapsed={isCollapsed} to="/super-admin/plans" icon={<CreditCard size={18} />} label="Planos & Preços" onClick={() => setIsMobileMenuOpen(false)} />
 
                                 <div className="my-4 border-t border-white/5"></div>
-                                <SidebarItem isCollapsed={isCollapsed} to="/" icon={<ArrowLeftCircle size={18} />} label="Voltar ao App" onClick={() => setIsMobileMenuOpen(false)} />
+                                <SidebarItem isCollapsed={isCollapsed} to="/dashboard" icon={<ArrowLeftCircle size={18} />} label="Voltar ao App" onClick={() => setIsMobileMenuOpen(false)} />
                             </>
                         ) : (
                             /* CLIENT MENU */
                             <>
-                                <SidebarItem isCollapsed={isCollapsed} to="/" icon={<LayoutDashboard size={18} />} label="Painel Principal" onClick={() => setIsMobileMenuOpen(false)} />
+                                <SidebarItem isCollapsed={isCollapsed} to="/dashboard" icon={<LayoutDashboard size={18} />} label="Painel Principal" onClick={() => setIsMobileMenuOpen(false)} />
                                 <div className="my-4 border-t border-white/10"></div>
 
                                 {/* Commercial Module */}
