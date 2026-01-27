@@ -1402,12 +1402,16 @@ export const api = {
             status: data.status,
             type: data.type,
             financial_status: data.financialStatus,
-            calendar_settings: data.settings?.calendar
+            calendar_settings: data.settings?.calendar,
+            billing_cycle: data.billingCycle,
+            subscription_start: data.subscriptionStart,
+            subscription_end: data.subscriptionEnd
         };
         // Remove undefined keys
         Object.keys(dbData).forEach(key => dbData[key] === undefined && delete dbData[key]);
 
-        await supabase.from('tenants').update(dbData).eq('id', id);
+        const { error } = await supabase.from('tenants').update(dbData).eq('id', id);
+        if (error) throw error;
     },
     updateCalendarSettings: async (settings: any) => {
         const tenantId = getCurrentTenantId();

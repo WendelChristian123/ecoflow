@@ -38,6 +38,9 @@ export interface Tenant {
   lastActiveAt?: string;
   settings?: TenantSettings;
   addons?: TenantAddon[]; // Joined data
+  billingCycle?: 'monthly' | 'semiannually' | 'yearly';
+  subscriptionStart?: string;
+  subscriptionEnd?: string;
 }
 
 export interface TenantSettings {

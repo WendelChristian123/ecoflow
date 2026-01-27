@@ -102,8 +102,13 @@ export const SuperAdminDashboard: React.FC = () => {
             phone: tenant.phone || '',
             document: tenant.cnpj || '',
             adminName: tenant.adminName || '',
+            adminName: tenant.adminName || '',
             password: '',
-            status: tenant.status
+            status: tenant.status,
+            planId: tenant.planId || '',
+            billingCycle: tenant.billingCycle || 'monthly',
+            subscriptionStart: tenant.subscriptionStart || '',
+            subscriptionEnd: tenant.subscriptionEnd || ''
         });
 
         let modules: string[] = ['mod_tasks'];
@@ -206,8 +211,17 @@ export const SuperAdminDashboard: React.FC = () => {
         try {
             if (editingId) {
                 await api.updateTenant(editingId, {
-                    name: newTenant.name, phone: newTenant.phone, cnpj: newTenant.document, adminName: newTenant.adminName,
-                    status: newTenant.status as any, modules: draftModules
+                    name: newTenant.name,
+                    phone: newTenant.phone,
+                    cnpj: newTenant.document,
+                    adminName: newTenant.adminName,
+                    status: newTenant.status as any,
+                    modules: draftModules,
+                    planId: newTenant.planId,
+                    billingCycle: newTenant.billingCycle,
+                    financialStatus: 'ok', // Default to ok on edit unless specified
+                    subscriptionStart: newTenant.subscriptionStart || undefined,
+                    subscriptionEnd: newTenant.subscriptionEnd || undefined
                 });
                 alert('Empresa atualizada com sucesso!');
                 setIsModalOpen(false);
