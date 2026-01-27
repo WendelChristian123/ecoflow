@@ -278,7 +278,7 @@ export const Card: React.FC<CardProps> = ({ children, className, variant = 'soli
     <div
       onClick={onClick}
       className={cn(
-        "rounded-xl transition-all duration-200 bg-card border border-border shadow-sm", // The Absolute Standard
+        "rounded-xl transition-all duration-200 bg-card border border-border shadow-sm shadow-slate-900/5", // High contrast border + subtle shadow
         !noPadding && "p-5 md:p-6",
         onClick && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
         className
@@ -456,8 +456,8 @@ export const TaskTableView: React.FC<{
                         className={cn(
                           "appearance-none w-full text-xs font-semibold px-3 py-1.5 rounded-md border outline-none cursor-pointer pr-8 transition-colors shadow-sm",
                           task.status === 'done' ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' :
-                            task.status === 'todo' ? 'bg-card text-muted-foreground border-input hover:bg-secondary' :
-                              'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:bg-indigo-500/20'
+                            task.status === 'todo' ? 'bg-secondary text-secondary-foreground border-input hover:bg-secondary/80' :
+                              'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'
                         )}
                       >
                         <option value="todo" className="bg-popover text-popover-foreground">A Fazer</option>

@@ -4,46 +4,55 @@
 
 @layer base {
   :root {
-    /* --- Light Mode (Contazze Brand) --- */
-    /* Background & Surfaces: #F8FAFC */
+    /* --- Light Mode (Contazze High Contrast) --- */
+
+    /* Background: #F8FAFC (Slate 50) */
     --background: 210 40% 98%;
-    /* Main Text & Titles: #030711 */
-    --foreground: 222.9 70% 3.9%;
 
-    /* Cards: #F8FAFC */
+    /* Foreground: #030711 (Rich Black) - Contrast Ratio > 7:1 */
+    --foreground: 223 71% 4%;
+
+    /* Cards: #F8FAFC (Same as BG but defined for semantic use) */
     --card: 210 40% 98%;
-    --card-foreground: 222.9 70% 3.9%;
+    --card-foreground: 223 71% 4%;
 
-    /* Popovers: #F8FAFC */
+    /* Popovers: White for lift, or #F8FAFC if strict */
+    /* User said "Cards & Containers: #F8FAFC". Keeping strict but relying on borders. */
     --popover: 210 40% 98%;
-    --popover-foreground: 222.9 70% 3.9%;
+    --popover-foreground: 223 71% 4%;
 
-    /* Primary CTA: #1BBF84 */
-    --primary: 158.4 75.2% 42.7%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: #1BBF84 (Vibrant Green) */
+    --primary: 159 75% 43%;
+    --primary-foreground: 0 0% 100%;
+    /* White Text for Buttons */
 
-    /* Secondary: #071A1C (Subtle/Low Opacity) */
-    --secondary: 185.7 60% 6.9% / 0.1;
-    --secondary-foreground: 185.7 60% 6.9%;
+    /* Secondary: Used for Sidebar/Muted areas. 
+       Mapping to #071A1C with opacity to create "slightly darker" look 
+    */
+    --secondary: 187 60% 7%;
+    --secondary-foreground: 187 60% 7%;
 
-    /* Muted: #071A1C (Subtle/Low Opacity) */
-    --muted: 185.7 60% 6.9% / 0.1;
-    --muted-foreground: 185.7 60% 6.9% / 0.7;
+    /* Muted: Subtle text #071A1C */
+    --muted: 210 40% 96.1%;
+    /* Use Slate 100 for muted backgrounds to distinguish from 50? No, strict palette: #071A1C or #F8FAFC. */
+    /* Let's use #F8FAFC darkened slightly for muted backgrounds, OR #071A1C at 5% opacity */
+    --muted: 187 60% 7%;
+    /* We will use opacity in utility classes like bg-muted/5 */
+    --muted-foreground: 187 60% 7% / 0.7;
 
-    /* Accent: #071A1C (Subtle/Low Opacity) */
-    --accent: 185.7 60% 6.9% / 0.1;
-    --accent-foreground: 185.7 60% 6.9%;
+    /* Accent: Hover states */
+    --accent: 187 60% 7%;
+    --accent-foreground: 187 60% 7%;
 
-    /* Destructive: Keep Red (No Blue) */
+    /* Destructive */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Borders & Inputs: #071A1C (Low Opacity) */
-    --border: 185.7 60% 6.9% / 0.15;
-    --input: 185.7 60% 6.9% / 0.15;
-    
-    /* Ring: #1BBF84 */
-    --ring: 158.4 75.2% 42.7%;
+    /* Border: #071A1C at 15-20% opacity for clear visibility */
+    --border: 187 60% 7% / 0.15;
+    --input: 187 60% 7% / 0.20;
+
+    --ring: 159 75% 43%;
 
     --radius: 0.5rem;
   }

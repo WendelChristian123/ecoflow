@@ -33,8 +33,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, onClick, dep
                 isCollapsed ? "justify-center px-2" : "px-4",
                 (!isCollapsed && depth > 0) && "pl-11",
                 isActive
-                    ? "bg-primary/10 text-primary border border-primary/10"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20"
+                    : "text-muted-foreground hover:bg-secondary/10 hover:text-foreground"
             )}
         >
             <div className="shrink-0">{icon}</div>
@@ -69,7 +69,7 @@ const SidebarGroup: React.FC<{
             >
                 <div className={cn(
                     "w-full flex items-center justify-center py-2.5 rounded-lg transition-colors cursor-pointer",
-                    highlight ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-secondary"
+                    highlight ? "text-primary hover:bg-primary/10 font-semibold" : "text-muted-foreground hover:bg-secondary/10"
                 )}>
                     {icon}
                 </div>
@@ -93,7 +93,7 @@ const SidebarGroup: React.FC<{
                 onClick={onToggle}
                 className={cn(
                     "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors",
-                    highlight ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-secondary"
+                    highlight ? "text-primary hover:bg-primary/10 font-semibold" : "text-muted-foreground hover:bg-secondary/10"
                 )}
             >
                 <div className="flex items-center gap-3">
@@ -366,7 +366,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             )}
 
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 bg-card/85 backdrop-blur-xl border-r border-border/50 transition-all duration-300 flex flex-col h-full shadow-2xl",
+                "fixed inset-y-0 left-0 z-50 bg-background border-r border-border transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-900/5",
                 "lg:static",
                 isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
                 (!isMobileMenuOpen && isCollapsed) ? "lg:w-20" : "lg:w-64"
@@ -482,8 +482,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-background">
-                <header className="h-16 border-b border-border/40 bg-background/60 backdrop-blur-xl px-6 flex items-center justify-between shrink-0 z-30 sticky top-0">
+            <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-secondary/5">
+                <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-30 sticky top-0 shadow-sm">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>
                         <div className="flex flex-col">
