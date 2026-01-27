@@ -317,7 +317,7 @@ export const api = {
         // Force get latest session to ensure token is fresh
         const { data: { session } } = await supabase.auth.getSession();
 
-        // Check limits first
+        // Check limits first (Frontend Check)
         if (tenantId) {
             const { checkUserLimit } = await import('./limits');
             const limitStatus = await checkUserLimit(tenantId);
@@ -326,21 +326,23 @@ export const api = {
             }
         }
 
-        const { data, error } = await supabase.functions.invoke('admin-create-user', {
-            body: { ...userData, tenantId },
-            headers: session?.access_token
-                ? { Authorization: `Bearer ${session.access_token}` }
-                : undefined
+        // Use native fetch to get proper error messages from 400 Bad Request responses
+        // (Supabase client often swallows the body on error)
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const response = await fetch(`${supabaseUrl}/functions/v1/admin-create-user`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`
+            },
+            body: JSON.stringify({ ...userData, tenantId })
         });
 
-        if (error) {
-            console.error('Edge Function Invoke Error:', error);
-            throw error;
-        }
+        const data = await response.json();
 
-        // Edge Function might return { error: "message" }
-        if (data && data.error) {
-            throw new Error(data.error);
+        if (!response.ok) {
+            console.error('Edge Function Error:', data);
+            throw new Error(data.error || 'Falha ao criar usuário (Erro desconhecido)');
         }
 
         return data;
