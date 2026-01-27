@@ -55,8 +55,8 @@ export const LoginPage: React.FC = () => {
 
       {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-emerald-500/5 blur-[120px]" />
-        <div className="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-indigo-500/5 blur-[100px]" />
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[100px]" />
       </div>
 
       <div className="w-full max-w-[400px] relative z-10">
@@ -75,7 +75,7 @@ export const LoginPage: React.FC = () => {
 
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 transform hover:scale-105 transition-transform duration-300">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary flex items-center justify-center shadow-lg shadow-primary/20 transform hover:scale-105 transition-transform duration-300">
               <LayoutDashboard className="h-6 w-6 text-white" />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">Contazze</h1>
@@ -85,7 +85,7 @@ export const LoginPage: React.FC = () => {
 
         <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/60 rounded-3xl shadow-2xl p-8 relative overflow-hidden group">
           {/* Top Line Gradient */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
 
           <div className="text-center mb-8">
             <h2 className="text-xl font-bold text-white mb-1">Login</h2>
@@ -127,20 +127,20 @@ export const LoginPage: React.FC = () => {
                 leftIcon={<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>}
               />
               <div className="flex justify-end">
-                <Link to="/forgot-password" className="text-xs text-emerald-500 hover:text-emerald-400 font-medium transition-colors">
+                <Link to="/forgot-password" className="text-xs text-primary hover:text-primary/80 font-medium transition-colors">
                   Esqueceu a senha?
                 </Link>
               </div>
             </div>
 
-            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 h-11 text-sm font-semibold rounded-xl" isLoading={localLoading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-11 text-sm font-semibold rounded-xl" isLoading={localLoading}>
               Entrar
             </Button>
           </form>
 
           <p className="mt-8 text-center text-xs text-slate-500">
             Não tem uma conta?{' '}
-            <Link to="/register" className="text-emerald-500 hover:text-emerald-400 hover:underline font-medium transition-colors">
+            <Link to="/register" className="text-primary hover:text-primary/80 hover:underline font-medium transition-colors">
               Cadastre-se
             </Link>
           </p>

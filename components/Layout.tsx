@@ -163,7 +163,7 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
                 <div className="relative">
                     <Avatar name={userName} />
                     {isSuperAdmin && (
-                        <div className="absolute -top-1 -right-1 bg-indigo-500 rounded-full p-0.5 border border-slate-900" title="Super Admin">
+                        <div className="absolute -top-1 -right-1 bg-primary rounded-full p-0.5 border border-slate-900" title="Super Admin">
                             <Globe size={8} className="text-white" />
                         </div>
                     )}
@@ -176,7 +176,7 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
                     <div className="p-4 border-b border-slate-800">
                         <p className="text-sm font-medium text-white truncate">{user?.email}</p>
                         {isSuperAdmin && (
-                            <span className="inline-flex items-center gap-1 mt-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-500/20">
+                            <span className="inline-flex items-center gap-1 mt-1 bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded border border-primary/20">
                                 <Globe size={10} /> SUPER ADMIN
                             </span>
                         )}
@@ -235,12 +235,12 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     className={cn(
-                        "w-full flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-200 rounded-lg transition-all hover:bg-indigo-500/20",
+                        "w-full flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary rounded-lg transition-all hover:bg-primary/20",
                         isCollapsed ? "justify-center p-2" : "px-3 py-2 justify-between"
                     )}
                 >
                     <div className="flex items-center gap-2 overflow-hidden">
-                        <Building2 size={18} className="shrink-0 text-indigo-400" />
+                        <Building2 size={18} className="shrink-0 text-primary" />
                         {!isCollapsed && <span className="text-sm font-medium truncate">{currentTenant?.name || 'Selecione...'}</span>}
                     </div>
                     {!isCollapsed && <ChevronDown size={14} className="opacity-70" />}
@@ -259,13 +259,13 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
                                     className={cn(
                                         "w-full text-left px-3 py-2 text-sm rounded-lg mb-1 flex items-center gap-2",
                                         currentTenant?.id === t.id
-                                            ? "bg-indigo-500/20 text-indigo-300"
+                                            ? "bg-primary/10 text-primary"
                                             : "text-slate-300 hover:bg-slate-800"
                                     )}
                                 >
                                     <Building2 size={14} />
                                     <span className="truncate">{t.name}</span>
-                                    {currentTenant?.id === t.id && <div className="ml-auto w-2 h-2 rounded-full bg-indigo-500"></div>}
+                                    {currentTenant?.id === t.id && <div className="ml-auto w-2 h-2 rounded-full bg-primary"></div>}
                                 </button>
                             ))}
                         </div>
@@ -375,7 +375,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     <div className={cn("h-16 flex items-center border-b border-white/5 transition-all px-4 shrink-0 bg-white/5", isCollapsed ? "justify-center" : "justify-between")}>
                         {!isCollapsed ? (
                             <div className="flex items-center gap-2">
-                                <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg glow", isSuperAdminArea ? "bg-indigo-600" : "bg-gradient-to-br from-primary to-emerald-500")}>
+                                <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg glow", isSuperAdminArea ? "bg-primary" : "bg-gradient-to-br from-primary to-primary")}>
                                     {isSuperAdminArea ? <Globe className="h-5 w-5 text-white" /> : <LayoutDashboard className="h-5 w-5 text-white" />}
                                 </div>
                                 <span className="text-lg font-bold tracking-tight text-foreground whitespace-nowrap overflow-hidden drop-shadow-sm">
@@ -383,7 +383,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 </span>
                             </div>
                         ) : (
-                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg", isSuperAdminArea ? "bg-indigo-600" : "bg-gradient-to-br from-primary to-emerald-500")}>
+                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg", isSuperAdminArea ? "bg-primary" : "bg-gradient-to-br from-primary to-primary")}>
                                 {isSuperAdminArea ? <Globe className="h-5 w-5 text-white" /> : <LayoutDashboard className="h-5 w-5 text-white" />}
                             </div>
                         )}
@@ -402,7 +402,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         {isSuperAdminArea ? (
                             <>
                                 <div className="mb-2 px-3">
-                                    <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-2">Gestão Global</div>
+                                    <div className="text-[10px] font-bold text-primary uppercase tracking-wider mb-2">Gestão Global</div>
                                 </div>
                                 <SidebarItem isCollapsed={isCollapsed} to="/super-admin/dashboard" icon={<LayoutDashboard size={18} />} label="Dashboard Admin" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem isCollapsed={isCollapsed} to="/super-admin/users" icon={<Users size={18} />} label="Usuários" onClick={() => setIsMobileMenuOpen(false)} />
