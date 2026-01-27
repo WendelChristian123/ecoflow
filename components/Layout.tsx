@@ -366,7 +366,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             )}
 
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 bg-background border-r border-border transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-900/5",
+                "fixed inset-y-0 left-0 z-50 bg-card border-r border-border transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-900/5",
                 "lg:static",
                 isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
                 (!isMobileMenuOpen && isCollapsed) ? "lg:w-20" : "lg:w-64"

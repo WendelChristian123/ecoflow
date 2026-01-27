@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader, Button, Input, Modal, Select, Badge, Avatar } from '../../components/Shared';
+import { Loader, Button, Input, Modal, Select, Badge, Avatar, cn } from '../../components/Shared';
 import {
     Search, Plus, User as UserIcon, Building2, AlertTriangle, Key,
     CheckCircle2, MoreVertical, Shield, Lock, Power, LogOut, Trash2,
@@ -156,16 +156,16 @@ export const SuperAdminUsers: React.FC = () => {
     };
 
     const getLastAccessBadge = (lastActiveAt?: string) => {
-        if (!lastActiveAt) return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-slate-500">Nunca acessou</Badge>;
+        if (!lastActiveAt) return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-muted-foreground">Nunca acessou</Badge>;
 
         const date = new Date(lastActiveAt);
         const now = new Date();
         const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
-        if (diffHours < 0.5) return <Badge variant="success" className="h-5 px-1.5 text-[10px] bg-emerald-500/20 text-emerald-300 border-emerald-500/30 animate-pulse">Online agora</Badge>;
-        if (diffHours < 24) return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-indigo-300 bg-indigo-500/10 border-indigo-500/20">Ativo hoje</Badge>;
-        if (diffHours < 24 * 7) return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-slate-400">Ativo 7d</Badge>;
-        return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-slate-500">Inativo 30d+</Badge>;
+        if (diffHours < 0.5) return <Badge variant="success" className="h-5 px-1.5 text-[10px] bg-primary/20 text-primary border-primary/30 animate-pulse">Online agora</Badge>;
+        if (diffHours < 24) return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-primary bg-primary/10 border-primary/20">Ativo hoje</Badge>;
+        if (diffHours < 24 * 7) return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-muted-foreground">Ativo 7d</Badge>;
+        return <Badge variant="neutral" className="h-5 px-1.5 text-[10px] text-muted-foreground">Inativo 30d+</Badge>;
     };
 
     if (loading) return <Loader />;
@@ -174,23 +174,23 @@ export const SuperAdminUsers: React.FC = () => {
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Gestão de Usuários</h1>
-                    <p className="text-slate-400 text-sm">Base global de usuários de todas as empresas.</p>
+                    <h1 className="text-2xl font-bold text-foreground">Gestão de Usuários</h1>
+                    <p className="text-muted-foreground text-sm">Base global de usuários de todas as empresas.</p>
                 </div>
-                <Button onClick={() => setIsModalOpen(true)} className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-900/20">
+                <Button onClick={() => setIsModalOpen(true)} className="gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
                     <Plus size={18} /> Novo Usuário
                 </Button>
             </div>
 
             {/* Filters Toolbar */}
-            <div className="flex flex-col md:flex-row gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+            <div className="flex flex-col md:flex-row gap-4 bg-card/50 p-4 rounded-xl border border-border">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                    <Input placeholder="Buscar usuário, email ou empresa..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 py-2 text-sm bg-slate-800 border-slate-700" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input placeholder="Buscar usuário, email ou empresa..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 py-2 text-sm bg-card border-input" />
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
                     <div className="min-w-[140px]">
-                        <select value={filterRole} onChange={e => setFilterRole(e.target.value as any)} className="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 pointer-cursor">
+                        <select value={filterRole} onChange={e => setFilterRole(e.target.value as any)} className="w-full bg-card border border-input text-foreground text-sm rounded-lg px-3 py-2 outline-none focus:border-primary pointer-cursor">
                             <option value="all">Função: Todas</option>
                             <option value="super_admin">Super Admin</option>
                             <option value="admin">Admin</option>
@@ -198,7 +198,7 @@ export const SuperAdminUsers: React.FC = () => {
                         </select>
                     </div>
                     <div className="min-w-[140px]">
-                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)} className="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 pointer-cursor">
+                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)} className="w-full bg-card border border-input text-foreground text-sm rounded-lg px-3 py-2 outline-none focus:border-primary pointer-cursor">
                             <option value="all">Status: Todos</option>
                             <option value="active">Ativo</option>
                             <option value="suspended">Suspenso</option>
@@ -206,7 +206,7 @@ export const SuperAdminUsers: React.FC = () => {
                         </select>
                     </div>
                     <div className="min-w-[160px]">
-                        <select value={filterTenant} onChange={e => setFilterTenant(e.target.value)} className="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 pointer-cursor">
+                        <select value={filterTenant} onChange={e => setFilterTenant(e.target.value)} className="w-full bg-card border border-input text-foreground text-sm rounded-lg px-3 py-2 outline-none focus:border-primary pointer-cursor">
                             <option value="all">Empresa: Todas</option>
                             {availableTenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
@@ -214,9 +214,9 @@ export const SuperAdminUsers: React.FC = () => {
                 </div>
             </div>
 
-            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-visible min-h-[400px]">
-                <table className="w-full text-left text-sm text-slate-400">
-                    <thead className="bg-slate-900/50 text-slate-200 uppercase text-xs font-semibold">
+            <div className="bg-card rounded-xl border border-border overflow-visible min-h-[400px]">
+                <table className="w-full text-left text-sm text-muted-foreground">
+                    <thead className="bg-muted/50 text-foreground uppercase text-xs font-semibold">
                         <tr>
                             <th className="px-6 py-4">Usuário</th>
                             <th className="px-6 py-4">Empresa (Tenant)</th>
@@ -225,17 +225,17 @@ export const SuperAdminUsers: React.FC = () => {
                             <th className="px-6 py-4 text-right">Ações</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700/50">
+                    <tbody className="divide-y divide-border">
                         {filteredUsers.length === 0 ? (
-                            <tr><td colSpan={5} className="p-8 text-center text-slate-500 italic">Nenhum usuário encontrado.</td></tr>
+                            <tr><td colSpan={5} className="p-8 text-center text-muted-foreground italic">Nenhum usuário encontrado.</td></tr>
                         ) : filteredUsers.map(user => (
-                            <tr key={user.id} className="hover:bg-slate-700/20 transition-colors group">
+                            <tr key={user.id} className="hover:bg-muted/10 transition-colors group">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                         <Avatar name={user.name} />
                                         <div>
-                                            <div className="font-medium text-white">{user.name}</div>
-                                            <div className="text-xs text-slate-500">{user.email}</div>
+                                            <div className="font-medium text-foreground">{user.name}</div>
+                                            <div className="text-xs text-muted-foreground">{user.email}</div>
                                             <div className="mt-1">{getLastAccessBadge(user.lastAccessStatus)}</div>
                                         </div>
                                     </div>
@@ -243,10 +243,10 @@ export const SuperAdminUsers: React.FC = () => {
                                 <td className="px-6 py-4">
                                     <button
                                         onClick={() => { setSelectedUser(user); setActionModal('tenant'); }}
-                                        className="flex items-center gap-2 hover:bg-slate-700 px-2 py-1 rounded transition-colors group/btn text-left"
+                                        className="flex items-center gap-2 hover:bg-secondary px-2 py-1 rounded transition-colors group/btn text-left"
                                     >
-                                        <Building2 size={14} className="text-indigo-400" />
-                                        <span className="group-hover/btn:text-white transition-colors decoration-indigo-500/50 underline-offset-4 group-hover/btn:underline">{user.companyName || 'N/A'}</span>
+                                        <Building2 size={14} className="text-primary" />
+                                        <span className="group-hover/btn:text-foreground transition-colors decoration-primary/50 underline-offset-4 group-hover/btn:underline">{user.companyName || 'N/A'}</span>
                                     </button>
                                 </td>
                                 <td className="px-6 py-4">
@@ -273,33 +273,33 @@ export const SuperAdminUsers: React.FC = () => {
                                     <div className="relative inline-block">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === user.id ? null : user.id); }}
-                                            className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                            className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                         >
                                             <MoreVertical size={18} />
                                         </button>
 
                                         {activeMenuId === user.id && (
-                                            <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
-                                                <button onClick={() => { setSelectedUser(user); setActionModal('tenant'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                            <div className="absolute right-0 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-premium z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('tenant'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground/80 hover:bg-secondary hover:text-foreground text-left w-full transition-colors">
                                                     <Building2 size={16} /> Detalhes Empresa
                                                 </button>
-                                                <button onClick={() => { setSelectedUser(user); setActionModal('role'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('role'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground/80 hover:bg-secondary hover:text-foreground text-left w-full transition-colors">
                                                     <Shield size={16} /> Gerenciar Papel
                                                 </button>
-                                                <button onClick={() => { setSelectedUser(user); setActionModal('edit'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('edit'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground/80 hover:bg-secondary hover:text-foreground text-left w-full transition-colors">
                                                     <UserCog size={16} /> Editar Dados
                                                 </button>
-                                                <button onClick={() => { setSelectedUser(user); setActionModal('password'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                                <button onClick={() => { setSelectedUser(user); setActionModal('password'); }} className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground/80 hover:bg-secondary hover:text-foreground text-left w-full transition-colors">
                                                     <Key size={16} /> Resetar Senha
                                                 </button>
-                                                <div className="h-px bg-slate-800 my-1" />
-                                                <button onClick={() => handleForceLogout(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
+                                                <div className="h-px bg-border my-1" />
+                                                <button onClick={() => handleForceLogout(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 text-left w-full transition-colors">
                                                     <LogOut size={16} /> Forçar Logout
                                                 </button>
-                                                <button onClick={() => handleToggleSuspend(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
+                                                <button onClick={() => handleToggleSuspend(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 text-left w-full transition-colors">
                                                     <ShieldAlert size={16} /> {user.status === 'suspended' ? 'Reativar' : 'Suspender'}
                                                 </button>
-                                                <button onClick={() => handleDeleteUser(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
+                                                <button onClick={() => handleDeleteUser(user)} className="flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 text-left w-full transition-colors">
                                                     <Trash2 size={16} /> Excluir
                                                 </button>
                                             </div>
@@ -316,9 +316,9 @@ export const SuperAdminUsers: React.FC = () => {
             <Modal isOpen={isModalOpen} onClose={closeAndReset} title={createStep === 1 ? "Novo Usuário" : "Usuário Criado"}>
                 {createStep === 1 ? (
                     <form onSubmit={handleCreate} className="space-y-4">
-                        <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-lg flex items-start gap-3">
-                            <Building2 className="text-indigo-500 shrink-0" size={18} />
-                            <p className="text-xs text-indigo-200">
+                        <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg flex items-start gap-3">
+                            <Building2 className="text-primary shrink-0" size={18} />
+                            <p className="text-xs text-primary">
                                 <strong>Vínculo Obrigatório:</strong> Todo usuário deve pertencer a uma empresa (Tenant).
                                 Ele só verá dados desta empresa.
                             </p>
@@ -352,23 +352,23 @@ export const SuperAdminUsers: React.FC = () => {
                     </form>
                 ) : (
                     <div className="space-y-6 text-center py-4">
-                        <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4"><UserIcon size={32} /></div>
-                        <h3 className="text-xl font-bold text-white">Usuário Criado com Sucesso!</h3>
-                        <div className="bg-slate-950 border border-slate-800 p-4 rounded-lg text-left space-y-3">
+                        <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4"><UserIcon size={32} /></div>
+                        <h3 className="text-xl font-bold text-foreground">Usuário Criado com Sucesso!</h3>
+                        <div className="bg-secondary border border-border p-4 rounded-lg text-left space-y-3">
                             <div>
-                                <span className="text-xs text-slate-500 uppercase block mb-1">Acesso</span>
-                                <div className="text-white font-mono bg-slate-900 p-2 rounded border border-slate-800">{newUser.email}</div>
+                                <span className="text-xs text-muted-foreground uppercase block mb-1">Acesso</span>
+                                <div className="text-foreground font-mono bg-card p-2 rounded border border-border">{newUser.email}</div>
                             </div>
                             <div>
-                                <span className="text-xs text-slate-500 uppercase block mb-1">Senha Provisória</span>
+                                <span className="text-xs text-muted-foreground uppercase block mb-1">Senha Provisória</span>
                                 <div className="flex items-center gap-2">
-                                    <div className="text-emerald-400 font-mono text-lg font-bold bg-slate-900 p-2 rounded border border-emerald-500/30 flex-1 text-center tracking-wider">{tempPassword}</div>
+                                    <div className="text-primary font-mono text-lg font-bold bg-card p-2 rounded border border-primary/30 flex-1 text-center tracking-wider">{tempPassword}</div>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-2 text-left">
-                            <Key className="text-amber-500 shrink-0" size={16} />
-                            <p className="text-xs text-amber-200"><strong>Importante:</strong> Esta senha deve ser trocada no primeiro acesso.</p>
+                        <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-lg flex items-start gap-2 text-left">
+                            <Key className="text-destructive shrink-0" size={16} />
+                            <p className="text-xs text-destructive"><strong>Importante:</strong> Esta senha deve ser trocada no primeiro acesso.</p>
                         </div>
                         <Button onClick={closeAndReset} className="w-full">Concluir</Button>
                     </div>
@@ -408,8 +408,8 @@ export const SuperAdminUsers: React.FC = () => {
             <Modal isOpen={actionModal === 'role' && !!selectedUser} onClose={() => setActionModal('none')} title="Gerenciar Papel (Role)">
                 {selectedUser && (
                     <div className="space-y-6 text-center">
-                        <div className="w-16 h-16 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-2"><Shield size={32} /></div>
-                        <p className="text-slate-300 text-sm">
+                        <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-2"><Shield size={32} /></div>
+                        <p className="text-muted-foreground text-sm">
                             Alterar o nível de acesso de <strong>{selectedUser.name}</strong>.
                         </p>
 
@@ -427,21 +427,21 @@ export const SuperAdminUsers: React.FC = () => {
                                             alert("Erro ao alterar papel: " + getErrorMessage(e));
                                         }
                                     }}
-                                    className={`p-3 rounded-lg border text-left flex items-center justify-between hover:bg-slate-800 transition-colors ${selectedUser.role === r ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-transparent border-slate-700'}`}
+                                    className={cn("p-3 rounded-lg border text-left flex items-center justify-between hover:bg-secondary transition-colors", selectedUser.role === r ? 'bg-primary/10 border-primary/50' : 'bg-transparent border-input')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-4 h-4 rounded-full border ${selectedUser.role === r ? 'bg-indigo-500 border-indigo-500' : 'border-slate-500'}`} />
-                                        <span className={`font-medium ${selectedUser.role === r ? 'text-white' : 'text-slate-400'}`}>{r.toUpperCase().replace('_', ' ')}</span>
+                                        <div className={cn("w-4 h-4 rounded-full border", selectedUser.role === r ? 'bg-primary border-primary' : 'border-muted-foreground')} />
+                                        <span className={cn("font-medium", selectedUser.role === r ? 'text-foreground' : 'text-muted-foreground')}>{r.toUpperCase().replace('_', ' ')}</span>
                                     </div>
-                                    {r === 'super_admin' && <AlertTriangle size={14} className="text-amber-500" />}
+                                    {r === 'super_admin' && <AlertTriangle size={14} className="text-destructive" />}
                                 </button>
                             ))}
                         </div>
 
                         {selectedUser.role === 'super_admin' && (
-                            <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-2 text-left">
-                                <AlertTriangle className="text-amber-500 shrink-0" size={16} />
-                                <p className="text-xs text-amber-200">
+                            <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-lg flex items-start gap-2 text-left">
+                                <AlertTriangle className="text-destructive shrink-0" size={16} />
+                                <p className="text-xs text-destructive">
                                     <strong>Cuidado:</strong> Super Admins têm acesso irrestrito a todas as empresas do sistema.
                                 </p>
                             </div>

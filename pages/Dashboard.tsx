@@ -225,38 +225,47 @@ export const Dashboard: React.FC = () => {
     const ZoneCard = ({ title, count, icon, type, variant, onClick }: { title: string, count: number, icon: React.ReactNode, type: string, variant: 'danger' | 'warning' | 'info', onClick: () => void }) => {
         if (count === 0) return null;
 
-        // Semantic Colors only for Icons and Text
+        // Semantic Colors only for Icons and Text - STRONG Contrast
         const colorMap = {
-            danger: { text: "text-destructive", bg: "bg-destructive/10", border: "group-hover:border-destructive/30" },
-            warning: { text: "text-amber-500", bg: "bg-amber-500/10", border: "group-hover:border-amber-500/30" },
-            info: { text: "text-primary", bg: "bg-primary/10", border: "group-hover:border-primary/30" }
+            danger: { text: "text-destructive", bg: "bg-destructive/10", border: "group-hover:border-destructive/40", title: "text-destructive" },
+            warning: { text: "text-primary", bg: "bg-primary/10", border: "group-hover:border-primary/40", title: "text-primary" },
+            info: { text: "text-secondary", bg: "bg-secondary/10", border: "group-hover:border-secondary/40", title: "text-secondary font-semibold" } // Future: Title Dark/Bold
         };
 
         const theme = colorMap[variant];
 
-        // Standard Card Structure
+        // Standard Card Structure - PREMIUM
         return (
             <div
                 onClick={onClick}
                 className={cn(
-                    "bg-card border border-border shadow-sm rounded-xl p-5 flex flex-col justify-between cursor-pointer h-32 select-none group transition-all duration-200 hover:-translate-y-1 hover:shadow-md",
-                    theme.border // Subtle border interaction
+                    "bg-card border border-border shadow-sm rounded-2xl p-6 flex flex-col justify-between cursor-pointer min-h-[160px] select-none group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg relative overflow-hidden",
+                    theme.border
                 )}
             >
-                <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
+                {/* Background Decoration */}
+                <div className={cn("absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none", theme.bg.replace('/10', ''))} />
+
+                <div className="flex justify-between items-start relative z-10">
+                    <span className={cn("text-[10px] uppercase tracking-widest transition-colors",
+                        theme.title ? theme.title : "font-bold text-muted-foreground group-hover:text-foreground"
+                    )}>
                         {title}
                     </span>
-                    <div className={cn("p-2 rounded-lg transition-colors", theme.bg, theme.text)}>
+                    <div className={cn("p-2.5 rounded-xl transition-all duration-300 group-hover:scale-110 shadow-sm", theme.bg, theme.text)}>
                         {icon}
                     </div>
                 </div>
 
-                <div className="mt-auto">
-                    <div className={cn("text-3xl font-black tracking-tighter leading-none mb-1", theme.text)}>
+                <div className="mt-auto relative z-10">
+                    <div className={cn("text-5xl font-black tracking-tighter leading-none mb-2 transition-transform duration-300 group-hover:translate-x-1",
+                        variant === 'info' ? "text-foreground" : theme.text
+                    )}>
                         {count}
                     </div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Pendentes</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block opacity-70">
+                        Itens Pendentes
+                    </span>
                 </div>
             </div>
         );
@@ -276,22 +285,28 @@ export const Dashboard: React.FC = () => {
         // Semantic Accents
         const accents = {
             danger: "text-destructive border-l-destructive",
-            warning: "text-amber-500 border-l-amber-500",
-            info: "text-primary border-l-primary"
+            warning: "text-primary border-l-primary",
+            info: "text-secondary border-l-secondary"
         };
 
         const EmptyState = () => (
-            <div className="flex items-center gap-3 text-muted-foreground italic text-sm py-4 px-4 border border-dashed border-border rounded-xl bg-secondary/20">
-                <CheckCircle2 size={18} className="opacity-50" />
-                <span>{variant === 'danger' ? "Excelente! Nenhum item vencido." : variant === 'warning' ? "Agenda livre por hoje." : "Sem pendências para os próximos dias."}</span>
+            <div className="flex items-center gap-4 text-muted-foreground py-6 px-6 border border-dashed border-border rounded-2xl bg-card shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+                <div className={cn("p-2 rounded-full bg-secondary")}>
+                    <CheckCircle2 size={20} className="text-primary" />
+                </div>
+                <span className="text-xs font-medium uppercase tracking-wide">
+                    {variant === 'danger' ? "Excelente! Nenhum item vencido sob sua responsabilidade." :
+                        variant === 'warning' ? "Agenda livre por hoje. Aproveite para adiantar tarefas." :
+                            "Tudo em dia para os próximos dias."}
+                </span>
             </div>
         );
 
         return (
             <section className="mb-8">
                 <div className="flex items-center gap-3 mb-4 pl-1">
-                    <div className={cn("w-1 h-4 rounded-full", variant === 'danger' ? 'bg-destructive' : variant === 'warning' ? 'bg-amber-500' : 'bg-primary')}></div>
-                    <div className={cn("text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-destructive' : variant === 'warning' ? 'text-amber-500' : 'text-primary')}>
+                    <div className={cn("w-1 h-4 rounded-full", variant === 'danger' ? 'bg-destructive' : variant === 'warning' ? 'bg-primary' : 'bg-secondary')}></div>
+                    <div className={cn("text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-destructive' : variant === 'warning' ? 'text-primary' : 'text-secondary')}>
                         {title}
                     </div>
                     <div className="h-px bg-border flex-1 ml-2"></div>

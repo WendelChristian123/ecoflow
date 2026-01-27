@@ -216,8 +216,10 @@ export const FinancialOverview: React.FC = () => {
         if (comparisonMode === 'month') {
             const thisMonthStart = startOfMonth(now);
             const thisMonthEnd = endOfMonth(now);
-            const lastMonthStart = startOfMonth(subMonths(now, 1));
-            const lastMonthEnd = endOfMonth(subMonths(now, 1));
+            const lastMonthStart = subMonths(now, 1);
+            const lastMonthStartMonth = startOfMonth(lastMonthStart);
+            const lastMonthEnd = endOfMonth(lastMonthStart);
+
 
             const calc = (start: Date, end: Date, type: 'income' | 'expense') =>
                 transactions.filter(t => {
@@ -236,7 +238,7 @@ export const FinancialOverview: React.FC = () => {
                     }
                 }).reduce((s, t) => s + t.amount, 0);
 
-            data.push({ name: 'Mês Anterior', Receitas: calc(lastMonthStart, lastMonthEnd, 'income'), Despesas: calc(lastMonthStart, lastMonthEnd, 'expense') });
+            data.push({ name: 'Mês Anterior', Receitas: calc(lastMonthStartMonth, lastMonthEnd, 'income'), Despesas: calc(lastMonthStartMonth, lastMonthEnd, 'expense') });
             data.push({ name: 'Mês Atual', Receitas: calc(thisMonthStart, thisMonthEnd, 'income'), Despesas: calc(thisMonthStart, thisMonthEnd, 'expense') });
 
         } else if (comparisonMode === 'semester') {
@@ -316,8 +318,8 @@ export const FinancialOverview: React.FC = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                        <DollarSign className="text-primary" size={28} /> Visão Geral
+                    <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                        <DollarSign className="text-primary" size={32} /> Visão Geral
                         <span className="text-sm font-normal text-muted-foreground ml-2 hidden md:inline">| Financeiro</span>
                     </h1>
                 </div>
@@ -357,53 +359,62 @@ export const FinancialOverview: React.FC = () => {
                         </div>
                     </div>
                     <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                        <div className="w-2 h-2 rounded-full bg-primary"></div>
                         <span>Soma de todas as contas</span>
                     </div>
                 </div>
+
 
                 {/* FLUXO - SECUNDÁRIO */}
                 <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <Card
                         variant="solid"
-                        className="flex flex-col justify-center cursor-pointer hover:border-emerald-500/30 group relative overflow-hidden"
+                        className="flex flex-col justify-center cursor-pointer hover:border-primary/30 group relative overflow-hidden"
                         onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)}
                     >
                         <div className="flex items-center gap-3 mb-2 relative z-10">
-                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500/20 transition-colors">
-                                <TrendingUp size={18} />
+                            <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                                <TrendingUp size={20} />
                             </div>
                             <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Receitas</span>
                         </div>
-                        <div className="text-2xl font-bold text-foreground group-hover:text-emerald-500 transition-colors tracking-tight relative z-10">
+                        <div className="text-3xl font-black text-foreground group-hover:text-primary transition-colors tracking-tighter relative z-10">
                             {fmt(realizedIncome)}
                         </div>
                     </Card>
 
                     <Card
                         variant="solid"
-                        className="flex flex-col justify-center cursor-pointer hover:border-rose-500/30 group relative overflow-hidden"
+                        className="flex flex-col justify-center cursor-pointer hover:border-destructive/30 group relative overflow-hidden"
                         onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)}
                     >
                         <div className="flex items-center gap-3 mb-2 relative z-10">
-                            <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500 group-hover:bg-rose-500/20 transition-colors">
-                                <TrendingDown size={18} />
+                            <div className="p-2 rounded-lg bg-destructive/10 text-destructive group-hover:bg-destructive/20 transition-colors">
+                                <TrendingDown size={20} />
                             </div>
                             <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Despesas</span>
                         </div>
-                        <div className="text-2xl font-bold text-foreground group-hover:text-rose-500 transition-colors tracking-tight relative z-10">
+                        <div className="text-3xl font-black text-foreground group-hover:text-destructive transition-colors tracking-tighter relative z-10">
                             {fmt(realizedExpense)}
                         </div>
                     </Card>
 
                     <Card variant="solid" className="flex flex-col justify-center">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className={cn("p-2 rounded-lg bg-secondary transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-500" : "text-amber-500")}>
-                                <DollarSign size={18} />
+                            <div className={cn("p-2 rounded-lg transition-colors",
+                                (realizedIncome - realizedExpense) > 0 ? "bg-primary/10 text-primary" :
+                                    (realizedIncome - realizedExpense) < 0 ? "bg-destructive/10 text-destructive" :
+                                        "bg-secondary text-secondary-foreground"
+                            )}>
+                                <DollarSign size={20} />
                             </div>
                             <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Resultado</span>
                         </div>
-                        <div className={cn("text-2xl font-bold tracking-tight transition-colors", (realizedIncome - realizedExpense) >= 0 ? "text-indigo-600 dark:text-indigo-400" : "text-amber-600 dark:text-amber-400")}>
+                        <div className={cn("text-3xl font-black tracking-tighter transition-colors",
+                            (realizedIncome - realizedExpense) > 0 ? "text-primary" :
+                                (realizedIncome - realizedExpense) < 0 ? "text-destructive" :
+                                    "text-foreground"
+                        )}>
                             {fmt(realizedIncome - realizedExpense)}
                         </div>
                     </Card>
@@ -424,16 +435,16 @@ export const FinancialOverview: React.FC = () => {
                     {/* PAYABLES OVERDUE - ALARM */}
                     <Card
                         variant="solid"
-                        className="cursor-pointer hover:border-rose-500/40 group relative overflow-hidden border-l-4 border-l-destructive"
+                        className="cursor-pointer hover:border-destructive/40 group relative overflow-hidden border-l-4 border-l-destructive"
                         onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)}
                     >
                         <div className="relative z-10 flex flex-col h-full justify-between">
                             <div className="flex justify-between items-start mb-2">
-                                <span className="text-rose-500 text-[10px] font-bold uppercase tracking-wider">Pagamentos em Atraso</span>
-                                <AlertCircle size={16} className="text-rose-500" />
+                                <span className="text-destructive text-[10px] font-bold uppercase tracking-wider">Pagamentos em Atraso</span>
+                                <AlertCircle size={16} className="text-destructive" />
                             </div>
                             <div>
-                                <div className="text-2xl font-black text-rose-600 dark:text-rose-400 group-hover:scale-105 transition-transform origin-left">
+                                <div className="text-2xl font-black text-destructive group-hover:scale-105 transition-transform origin-left">
                                     {fmt(payablesOverdue)}
                                 </div>
                             </div>
@@ -448,9 +459,9 @@ export const FinancialOverview: React.FC = () => {
                     >
                         <div className="flex justify-between items-start mb-2">
                             <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pagamentos a Vencer (7d)</span>
-                            <Clock size={16} className="text-muted-foreground group-hover:text-amber-500 transition-colors" />
+                            <Clock size={16} className="text-muted-foreground group-hover:text-secondary-foreground transition-colors" />
                         </div>
-                        <div className="text-2xl font-bold text-foreground group-hover:text-amber-500 transition-colors">
+                        <div className="text-2xl font-bold text-foreground group-hover:text-secondary-foreground transition-colors">
                             {fmt(payablesFuture)}
                         </div>
                     </Card>
@@ -458,15 +469,15 @@ export const FinancialOverview: React.FC = () => {
                     {/* RECEIVABLES OVERDUE - ALARM */}
                     <Card
                         variant="solid"
-                        className="cursor-pointer hover:border-rose-500/40 group relative overflow-hidden border-l-4 border-l-destructive"
+                        className="cursor-pointer hover:border-destructive/40 group relative overflow-hidden border-l-4 border-l-destructive"
                         onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))}
                     >
                         <div className="relative z-10 flex flex-col h-full justify-between">
                             <div className="flex justify-between items-start mb-2">
-                                <span className="text-rose-500 text-[10px] font-bold uppercase tracking-wider">Recebimentos em Atraso</span>
-                                <AlertCircle size={16} className="text-rose-500" />
+                                <span className="text-destructive text-[10px] font-bold uppercase tracking-wider">Recebimentos em Atraso</span>
+                                <AlertCircle size={16} className="text-destructive" />
                             </div>
-                            <div className="text-2xl font-black text-rose-600 dark:text-rose-400 group-hover:scale-105 transition-transform origin-left">
+                            <div className="text-2xl font-black text-destructive group-hover:scale-105 transition-transform origin-left">
                                 {fmt(receivablesOverdue)}
                             </div>
                         </div>
@@ -475,14 +486,14 @@ export const FinancialOverview: React.FC = () => {
                     {/* RECEIVABLES FUTURE - QUIET */}
                     <Card
                         variant="solid"
-                        className="cursor-pointer hover:border-indigo-500/40 group flex flex-col justify-between"
+                        className="cursor-pointer hover:border-primary/40 group flex flex-col justify-between"
                         onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))}
                     >
                         <div className="flex justify-between items-start mb-2">
                             <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Recebimentos a Vencer (7d)</span>
-                            <Clock size={16} className="text-muted-foreground group-hover:text-indigo-500 transition-colors" />
+                            <Clock size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
-                        <div className="text-2xl font-bold text-foreground group-hover:text-indigo-500 transition-colors">
+                        <div className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
                             {fmt(receivablesFuture)}
                         </div>
                     </Card>
@@ -549,40 +560,40 @@ export const FinancialOverview: React.FC = () => {
                                 return (
                                     <div key={card.id}
                                         onClick={() => openDrilldown(`Fatura: ${card.name}`, t => t.creditCardId === card.id && !t.isPaid)}
-                                        className="bg-[#0B0D12] border border-slate-800/40 p-5 rounded-xl cursor-pointer hover:bg-slate-800/30 transition-all group"
+                                        className="bg-card border border-border shadow-sm p-5 rounded-xl cursor-pointer hover:shadow-md transition-all group"
                                     >
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-md shadow-inner flex items-center justify-center">
-                                                    <div className="w-6 h-3 bg-white/20 rounded-sm"></div>
+                                                <div className="w-10 h-6 bg-gradient-to-br from-slate-700 to-slate-900 rounded-md shadow-inner flex items-center justify-center">
+                                                    <div className="w-6 h-3 bg-white/10 rounded-sm"></div>
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-sm font-bold text-slate-200">{card.name}</h3>
-                                                    <div className="text-[10px] text-slate-500">
+                                                    <h3 className="text-sm font-bold text-foreground">{card.name}</h3>
+                                                    <div className="text-[10px] text-muted-foreground">
                                                         Fecha dia {card.closingDay} • Vence dia {card.dueDay}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className={cn("text-xs uppercase font-bold tracking-wider", isOverdue ? "text-rose-500" : "text-slate-500")}>
+                                                <div className={cn("text-xs uppercase font-bold tracking-wider", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                                                     {isOverdue ? "Total em Aberto" : "Fatura Atual"}
                                                 </div>
-                                                <div className={cn("text-xl font-bold tracking-tight", isOverdue ? "text-rose-400" : "text-white")}>
+                                                <div className={cn("text-xl font-bold tracking-tight", isOverdue ? "text-destructive" : "text-foreground")}>
                                                     {fmt(totalOpenAmount)}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mb-2">
+                                        <div className="relative h-2 bg-secondary rounded-full overflow-hidden mb-2">
                                             <div
-                                                className="absolute top-0 left-0 h-full bg-indigo-500 rounded-full transition-all duration-500"
+                                                className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-500"
                                                 style={{ width: `${percent}%` }}
                                             ></div>
                                         </div>
 
                                         <div className="flex justify-between text-[10px] font-medium uppercase tracking-wide">
-                                            <span className="text-indigo-400">Usado: {Math.round(percent)}%</span>
-                                            <span className="text-emerald-500">Disponível: {fmt(available)}</span>
+                                            <span className="text-muted-foreground">Usado: {Math.round(percent)}%</span>
+                                            <span className="text-primary">Disponível: {fmt(available)}</span>
                                         </div>
                                     </div>
                                 )
@@ -595,13 +606,13 @@ export const FinancialOverview: React.FC = () => {
 
 
             {/* BLOCO 5 - EVOLUÇÃO */}
-            <div className="bg-[#0B0D12] border border-slate-800/40 rounded-2xl p-6 sm:p-8">
+            <div className="bg-card border border-border shadow-sm rounded-2xl p-6 sm:p-8">
                 <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-                    <h3 className="font-bold text-slate-400 uppercase tracking-widest text-xs flex items-center gap-2">
+                    <h3 className="font-bold text-muted-foreground uppercase tracking-widest text-xs flex items-center gap-2">
                         <BarChart2 size={16} /> Evolução Financeira
                     </h3>
                     <div className="flex items-center gap-2">
-                        <Select value={comparisonMode} onChange={(e) => setComparisonMode(e.target.value as any)} className="w-[160px] py-1 text-xs bg-slate-900 border-slate-700/50 rounded-lg text-slate-400 focus:text-white focus:border-slate-600">
+                        <Select value={comparisonMode} onChange={(e) => setComparisonMode(e.target.value as any)} className="w-[160px] py-1 text-xs bg-secondary border-border rounded-lg text-foreground focus:border-primary">
                             <option value="month">Mês Atual vs Anterior</option>
                             <option value="semester">Últimos 6 Meses</option>
                             <option value="year">Anual</option>
@@ -611,14 +622,14 @@ export const FinancialOverview: React.FC = () => {
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 ml-2">
                                 <input
                                     type="date"
-                                    className="bg-transparent text-xs text-slate-400 outline-none w-24 border-b border-slate-800 focus:border-emerald-500 transition-colors"
+                                    className="bg-transparent text-xs text-foreground outline-none w-24 border-b border-border focus:border-primary transition-colors"
                                     value={chartCustomRange.start}
                                     onChange={(e) => setChartCustomRange(prev => ({ ...prev, start: e.target.value }))}
                                 />
-                                <span className="text-slate-700">-</span>
+                                <span className="text-muted-foreground">-</span>
                                 <input
                                     type="date"
-                                    className="bg-transparent text-xs text-slate-400 outline-none w-24 border-b border-slate-800 focus:border-emerald-500 transition-colors"
+                                    className="bg-transparent text-xs text-foreground outline-none w-24 border-b border-border focus:border-primary transition-colors"
                                     value={chartCustomRange.end}
                                     onChange={(e) => setChartCustomRange(prev => ({ ...prev, end: e.target.value }))}
                                 />
@@ -742,8 +753,8 @@ export const FinancialOverview: React.FC = () => {
                                     formatter={(value: number) => fmt(value)}
                                     cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }}
                                 />
-                                <Bar dataKey="Receitas" fill="#10b981" radius={[2, 2, 0, 0]} maxBarSize={40} />
-                                <Bar dataKey="Despesas" fill="#f43f5e" radius={[2, 2, 0, 0]} maxBarSize={40} />
+                                <Bar dataKey="Receitas" fill="#1BBF84" radius={[2, 2, 0, 0]} maxBarSize={40} />
+                                <Bar dataKey="Despesas" fill="#EF4444" radius={[2, 2, 0, 0]} maxBarSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

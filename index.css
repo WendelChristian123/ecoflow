@@ -4,57 +4,53 @@
 
 @layer base {
   :root {
-    /* --- Light Mode (Contazze High Contrast) --- */
+    /* --- Light Mode (Contazze Strict Identity) --- */
 
-    /* Background: #F8FAFC (Slate 50) */
+    /* Background: #F8FAFC (Slate 50) - FOUNDATION */
     --background: 210 40% 98%;
 
-    /* Foreground: #030711 (Rich Black) - Contrast Ratio > 7:1 */
+    /* Foreground: #030711 (Rich Black) - PRIMARY TEXT */
     --foreground: 223 71% 4%;
 
-    /* Cards: #F8FAFC (Same as BG but defined for semantic use) */
-    --card: 210 40% 98%;
+    /* Cards: #FFFFFF (Pure White) - SURFACE LAYER 1 */
+    /* Must be distinct from background. Using pure white to pop against F8FAFC. */
+    --card: 0 0% 100%;
     --card-foreground: 223 71% 4%;
 
-    /* Popovers: White for lift, or #F8FAFC if strict */
-    /* User said "Cards & Containers: #F8FAFC". Keeping strict but relying on borders. */
-    --popover: 210 40% 98%;
+    /* Popovers: #FFFFFF (Pure White) - SURFACE LAYER 2 */
+    --popover: 0 0% 100%;
     --popover-foreground: 223 71% 4%;
 
-    /* Primary: #1BBF84 (Vibrant Green) */
+    /* Primary: #1BBF84 (Vibrant Green) - ACTION & POSITIVE */
     --primary: 159 75% 43%;
     --primary-foreground: 0 0% 100%;
-    /* White Text for Buttons */
 
-    /* Secondary: Used for Sidebar/Muted areas. 
-       Mapping to #071A1C with opacity to create "slightly darker" look 
-    */
+    /* Secondary: #071A1C (Deep Dark Teal) - NEUTRAL / BORDERS / MUTED TEXT */
     --secondary: 187 60% 7%;
-    --secondary-foreground: 187 60% 7%;
+    --secondary-foreground: 0 0% 100%;
+    /* Text on secondary should be light */
 
-    /* Muted: Subtle text #071A1C */
-    --muted: 210 40% 96.1%;
-    /* Use Slate 100 for muted backgrounds to distinguish from 50? No, strict palette: #071A1C or #F8FAFC. */
-    /* Let's use #F8FAFC darkened slightly for muted backgrounds, OR #071A1C at 5% opacity */
-    --muted: 187 60% 7%;
-    /* We will use opacity in utility classes like bg-muted/5 */
-    --muted-foreground: 187 60% 7% / 0.7;
+    /* Muted: #F0F4F8 (Light Blue/Gray) for subtle backgrounds to contrast with #071A1C text */
+    --muted: 210 20% 96%;
+    --muted-foreground: 187 60% 7%;
+    /* #071A1C (Secondary Color as Muted Text) */
 
-    /* Accent: Hover states */
-    --accent: 187 60% 7%;
+    /* Accent: #F1F5F9 for hover states */
+    --accent: 210 40% 96.1%;
     --accent-foreground: 187 60% 7%;
 
-    /* Destructive */
+    /* Destructive: #EF4444 (Red 500) - ALERTS ONLY */
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Border: #071A1C at 15-20% opacity for clear visibility */
-    --border: 187 60% 7% / 0.15;
-    --input: 187 60% 7% / 0.20;
+    /* Border: #071A1C at 12% Opacity (Strict rule: 10-15%) */
+    --border: 187 60% 7% / 0.12;
+    --input: 187 60% 7% / 0.12;
 
     --ring: 159 75% 43%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    /* slightly larger radius for modern feel */
   }
 
   /* Force Dark Mode Options for Selects */
@@ -101,6 +97,12 @@
   }
 }
 
+@layer utilities {
+  .shadow-premium {
+    box-shadow: 0 1px 2px rgba(3, 7, 17, 0.06), 0 4px 12px rgba(3, 7, 17, 0.08);
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -121,7 +123,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-700/50 rounded-full hover:bg-slate-600/80 transition-colors;
+    @apply bg-secondary/40 rounded-full hover:bg-secondary/60 transition-colors;
     backdrop-filter: blur(4px);
   }
 }

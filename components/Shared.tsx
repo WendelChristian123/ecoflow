@@ -59,7 +59,7 @@ export const Input: React.FC<InputProps> = ({ className, label, leftIcon, ...pro
       )}
       <input
         className={cn(
-          "w-full bg-input/50 md:bg-input/20 border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium",
+          "w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium shadow-sm",
           leftIcon && "pl-10",
           className
         )}
@@ -110,7 +110,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
             onValueChange(values?.float ?? undefined);
           }}
           className={cn(
-            "w-full bg-input/50 md:bg-input/20 border border-input text-foreground rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium",
+            "w-full bg-card border border-input text-foreground rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium shadow-sm",
             className
           )}
           disabled={disabled}
@@ -141,7 +141,7 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
 export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = ({ className, ...props }) => (
   <textarea
     className={cn(
-      "w-full bg-input/50 md:bg-input/20 border border-input text-foreground rounded-lg px-4 py-2 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 min-h-[100px] transition-all resize-none",
+      "w-full bg-card border border-input text-foreground rounded-lg px-4 py-2 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 min-h-[100px] transition-all resize-none shadow-sm",
       className
     )}
     {...props}
@@ -222,8 +222,8 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
 export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral' | 'outline'; className?: string }> = ({ children, variant = 'default', className }) => {
   const styles = {
     default: 'bg-primary/10 text-primary border-primary/20',
-    success: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-    warning: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    success: 'bg-primary/10 text-primary border-primary/20', // Emerald -> Primary
+    warning: 'bg-secondary/10 text-secondary-foreground border-secondary/20', // Amber -> Secondary (Neutral/Dark)
     error: 'bg-destructive/10 text-destructive border-destructive/20',
     neutral: 'bg-muted text-muted-foreground border-border',
     outline: 'bg-transparent text-muted-foreground border-border',
@@ -278,7 +278,7 @@ export const Card: React.FC<CardProps> = ({ children, className, variant = 'soli
     <div
       onClick={onClick}
       className={cn(
-        "rounded-xl transition-all duration-200 bg-card border border-border shadow-sm shadow-slate-900/5", // High contrast border + subtle shadow
+        "rounded-xl transition-all duration-200 bg-card border border-border shadow-premium", // White Card + Consistent Border + Premium Depth
         !noPadding && "p-5 md:p-6",
         onClick && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
         className
@@ -393,17 +393,17 @@ export const TaskTableView: React.FC<{
   };
 
   const getRowClass = (task: Task) => {
-    if (task.status === 'done') return 'border-l-4 border-l-primary/30 opacity-60 bg-muted/30';
+    if (task.status === 'done') return 'border-l-4 border-l-primary/30 opacity-60 bg-muted/10';
     const dueDate = parseISO(task.dueDate);
     const now = new Date();
     if (isPast(dueDate) && !isToday(dueDate)) {
-      return 'border-l-4 border-l-destructive bg-destructive/5 hover:bg-destructive/10';
+      return 'border-l-4 border-l-destructive bg-card hover:bg-destructive/5';
     }
     const diff = differenceInDays(dueDate, now);
     if (diff <= 3 && diff >= 0) {
-      return 'border-l-4 border-l-amber-500 bg-amber-500/5 hover:bg-amber-500/10';
+      return 'border-l-4 border-l-secondary bg-card hover:bg-secondary/5';
     }
-    return 'border-l-4 border-l-primary bg-primary/5 hover:bg-primary/10';
+    return 'border-l-4 border-l-primary bg-card hover:bg-primary/5';
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>, taskId: string) => {

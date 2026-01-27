@@ -4,7 +4,7 @@ import { api, getErrorMessage } from '../../services/api';
 import { Tenant } from '../../types';
 import { useRBAC } from '../../context/RBACContext';
 import { useTenant } from '../../context/TenantContext';
-import { Loader, Button, Input, Card, Badge } from '../../components/Shared';
+import { Loader, Button, Input, Card, Badge, cn } from '../../components/Shared';
 import { Modal } from '../../components/Shared';
 import { Building2, Plus, Search, LogIn, Calendar, Users, Globe, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -154,33 +154,33 @@ export const SuperAdminTenants: React.FC = () => {
 
     return (
         <div className="space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/20 p-6 rounded-2xl">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-                        <Globe className="text-indigo-400" /> Área Super Admin
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                        <Globe className="text-primary" /> Área Super Admin
                     </h1>
-                    <p className="text-indigo-200/60 text-sm mt-1">Gestão global de empresas e acessos.</p>
+                    <p className="text-muted-foreground text-sm mt-1">Gestão global de empresas e acessos.</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="text-right hidden md:block">
-                        <p className="text-xs text-slate-400 uppercase font-bold">Empresa Atual</p>
-                        <p className="text-white font-medium">{currentTenant?.name || 'Selecione...'}</p>
+                        <p className="text-xs text-muted-foreground uppercase font-bold">Empresa Atual</p>
+                        <p className="text-foreground font-medium">{currentTenant?.name || 'Selecione...'}</p>
                     </div>
-                    <Button onClick={openCreateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-900/20 gap-2">
+                    <Button onClick={openCreateModal} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 gap-2">
                         <Plus size={18} /> Nova Empresa
                     </Button>
                 </div>
             </div>
 
             <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                 <Input placeholder="Buscar empresa..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
 
             {/* TABLE VIEW */}
-            <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
-                <table className="w-full text-left text-sm text-slate-400">
-                    <thead className="bg-slate-950 text-slate-200 uppercase font-bold text-xs">
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+                <table className="w-full text-left text-sm text-muted-foreground">
+                    <thead className="bg-muted/50 text-foreground uppercase font-bold text-xs">
                         <tr>
                             <th className="px-6 py-4">Empresa</th>
                             <th className="px-6 py-4">Admin / Email</th>
@@ -189,34 +189,34 @@ export const SuperAdminTenants: React.FC = () => {
                             <th className="px-6 py-4 text-right">Ações</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-border">
                         {filtered.map(tenant => (
-                            <tr key={tenant.id} className={currentTenant?.id === tenant.id ? 'bg-indigo-500/5' : 'hover:bg-slate-800/50'}>
+                            <tr key={tenant.id} className={currentTenant?.id === tenant.id ? 'bg-primary/5' : 'hover:bg-muted/10'}>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded bg-slate-800 flex items-center justify-center text-indigo-400">
+                                        <div className="h-10 w-10 rounded bg-secondary flex items-center justify-center text-primary">
                                             <Building2 size={20} />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-white">{tenant.name}</p>
-                                            <p className="text-xs text-slate-500">{tenant.cnpj || 'CNPJ não inf.'}</p>
+                                            <p className="font-semibold text-foreground">{tenant.name}</p>
+                                            <p className="text-xs text-muted-foreground">{tenant.cnpj || 'CNPJ não inf.'}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <p className="text-white">{tenant.adminName || 'Admin'}</p>
+                                    <p className="text-foreground">{tenant.adminName || 'Admin'}</p>
                                     <p className="text-xs">{tenant.ownerEmail}</p>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex gap-1 flex-wrap max-w-[200px]">
                                         {tenant.contractedModules?.includes('mod_commercial') && (
-                                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] border border-emerald-500/20">Co</span>
+                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] border border-primary/20">Co</span>
                                         )}
                                         {tenant.contractedModules?.includes('mod_finance') && (
-                                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] border border-amber-500/20">Fi</span>
+                                            <span className="px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground text-[10px] border border-border">Fi</span>
                                         )}
                                         {tenant.contractedModules?.includes('mod_tasks') && (
-                                            <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] border border-blue-500/20">Op</span>
+                                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] border border-primary/20">Op</span>
                                         )}
                                         {(!tenant.contractedModules || tenant.contractedModules.length === 0) && '-'}
                                     </div>
@@ -233,7 +233,7 @@ export const SuperAdminTenants: React.FC = () => {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => handleAccess(tenant.id)}
-                                                className="text-indigo-400 hover:bg-indigo-500/10"
+                                                className="text-primary hover:bg-primary/10"
                                                 title="Acessar"
                                             >
                                                 <LogIn size={16} />
@@ -243,7 +243,7 @@ export const SuperAdminTenants: React.FC = () => {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => openEditModal(tenant)}
-                                            className="text-slate-400 hover:text-white hover:bg-slate-800"
+                                            className="text-muted-foreground hover:text-foreground hover:bg-secondary"
                                             title="Editar"
                                         >
                                             <Edit size={16} />
@@ -259,7 +259,7 @@ export const SuperAdminTenants: React.FC = () => {
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Editar Empresa" : "Nova Empresa (Tenant)"}>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {!editingId && (
-                        <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-sm text-indigo-200 mb-4">
+                        <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg text-sm text-primary mb-4">
                             <p>Ao criar uma empresa, o email informado será automaticamente configurado como o primeiro administrador.</p>
                         </div>
                     )}
@@ -274,19 +274,19 @@ export const SuperAdminTenants: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-3 mb-1">
-                                <label className="text-[10px] uppercase font-bold text-slate-400">Tipo de Documento</label>
-                                <div className="flex bg-slate-800 rounded p-0.5 border border-slate-700">
+                                <label className="text-[10px] uppercase font-bold text-muted-foreground">Tipo de Documento</label>
+                                <div className="flex bg-card rounded p-0.5 border border-border">
                                     <button
                                         type="button"
                                         onClick={() => setDocType('CNPJ')}
-                                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${docType === 'CNPJ' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                                        className={cn("px-2 py-0.5 text-[10px] font-bold rounded transition-colors", docType === 'CNPJ' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
                                     >
                                         CNPJ
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setDocType('CPF')}
-                                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${docType === 'CPF' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                                        className={cn("px-2 py-0.5 text-[10px] font-bold rounded transition-colors", docType === 'CPF' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
                                     >
                                         CPF
                                     </button>
@@ -308,41 +308,41 @@ export const SuperAdminTenants: React.FC = () => {
                         />
                     </div>
 
-                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-3">
-                        <p className="text-xs text-slate-400 font-bold uppercase">Módulos Contratados</p>
+                    <div className="bg-card p-3 rounded-lg border border-border space-y-3">
+                        <p className="text-xs text-muted-foreground font-bold uppercase">Módulos Contratados</p>
                         <div className="flex flex-col gap-2">
-                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-700/50">
+                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-muted/10">
                                 <input
                                     type="checkbox"
-                                    className="rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                                    className="rounded border-input bg-card text-primary focus:ring-primary"
                                     checked={selectedModules.includes('mod_commercial')}
                                     onChange={() => toggleModule('mod_commercial')}
                                 />
-                                <span className="text-sm text-slate-300">Gestão Comercial (CRM, Orçamentos)</span>
+                                <span className="text-sm text-foreground">Gestão Comercial (CRM, Orçamentos)</span>
                             </label>
-                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-700/50">
+                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-muted/10">
                                 <input
                                     type="checkbox"
-                                    className="rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                                    className="rounded border-input bg-card text-primary focus:ring-primary"
                                     checked={selectedModules.includes('mod_tasks')}
                                     onChange={() => toggleModule('mod_tasks')}
                                 />
-                                <span className="text-sm text-slate-300">Rotinas & Execução (Tarefas, Projetos)</span>
+                                <span className="text-sm text-foreground">Rotinas & Execução (Tarefas, Projetos)</span>
                             </label>
-                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-700/50">
+                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-muted/10">
                                 <input
                                     type="checkbox"
-                                    className="rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                                    className="rounded border-input bg-card text-primary focus:ring-primary"
                                     checked={selectedModules.includes('mod_finance')}
                                     onChange={() => toggleModule('mod_finance')}
                                 />
-                                <span className="text-sm text-slate-300">Gestão Financeira</span>
+                                <span className="text-sm text-foreground">Gestão Financeira</span>
                             </label>
                         </div>
                     </div>
 
-                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-3">
-                        <p className="text-xs text-slate-400 font-bold uppercase">Dados de Acesso</p>
+                    <div className="bg-card p-3 rounded-lg border border-border space-y-3">
+                        <p className="text-xs text-muted-foreground font-bold uppercase">Dados de Acesso</p>
                         <Input
                             label="Nome do Admin"
                             placeholder="Nome Completo"
@@ -368,29 +368,29 @@ export const SuperAdminTenants: React.FC = () => {
                                 required
                             />
                         ) : (
-                            <div className="text-xs text-slate-500 italic">
+                            <div className="text-xs text-muted-foreground italic">
                                 * Edição de senha via email não suportada diretamente aqui
                             </div>
                         )}
                     </div>
 
                     {editingId && (
-                        <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-3">
-                            <p className="text-xs text-slate-400 font-bold uppercase">Status</p>
+                        <div className="bg-card p-3 rounded-lg border border-border space-y-3">
+                            <p className="text-xs text-muted-foreground font-bold uppercase">Status</p>
                             <div className="flex gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="radio" name="status" checked={tenantStatus === 'active'} onChange={() => setTenantStatus('active')} />
-                                    <span className={tenantStatus === 'active' ? 'text-emerald-400' : 'text-slate-400'}>Ativo</span>
+                                    <span className={tenantStatus === 'active' ? 'text-primary' : 'text-muted-foreground'}>Ativo</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="radio" name="status" checked={tenantStatus === 'inactive'} onChange={() => setTenantStatus('inactive')} />
-                                    <span className={tenantStatus === 'inactive' ? 'text-rose-400' : 'text-slate-400'}>Inativo / Bloqueado</span>
+                                    <span className={tenantStatus === 'inactive' ? 'text-destructive' : 'text-muted-foreground'}>Inativo / Bloqueado</span>
                                 </label>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
+                    <div className="flex justify-end gap-2 pt-4 border-t border-border">
                         <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
                         <Button type="submit" disabled={creating}>{creating ? 'Salvando...' : (editingId ? 'Salvar Alterações' : 'Criar Empresa')}</Button>
                     </div>

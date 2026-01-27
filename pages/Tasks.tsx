@@ -201,7 +201,7 @@ export const TasksPage: React.FC = () => {
           <p className="text-muted-foreground mt-1">Gerencie suas atividades diárias</p>
         </div>
         {can('routines', 'create') && (
-          <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
+          <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
             <Plus size={16} /> <span className="hidden sm:inline">Nova</span>
           </Button>
         )}

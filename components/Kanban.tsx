@@ -53,11 +53,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, users
 
   const getPriorityColor = (p: Priority) => {
     switch (p) {
-      case 'urgent': return 'error';
-      case 'high': return 'warning';
+      case 'urgent': return 'destructive';
+      case 'high': return 'destructive';
       case 'medium': return 'neutral';
       case 'low': return 'success';
-      default: return 'default';
+      default: return 'neutral';
     }
   };
 
@@ -96,11 +96,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, users
         <div className="flex items-center gap-2">
           <div className={cn("w-2 h-2 rounded-full",
             status === 'todo' ? 'bg-muted-foreground' :
-              status === 'in_progress' ? 'bg-indigo-500' :
-                status === 'review' ? 'bg-amber-500' : 'bg-emerald-500'
+              status === 'in_progress' ? 'bg-secondary' :
+                status === 'review' ? 'bg-secondary/70' : 'bg-primary'
           )}></div>
           <h3 className="font-semibold text-foreground">{title}</h3>
-          <span className="bg-background text-muted-foreground text-xs px-2 py-0.5 rounded-full border border-border">{filteredTasks.length}</span>
+          <span className="bg-card text-muted-foreground text-xs px-2 py-0.5 rounded-full border border-border">{filteredTasks.length}</span>
         </div>
       </div>
 
