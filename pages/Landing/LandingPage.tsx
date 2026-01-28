@@ -467,34 +467,116 @@ export const LandingPage: React.FC = () => {
                         {/* START PLAN */}
                         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col relative overflow-hidden hover:border-slate-600 transition-colors">
                             <h3 className="text-2xl font-bold text-white mb-2">Start</h3>
-                            <p className="text-slate-400 text-sm mb-6 h-10">Para quem precisa parar de perder dinheiro.</p>
+                            <p className="text-slate-400 text-sm mb-6 h-10">Para quem precisa parar de perder dinheiro e organizar a operação básica.</p>
 
                             <div className="mb-6">
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-sm text-slate-400">R$</span>
                                     <span className="text-5xl font-bold text-white">
-                                        {cycle === 'monthly' ? '47' : cycle === 'semiannual' ? '42,90' : '39,90'}
+                                        {'39,90'}
                                     </span>
                                     <span className="text-slate-400">/mês</span>
                                 </div>
-                                {cycle !== 'monthly' && (
-                                    <p className="text-xs text-slate-500 font-medium mt-1">
-                                        Total de <span className="text-slate-300">R$ {cycle === 'semiannual' ? '257,40' : '478,80'}</span> no período
-                                    </p>
+                                {cycle === 'semiannual' && (
+                                    <>
+                                        <p className="text-xs text-slate-500 font-medium mt-1">
+                                            Total de <span className="text-slate-300">R$ 239,40</span> no período
+                                        </p>
+                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-green-500/10 border border-green-500/20 text-[10px] font-bold text-green-400 uppercase tracking-wide">
+                                            Economia de R$ 79,00
+                                        </div>
+                                    </>
+                                )}
+                                {cycle === 'annual' && (
+                                    <>
+                                        <p className="text-xs text-slate-500 font-medium mt-1">
+                                            Total de <span className="text-slate-300">R$ 478,80</span> no período
+                                        </p>
+                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-green-500/10 border border-green-500/20 text-[10px] font-bold text-green-400 uppercase tracking-wide">
+                                            Economia de R$ 200,00
+                                        </div>
+                                    </>
                                 )}
                             </div>
 
-                            <ul className="space-y-4 mb-8 flex-1">
-                                <li className="flex items-center gap-3 text-slate-300 text-sm">
-                                    <CheckCircle2 size={18} className="text-white shrink-0" /> Financeiro Completo
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-300 text-sm">
-                                    <CheckCircle2 size={18} className="text-white shrink-0" /> Rotinas Básicas
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-300 text-sm">
-                                    <CheckCircle2 size={18} className="text-white shrink-0" /> 1 Usuário Incluso
-                                </li>
-                            </ul>
+                            <div className="space-y-6 mb-8 flex-1 text-sm">
+                                {/* Financeiro */}
+                                <div>
+                                    <h4 className="font-bold text-white mb-3 text-xs uppercase tracking-wider">Financeiro</h4>
+                                    <ul className="space-y-3">
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Visão geral financeira
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Lançamentos
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Contas & Bancos
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Categorias financeiras
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Cartões
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Relatórios financeiros essenciais
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Rotinas */}
+                                <div>
+                                    <h4 className="font-bold text-white mb-3 text-xs uppercase tracking-wider">Rotinas & Execução</h4>
+                                    <ul className="space-y-3">
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Visão geral de rotinas
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Tarefas
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Projetos
+                                        </li>
+                                        <li className="flex items-center gap-3 text-slate-300">
+                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Agenda
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Comercial (Unavailable) */}
+                                <div>
+                                    <h4 className="font-bold text-slate-600 mb-3 text-xs uppercase tracking-wider">Comercial</h4>
+                                    <ul className="space-y-3">
+                                        {[
+                                            "Visão geral comercial",
+                                            "Contatos",
+                                            "Orçamentos",
+                                            "Contratos",
+                                            "Catálogo"
+                                        ].map((item, i) => (
+                                            <li key={i} className="flex items-center gap-3 text-slate-600 line-through decoration-slate-700">
+                                                <XCircle size={16} className="text-slate-700 shrink-0" />
+                                                <span className="flex-1">{item}</span>
+                                                <span className="text-[10px] font-bold bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">Indisponível</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* Users */}
+                                <div className="pt-4 border-t border-slate-800">
+                                    <ul className="space-y-2">
+                                        <li className="flex items-center gap-2 text-slate-300 text-xs">
+                                            <Users size={14} className="text-slate-500" /> 1 usuário incluso
+                                        </li>
+                                        <li className="flex items-center gap-2 text-slate-400 text-xs">
+                                            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full border border-slate-600 text-[8px] text-slate-500">+</span>
+                                            Usuário adicional: R$ 24,90/mês
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
 
                             <Button onClick={() => handlePlanSelect('start')} variant="outline" className="w-full border-slate-700 hover:bg-white hover:text-black text-white h-12 rounded-xl transition-all">
                                 Testar Start Grátis
@@ -507,46 +589,128 @@ export const LandingPage: React.FC = () => {
                             <div className="absolute top-4 right-4 bg-primary text-white text-[10px] uppercase font-bold px-3 py-1 rounded-full">Mais Popular</div>
 
                             <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
-                            <p className="text-emerald-100/70 text-sm mb-6 h-10">Para quem quer crescer com controle total.</p>
+                            <p className="text-emerald-100/70 text-sm mb-6 h-10">Para quem quer crescer com controle total do financeiro, operação e vendas.</p>
 
                             <div className="mb-6">
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-sm text-emerald-200">R$</span>
                                     <span className="text-6xl font-bold text-white tracking-tighter">
-                                        {cycle === 'monthly' ? '97' : cycle === 'semiannual' ? '87,90' : '79,90'}
+                                        {'79,90'}
                                     </span>
                                     <span className="text-emerald-200">/mês</span>
                                 </div>
-                                {cycle !== 'monthly' && (
-                                    <p className="text-xs text-emerald-200/60 font-medium mt-1">
-                                        Total de <span className="text-emerald-200">R$ {cycle === 'semiannual' ? '527,40' : '958,80'}</span> no período
-                                    </p>
+                                {cycle === 'semiannual' && (
+                                    <>
+                                        <p className="text-xs text-emerald-200/60 font-medium mt-1">
+                                            Total de <span className="text-emerald-200">R$ 479,40</span> no período
+                                        </p>
+                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 uppercase tracking-wide">
+                                            Economia de R$ 99,00
+                                        </div>
+                                    </>
+                                )}
+                                {cycle === 'annual' && (
+                                    <>
+                                        <p className="text-xs text-emerald-200/60 font-medium mt-1">
+                                            Total de <span className="text-emerald-200">R$ 958,80</span> no período
+                                        </p>
+                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 uppercase tracking-wide">
+                                            Economia de R$ 300,00
+                                        </div>
+                                    </>
                                 )}
                             </div>
 
-                            <ul className="space-y-4 mb-8 flex-1">
-                                <li className="flex items-center gap-3 font-medium text-sm">
-                                    <CheckCircle2 size={18} className="text-primary shrink-0" /> Tudo do Plano Start
-                                </li>
-                                <li className="flex items-center gap-3 font-medium text-sm">
-                                    <CheckCircle2 size={18} className="text-primary shrink-0" /> CRM Completo
-                                </li>
-                                <li className="flex items-center gap-3 font-medium text-sm">
-                                    <CheckCircle2 size={18} className="text-primary shrink-0" /> Automação de Tarefas
-                                </li>
-                                <li className="flex items-center gap-3 font-medium text-sm">
-                                    <CheckCircle2 size={18} className="text-primary shrink-0" /> Relatórios Avançados
-                                </li>
-                                <li className="flex items-center gap-3 font-medium text-sm">
-                                    <CheckCircle2 size={18} className="text-primary shrink-0" /> Até 5 Usuários
-                                </li>
-                            </ul>
+                            <div className="space-y-6 mb-8 flex-1 text-sm">
+                                {/* Financeiro */}
+                                <div>
+                                    <h4 className="font-bold text-emerald-400 mb-3 text-xs uppercase tracking-wider">Financeiro</h4>
+                                    <ul className="space-y-3">
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Visão geral financeira
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Lançamentos
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Contas & Bancos
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Categorias financeiras
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Cartões
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Relatórios financeiros estratégicos
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Rotinas */}
+                                <div>
+                                    <h4 className="font-bold text-cyan-400 mb-3 text-xs uppercase tracking-wider">Rotinas & Execução</h4>
+                                    <ul className="space-y-3">
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Visão geral de rotinas
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Tarefas
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Projetos
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Equipes
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Agenda
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Organização por responsáveis
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Comercial */}
+                                <div>
+                                    <h4 className="font-bold text-purple-400 mb-3 text-xs uppercase tracking-wider">Comercial</h4>
+                                    <ul className="space-y-3">
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Visão geral comercial
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Contatos
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Orçamentos
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Contratos
+                                        </li>
+                                        <li className="flex items-center gap-3 font-medium">
+                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Catálogo
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Users */}
+                                <div className="pt-4 border-t border-primary/20">
+                                    <ul className="space-y-2">
+                                        <li className="flex items-center gap-2 text-white font-bold text-xs">
+                                            <Users size={14} className="text-primary" /> Até 5 usuários inclusos
+                                        </li>
+                                        <li className="flex items-center gap-2 text-emerald-200/70 text-xs">
+                                            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full border border-primary/50 text-[8px] text-primary">+</span>
+                                            Usuário adicional: R$ 24,90/mês
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
 
                             <Button onClick={() => handlePlanSelect('pro')} className="w-full bg-primary hover:bg-primary/90 text-white h-14 rounded-xl font-bold text-lg shadow-lg shadow-primary/25">
                                 Testar Pro Grátis
                             </Button>
-
-                            <p className="text-center mt-4 text-xs text-slate-500">Usuário adicional: R$ 24,90/mês</p>
                         </div>
                     </div>
                 </div>

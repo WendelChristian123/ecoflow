@@ -9,6 +9,7 @@ import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon
 import { CreateUserModal, EditUserModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
+import { SharedAccessPanel } from '../components/Permissions/SharedAccessPanel';
 import { checkUserLimit, UserLimitStatus } from '../services/limits';
 
 export const SettingsPage: React.FC = () => {
@@ -172,81 +173,12 @@ export const SettingsPage: React.FC = () => {
                 )}
             </div>
 
-            {/* TAB: DELEGATION */}
+            {/* TAB: DELEGATION (SHARED ACCESS) */}
             {activeTab === 'delegation' && (
-                <Card className="p-6" variant="solid">
-                    <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                                <UsersIcon size={20} className="text-indigo-500" />
-                                Meus Acessos Compartilhados
-                            </h2>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Usuários listados aqui podem visualizar ou editar seus dados conforme permissão.
-                            </p>
-                        </div>
-                        <Button variant="secondary" className="gap-2" onClick={() => { setEditingDelegations([]); setIsDelegationOpen(true); }}>
-                            <UserPlus size={16} /> Conceder Acesso
-                        </Button>
-                    </div>
-
-                    {Object.keys(groupedDelegations).length === 0 ? (
-                        <div className="text-center py-8 border border-dashed border-border rounded-lg text-muted-foreground text-sm">
-                            Você não compartilhou acesso com ninguém ainda.
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {Object.values(groupedDelegations).map(({ user, delegations, isOwner }) => {
-                                const canManage = isOwner || isAdmin;
-
-                                return (
-                                    <div key={user?.id || 'unknown'} className="bg-card border border-border rounded-lg p-4 flex flex-col gap-3 relative group hover:border-primary/50 transition-colors shadow-sm">
-                                        {canManage && (
-                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => { setEditingDelegations(delegations); setIsDelegationOpen(true); }}
-                                                    className="p-1 text-muted-foreground hover:text-primary transition-colors"
-                                                    title="Editar Permissões"
-                                                >
-                                                    <Pencil size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteAccess(delegations)}
-                                                    className="p-1 text-muted-foreground hover:text-rose-500 transition-colors"
-                                                    title="Revogar Acesso"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        <div className="flex items-center gap-3">
-                                            <Avatar src={user?.avatarUrl} name={user?.name || 'Usuário'} />
-                                            <div className="overflow-hidden">
-                                                <div className="text-xs text-muted-foreground mb-0.5">{isOwner ? 'Compartilhado com:' : 'Compartilhado por:'}</div>
-                                                <div className="font-medium text-foreground truncate">{user?.name || 'Desconhecido'}</div>
-                                                <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2 mt-2 pt-2 border-t border-border/50">
-                                            {delegations.map(del => (
-                                                <div key={del.id} className="flex items-center justify-between text-sm">
-                                                    <Badge variant="neutral" className="px-2 py-0.5 text-xs">{translateModule(del.module)}</Badge>
-                                                    <div className="flex gap-1">
-                                                        {del.permissions.view && <span title="Ver" className="text-emerald-500 bg-emerald-500/10 p-1 rounded"><CheckCircle size={12} /></span>}
-                                                        {del.permissions.create && <span title="Criar" className="text-blue-500 bg-blue-500/10 p-1 rounded"><Plus size={12} /></span>}
-                                                        {del.permissions.edit && <span title="Editar" className="text-amber-500 bg-amber-500/10 p-1 rounded"><Shield size={12} /></span>}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </Card>
+                <div className="animate-in fade-in slide-in-from-bottom-4">
+                    {/* New SharedAccessPanel Component */}
+                    <SharedAccessPanel />
+                </div>
             )}
 
             {/* TAB: USERS */}

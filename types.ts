@@ -5,16 +5,56 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 // --- RBAC Types ---
 export type UserRole = 'admin' | 'user' | 'super_admin';
 
-export interface ModulePermissions {
+// --- New Granular Permissions Types ---
+
+export interface Actions {
   view: boolean;
   create: boolean;
   edit: boolean;
+  delete: boolean;
 }
 
-export interface UserPermissions {
-  routines: ModulePermissions;
-  finance: ModulePermissions;
-  commercial: ModulePermissions;
+export interface AppModule {
+  id: string; // e.g., 'finance'
+  name: string;
+  description?: string;
+}
+
+export interface AppFeature {
+  id: string; // e.g., 'finance.payables'
+  module_id: string;
+  name: string;
+}
+
+export interface TenantModule {
+  tenant_id: string;
+  module_id: string;
+  status: 'included' | 'extra' | 'disabled';
+}
+
+export interface UserPermission {
+  tenant_id: string;
+  user_id: string;
+  feature_id: string;
+  actions: Actions;
+}
+
+export interface SharedAccess {
+  id: string;
+  tenant_id: string;
+  owner_id: string;
+  target_id: string;
+  feature_id: string;
+  actions: Actions;
+  created_at: string;
+  expires_at?: string;
+}
+
+// Old types deprecated but kept for transition if needed (user.permissions field might need refactor)
+export interface LegacyUserPermissions {
+  routines: { view: boolean; create: boolean; edit: boolean };
+  finance: { view: boolean; create: boolean; edit: boolean };
+  commercial: { view: boolean; create: boolean; edit: boolean };
   reports: { view: boolean };
 }
 
@@ -105,7 +145,8 @@ export interface User {
   role: UserRole;
   email: string;
   phone?: string;
-  permissions?: UserPermissions;
+  permissions?: LegacyUserPermissions; // @deprecated
+  granular_permissions?: UserPermission[]; // New strict structure
   tenantId?: string; // Multi-tenant link
   companyName?: string; // Optional for global views
   // New Real Fields

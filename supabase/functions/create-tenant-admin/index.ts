@@ -115,6 +115,26 @@ Deno.serve(async (req) => {
         createdTenantId = newTenant.id;
         console.log(`[V9] Tenant created: ${createdTenantId}`);
 
+        // 2a. INSERT TENANT MODULES (3-Layer Architecture)
+        if (modules && modules.length > 0) {
+            const tenantModules = modules.map((m: string) => {
+                const parts = m.split(':');
+                const modId = parts[0];
+                const type = parts[1] === 'extra' ? 'extra' : 'included';
+                return {
+                    tenant_id: createdTenantId,
+                    module_id: modId,
+                    status: 'active',
+                    config: { type }
+                };
+            });
+            const { error: modError } = await supabaseAdmin.from('tenant_modules').insert(tenantModules);
+            if (modError) {
+                console.error(`[V9][MODULE_FAIL] ${modError.message}`);
+                throw new Error(`Failed to configure modules: ${modError.message}`);
+            }
+        }
+
         // 3. RETRY LOOP FOR PROFILE
         let profileLinked = false;
         let lastProfileError = null;

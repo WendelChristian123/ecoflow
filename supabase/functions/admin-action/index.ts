@@ -36,18 +36,45 @@ serve(async (req) => {
 
         const { data: profile } = await serviceClient
             .from('profiles')
-            .select('role')
+            .select('role, tenant_id')
             .eq('id', user.id)
             .single();
 
-        if (!profile || profile.role !== 'super_admin') {
-            throw new Error("Forbidden: Super Admin access required");
+        if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+            throw new Error("Forbidden: Admin access required");
         }
 
         const { action, targetId, payload } = await req.json();
 
         if (!targetId || !action) {
             throw new Error("Missing action or targetId");
+        }
+
+        // TENANT SECURITY CHECK (For non-super_admins)
+        if (profile.role !== 'super_admin') {
+            // 1. Fetch target user profile to check tenant
+            const { data: targetProfile, error: targetError } = await serviceClient
+                .from('profiles')
+                .select('tenant_id, role')
+                .eq('id', targetId)
+                .single();
+
+            if (targetError || !targetProfile) {
+                // If user exists in Auth but not Profile, it's an edge case. 
+                // But for safety, we block unless we are sure.
+                // Or maybe we allow deleting "orphaned" users? safer to block.
+                throw new Error("Target user profile not found or access denied");
+            }
+
+            // 2. Strict Tenant Match
+            if (targetProfile.tenant_id !== profile.tenant_id) {
+                throw new Error("Forbidden: You can only manage users in your own organization");
+            }
+
+            // 3. Prevent deleting yourself
+            if (targetId === user.id) {
+                throw new Error("Operation not allowed on yourself");
+            }
         }
 
         let result;

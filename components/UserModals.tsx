@@ -1,11 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, cn } from './Shared';
-import { User, UserRole, UserPermissions, Delegation } from '../types';
+import { User, UserRole, LegacyUserPermissions, Delegation } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
 import { DEFAULT_USER_PERMISSIONS } from '../context/RBACContext';
 import { Shield, Check, X, AlertTriangle, UserCheck, Lock, CheckSquare, Square } from 'lucide-react';
+
+// --- User Modals with Dynamic Catalog ---
+
+import { PermissionAccordion } from './Permissions/PermissionAccordion';
+import { UserPermission, Actions, AppModule, AppFeature } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface CreateUserModalProps {
     isOpen: boolean;
@@ -14,6 +20,7 @@ interface CreateUserModalProps {
 }
 
 export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSuccess }) => {
+    const { user: currentUser } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -22,22 +29,73 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
         role: 'user' as UserRole
     });
     const [loading, setLoading] = useState(false);
-    const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_USER_PERMISSIONS);
+    const [granularPermissions, setGranularPermissions] = useState<Record<string, UserPermission>>({});
+
+    // Dynamic Data
+    const [systemModules, setSystemModules] = useState<AppModule[]>([]);
+    const [systemFeatures, setSystemFeatures] = useState<AppFeature[]>([]);
+    const [tenantModuleStatus, setTenantModuleStatus] = useState<Record<string, any>>({});
 
     useEffect(() => {
         if (isOpen) {
-            setFormData({ name: '', email: '', phone: '', password: '', role: 'user' });
-            setPermissions(DEFAULT_USER_PERMISSIONS);
+            setFormData({ name: '', email: '', phone: '', password: '', role: 'user' as UserRole });
+            setGranularPermissions({});
+            loadCatalog();
         }
     }, [isOpen]);
+
+    const loadCatalog = async () => {
+        try {
+            const { modules, features } = await api.getSystemCatalog();
+            setSystemModules(modules);
+            setSystemFeatures(features);
+
+            if (currentUser?.tenantId) {
+                const tm = await api.getTenantModules(currentUser.tenantId);
+                setTenantModuleStatus(tm);
+            }
+        } catch (error) {
+            console.error("Failed to load catalog", error);
+        }
+    };
+
+    const handlePermissionChange = (featureId: string, action: keyof Actions, value: boolean) => {
+        setGranularPermissions(prev => {
+            const current = prev[featureId] || {
+                tenant_id: currentUser?.tenantId || '',
+                user_id: '',
+                feature_id: featureId,
+                actions: { view: false, create: false, edit: false, delete: false }
+            };
+
+            const newActions = { ...current.actions, [action]: value };
+
+            if (action === 'view' && !value) {
+                newActions.create = false;
+                newActions.edit = false;
+                newActions.delete = false;
+            }
+            if (action !== 'view' && value) {
+                newActions.view = true;
+            }
+
+            return {
+                ...prev,
+                [featureId]: { ...current, actions: newActions }
+            };
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
+            const granularArray = Object.values(granularPermissions);
+
             await api.createUser({
                 ...formData,
-                permissions: formData.role === 'user' ? permissions : undefined
+                permissions: undefined,
+                granular_permissions: formData.role === 'user' ? granularArray : undefined
             });
             onSuccess();
             onClose();
@@ -93,45 +151,26 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                 </div>
 
                 {formData.role === 'user' && (
-                    <div className="bg-secondary/30 p-4 rounded-lg border border-border space-y-4">
-                        <div className="flex items-center gap-2 text-foreground text-sm font-semibold border-b border-border pb-2">
+                    <div className="bg-secondary/30 p-2 rounded-lg border border-border space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                        <div className="flex items-center gap-2 text-foreground text-sm font-semibold border-b border-border pb-2 px-2">
                             <Shield size={14} className="text-emerald-500" />
-                            Permissões de Acesso
+                            Permissões Granulares
                         </div>
 
-                        <PermissionToggleGroup
-                            label="Rotinas & Execução"
-                            values={permissions.routines}
-                            onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
+                        <PermissionAccordion
+                            modules={systemModules}
+                            features={systemFeatures}
+                            permissions={granularPermissions}
+                            onChange={handlePermissionChange}
+                            tenantModuleStatus={tenantModuleStatus}
                         />
-
-                        <PermissionToggleGroup
-                            label="Comercial"
-                            values={permissions.commercial}
-                            onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
-                        />
-
-                        <PermissionToggleGroup
-                            label="Financeiro"
-                            values={permissions.finance}
-                            onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
-                        />
-
-                        <div className="flex items-center justify-between py-1">
-                            <span className="text-sm text-muted-foreground">Relatórios</span>
-                            <Toggle
-                                checked={permissions.reports.view}
-                                onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
-                                label="Ver"
-                            />
-                        </div>
                     </div>
                 )}
 
                 {formData.role === 'admin' && (
                     <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-3">
                         <AlertTriangle className="text-amber-500 shrink-0" size={18} />
-                        <p className="text-xs text-amber-500">Administradores têm acesso irrestrito a todos os módulos, podem excluir registros e gerenciar outros usuários.</p>
+                        <p className="text-xs text-amber-500">Administradores têm acesso irrestrito a todos os módulos.</p>
                     </div>
                 )}
 
@@ -152,39 +191,98 @@ interface EditUserModalProps {
 }
 
 export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, onSuccess, user }) => {
-    const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_USER_PERMISSIONS);
+    const { user: currentUser } = useAuth();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [status, setStatus] = useState<string>('active');
     const [role, setRole] = useState<string>('user');
     const [loading, setLoading] = useState(false);
+    const [granularPermissions, setGranularPermissions] = useState<Record<string, UserPermission>>({});
+
+    // Dynamic Data
+    const [systemModules, setSystemModules] = useState<AppModule[]>([]);
+    const [systemFeatures, setSystemFeatures] = useState<AppFeature[]>([]);
+    const [tenantModuleStatus, setTenantModuleStatus] = useState<Record<string, any>>({});
 
     useEffect(() => {
-        if (user) {
-            setPermissions(user.permissions || DEFAULT_USER_PERMISSIONS);
+        if (isOpen && user) {
             setName(user.name);
             setPhone(user.phone || '');
             setStatus(user.status || 'active');
             setRole(user.role || 'user');
+
+            // Hydrate permissions
+            const permMap: Record<string, UserPermission> = {};
+            if (user.granular_permissions) {
+                user.granular_permissions.forEach(p => permMap[p.feature_id] = p);
+            }
+            setGranularPermissions(permMap);
+            loadCatalog();
+
         } else {
-            setPermissions(DEFAULT_USER_PERMISSIONS);
             setName('');
             setPhone('');
             setStatus('active');
             setRole('user');
+            setGranularPermissions({});
         }
     }, [user, isOpen]);
+
+    const loadCatalog = async () => {
+        try {
+            const { modules, features } = await api.getSystemCatalog();
+            setSystemModules(modules);
+            setSystemFeatures(features);
+
+            if (currentUser?.tenantId) {
+                const tm = await api.getTenantModules(currentUser.tenantId);
+                setTenantModuleStatus(tm);
+            }
+        } catch (error) {
+            console.error("Failed to load catalog", error);
+        }
+    };
+
+    const handlePermissionChange = (featureId: string, action: keyof Actions, value: boolean) => {
+        setGranularPermissions(prev => {
+            const current = prev[featureId] || {
+                tenant_id: user?.tenantId || '',
+                user_id: user?.id || '',
+                feature_id: featureId,
+                actions: { view: false, create: false, edit: false, delete: false }
+            };
+
+            const newActions = { ...current.actions, [action]: value };
+
+            if (action === 'view' && !value) {
+                newActions.create = false;
+                newActions.edit = false;
+                newActions.delete = false;
+            }
+            if (action !== 'view' && value) {
+                newActions.view = true;
+            }
+
+            return {
+                ...prev,
+                [featureId]: { ...current, actions: newActions }
+            };
+        });
+    };
 
     const handleSubmit = async () => {
         if (!user) return;
         setLoading(true);
         try {
+            // Validate: if role is user, we send updated permissions.
+            // If role is admin, granular is ignored (or cleared).
             await api.adminUpdateUser(user.id, {
                 name,
                 phone,
                 status,
                 role,
-                permissions: role === 'user' ? permissions : undefined
+                permissions: undefined,
+                granular_permissions: role === 'user' ? Object.values(granularPermissions) : undefined
             });
             onSuccess();
             onClose();
@@ -246,36 +344,20 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                 {role === 'user' ? (
                     <div className="space-y-4 pt-4 border-t border-border">
                         <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Permissões de Acesso</p>
-                        <div className="bg-secondary/30 p-4 rounded-lg border border-border space-y-4">
-                            <PermissionToggleGroup
-                                label="Rotinas & Execução"
-                                values={permissions.routines}
-                                onChange={(newVals) => setPermissions({ ...permissions, routines: newVals })}
+                        <div className="bg-secondary/30 p-2 rounded-lg border border-border space-y-4">
+                            <PermissionAccordion
+                                modules={systemModules}
+                                features={systemFeatures}
+                                permissions={granularPermissions}
+                                onChange={handlePermissionChange}
+                                tenantModuleStatus={tenantModuleStatus}
                             />
-                            <PermissionToggleGroup
-                                label="Comercial"
-                                values={permissions.commercial}
-                                onChange={(newVals) => setPermissions({ ...permissions, commercial: newVals })}
-                            />
-                            <PermissionToggleGroup
-                                label="Financeiro"
-                                values={permissions.finance}
-                                onChange={(newVals) => setPermissions({ ...permissions, finance: newVals })}
-                            />
-                            <div className="flex items-center justify-between py-1">
-                                <span className="text-sm text-muted-foreground">Relatórios</span>
-                                <Toggle
-                                    checked={permissions.reports.view}
-                                    onChange={v => setPermissions({ ...permissions, reports: { view: v } })}
-                                    label="Ver"
-                                />
-                            </div>
                         </div>
                     </div>
                 ) : (
                     <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-3 mt-4">
                         <AlertTriangle className="text-amber-500 shrink-0" size={18} />
-                        <p className="text-xs text-amber-500">Administradores têm acesso irrestrito a todos os módulos, podem excluir registros e gerenciar outros usuários.</p>
+                        <p className="text-xs text-amber-500">Administradores têm acesso irrestrito a todos os módulos.</p>
                     </div>
                 )}
 
