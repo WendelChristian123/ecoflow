@@ -29,7 +29,7 @@ export const DEFAULT_USER_PERMISSIONS: UserPermissions = {
 };
 
 // Map Permission Modules to System Module IDs and Feature Prefixes
-const MODULE_MAP: Record<string, { sysId: string, featPrefix: string }> = {
+export const MODULE_MAP: Record<string, { sysId: string, featPrefix: string }> = {
   'routines': { sysId: 'mod_tasks', featPrefix: 'tasks_' },
   'finance': { sysId: 'mod_finance', featPrefix: 'finance_' },
   'commercial': { sysId: 'mod_commercial', featPrefix: 'crm_' },
@@ -38,7 +38,7 @@ const MODULE_MAP: Record<string, { sysId: string, featPrefix: string }> = {
 
 // Map Exception strings from Layout to Constants
 // Map Exception strings from Layout to Constants
-const FEATURE_EXCEPTION_MAP: Record<string, string> = {
+export const FEATURE_EXCEPTION_MAP: Record<string, string> = {
   // Finance
   'finance.dashboard': 'finance_overview',
   'finance.accounts': 'finance_banking',

@@ -4,7 +4,7 @@ import { Modal, Button, Input, Select, cn } from './Shared';
 import { User, UserRole, LegacyUserPermissions, Delegation } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
-import { DEFAULT_USER_PERMISSIONS } from '../context/RBACContext';
+import { DEFAULT_USER_PERMISSIONS, MODULE_MAP, FEATURE_EXCEPTION_MAP } from '../context/RBACContext';
 import { Shield, Check, X, AlertTriangle, UserCheck, Lock, CheckSquare, Square } from 'lucide-react';
 
 // --- User Modals with Dynamic Catalog ---
@@ -12,6 +12,7 @@ import { Shield, Check, X, AlertTriangle, UserCheck, Lock, CheckSquare, Square }
 import { PermissionAccordion } from './Permissions/PermissionAccordion';
 import { UserPermission, Actions, AppModule, AppFeature } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useTenant } from '../context/TenantContext';
 
 interface CreateUserModalProps {
     isOpen: boolean;
@@ -31,24 +32,83 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
     const [loading, setLoading] = useState(false);
     const [granularPermissions, setGranularPermissions] = useState<Record<string, UserPermission>>({});
 
-    // Dynamic Data
+    // --- Dynamic Data ---
     const [systemModules, setSystemModules] = useState<AppModule[]>([]);
     const [systemFeatures, setSystemFeatures] = useState<AppFeature[]>([]);
     const [tenantModuleStatus, setTenantModuleStatus] = useState<Record<string, any>>({});
+
+    // We need currentTenant to know the PLAN limits
+    const { currentTenant } = useTenant();
 
     useEffect(() => {
         if (isOpen) {
             setFormData({ name: '', email: '', phone: '', password: '', role: 'user' as UserRole });
             setGranularPermissions({});
-            loadCatalog();
+            // Only load if tenant is ready, otherwise the effect will re-run when it is
+            if (currentTenant) loadCatalog();
         }
-    }, [isOpen]);
+    }, [isOpen, currentTenant]);
 
     const loadCatalog = async () => {
+        if (!currentTenant?.contractedModules) return;
+
         try {
             const { modules, features } = await api.getSystemCatalog();
-            setSystemModules(modules);
-            setSystemFeatures(features);
+            const planModules = currentTenant.contractedModules;
+
+            // 1. Filter Modules: Only allow modules present in the Plan
+            const allowedModules = modules.filter(m => {
+                const sysMap = MODULE_MAP[m.id];
+                const sysId = sysMap ? sysMap.sysId : m.id;
+                // Allow if exact ID matches OR if implicit extra/legacy check passes (though Plan usually has system IDs)
+                return planModules.includes(sysId) || planModules.includes(`${sysId}:extra`);
+            });
+
+            // 2. Filter Features
+            const allowedFeatures = features.filter(f => {
+                const sysMap = MODULE_MAP[f.module_id];
+                const sysModId = sysMap ? sysMap.sysId : f.module_id;
+
+                // Feature must belong to an allowed module (Base Check)
+                if (!planModules.includes(sysModId) && !planModules.includes(`${sysModId}:extra`)) return false;
+
+                // --- Granular Check Logic (Matches RBACContext checkPlanAccess) ---
+
+                // Construct the "Plan Feature ID"
+                // 1. Split ID by dot to get the subFeature (e.g. 'finance.dashboard' -> 'dashboard')
+                // System features in DB are often 'module.subfeature'
+                const parts = f.id.split('.');
+                const subFeature = parts.length > 1 ? parts[1] : parts[0];
+
+                // 2. Base Prefix + SubFeature
+                let expectedFeatId = sysMap ? `${sysMap.featPrefix}${subFeature}` : f.id;
+
+                // 3. Exception Map (e.g. routines.dashboard -> tasks_overview)
+                // Use the FULL f.id (e.g. 'finance.dashboard') as the key
+                if (FEATURE_EXCEPTION_MAP[f.id]) {
+                    expectedFeatId = FEATURE_EXCEPTION_MAP[f.id];
+                } else if (f.module_id === 'commercial' && subFeature === 'contracts') {
+                    expectedFeatId = 'crm_contracts';
+                }
+
+                // 4. Final Granular Key in Plan (e.g. mod_tasks:tasks_overview)
+                const granularKey = `${sysModId}:${expectedFeatId}`;
+
+                // Does the plan contain ANY granular storage for this module?
+                // (Check for any string starting with "mod_id:" BUT NOT "mod_id:extra")
+                const hasGranularForModule = planModules.some(p => p.startsWith(`${sysModId}:`) && !p.endsWith(':extra'));
+
+                if (hasGranularForModule) {
+                    // Strict Mode: Only allow if explicitly included in the plan
+                    return planModules.includes(granularKey);
+                }
+
+                // Legacy/Default Mode: If no granular features are listed for this module, allow ALL features.
+                return true;
+            });
+
+            setSystemModules(allowedModules);
+            setSystemFeatures(allowedFeatures);
 
             if (currentUser?.tenantId) {
                 const tm = await api.getTenantModules(currentUser.tenantId);

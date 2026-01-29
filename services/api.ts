@@ -1608,30 +1608,50 @@ export const api = {
         const { error } = await supabase.from('tenants').update(dbData).eq('id', id);
         if (error) throw error;
 
-        // Sync tenant_modules if modules are provided
         if (data.modules && Array.isArray(data.modules)) {
-            // 1. Delete existing for this tenant (Simple sync strategy: Replace All)
-            // Or better: Upsert. But how to handle deleted?
-            // Strategy: Delete not in new list?
-            // "data.modules" is the string array ['finance', 'routines:extra']
+            // 1. Deduplicate input modules (Fix for duplicate key error)
+            const uniqueModules = Array.from(new Set(data.modules as string[]));
 
-            // Delete all current overrides to ensure clean state matching the array
-            // Optimization: Only delete if necessary, but 'Delete All' is safer for 'Full Sync'
+            // 2. Delete existing for this tenant
             await supabase.from('tenant_modules').delete().eq('tenant_id', id);
 
-            if (data.modules.length > 0) {
-                const tenantModules = data.modules.map((m: string) => {
+            if (uniqueModules.length > 0) {
+                const tenantModules = uniqueModules.map((m: string) => {
                     const parts = m.split(':');
-                    const modId = parts[0];
+                    const modIdRaw = parts[0];
                     const type = parts[1] === 'extra' ? 'extra' : 'included';
+
+                    // Fix for FK Constraint: Map Plan ID (mod_*) to DB Catalog ID
+                    let dbModuleId = modIdRaw;
+                    if (modIdRaw === 'mod_tasks') dbModuleId = 'routines';
+                    if (modIdRaw === 'mod_finance') dbModuleId = 'finance';
+                    if (modIdRaw === 'mod_commercial') dbModuleId = 'commercial';
+                    if (modIdRaw === 'mod_reports') dbModuleId = 'reports';
+
                     return {
                         tenant_id: id,
-                        module_id: modId,
+                        module_id: dbModuleId,
                         status: 'active',
                         config: { type }
                     };
                 });
-                const { error: modError } = await supabase.from('tenant_modules').insert(tenantModules);
+
+                // 3. Final safety check: Filter out any duplicates that might have slipped through mapping (e.g. 'finance' and 'finance:extra' both map to module_id 'finance')
+                // We prioritize 'included' over 'extra' if both exist? Or just take the first one?
+                // Let's use a Map to ensure unique module_id
+                const uniqueInserts = new Map();
+                tenantModules.forEach((tm: any) => {
+                    if (!uniqueInserts.has(tm.module_id)) {
+                        uniqueInserts.set(tm.module_id, tm);
+                    } else {
+                        // If we have a conflict, we might want to prefer 'included'
+                        // But for now, first wins is fine as dedupe on string already handled exact matches.
+                    }
+                });
+
+                const finalInserts = Array.from(uniqueInserts.values());
+
+                const { error: modError } = await supabase.from('tenant_modules').insert(finalInserts);
                 if (modError) throw modError;
             }
         }
