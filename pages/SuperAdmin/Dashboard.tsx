@@ -5,11 +5,11 @@ import { maskCNPJ, maskPhone, maskCPF } from '../../utils/masks';
 import { useRBAC } from '../../context/RBACContext';
 import { useTenant } from '../../context/TenantContext';
 import { useAuth } from '../../context/AuthContext';
-import { Loader, Button, Input, Card, Badge, Modal, Select } from '../../components/Shared';
+import { Loader, Button, Input, Card, Badge, Modal, Select, cn } from '../../components/Shared';
 import {
     Building2, Plus, Search, Globe, Lock, CheckCircle2, Edit2, Package,
     AlertTriangle, Terminal, MoreVertical, CreditCard, PauseCircle,
-    Trash2, PlayCircle, Shield, Calendar, Filter, UserCog
+    Trash2, PlayCircle, Shield, Calendar, Filter, UserCog, Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SYSTEM_MODULES } from '../../lib/constants';
@@ -40,6 +40,11 @@ export const SuperAdminDashboard: React.FC = () => {
         planId: '', billingCycle: 'monthly', subscriptionStart: '', subscriptionEnd: ''
     });
     const [draftModules, setDraftModules] = useState<string[]>(['mod_tasks']);
+    // New Granular Module State
+    const [moduleConfig, setModuleConfig] = useState<Record<string, 'included' | 'locked' | 'extra'>>({});
+    const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(new Set());
+    const [activeCategoryTab, setActiveCategoryTab] = useState<string>('Todos');
+
     const [editingId, setEditingId] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
     const [tempPassword, setTempPassword] = useState('');
@@ -113,8 +118,50 @@ export const SuperAdminDashboard: React.FC = () => {
         let modules: string[] = ['mod_tasks'];
         if (Array.isArray(tenant.contractedModules)) modules = [...tenant.contractedModules];
         if (!modules.includes('mod_tasks')) modules.push('mod_tasks');
-        setDraftModules(modules);
-        setCreateTab(mode);
+
+        // Parse into Module Config & Clean Draft Modules
+        const config: Record<string, 'included' | 'locked' | 'extra'> = {};
+        const initialFeats = new Set<string>();
+        const cleanModules: string[] = [];
+
+        modules.forEach(m => {
+            const parts = m.split(':');
+            const modId = parts[0];
+            const suffix = parts[1];
+
+            // Logic to handle features
+            const knownMod = SYSTEM_MODULES.find(sys => sys.id === modId);
+            if (knownMod) {
+                if (suffix === 'extra') {
+                    config[modId] = 'extra';
+                    cleanModules.push(modId);
+                } else if (suffix && knownMod.features?.some(f => f.id === suffix)) {
+                    // It is a feature
+                    initialFeats.add(suffix);
+                    // Ensure module is included
+                    if (!config[modId]) config[modId] = 'included';
+                    if (!cleanModules.includes(modId)) cleanModules.push(modId);
+                } else {
+                    // Just module ID
+                    config[modId] = 'included';
+                    cleanModules.push(modId);
+                    // Legacy: auto-select features? let's do manual only for now to be safe or all?
+                    // Let's select all if legacy
+                    if (knownMod.features) knownMod.features.forEach(f => initialFeats.add(f.id));
+                }
+            } else {
+                // Fallback
+                if (m.includes(':extra')) {
+                    config[m.split(':')[0]] = 'extra';
+                } else {
+                    config[m] = 'included';
+                }
+            }
+        });
+
+        setModuleConfig(config);
+        setSelectedFeatures(initialFeats);
+        setDraftModules(cleanModules);
         setCreateTab(mode);
 
         // Auto-detect Document Type for Edit
@@ -167,10 +214,39 @@ export const SuperAdminDashboard: React.FC = () => {
                 subscriptionEnd: dates.end
             }));
             // Auto-fill modules logic could go here if we want to enforce it
-            if (plan.features) {
-                // Logic to set draftModules based on plan?
-                // For now user can override in next step
-                setDraftModules(plan.allowedModules || ['mod_tasks']);
+            if (plan) {
+                const planModules = plan.allowedModules || [];
+                const config: Record<string, 'included' | 'locked' | 'extra'> = {};
+                const feats = new Set<string>();
+                const cleanModules: string[] = [];
+
+                SYSTEM_MODULES.forEach(sysMod => {
+                    let status: 'included' | 'locked' | 'extra' = 'locked';
+
+                    if (planModules.includes(sysMod.id)) {
+                        status = 'included';
+                    } else if (planModules.includes(sysMod.id + ':extra')) {
+                        status = 'extra';
+                    }
+
+                    if (sysMod.mandatory) status = 'included';
+
+                    config[sysMod.id] = status;
+                    if (status !== 'locked') cleanModules.push(sysMod.id);
+
+                    if (status !== 'locked' && sysMod.features) {
+                        const specificFeatures = planModules.filter(m => m.startsWith(sysMod.id + ':') && m !== sysMod.id + ':extra');
+                        if (specificFeatures.length > 0) {
+                            specificFeatures.forEach(sf => feats.add(sf.split(':')[1]));
+                        } else {
+                            sysMod.features.forEach(f => feats.add(f.id));
+                        }
+                    }
+                });
+
+                setModuleConfig(config);
+                setDraftModules(cleanModules);
+                setSelectedFeatures(feats);
             }
         }
     };
@@ -208,6 +284,30 @@ export const SuperAdminDashboard: React.FC = () => {
         setUserCreationError(null);
 
         try {
+            // Construct Final Modules Array
+            // Construct Final Modules Array
+            const finalModules: string[] = [];
+            Object.entries(moduleConfig).forEach(([modId, status]) => {
+                if (status === 'locked') return;
+
+                finalModules.push(status === 'extra' ? `${modId}:extra` : modId);
+
+                // Add Features
+                const mod = SYSTEM_MODULES.find(m => m.id === modId);
+                if (mod && mod.features) {
+                    mod.features.forEach(f => {
+                        if (selectedFeatures.has(f.id)) {
+                            finalModules.push(`${modId}:${f.id}`);
+                        }
+                    });
+                }
+            });
+
+            // Ensure mod_tasks is present
+            if (!finalModules.some(m => m === 'mod_tasks' || m.startsWith('mod_tasks:'))) {
+                finalModules.push('mod_tasks');
+            }
+
             if (editingId) {
                 await api.updateTenant(editingId, {
                     name: newTenant.name,
@@ -215,7 +315,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     cnpj: newTenant.document,
                     adminName: newTenant.adminName,
                     status: newTenant.status as any,
-                    modules: draftModules,
+                    modules: finalModules,
                     planId: newTenant.planId,
                     billingCycle: newTenant.billingCycle,
                     financialStatus: 'ok', // Default to ok on edit unless specified
@@ -228,7 +328,7 @@ export const SuperAdminDashboard: React.FC = () => {
             } else {
                 const tenantId = await api.createTenant({
                     name: newTenant.name, ownerEmail: newTenant.ownerEmail, cnpj: newTenant.document, phone: newTenant.phone, adminName: newTenant.adminName,
-                    modules: draftModules, password: newTenant.password,
+                    modules: finalModules, password: newTenant.password,
                     planId: newTenant.planId, billingCycle: newTenant.billingCycle,
                     subscriptionStart: newTenant.subscriptionStart, subscriptionEnd: newTenant.subscriptionEnd
                 });
@@ -651,29 +751,167 @@ export const SuperAdminDashboard: React.FC = () => {
                                     )}
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    <p className="text-xs text-slate-400 bg-slate-800 p-3 rounded border border-slate-700 mb-4">
-                                        Habilite os módulos que esta empresa pode acessar. Módulos marcados como "Extra" serão cobrados à parte na fatura.
-                                    </p>
+                                <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+
+                                    {/* Module Categories Tabs */}
+                                    {/* Module Categories Tabs */}
+                                    <div className="flex gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                                        {['Todos', ...Array.from(new Set(SYSTEM_MODULES.map(m => m.category || 'Outros')))].map(cat => (
+                                            <button
+                                                key={cat}
+                                                type="button"
+                                                onClick={() => setActiveCategoryTab(cat)}
+                                                className={cn(
+                                                    "px-4 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap",
+                                                    activeCategoryTab === cat
+                                                        ? "bg-primary text-primary-foreground border-primary"
+                                                        : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                                                )}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="p-3 bg-secondary/10 border border-border rounded-lg mb-4">
+                                        <p className="text-xs text-muted-foreground">
+                                            Configure os módulos. Itens "Obrigatórios" não podem ser removidos. Módulos "Extra" podem ser faturados à parte.
+                                        </p>
+                                    </div>
+
                                     <div className="grid grid-cols-1 gap-2">
-                                        {SYSTEM_MODULES.map(mod => {
-                                            const isSelected = draftModules.includes(mod.id);
-                                            const isMandatory = mod.id === 'mod_tasks';
-                                            return (
-                                                <button type="button" key={mod.id} onClick={() => !isMandatory && toggleDraftModule(mod.id)} className={`w-full text-left p-3 rounded-lg border flex items-center justify-between transition-all ${isSelected ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-slate-800 border-slate-700 hover:bg-slate-700'}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-500'}`}>{isSelected && <CheckCircle2 size={12} className="text-white" />}</div>
-                                                        <div>
-                                                            <div className={`font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>{mod.name}</div>
-                                                            <div className="text-xs text-slate-500">{mod.category}</div>
+                                        {SYSTEM_MODULES
+                                            .filter(mod => activeCategoryTab === 'Todos' || (mod.category || 'Outros') === activeCategoryTab)
+                                            .map(mod => {
+                                                const status = moduleConfig[mod.id] || (draftModules.includes(mod.id) ? 'included' : 'locked');
+                                                const isMandatory = mod.mandatory || mod.id === 'mod_tasks'; // Fallback for legacy id check
+
+                                                return (
+                                                    <div
+                                                        key={mod.id}
+                                                        className={cn(
+                                                            "flex flex-col p-4 rounded-xl border-2 transition-all select-none gap-4",
+                                                            status !== 'locked' ? "bg-[#1E293B] border-primary/50" : "bg-card border-border opacity-80"
+                                                        )}
+                                                    >
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className={cn(
+                                                                    "w-10 h-10 rounded-lg flex items-center justify-center transition-colors border shadow-inner",
+                                                                    status === 'included' ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-500" :
+                                                                        status === 'extra' ? "bg-amber-500/20 border-amber-500/50 text-amber-500" :
+                                                                            "bg-secondary border-border text-muted-foreground"
+                                                                )}>
+                                                                    {status === 'included' && <CheckCircle2 size={20} />}
+                                                                    {status === 'extra' && <AlertTriangle size={20} />}
+                                                                    {status === 'locked' && <Lock size={18} />}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className={cn("font-bold text-base", status !== 'locked' ? "text-white" : "text-muted-foreground")}>{mod.name}</p>
+                                                                        {isMandatory && <Badge variant="neutral" className="text-[10px] h-5 px-1.5 bg-slate-700 text-slate-300 border-none">Obrigatório</Badge>}
+                                                                    </div>
+                                                                    <p className="text-xs text-slate-400">{mod.category}</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Explicit Segmented Control */}
+                                                            {!isMandatory && (
+                                                                <div className="flex p-0.5 bg-background rounded-lg border border-border shrink-0 self-start sm:self-center">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setModuleConfig(prev => ({ ...prev, [mod.id]: 'locked' }));
+                                                                            // Sync legacy draft array
+                                                                            setDraftModules(prev => prev.filter(m => m !== mod.id));
+                                                                        }}
+                                                                        className={cn(
+                                                                            "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
+                                                                            status === 'locked' ? "bg-secondary text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                                                        )}
+                                                                    >
+                                                                        Bloqueado
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setModuleConfig(prev => ({ ...prev, [mod.id]: 'included' }));
+                                                                            // Sync legacy draft array
+                                                                            setDraftModules(prev => [...prev.filter(m => m !== mod.id), mod.id]);
+                                                                        }}
+                                                                        className={cn(
+                                                                            "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
+                                                                            status === 'included' ? "bg-emerald-600 text-white shadow-sm" : "text-muted-foreground hover:text-emerald-500"
+                                                                        )}
+                                                                    >
+                                                                        Incluso
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setModuleConfig(prev => ({ ...prev, [mod.id]: 'extra' }));
+                                                                            // Sync legacy draft array (extra is also allowed access)
+                                                                            setDraftModules(prev => [...prev.filter(m => m !== mod.id), mod.id]);
+                                                                        }}
+                                                                        className={cn(
+                                                                            "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
+                                                                            status === 'extra' ? "bg-amber-500 text-black shadow-sm" : "text-muted-foreground hover:text-amber-500"
+                                                                        )}
+                                                                    >
+                                                                        Extra
+                                                                    </button>
+                                                                </div>
+                                                            )}
+
+                                                            {isMandatory && (
+                                                                <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded text-xs text-emerald-500 font-bold flex items-center gap-1 shrink-0">
+                                                                    <CheckCircle2 size={12} /> Sempre Incluso
+                                                                </div>
+                                                            )}
                                                         </div>
+
+                                                        {/* Feature List (Visual Only) */}
+                                                        {mod.features && mod.features.length > 0 && (
+                                                            <div className={cn(
+                                                                "mt-2 pl-[56px] grid grid-cols-2 gap-2",
+                                                                status === 'locked' ? "opacity-50 grayscale pointer-events-none" : "opacity-100"
+                                                            )}>
+                                                                {mod.features.map(feat => {
+                                                                    const featId = typeof feat === 'string' ? feat : feat.id;
+                                                                    const featName = typeof feat === 'string' ? feat : feat.name;
+                                                                    const isSelected = selectedFeatures.has(featId);
+
+                                                                    return (
+                                                                        <div
+                                                                            key={featId}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (status === 'locked') return;
+                                                                                const newSet = new Set(selectedFeatures);
+                                                                                if (newSet.has(featId)) newSet.delete(featId);
+                                                                                else newSet.add(featId);
+                                                                                setSelectedFeatures(newSet);
+                                                                            }}
+                                                                            className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-white transition-colors group select-none"
+                                                                        >
+                                                                            <div className={cn(
+                                                                                "w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0",
+                                                                                isSelected ? "bg-indigo-600 border-indigo-600" : "border-slate-600 group-hover:border-slate-500"
+                                                                            )}>
+                                                                                {isSelected && <Check size={10} className="text-white" />}
+                                                                            </div>
+                                                                            {featName}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {isSelected && (
-                                                        <span className="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-bold">Incluído</span>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
+                                                )
+                                            })}
                                     </div>
                                 </div>
                             )}

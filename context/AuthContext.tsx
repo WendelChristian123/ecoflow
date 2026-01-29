@@ -39,9 +39,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async (currentUser: AppUser) => {
     try {
       // console.log('[Auth] Syncing profile in background...');
-      const { data: profile, error } = await supabase.rpc('get_my_profile');
+      // Run profile fetch and permissions fetch in parallel
+      const [profileResult, permsResult] = await Promise.all([
+        supabase.rpc('get_my_profile'),
+        supabase.from('user_permissions').select('*').eq('user_id', currentUser.id)
+      ]);
 
-      if (error) throw error;
+      const profile = profileResult.data;
+      const granularPermissions = permsResult.data || [];
+
+      if (profileResult.error) throw profileResult.error;
 
       if (profile) {
         // ENFORCEMENT: We check status but DO NOT logout automatically.
@@ -64,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const newAvatar = profile.avatar_url || prev.avatarUrl;
           const newStatus = profile.status;
           const newPermissions = profile.permissions;
+          const newGranularPermissions = granularPermissions;
 
           // Optimization: Only update state if something changed
           if (
@@ -72,7 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             prev.tenantId === newTenant &&
             prev.avatarUrl === newAvatar &&
             prev.status === newStatus &&
-            JSON.stringify(prev.permissions) === JSON.stringify(newPermissions)
+            JSON.stringify(prev.permissions) === JSON.stringify(newPermissions) &&
+            JSON.stringify(prev.granular_permissions) === JSON.stringify(newGranularPermissions)
           ) {
             return prev;
           }
@@ -84,7 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             tenantId: newTenant,
             avatarUrl: newAvatar,
             status: newStatus,
-            permissions: newPermissions
+            permissions: newPermissions,
+            granular_permissions: newGranularPermissions
           } as AppUser;
         });
         // console.log('[Auth] Profile synced.');

@@ -427,11 +427,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                         onToggle={() => toggleGroup('commercial')}
                                         isCollapsed={isCollapsed}
                                     >
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/overview" icon={<PieChart size={16} />} label="Visão Geral" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/contacts" icon={<Users size={16} />} label="Contatos" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/quotes" icon={<FileText size={16} />} label="Orçamentos" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/recurring" icon={<RefreshCw size={16} />} label="Contratos" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/catalog" icon={<ShoppingBag size={16} />} label="Catálogo" onClick={() => setIsMobileMenuOpen(false)} />
+                                        {can('commercial.dashboard', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/overview" icon={<PieChart size={16} />} label="Visão Geral" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('commercial.contacts', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/contacts" icon={<Users size={16} />} label="Contatos" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('commercial.quotes', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/quotes" icon={<FileText size={16} />} label="Orçamentos" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('commercial.contracts', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/recurring" icon={<RefreshCw size={16} />} label="Contratos" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('commercial.catalog', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/commercial/catalog" icon={<ShoppingBag size={16} />} label="Catálogo" onClick={() => setIsMobileMenuOpen(false)} />}
                                     </SidebarGroup>
                                 )}
 
@@ -444,11 +444,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                         onToggle={() => toggleGroup('routines')}
                                         isCollapsed={isCollapsed}
                                     >
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/routines/overview" icon={<BarChart2 size={16} />} label="Visão Geral" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/tasks" icon={<CheckSquare size={16} />} label="Tarefas" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/projects" icon={<Briefcase size={16} />} label="Projetos" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/teams" icon={<Users size={16} />} label="Equipes" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/agenda" icon={<Calendar size={16} />} label="Agenda" onClick={() => setIsMobileMenuOpen(false)} />
+                                        {can('routines.dashboard', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/routines/overview" icon={<BarChart2 size={16} />} label="Visão Geral" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('routines.tasks', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/tasks" icon={<CheckSquare size={16} />} label="Tarefas" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('routines.projects', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/projects" icon={<Briefcase size={16} />} label="Projetos" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('routines.teams', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/teams" icon={<Users size={16} />} label="Equipes" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('routines.agenda', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/agenda" icon={<Calendar size={16} />} label="Agenda" onClick={() => setIsMobileMenuOpen(false)} />}
                                     </SidebarGroup>
                                 )}
 
@@ -461,11 +461,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                         onToggle={() => toggleGroup('finance')}
                                         isCollapsed={isCollapsed}
                                     >
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/overview" icon={<PieChart size={16} />} label="Visão Geral" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/transactions" icon={<FileText size={16} />} label="Lançamentos" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/accounts" icon={<Wallet size={16} />} label="Contas & Bancos" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/categories" icon={<Tags size={16} />} label="Categorias" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/cards" icon={<CreditCard size={16} />} label="Cartões" onClick={() => setIsMobileMenuOpen(false)} />
+                                        {can('finance.dashboard', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/overview" icon={<PieChart size={16} />} label="Visão Geral" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('finance.transactions', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/transactions" icon={<FileText size={16} />} label="Lançamentos" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {/* Banking/Accounts - Consolidated permission */}
+                                        {can('finance.accounts', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/accounts" icon={<Wallet size={16} />} label="Contas & Bancos" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('finance.categories', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/categories" icon={<Tags size={16} />} label="Categorias" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('finance.cards', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/cards" icon={<CreditCard size={16} />} label="Cartões" onClick={() => setIsMobileMenuOpen(false)} />}
 
                                     </SidebarGroup>
                                 )}

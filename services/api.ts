@@ -278,20 +278,39 @@ export const api = {
 
     // --- USERS ---
     getUsers: async (tenantId?: string) => {
+        // 1. Fetch Profiles
         let query = supabase.from('profiles').select('*').neq('role', 'super_admin');
         if (tenantId) query = query.eq('tenant_id', tenantId);
-        const { data, error } = await query;
-        if (error) throw error;
-        // Map DB fields to User type if needed (snake_case to camelCase mapping might be needed if not handled automatically)
-        // Since my schema uses snake_case and Types use camelCase, I might need aliasing or mapping.
-        // HOWEVER, Supabase JS client usually returns what's in DB.
-        // Let's assume strict mapping.
-        return data.map((u: any) => ({
-            ...u,
-            tenantId: u.tenant_id,
-            avatarUrl: u.avatar_url,
-            // role, email, name match
-        })) as User[];
+
+        const { data: profiles, error: errProfiles } = await query;
+        if (errProfiles) throw errProfiles;
+
+        // 2. Fetch Permissions (Manual Join to avoid schema issues)
+        // We only fetch permissions for these users
+        const userIds = profiles.map(u => u.id);
+        let permsQuery = supabase.from('user_permissions').select('*');
+        if (userIds.length > 0) {
+            permsQuery = permsQuery.in('user_id', userIds);
+            if (tenantId) permsQuery = permsQuery.eq('tenant_id', tenantId);
+        } else {
+            // specific edge case: no users found
+            return [];
+        }
+
+        const { data: allPerms, error: errPerms } = await permsQuery;
+        // If error fetching permissions (e.g. table missing), log but don't crash main list
+        if (errPerms) console.warn("Could not fetch permissions:", errPerms);
+
+        // 3. Merge
+        return profiles.map((u: any) => {
+            const userPerms = allPerms?.filter(p => p.user_id === u.id) || [];
+            return {
+                ...u,
+                tenantId: u.tenant_id,
+                avatarUrl: u.avatar_url,
+                granular_permissions: userPerms
+            };
+        }) as User[];
     },
     getGlobalUsers: async () => {
         // Only super admin triggers this
@@ -397,11 +416,19 @@ export const api = {
 
                 // 2. Insert new
                 if (data.granular_permissions.length > 0) {
-                    const toInsert = data.granular_permissions.map(p => ({
-                        ...p,
-                        user_id: id,
-                        tenant_id: tenantId
-                    }));
+                    const toInsert = data.granular_permissions.map(p => {
+                        // Strip existing permission ID (if any) to ensure we create new records with new IDs
+                        // We rename it to 'permId' to avoid shadowing the outer 'id' (which is the User ID)
+                        const { id: permId, ...rest } = p as any;
+
+                        return {
+                            ...rest,
+                            id: self.crypto.randomUUID(),  // Generate new Permission UUID
+                            user_id: id,                   // Use the outer function argument 'id' (Target User UUID)
+                            tenant_id: tenantId
+                        };
+                    });
+
                     const { error: permError } = await supabase.from('user_permissions').insert(toInsert);
                     if (permError) {
                         console.error("Failed to update granular permissions", permError);

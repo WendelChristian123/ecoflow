@@ -53,8 +53,10 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.app_features (id, module_id, name) VALUES
 ('finance.dashboard', 'finance', 'Visão Geral'),
-('finance.payables', 'finance', 'Contas a Pagar'),
-('finance.receivables', 'finance', 'Contas a Receber'),
+('finance.transactions', 'finance', 'Lançamentos'),
+('finance.accounts', 'finance', 'Contas & Bancos'),
+('finance.categories', 'finance', 'Categorias'),
+('finance.cards', 'finance', 'Cartões'),
 ('routines.tasks', 'routines', 'Tarefas'),
 ('commercial.contacts', 'commercial', 'Contatos'),
 ('commercial.quotes', 'commercial', 'Orçamentos')

@@ -29,6 +29,7 @@ export const SuperAdminPlans: React.FC = () => {
         // Module configuration state
         modules: {} as Record<string, 'included' | 'locked' | 'extra'>
     });
+    const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(new Set());
 
     const loadPlans = async () => {
         try {
@@ -61,11 +62,52 @@ export const SuperAdminPlans: React.FC = () => {
             status: 'active',
             modules: defaultMods
         });
+        setSelectedFeatures(new Set());
         setIsModalOpen(true);
     };
 
     const handleOpenEdit = (plan: SaasPlan) => {
         setEditingPlan(plan);
+        // Load features from plan
+        const planModules = plan.allowedModules || [];
+        const config: Record<string, 'included' | 'locked' | 'extra'> = {};
+        const feats = new Set<string>();
+
+        // Reconstruct config from allowedModules array which now contains 'modId', 'modId:extra', 'modId:featId'
+        // First pass: identify modules
+        SYSTEM_MODULES.forEach(sysMod => {
+            // Check if module is present in any form
+            const isPresent = planModules.some(m => m === sysMod.id || m.startsWith(sysMod.id + ':'));
+            if (isPresent) {
+                // Determine status
+                if (planModules.includes(sysMod.id + ':extra')) {
+                    config[sysMod.id] = 'extra';
+                } else {
+                    // Default to included if present (unless forced extra?)
+                    // If base ID is present, it's included.
+                    // If ONLY features are present? Typically base ID is present too.
+                    config[sysMod.id] = 'included';
+                }
+
+                // Determine features
+                // Logic: If NO specific features listed, but module is there -> Legacy -> ALL?
+                // OR -> If features listed, use them.
+                const specificFeatures = planModules.filter(m => m.startsWith(sysMod.id + ':') && m !== sysMod.id + ':extra');
+                if (specificFeatures.length > 0) {
+                    specificFeatures.forEach(sf => feats.add(sf.split(':')[1]));
+                } else {
+                    // Legacy or "All default"?
+                    // If user saved a plan before this feature, likely they want all features.
+                    if (sysMod.features) sysMod.features.forEach(f => feats.add(f.id));
+                }
+            } else {
+                config[sysMod.id] = 'locked';
+            }
+        });
+
+        // Ensure mandatory
+        config['mod_tasks'] = 'included';
+
         setFormData({
             name: plan.name,
             priceMonthly: plan.priceMonthly || 0,
@@ -74,8 +116,9 @@ export const SuperAdminPlans: React.FC = () => {
             maxUsers: plan.maxUsers,
             type: plan.type,
             status: plan.status,
-            modules: plan.moduleConfig || {}
+            modules: config
         });
+        setSelectedFeatures(feats);
         setActiveMenuId(null);
         setIsModalOpen(true);
     };
@@ -84,9 +127,25 @@ export const SuperAdminPlans: React.FC = () => {
         e.preventDefault();
         setLoading(true);
 
-        const allowedModules = Object.entries(formData.modules)
-            .filter(([_, status]) => status === 'included' || status === 'extra')
-            .map(([id]) => id);
+        // Serialize Modules + Features
+        const allowedModules: string[] = [];
+
+        Object.entries(formData.modules).forEach(([modId, status]) => {
+            if (status === 'locked') return;
+
+            // Add Module Entry
+            allowedModules.push(status === 'extra' ? `${modId}:extra` : modId);
+
+            // Add Feature Entries
+            const mod = SYSTEM_MODULES.find(m => m.id === modId);
+            if (mod && mod.features) {
+                mod.features.forEach(feat => {
+                    if (selectedFeatures.has(feat.id)) {
+                        allowedModules.push(`${modId}:${feat.id}`);
+                    }
+                });
+            }
+        });
 
         const planData = {
             id: editingPlan?.id,
@@ -127,6 +186,18 @@ export const SuperAdminPlans: React.FC = () => {
             if (current === 'included') next = 'extra';
             else if (current === 'extra') next = 'locked';
             else next = 'included';
+
+            // Auto-select features if unlocking
+            if (next === 'included') {
+                const mod = SYSTEM_MODULES.find(m => m.id === modId);
+                if (mod && mod.features) {
+                    setSelectedFeatures(prevF => {
+                        const newF = new Set(prevF);
+                        mod.features.forEach(f => newF.add(f.id));
+                        return newF;
+                    });
+                }
+            }
 
             return {
                 ...prev,
@@ -291,30 +362,64 @@ export const SuperAdminPlans: React.FC = () => {
                                 return (
                                     <div
                                         key={mod.id}
-                                        onClick={() => !isMandatory && cycleModuleStatus(mod.id)}
-                                        className={`flex items-center justify-between p-2 rounded border cursor-pointer select-none transition-all ${status === 'included' ? 'bg-emerald-500/10 border-emerald-500/30' :
+                                        className={`flex flex-col p-3 rounded border select-none transition-all ${status === 'included' ? 'bg-emerald-500/10 border-emerald-500/30' :
                                             status === 'extra' ? 'bg-amber-500/10 border-amber-500/30' :
-                                                'bg-slate-900 border-slate-700 opacity-60'
+                                                'bg-slate-900 border-slate-700 opacity-80'
                                             }`}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${status === 'included' ? 'bg-emerald-500 border-emerald-500' :
-                                                status === 'extra' ? 'bg-amber-500 border-amber-500' :
-                                                    'border-slate-500 bg-slate-800'
-                                                }`}>
-                                                {status === 'included' && <CheckCircle2 size={14} className="text-white" />}
-                                                {status === 'extra' && <DollarSign size={14} className="text-white" />}
-                                                {status === 'locked' && <Lock size={12} className="text-slate-400" />}
-                                            </div>
-                                            <div>
+                                        <div
+                                            onClick={() => !isMandatory && cycleModuleStatus(mod.id)}
+                                            className="flex items-center justify-between cursor-pointer mb-2"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${status === 'included' ? 'bg-emerald-500 border-emerald-500' :
+                                                    status === 'extra' ? 'bg-amber-500 border-amber-500' :
+                                                        'border-slate-500 bg-slate-800'
+                                                    }`}>
+                                                    {status === 'included' && <CheckCircle2 size={14} className="text-white" />}
+                                                    {status === 'extra' && <DollarSign size={14} className="text-white" />}
+                                                    {status === 'locked' && <Lock size={12} className="text-slate-400" />}
+                                                </div>
                                                 <div className={`text-sm font-medium ${status !== 'locked' ? 'text-white' : 'text-slate-400'}`}>
                                                     {mod.name}
                                                 </div>
                                             </div>
+                                            <div className="flex items-center gap-2">
+                                                {status === 'included' && <Badge variant="success" className='text-[10px] uppercase'>Incluso</Badge>}
+                                                {status === 'extra' && <Badge variant="warning" className='text-[10px] uppercase'>Upsell</Badge>}
+                                                {status === 'locked' && <span className="text-[10px] text-slate-500 uppercase font-bold">Bloqueado</span>}
+                                            </div>
                                         </div>
-                                        {status === 'included' && <span className="text-[10px] text-emerald-400 font-bold uppercase">Incluso</span>}
-                                        {status === 'extra' && <span className="text-[10px] text-amber-400 font-bold uppercase">Upsell</span>}
-                                        {status === 'locked' && <span className="text-[10px] text-slate-500 uppercase">Bloqueado</span>}
+
+                                        {/* Granular Features */}
+                                        {status !== 'locked' && mod.features && mod.features.length > 0 && (
+                                            <div className="grid grid-cols-2 gap-2 pl-9 pt-1 border-t border-slate-700/50 mt-1">
+                                                {mod.features.map(feat => {
+                                                    const isSelected = selectedFeatures.has(feat.id);
+                                                    return (
+                                                        <div
+                                                            key={feat.id}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const newSet = new Set(selectedFeatures);
+                                                                if (newSet.has(feat.id)) newSet.delete(feat.id);
+                                                                else newSet.add(feat.id);
+                                                                setSelectedFeatures(newSet);
+                                                            }}
+                                                            className="flex items-center gap-2 cursor-pointer group"
+                                                        >
+                                                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-transparent group-hover:border-slate-500'
+                                                                }`}>
+                                                                {isSelected && <Check size={10} className="text-white" />}
+                                                            </div>
+                                                            <span className={`text-xs ${isSelected ? 'text-slate-200' : 'text-slate-500 group-hover:text-slate-400'}`}>
+                                                                {feat.name}
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

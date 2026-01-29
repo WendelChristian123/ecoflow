@@ -46,8 +46,8 @@ import { RoutinesOverview } from './pages/routines/Overview';
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <RBACProvider>
-        <TenantProvider>
+      <TenantProvider>
+        <RBACProvider>
           <ThemeProvider>
             <Router>
               <Routes>
@@ -97,8 +97,8 @@ const App: React.FC = () => {
               </Routes>
             </Router>
           </ThemeProvider>
-        </TenantProvider>
-      </RBACProvider>
+        </RBACProvider>
+      </TenantProvider>
     </AuthProvider>
   );
 };
