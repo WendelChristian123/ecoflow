@@ -162,6 +162,12 @@ export const LandingPricing: React.FC = () => {
                                             Economia de R$ {savings.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </div>
                                     )}
+
+                                    {/* Users Limit Moved Here */}
+                                    <div className="flex items-center gap-2 mt-4 text-sm font-bold text-slate-300">
+                                        <Users size={16} className={isMostExpensive ? "text-primary" : "text-slate-500"} />
+                                        {plan.maxUsers} Usuários Inclusos
+                                    </div>
                                 </div>
 
                                 <div className="space-y-8 mb-8 flex-1 text-sm bg-slate-950/30 -mx-4 px-4 py-6 rounded-2xl border border-white/5">
@@ -215,13 +221,6 @@ export const LandingPricing: React.FC = () => {
                                             );
                                         })}
 
-                                    {/* Users Limit */}
-                                    <div className={cn("pt-4 border-t", isMostExpensive ? "border-primary/20" : "border-slate-800")}>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                                            <Users size={14} className={isMostExpensive ? "text-primary" : "text-slate-500"} />
-                                            Até {plan.maxUsers} usuários inclusos
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <Button
