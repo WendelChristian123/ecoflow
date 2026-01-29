@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PublicLayout } from '../../components/PublicLayout';
 import { LandingNavbar } from '../../components/LandingNavbar';
 import { Button, Card, cn } from '../../components/Shared';
+import { LandingPricing } from '../../components/LandingPricing';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     CheckCircle2, XCircle, ChevronRight, BarChart2, ShieldCheck, Zap,
@@ -144,14 +145,8 @@ const FeatureTabs: React.FC = () => {
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
-    const [cycle, setCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
-
     // FAQ State
     const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-    const handlePlanSelect = (plan: 'start' | 'pro') => {
-        navigate(`/checkout?plan=${plan}&cycle=${cycle}`);
-    };
 
     const toggleFaq = (index: number) => {
         setOpenFaq(openFaq === index ? null : index);
@@ -439,282 +434,7 @@ export const LandingPage: React.FC = () => {
             </section>
 
             {/* 7. PLANOS */}
-            <section id="plans" className="py-24 px-4 bg-slate-950 relative overflow-hidden">
-                <div className="container mx-auto max-w-5xl relative z-10">
-                    <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold text-white mb-6">Escolha como começar</h2>
-
-                        {/* Cycle Selector */}
-                        <div className="inline-flex bg-slate-900 p-1.5 rounded-xl border border-slate-800 mb-8">
-                            {(['monthly', 'semiannual', 'annual'] as const).map((c) => (
-                                <button
-                                    key={c}
-                                    onClick={() => setCycle(c)}
-                                    className={cn(
-                                        "px-6 py-2.5 rounded-lg text-sm font-bold transition-all",
-                                        cycle === c
-                                            ? "bg-white text-black shadow-lg"
-                                            : "text-slate-400 hover:text-white hover:bg-white/5"
-                                    )}
-                                >
-                                    {c === 'monthly' ? 'Mensal' : c === 'semiannual' ? 'Semestral' : 'Anual'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-start">
-                        {/* START PLAN */}
-                        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col relative overflow-hidden hover:border-slate-600 transition-colors">
-                            <h3 className="text-2xl font-bold text-white mb-2">Start</h3>
-                            <p className="text-slate-400 text-sm mb-6 h-10">Para quem precisa parar de perder dinheiro e organizar a operação básica.</p>
-
-                            <div className="mb-6">
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-sm text-slate-400">R$</span>
-                                    <span className="text-5xl font-bold text-white">
-                                        {'39,90'}
-                                    </span>
-                                    <span className="text-slate-400">/mês</span>
-                                </div>
-                                {cycle === 'semiannual' && (
-                                    <>
-                                        <p className="text-xs text-slate-500 font-medium mt-1">
-                                            Total de <span className="text-slate-300">R$ 239,40</span> no período
-                                        </p>
-                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-green-500/10 border border-green-500/20 text-[10px] font-bold text-green-400 uppercase tracking-wide">
-                                            Economia de R$ 79,00
-                                        </div>
-                                    </>
-                                )}
-                                {cycle === 'annual' && (
-                                    <>
-                                        <p className="text-xs text-slate-500 font-medium mt-1">
-                                            Total de <span className="text-slate-300">R$ 478,80</span> no período
-                                        </p>
-                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-green-500/10 border border-green-500/20 text-[10px] font-bold text-green-400 uppercase tracking-wide">
-                                            Economia de R$ 200,00
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="space-y-6 mb-8 flex-1 text-sm">
-                                {/* Financeiro */}
-                                <div>
-                                    <h4 className="font-bold text-white mb-3 text-xs uppercase tracking-wider">Financeiro</h4>
-                                    <ul className="space-y-3">
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Visão geral financeira
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Lançamentos
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Contas & Bancos
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Categorias financeiras
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Cartões
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> Relatórios financeiros essenciais
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* Rotinas */}
-                                <div>
-                                    <h4 className="font-bold text-white mb-3 text-xs uppercase tracking-wider">Rotinas & Execução</h4>
-                                    <ul className="space-y-3">
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Visão geral de rotinas
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Tarefas
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Projetos
-                                        </li>
-                                        <li className="flex items-center gap-3 text-slate-300">
-                                            <CheckCircle2 size={16} className="text-cyan-500 shrink-0" /> Agenda
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* Comercial (Unavailable) */}
-                                <div>
-                                    <h4 className="font-bold text-slate-600 mb-3 text-xs uppercase tracking-wider">Comercial</h4>
-                                    <ul className="space-y-3">
-                                        {[
-                                            "Visão geral comercial",
-                                            "Contatos",
-                                            "Orçamentos",
-                                            "Contratos",
-                                            "Catálogo"
-                                        ].map((item, i) => (
-                                            <li key={i} className="flex items-center gap-3 text-slate-600 line-through decoration-slate-700">
-                                                <XCircle size={16} className="text-slate-700 shrink-0" />
-                                                <span className="flex-1">{item}</span>
-                                                <span className="text-[10px] font-bold bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">Indisponível</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                {/* Users */}
-                                <div className="pt-4 border-t border-slate-800">
-                                    <ul className="space-y-2">
-                                        <li className="flex items-center gap-2 text-slate-300 text-xs">
-                                            <Users size={14} className="text-slate-500" /> 1 usuário incluso
-                                        </li>
-                                        <li className="flex items-center gap-2 text-slate-400 text-xs">
-                                            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full border border-slate-600 text-[8px] text-slate-500">+</span>
-                                            Usuário adicional: R$ 24,90/mês
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <Button onClick={() => handlePlanSelect('start')} variant="outline" className="w-full border-slate-700 hover:bg-white hover:text-black text-white h-12 rounded-xl transition-all">
-                                Testar Start Grátis
-                            </Button>
-                        </div>
-
-                        {/* PRO PLAN */}
-                        <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-primary text-white rounded-3xl p-8 flex flex-col relative overflow-hidden shadow-2xl shadow-primary/20 transform md:-translate-y-6">
-                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-cyan-400"></div>
-                            <div className="absolute top-4 right-4 bg-primary text-white text-[10px] uppercase font-bold px-3 py-1 rounded-full">Mais Popular</div>
-
-                            <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
-                            <p className="text-emerald-100/70 text-sm mb-6 h-10">Para quem quer crescer com controle total do financeiro, operação e vendas.</p>
-
-                            <div className="mb-6">
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-sm text-emerald-200">R$</span>
-                                    <span className="text-6xl font-bold text-white tracking-tighter">
-                                        {'79,90'}
-                                    </span>
-                                    <span className="text-emerald-200">/mês</span>
-                                </div>
-                                {cycle === 'semiannual' && (
-                                    <>
-                                        <p className="text-xs text-emerald-200/60 font-medium mt-1">
-                                            Total de <span className="text-emerald-200">R$ 479,40</span> no período
-                                        </p>
-                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 uppercase tracking-wide">
-                                            Economia de R$ 99,00
-                                        </div>
-                                    </>
-                                )}
-                                {cycle === 'annual' && (
-                                    <>
-                                        <p className="text-xs text-emerald-200/60 font-medium mt-1">
-                                            Total de <span className="text-emerald-200">R$ 958,80</span> no período
-                                        </p>
-                                        <div className="mt-2 inline-block px-2 py-1 rounded bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 uppercase tracking-wide">
-                                            Economia de R$ 300,00
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="space-y-6 mb-8 flex-1 text-sm">
-                                {/* Financeiro */}
-                                <div>
-                                    <h4 className="font-bold text-emerald-400 mb-3 text-xs uppercase tracking-wider">Financeiro</h4>
-                                    <ul className="space-y-3">
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Visão geral financeira
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Lançamentos
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Contas & Bancos
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Categorias financeiras
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Cartões
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Relatórios financeiros estratégicos
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* Rotinas */}
-                                <div>
-                                    <h4 className="font-bold text-cyan-400 mb-3 text-xs uppercase tracking-wider">Rotinas & Execução</h4>
-                                    <ul className="space-y-3">
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Visão geral de rotinas
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Tarefas
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Projetos
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Equipes
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Agenda
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Organização por responsáveis
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* Comercial */}
-                                <div>
-                                    <h4 className="font-bold text-purple-400 mb-3 text-xs uppercase tracking-wider">Comercial</h4>
-                                    <ul className="space-y-3">
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Visão geral comercial
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Contatos
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Orçamentos
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Contratos
-                                        </li>
-                                        <li className="flex items-center gap-3 font-medium">
-                                            <CheckCircle2 size={16} className="text-primary shrink-0" /> Catálogo
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* Users */}
-                                <div className="pt-4 border-t border-primary/20">
-                                    <ul className="space-y-2">
-                                        <li className="flex items-center gap-2 text-white font-bold text-xs">
-                                            <Users size={14} className="text-primary" /> Até 5 usuários inclusos
-                                        </li>
-                                        <li className="flex items-center gap-2 text-emerald-200/70 text-xs">
-                                            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full border border-primary/50 text-[8px] text-primary">+</span>
-                                            Usuário adicional: R$ 24,90/mês
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <Button onClick={() => handlePlanSelect('pro')} className="w-full bg-primary hover:bg-primary/90 text-white h-14 rounded-xl font-bold text-lg shadow-lg shadow-primary/25">
-                                Testar Pro Grátis
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <LandingPricing />
 
             {/* 8. COMPARATIVO DETALHADO */}
             <section className="py-20 px-4 border-b border-white/5 bg-slate-950/30">
@@ -761,7 +481,7 @@ export const LandingPage: React.FC = () => {
                                         category: "VENDAS / CRM",
                                         items: [
                                             { name: "CRM de vendas", start: false, pro: true },
-                                            { name: "Contatos e histórico", start: false, pro: true },
+                                            { name: "Contatos e histórico", start: true, pro: true },
                                             { name: "Orçamentos", start: false, pro: true },
                                             { name: "Contratos", start: false, pro: true },
                                             { name: "Catálogo de produtos", start: false, pro: true },

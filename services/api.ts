@@ -1532,6 +1532,40 @@ export const api = {
         return { modules: sortedModules, features: sortedFeatures };
     },
 
+    getPublicSystemCatalog: async () => {
+        const { data: modules, error: errMod } = await supabase.from('public_app_modules').select('*');
+        const { data: features, error: errFeat } = await supabase.from('public_app_features').select('*');
+
+        if (errMod || errFeat) throw errMod || errFeat;
+
+        // Sort Modules by standard menu order
+        const moduleOrder = ['routines', 'finance', 'commercial', 'reports'];
+        const sortedModules = modules?.sort((a, b) => {
+            const idxA = moduleOrder.indexOf(a.id);
+            const idxB = moduleOrder.indexOf(b.id);
+            if (idxA === -1 && idxB === -1) return 0;
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
+            return idxA - idxB;
+        });
+
+        return { modules: sortedModules, features };
+    },
+
+    getPublicPlans: async () => {
+        const { data, error } = await supabase.from('public_saas_plans').select('*');
+        if (error) throw error;
+
+        return data?.map((p: any) => ({
+            ...p,
+            priceMonthly: p.price_monthly,
+            priceSemiannually: p.price_semiannually,
+            priceYearly: p.price_yearly,
+            allowedModules: p.allowed_modules,
+            maxUsers: p.max_users
+        })) as SaasPlan[] || [];
+    },
+
     getTenantModules: async (tenantId: string) => {
         const { data, error } = await supabase.from('tenant_modules').select('*').eq('tenant_id', tenantId);
         if (error) throw error;
