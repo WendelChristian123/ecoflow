@@ -237,90 +237,101 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
                     </div>
                 </div>
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-slate-900/30">
-                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                        <div className="text-xs text-slate-500 font-bold uppercase">Total Tarefas</div>
-                        <div className="text-2xl font-bold text-white mt-1">{total}</div>
+                {/* Content - Scrollable Area containing both KPIs and Table */}
+                <div className="flex-1 overflow-auto bg-slate-900/30">
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6">
+                        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <div className="text-xs text-slate-500 font-bold uppercase">Total Tarefas</div>
+                            <div className="text-2xl font-bold text-white mt-1">{total}</div>
+                        </div>
+                        <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
+                            <div className="text-xs text-emerald-400 font-bold uppercase">Concluídas</div>
+                            <div className="text-2xl font-bold text-emerald-500 mt-1">{done}</div>
+                        </div>
+                        <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
+                            <div className="text-xs text-blue-400 font-bold uppercase">Pendentes</div>
+                            <div className="text-2xl font-bold text-blue-500 mt-1">{pending}</div>
+                        </div>
+                        <div className="bg-rose-500/10 p-4 rounded-xl border border-rose-500/20">
+                            <div className="text-xs text-rose-400 font-bold uppercase">Atrasadas</div>
+                            <div className="text-2xl font-bold text-rose-500 mt-1">{late}</div>
+                        </div>
                     </div>
-                    <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
-                        <div className="text-xs text-emerald-400 font-bold uppercase">Concluídas</div>
-                        <div className="text-2xl font-bold text-emerald-500 mt-1">{done}</div>
-                    </div>
-                    <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
-                        <div className="text-xs text-blue-400 font-bold uppercase">Pendentes</div>
-                        <div className="text-2xl font-bold text-blue-500 mt-1">{pending}</div>
-                    </div>
-                    <div className="bg-rose-500/10 p-4 rounded-xl border border-rose-500/20">
-                        <div className="text-xs text-rose-400 font-bold uppercase">Atrasadas</div>
-                        <div className="text-2xl font-bold text-rose-500 mt-1">{late}</div>
-                    </div>
-                </div>
 
-                {/* Table Area */}
-                <div className="flex-1 overflow-auto p-0">
-                    <table className="w-full text-left text-sm text-slate-400">
-                        <thead className="bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-                            <tr>
-                                <th className="px-6 py-3 font-semibold text-slate-300">Tarefa</th>
-                                <th className="px-6 py-3 font-semibold text-slate-300">Projeto</th>
-                                <th className="px-6 py-3 font-semibold text-slate-300">Responsável</th>
-                                <th className="px-6 py-3 font-semibold text-slate-300">Prazo</th>
-                                <th className="px-6 py-3 font-semibold text-slate-300 text-right">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800">
-                            {filteredData.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                                        Nenhum dado encontrado com os filtros atuais.
-                                    </td>
-                                </tr>
-                            ) : filteredData.map(t => {
-                                const assignee = getUser(t.assigneeId);
-                                const project = getProject(t.projectId);
-                                const isOverdue = t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfDay(new Date()));
-
-                                return (
-                                    <tr key={t.id} className="hover:bg-slate-800/50">
-                                        <td className="px-6 py-3">
-                                            <div className="font-medium text-slate-200">{t.title}</div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant={t.priority === 'urgent' ? 'error' : t.priority === 'high' ? 'warning' : 'neutral'} className="text-[10px] py-0">
-                                                    {t.priority === 'urgent' ? 'Urgente' : t.priority === 'high' ? 'Alta' : t.priority === 'medium' ? 'Média' : 'Baixa'}
-                                                </Badge>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3">{project?.name || '-'}</td>
-                                        <td className="px-6 py-3">
-                                            {assignee ? (
-                                                <div className="flex items-center gap-2">
-                                                    <Avatar src={assignee.avatarUrl} name={assignee.name} size="sm" />
-                                                    <span className="text-xs">{assignee.name}</span>
-                                                </div>
-                                            ) : '-'}
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            <div className={isOverdue ? 'text-rose-400 font-bold' : ''}>
-                                                {format(parseISO(t.dueDate), 'dd/MM/yyyy')}
-                                            </div>
-                                            {t.completedAt && (
-                                                <div className="text-[10px] text-emerald-500 flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                    {format(parseISO(t.completedAt), 'dd/MM')}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-3 text-right">
-                                            <Badge variant={t.status === 'done' ? 'success' : isOverdue ? 'error' : 'neutral'}>
-                                                {t.status === 'done' ? 'Concluída' : isOverdue ? 'Atrasada' : t.status === 'in_progress' ? 'Em Andamento' : 'Pendente'}
-                                            </Badge>
-                                        </td>
+                    {/* Table Area */}
+                    <div className="px-6 pb-6">
+                        <div className="overflow-hidden border border-slate-800 rounded-lg shadow-sm">
+                            <table className="w-full text-left text-sm text-slate-400">
+                                <thead className="bg-slate-950 border-b border-slate-800 sticky top-0 z-10 text-xs font-bold uppercase text-slate-500 tracking-wider">
+                                    <tr>
+                                        <th className="px-6 py-4">Tarefa</th>
+                                        <th className="px-6 py-4">Projeto / Responsável</th>
+                                        <th className="px-6 py-4">Prazo</th>
+                                        <th className="px-6 py-4 text-right">Status</th>
                                     </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/50">
+                                    {filteredData.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                                                Nenhum dado encontrado com os filtros atuais.
+                                            </td>
+                                        </tr>
+                                    ) : filteredData.map(t => {
+                                        const assignee = getUser(t.assigneeId);
+                                        const project = getProject(t.projectId);
+                                        const isOverdue = t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfDay(new Date()));
+
+                                        return (
+                                            <tr key={t.id} className="group hover:bg-slate-800/60 transition-colors odd:bg-transparent even:bg-slate-900/40">
+                                                <td className="px-6 py-4 align-top">
+                                                    <div className="font-bold text-base text-white group-hover:text-emerald-400 transition-colors">{t.title}</div>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <Badge variant={t.priority === 'urgent' ? 'error' : t.priority === 'high' ? 'warning' : 'neutral'} className="text-[10px] py-0 px-2 uppercase tracking-wide">
+                                                            {t.priority === 'urgent' ? 'Urgente' : t.priority === 'high' ? 'Alta' : t.priority === 'medium' ? 'Média' : 'Baixa'}
+                                                        </Badge>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 align-top">
+                                                    <div className="text-slate-300 font-medium mb-1">{project?.name || '-'}</div>
+                                                    {assignee && (
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Avatar src={assignee.avatarUrl} name={assignee.name} size="xs" />
+                                                            <span className="text-xs text-slate-500">{assignee.name}</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 align-top">
+                                                    <div className={`text-sm font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                                                        {format(parseISO(t.dueDate), 'dd/MM/yyyy')}
+                                                    </div>
+                                                    {t.completedAt && (
+                                                        <div className="text-[10px] text-emerald-500 flex items-center gap-1 mt-1 font-medium bg-emerald-500/10 px-2 py-0.5 rounded w-fit">
+                                                            Concluído em {format(parseISO(t.completedAt), 'dd/MM')}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right align-top">
+                                                    <Badge variant={t.status === 'done' ? 'success' : isOverdue ? 'error' : 'neutral'} className="px-3 py-1 text-[10px] uppercase font-bold tracking-wide">
+                                                        {t.status === 'done' ? 'Concluída' : isOverdue ? 'Atrasada' : t.status === 'in_progress' ? 'Em Andamento' : 'Pendente'}
+                                                    </Badge>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-end gap-3">
+                            <Button variant="ghost" onClick={onClose}>Fechar</Button>
+                            <Button className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-white" onClick={handlePrint}>
+                                <Printer size={18} /> Imprimir / Salvar PDF
+                            </Button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Footer Actions */}

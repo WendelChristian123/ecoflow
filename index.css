@@ -39,8 +39,8 @@
     --accent: 210 40% 96.1%;
     --accent-foreground: 187 60% 7%;
 
-    /* Destructive: #EF4444 (Red 500) - ALERTS ONLY */
-    --destructive: 0 84.2% 60.2%;
+    /* Destructive: #E4142C (Brand Red) - ALERTS ONLY */
+    --destructive: 353 84% 49%;
     --destructive-foreground: 0 0% 100%;
 
     /* Border: #071A1C at 12% Opacity (Strict rule: 10-15%) */
@@ -87,7 +87,7 @@
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 353 84% 49%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;

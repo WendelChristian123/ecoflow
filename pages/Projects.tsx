@@ -137,12 +137,20 @@ export const ProjectsPage: React.FC = () => {
       loadData();
       if (selectedProject?.id === project.id) {
         // Update local state to reflect changes immediately if viewing details
-        setSelectedProject({ ...project, status: 'completed', progress: 100 });
+        setSelectedProject({ ...project, status: 'completed' });
       }
     } catch (err) {
       console.error(err);
       alert("Erro ao concluir projeto.");
     }
+  };
+
+  const calculateProgress = (projectId: string) => {
+    const projectTasks = tasks.filter(t => t.projectId === projectId);
+    const total = projectTasks.length;
+    if (total === 0) return 0;
+    const completed = projectTasks.filter(t => t.status === 'done').length;
+    return Math.round((completed / total) * 100);
   };
 
   const handleCreate = () => {
@@ -459,9 +467,9 @@ export const ProjectsPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-muted-foreground">Progresso</span>
-                  <span className="text-foreground font-medium">{project.progress}%</span>
+                  <span className="text-foreground font-medium">{calculateProgress(project.id)}%</span>
                 </div>
-                <ProgressBar progress={project.progress} />
+                <ProgressBar progress={calculateProgress(project.id)} />
 
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div className="flex -space-x-2">
@@ -518,8 +526,8 @@ export const ProjectsPage: React.FC = () => {
                   </td>
                   <td className="p-4 w-48">
                     <div className="flex items-center gap-2">
-                      <ProgressBar progress={p.progress} className="flex-1" />
-                      <span className="text-xs">{p.progress}%</span>
+                      <ProgressBar progress={calculateProgress(p.id)} className="flex-1" />
+                      <span className="text-xs">{calculateProgress(p.id)}%</span>
                     </div>
                   </td>
                   <td className="p-4">{p.dueDate ? format(parseISO(p.dueDate), 'dd/MM/yyyy') : '-'}</td>

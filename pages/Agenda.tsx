@@ -574,9 +574,9 @@ export const AgendaPage: React.FC = () => {
                     <div className="flex items-center justify-between pt-1 border-t border-border/10 mt-auto">
                       <span className="text-[8px] uppercase tracking-wider font-bold opacity-50 flex items-center gap-1 text-muted-foreground">
                         {event.origin === 'agenda' ? 'AGENDA' :
-                          isPayable ? 'PAYABLE' :
-                            isReceivable ? 'RECEIVABLE' :
-                              event.origin.replace('finance_', '').replace('task', 'TASK').toUpperCase()}
+                          isPayable ? 'A PAGAR' :
+                            isReceivable ? 'A RECEBER' :
+                              event.origin.replace('finance_', '').replace('task', 'TAREFA').toUpperCase()}
                       </span>
 
                       {isFinance && (

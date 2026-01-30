@@ -227,9 +227,9 @@ export const Dashboard: React.FC = () => {
 
         // Semantic Colors only for Icons and Text - STRONG Contrast
         const colorMap = {
-            danger: { text: "text-destructive", bg: "bg-destructive/10", border: "group-hover:border-destructive/40", title: "text-destructive" },
-            warning: { text: "text-primary", bg: "bg-primary/10", border: "group-hover:border-primary/40", title: "text-primary" },
-            info: { text: "text-secondary", bg: "bg-secondary/10", border: "group-hover:border-secondary/40", title: "text-secondary font-semibold" } // Future: Title Dark/Bold
+            danger: { text: "text-red-500", bg: "bg-red-500/10", border: "group-hover:border-red-500/40", title: "text-red-500" },
+            warning: { text: "text-amber-500", bg: "bg-amber-500/10", border: "group-hover:border-amber-500/40", title: "text-amber-500" },
+            info: { text: "text-emerald-500", bg: "bg-emerald-500/10", border: "group-hover:border-emerald-500/40", title: "text-emerald-500" }
         };
 
         const theme = colorMap[variant];
@@ -284,9 +284,9 @@ export const Dashboard: React.FC = () => {
 
         // Semantic Accents
         const accents = {
-            danger: "text-destructive border-l-destructive",
-            warning: "text-primary border-l-primary",
-            info: "text-secondary border-l-secondary"
+            danger: "text-red-500 border-l-red-500",
+            warning: "text-amber-500 border-l-amber-500",
+            info: "text-emerald-500 border-l-emerald-500"
         };
 
         const EmptyState = () => (
@@ -296,8 +296,8 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <span className="text-xs font-medium uppercase tracking-wide">
                     {variant === 'danger' ? "Excelente! Nenhum item vencido sob sua responsabilidade." :
-                        variant === 'warning' ? "Agenda livre por hoje. Aproveite para adiantar tarefas." :
-                            "Tudo em dia para os próximos dias."}
+                        variant === 'warning' ? "Sem pendências críticas para hoje." :
+                            "Tudo tranquilo para os próximos dias."}
                 </span>
             </div>
         );
@@ -305,8 +305,8 @@ export const Dashboard: React.FC = () => {
         return (
             <section className="mb-8">
                 <div className="flex items-center gap-3 mb-4 pl-1">
-                    <div className={cn("w-1 h-4 rounded-full", variant === 'danger' ? 'bg-destructive' : variant === 'warning' ? 'bg-primary' : 'bg-secondary')}></div>
-                    <div className={cn("text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-destructive' : variant === 'warning' ? 'text-primary' : 'text-secondary')}>
+                    <div className={cn("w-1 h-4 rounded-full", variant === 'danger' ? 'bg-red-500' : variant === 'warning' ? 'bg-amber-500' : 'bg-emerald-500')}></div>
+                    <div className={cn("text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-red-500' : variant === 'warning' ? 'text-amber-500' : 'text-emerald-500')}>
                         {title}
                     </div>
                     <div className="h-px bg-border flex-1 ml-2"></div>

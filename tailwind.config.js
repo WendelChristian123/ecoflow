@@ -32,6 +32,12 @@ export default {
                     DEFAULT: "hsl(var(--secondary))",
                     foreground: "hsl(var(--secondary-foreground))",
                 },
+                red: {
+                    DEFAULT: "#E4142C",
+                    500: "#E4142C",
+                    600: "#C01025", // Darker shade for hover
+                    700: "#9B0D1E", // Even darker
+                },
                 destructive: {
                     DEFAULT: "hsl(var(--destructive))",
                     foreground: "hsl(var(--destructive-foreground))",

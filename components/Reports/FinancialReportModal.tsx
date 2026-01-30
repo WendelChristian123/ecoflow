@@ -313,12 +313,13 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
                 {/* Header */}
-                <div className="p-6 border-b border-slate-800 flex justify-between items-start">
+                {/* Header */}
+                <div className="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-900 rounded-t-2xl">
                     <div>
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                            <FileText className="text-emerald-500" /> Relatório Financeiro
+                        <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                            <FileText className="text-emerald-500" size={32} /> Relatório Financeiro
                         </h2>
-                        <p className="text-slate-400 text-sm mt-1">Visão completa e detalhada do fluxo financeiro.</p>
+                        <p className="text-slate-400 text-sm mt-2 ml-1">Visão completa e detalhada do fluxo financeiro.</p>
                     </div>
                     <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
                         <X size={24} />
@@ -326,23 +327,22 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 </div>
 
                 {/* Filters */}
-                {/* Filters */}
-                <div className="flex flex-col border-b border-slate-800">
-                    <div className="p-4 bg-slate-900/50 border-b border-slate-800/50">
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Período</label>
+                <div className="flex flex-col border-b border-slate-800 bg-slate-950 shadow-inner">
+                    <div className="p-5 border-b border-slate-800/50">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Período</label>
                             <DateRangePicker
                                 date={dateRange}
                                 setDate={setDateRange}
-                                className="bg-slate-800 border-slate-700 text-slate-200 max-w-[280px]"
+                                className="bg-slate-900 border-slate-700 text-slate-200 max-w-[300px]"
                             />
                         </div>
                     </div>
 
-                    <div className="p-4 bg-slate-900/50 grid grid-cols-1 md:grid-cols-5 gap-3">
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Conta/Banco</label>
-                            <Select value={accountFilter} onChange={e => setAccountFilter(e.target.value)} className="h-[30px] text-xs">
+                    <div className="p-5 grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Conta/Banco</label>
+                            <Select value={accountFilter} onChange={e => setAccountFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
                                 <option value="all">Todas Contas</option>
                                 <optgroup label="Contas Bancárias">
                                     {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -352,32 +352,32 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                 </optgroup>
                             </Select>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Categoria</label>
-                            <Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="h-[30px] text-xs">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Categoria</label>
+                            <Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
                                 <option value="all">Todas</option>
                                 {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </Select>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Cliente/Fornecedor</label>
-                            <Select value={contactFilter} onChange={e => setContactFilter(e.target.value)} className="h-[30px] text-xs">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Cliente/Fornecedor</label>
+                            <Select value={contactFilter} onChange={e => setContactFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
                                 <option value="all">Todos</option>
                                 {[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </Select>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Tipo</label>
-                            <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-[30px] text-xs">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Tipo</label>
+                            <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
                                 <option value="all">Todos</option>
                                 <option value="income">Receitas</option>
                                 <option value="expense">Despesas</option>
                                 <option value="transfer">Transferências</option>
                             </Select>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold uppercase text-slate-500">Status</label>
-                            <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-[30px] text-xs">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Status</label>
+                            <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
                                 <option value="all">Todos</option>
                                 <option value="paid">Realizado</option>
                                 <option value="pending">A Vencer</option>
@@ -392,52 +392,62 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
 
                     {/* TABLE */}
                     <div>
-                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Detalhamento</h3>
-                        <div className="overflow-x-auto border border-slate-800 rounded-lg">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 ml-1">Detalhamento</h3>
+                        <div className="overflow-hidden border border-slate-800 rounded-lg shadow-sm">
                             <table className="w-full text-left text-xs">
-                                <thead className="bg-slate-800 text-slate-400 font-semibold uppercase">
+                                <thead className="bg-slate-950 text-slate-500 font-bold uppercase tracking-wider sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-4 py-3">Data</th>
-                                        <th className="px-4 py-3">Descrição</th>
-                                        <th className="px-4 py-3">Categoria</th>
-                                        <th className="px-4 py-3">Conta</th>
-                                        <th className="px-4 py-3">Status</th>
-                                        <th className="px-4 py-3 text-right">Valor</th>
+                                        <th className="px-6 py-4 border-b border-slate-800 w-32">Data</th>
+                                        <th className="px-6 py-4 border-b border-slate-800">Descrição / Categoria</th>
+                                        <th className="px-6 py-4 border-b border-slate-800">Conta / Origem</th>
+                                        <th className="px-6 py-4 border-b border-slate-800 text-center w-32">Status</th>
+                                        <th className="px-6 py-4 border-b border-slate-800 text-right w-40">Valor</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-800 text-slate-300">
+                                <tbody className="divide-y divide-slate-800/50 text-slate-300">
                                     {filteredData.length === 0 ? (
-                                        <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Nenhum lançamento encontrado.</td></tr>
+                                        <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500">Nenhum lançamento encontrado.</td></tr>
                                     ) : filteredData.map(t => (
-                                        <tr key={t.id} className="hover:bg-slate-800/50">
-                                            <td className="px-4 py-3">{format(parseDateLocal(t.date), 'dd/MM/yyyy')}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium text-white">{t.description}</div>
-                                                <div className="text-[10px] text-slate-500">{t.type === 'income' ? 'Receita' : t.type === 'transfer' ? 'Transferência' : 'Despesa'}</div>
+                                        <tr key={t.id} className="group hover:bg-slate-800/60 transition-colors odd:bg-transparent even:bg-slate-900/40">
+                                            <td className="px-6 py-4 text-slate-400 font-medium align-top pt-5">
+                                                {format(parseDateLocal(t.date), 'dd/MM/yyyy')}
                                             </td>
-                                            <td className="px-4 py-3">{getCategoryName(t.categoryId)}</td>
-                                            <td className="px-4 py-3">{renderAccountInfo(t)}</td>
-                                            <td className="px-4 py-3">
-                                                <Badge variant={t.isPaid ? 'success' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'error' : 'warning'}>
+                                            <td className="px-6 py-4 align-top">
+                                                <div className="font-bold text-base text-white mb-1 group-hover:text-emerald-400 transition-colors">{t.description}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                                                        {t.type === 'income' ? 'Receita' : t.type === 'transfer' ? 'Transferência' : 'Despesa'}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500">•</span>
+                                                    <span className="text-xs text-slate-400">{getCategoryName(t.categoryId)}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-400 text-sm align-top pt-5">
+                                                {renderAccountInfo(t)}
+                                            </td>
+                                            <td className="px-6 py-4 text-center align-top pt-5">
+                                                <Badge variant={t.isPaid ? 'success' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'error' : 'warning'} className="px-3 py-1">
                                                     {t.isPaid ? 'Realizado' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'Atrasado' : 'Pendente'}
                                                 </Badge>
                                             </td>
-                                            <td className={`px-4 py-3 text-right font-bold ${t.type === 'transfer' ? 'text-blue-500' :
-                                                (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? 'text-yellow-500' :
-                                                    t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'
-                                                }`}>
-                                                {t.type === 'expense' || t.type === 'transfer' ? '-' : ''}{fmt(t.amount)}
+                                            <td className="px-6 py-4 text-right align-top pt-5">
+                                                <div className={`text-lg font-bold tabular-nums ${t.type === 'transfer' ? 'text-blue-400' :
+                                                        (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? 'text-yellow-400' :
+                                                            t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
+                                                    }`}>
+                                                    {t.type === 'expense' || t.type === 'transfer' ? '-' : ''}{fmt(t.amount)}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
-                                <tfoot className="bg-slate-900 border-t-2 border-slate-700 font-bold text-slate-200">
+                                <tfoot className="bg-slate-950 border-t-2 border-slate-800 font-bold text-slate-200">
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-4 text-right uppercase text-[10px] tracking-wider text-slate-400">
-                                            Resumo do Relatório
+                                        <td colSpan={4} className="px-6 py-4 text-right uppercase text-[10px] tracking-wider text-slate-500">
+                                            Resultado Líquido do Período
                                         </td>
-                                        <td className="px-4 py-4 text-right">
-                                            {/* Totals Summary in Footer */}
+                                        <td className={`px-6 py-4 text-right text-lg ${totals.result >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {fmt(totals.result)}
                                         </td>
                                     </tr>
                                 </tfoot>
