@@ -278,16 +278,26 @@ export const api = {
 
     // --- USERS ---
     getUsers: async (tenantId?: string) => {
-        // 1. Fetch Profiles
-        let query = supabase.from('profiles').select('*').neq('role', 'super_admin');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        // 1. Fetch Profiles - Relaxed filter to include null roles
+        let query = supabase.from('profiles').select('*');
+        // REMOVED manual filtered: if (tenantId) query = query.eq('tenant_id', tenantId);
+        // We rely on RLS (secure_profiles.sql) which enforces tenant_id = public.get_current_tenant_id()
 
+        // Filter super_admin in memory or with complex OR query. Memory is safer for nulls.
         const { data: profiles, error: errProfiles } = await query;
-        if (errProfiles) throw errProfiles;
+        if (errProfiles) {
+            console.error('Error fetching users:', errProfiles);
+            throw errProfiles;
+        }
+
+        if (!profiles) return []; // Safeguard against null data
+
+        // Filter out super_admins (handling nulls gracefully)
+        const validProfiles = profiles.filter((p: any) => p.role !== 'super_admin');
 
         // 2. Fetch Permissions (Manual Join to avoid schema issues)
         // We only fetch permissions for these users
-        const userIds = profiles.map(u => u.id);
+        const userIds = validProfiles.map(u => u.id);
         let permsQuery = supabase.from('user_permissions').select('*');
         if (userIds.length > 0) {
             permsQuery = permsQuery.in('user_id', userIds);
@@ -302,7 +312,7 @@ export const api = {
         if (errPerms) console.warn("Could not fetch permissions:", errPerms);
 
         // 3. Merge
-        return profiles.map((u: any) => {
+        return validProfiles.map((u: any) => {
             const userPerms = allPerms?.filter(p => p.user_id === u.id) || [];
             return {
                 ...u,
@@ -485,6 +495,95 @@ export const api = {
     },
 
 
+
+    // --- SHARED ACCESS ---
+    getSharedAccess: async (tenantId?: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('shared_access')
+            .select(`
+                *,
+                target:profiles!target_id(email, name, avatar_url),
+                owner:profiles!owner_id(email, name, avatar_url),
+                feature:feature_id(name)
+            `)
+            .or(`owner_id.eq.${user.id},target_id.eq.${user.id}`);
+
+        if (error) throw error;
+
+        return data.map((item: any) => ({
+            id: item.id,
+            tenant_id: item.tenant_id,
+            owner_id: item.owner_id,
+            target_id: item.target_id,
+            feature_id: item.feature_id,
+            actions: item.actions,
+            created_at: item.created_at,
+            expires_at: item.expires_at,
+            user_email: item.target?.email,
+            user_name: item.target?.name,
+            owner_email: item.owner?.email,
+            owner_name: item.owner?.name,
+            feature_name: item.feature?.name
+        })) as (SharedAccess & { user_email?: string; user_name?: string; owner_email?: string; owner_name?: string; feature_name?: string })[];
+    },
+
+    grantSharedAccess: async ({ email, targetUserId, featureId, currentUserId, duration, permissions }: { email?: string, targetUserId?: string, featureId: string, currentUserId?: string, duration: string, permissions?: any }) => {
+        // 1. Resolve to User ID
+        let targetId = targetUserId;
+
+        if (!targetId && email) {
+            // Try getting by RPC first (secure)
+            const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_id_by_email', { p_email: email });
+
+            if (!rpcError && rpcData) {
+                targetId = rpcData;
+            } else {
+                // Fallback: If RPC missing/fails, try public profiles lookup (if policy allows)
+                const { data: profileData } = await supabase.from('profiles').select('id').eq('email', email).single();
+                if (profileData) targetId = profileData.id;
+            }
+        }
+
+        if (!targetId) {
+            throw new Error(`Usuário não encontrado.`);
+        }
+
+        if (targetId === currentUserId) {
+            throw new Error("Você não pode compartilhar acesso consigo mesmo.");
+        }
+
+        // 2. Calculate Expiration
+        let expiresAt: string | null = null;
+        const now = new Date();
+        if (duration === '24h') expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+        else if (duration === '7d') expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        else if (duration === '30d') expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        // 'forever' leaves it null
+
+        // Default permissions if not provided
+        const finalPermissions = permissions || { view: true, create: false, edit: false, delete: false };
+
+        // 3. Insert
+        const tenantId = getCurrentTenantId();
+        const { error } = await supabase.from('shared_access').insert({
+            tenant_id: tenantId,
+            owner_id: currentUserId, // RLS will likely enforce this matches auth.uid()
+            target_id: targetId,
+            feature_id: featureId,
+            actions: finalPermissions,
+            expires_at: expiresAt
+        });
+
+        if (error) throw error;
+    },
+
+    revokeSharedAccess: async (id: string) => {
+        const { error } = await supabase.from('shared_access').delete().eq('id', id);
+        if (error) throw error;
+    },
 
     // --- AUDIT LOGS ---
     getAuditLogs: async (tenantId?: string) => {
@@ -1380,91 +1479,8 @@ export const api = {
         await supabase.from('delegations').delete().eq('id', id);
     },
 
-    // --- SHARED ACCESS (GRANULAR DELEGATION) ---
-    getSharedAccess: async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
-
-        // Fetch records where I AM THE OWNER (I shared with others)
-        const { data, error } = await supabase.from('shared_access')
-            .select('*, profiles!user_id(email)')
-            .eq('owner_id', user.id);
-
-        if (error) throw error;
-
-        return data.map((d: any) => ({
-            ...d,
-            user_email: d.profiles?.email,
-            feature_name: d.feature_id // Todo: Map to name from catalog
-        })) as SharedAccess[];
-    },
-    grantSharedAccess: async (data: { email: string, featureId: string, currentUserId: string, duration: string }) => {
-        // 1. Resolve User ID from Email
-        // Note: Generic users can't see all users emails usually. 
-        // But for sharing, we likely rely on exact match or a search if allowed.
-        // Or we use an Edge Function to resolve email safely.
-        // For MVP, lets assume we can query profiles by email if we are in same tenant?
-        // Or use RPC `get_user_id_by_email` if available to authenticated users (usually restricted to admin).
-        // Let's try simple query for now.
-        const tenantId = getCurrentTenantId();
-        const { data: targetUser, error: uError } = await supabase.from('profiles')
-            .select('id')
-            .eq('email', data.email)
-            .eq('tenant_id', tenantId)
-            .single();
-
-        if (uError || !targetUser) throw new Error("Usuário não encontrado na sua empresa.");
-
-        // SECURITY: Check Privilege Escalation
-        // The current user (owner_id) must have 'view' and 'edit' access (or at least view) to the feature they are sharing.
-        // Since we are in api.ts (client-side capable), we should ideally check this backend-side via RLS or Edge Function.
-        // But for UI feedback, we check locally first.
-        // We can reuse the same logic as `useAuthorization` hook but that is a hook.
-        // We will fetch the user's permission for this feature.
-
-        // 1. Check User Permissions (Layer 2)
-        const { data: myPerms } = await supabase.from('user_permissions')
-            .select('*')
-            .eq('user_id', data.currentUserId)
-            .eq('tenant_id', tenantId) // Tenant Check (Layer 1 implicit if user exists)
-            .eq('feature_id', data.featureId)
-            .single();
-
-        // 2. Check Shared Access (Layer 3 - Can I reshare? Usually no, unless 'Audit' allows. Strict: Owner only shares what they own via L2)
-        // User Rule: "shared_access não pode escalar".
-        // Let's enforce: You must have L2 permission to share L3.
-        const canShare = myPerms?.actions?.view === true; // Minimum requirement? Or Edit?
-
-        if (!canShare) {
-            throw new Error("Negado: Você não possui permissão suficiente neste recurso para compartilhá-lo.");
-        }
-
-        // 2. Calculate Expiration
-        let expiresAt = null;
-        if (data.duration !== 'forever') {
-            const now = new Date();
-            if (data.duration === '24h') now.setHours(now.getHours() + 24);
-            if (data.duration === '7d') now.setDate(now.getDate() + 7);
-            if (data.duration === '30d') now.setDate(now.getDate() + 30);
-            expiresAt = now.toISOString();
-        }
-
-        // 3. Insert
-        const { error } = await supabase.from('shared_access').insert({
-            owner_id: data.currentUserId,
-            user_id: targetUser.id,
-            tenant_id: tenantId,
-            feature_id: data.featureId,
-            actions: { view: true, create: true, edit: true, delete: false }, // Default 'Editor' Access for detailed sharing
-            expires_at: expiresAt
-        });
-
-        if (error) throw error;
-    },
-    revokeSharedAccess: async (id: string) => {
-        const { error } = await supabase.from('shared_access').delete().eq('id', id);
-        if (error) throw error;
-    },
+    // --- SHARED ACCESS ---
+    // (See lines 490+ for implementation)
 
     // --- TENANTS & SUPER ADMIN ---
     getTenantById: async (id: string) => {

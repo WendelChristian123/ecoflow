@@ -176,8 +176,8 @@ export const SettingsPage: React.FC = () => {
             {/* TAB: DELEGATION (SHARED ACCESS) */}
             {activeTab === 'delegation' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4">
-                    {/* New SharedAccessPanel Component */}
-                    <SharedAccessPanel />
+                    {/* New SharedAccessPanel Component with Preloaded Users */}
+                    <SharedAccessPanel preloadedUsers={users} />
                 </div>
             )}
 
