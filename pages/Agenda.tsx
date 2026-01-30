@@ -625,6 +625,23 @@ export const AgendaPage: React.FC = () => {
           event={selectedEvent}
           users={users}
           onEdit={handleEdit}
+          onDuplicate={(eventToDuplicate) => {
+            // Logic for duplication
+            const newEvent = {
+              ...eventToDuplicate,
+              id: undefined,
+              title: `${eventToDuplicate.title} (Cópia)`,
+              status: 'pending', // or 'scheduled'
+              metadata: {
+                ...eventToDuplicate.metadata,
+                id: undefined
+              }
+              // Add specific resets if needed
+            };
+            setEditingEvent(newEvent);
+            setSelectedEvent(null);
+            setIsCreateModalOpen(true);
+          }}
         />
       )}
     </div>

@@ -55,23 +55,41 @@ export const api = {
         const createdTasks: any[] = [];
         const baseRecurrenceId = recurrence ? crypto.randomUUID() : null;
 
+        // Fetch current user for the log (synchronously if possible, or assume valid session)
+        const { data: { user } } = await supabase.auth.getUser();
+
         const createDbTask = (t: Partial<Task>, date: string, recId: string | null) => {
+            // Ensure logs initialized with Creation event
+            const initialLog = {
+                id: crypto.randomUUID(),
+                action: 'create',
+                userId: user?.id || 'system',
+                timestamp: new Date().toISOString(),
+                details: 'Criou a tarefa',
+                comment: ''
+            };
+
+            const existingLogs = t.logs || [];
+            // Prepend creation log if not present (simple check)
+            const finalLogs = existingLogs.length > 0 && existingLogs[existingLogs.length - 1].action === 'create'
+                ? existingLogs
+                : [...existingLogs, initialLog];
+
             const dbTask = {
                 title: t.title,
                 description: t.description,
-                status: t.status,
-                priority: t.priority,
+                status: t.status || 'todo', // Force default
+                priority: t.priority || 'medium', // Force default
                 assignee_id: uuidOrNull(t.assigneeId),
                 project_id: uuidOrNull(t.projectId),
                 team_id: uuidOrNull(t.teamId),
                 due_date: date,
-                tags: t.tags,
-                links: t.links,
+                tags: t.tags || [],
+                links: t.links || [],
                 tenant_id: tenantId,
-                recurrence_id: recId
+                recurrence_id: recId,
+                logs: finalLogs
             };
-            if (!dbTask.status) delete dbTask.status;
-            if (!dbTask.priority) delete dbTask.priority;
             return dbTask;
         };
 
@@ -92,13 +110,9 @@ export const api = {
                 // Stop if endDate is exceeded (if provided)
                 if (recurrence.endDate && nextDate > new Date(recurrence.endDate)) break;
 
-                const dateStr = nextDate.toISOString().split('T')[0]; // Store as YYYY-MM-DD for tasks, or ISO for datetime
-                // Note: Tasks dueDate is usually YYYY-MM-DD or ISO. Let's keep input format if possible, but calculating usually results in Date object.
-                // Assuming task.dueDate includes time if needed. API sanitizeDate handles empty strings.
-                // Using ISO string preserves time if present in original startDate.
+                const dateStr = nextDate.toISOString().split('T')[0]; // Store as YYYY-MM-DD for tasks if possible, or ISO
+                // Note: Using ISO string to preserve time component if it exists
                 const isoStr = nextDate.toISOString();
-                // Using task.dueDate format style would be ideal but hard to guess.
-                // Let's use ISO string for safety.
                 createdTasks.push(createDbTask(task, isoStr, baseRecurrenceId));
             }
         } else {
@@ -120,6 +134,7 @@ export const api = {
             teamId: firstData.team_id,
             tenantId: firstData.tenant_id,
             dueDate: firstData.due_date,
+            links: firstData.links, // Ensure links are returned
         } as Task;
     },
     updateTask: async (task: Task) => {
@@ -133,7 +148,8 @@ export const api = {
             team_id: uuidOrNull(task.teamId),
             due_date: task.dueDate,
             tags: task.tags,
-            links: task.links
+            links: task.links,
+            logs: task.logs
         };
 
         const { error } = await supabase
@@ -205,7 +221,9 @@ export const api = {
             due_date: project.dueDate,
             team_ids: project.teamIds,
             member_ids: project.members,
-            links: project.links
+            owner_id: project.ownerId,
+            links: project.links,
+            logs: project.logs
         };
         const { error } = await supabase.from('projects').update(dbProject).eq('id', project.id);
         if (error) throw error;
@@ -228,90 +246,30 @@ export const api = {
         if (tError) throw tError;
     },
 
-    // --- TEAMS ---
-    getTeams: async (tenantId?: string) => {
-        let query = supabase.from('teams').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
-        const { data, error } = await query;
-        if (error) throw error;
-        return data.map((t: any) => ({
-            ...t,
-            leadId: t.lead_id,
-            tenantId: t.tenant_id,
-            memberIds: t.member_ids,
-        })) as Team[];
-    },
-    addTeam: async (team: Partial<Team>) => {
-        const tenantId = getCurrentTenantId();
-        const dbTeam = {
-            name: team.name,
-            description: team.description,
-            lead_id: team.leadId,
-            tenant_id: tenantId,
-            member_ids: team.memberIds,
-            links: team.links
-        };
-        const { error } = await supabase.from('teams').insert([dbTeam]);
-        if (error) throw error;
-    },
-    updateTeam: async (team: Team) => {
-        const dbTeam = {
-            name: team.name,
-            description: team.description,
-            lead_id: team.leadId,
-            member_ids: team.memberIds,
-            links: team.links
-        };
-        const { error } = await supabase.from('teams').update(dbTeam).eq('id', team.id);
-        if (error) throw error;
-    },
-    deleteTeam: async (id: string) => {
-        const { error } = await supabase.from('teams').delete().eq('id', id);
-        if (error) throw error;
-    },
-    deleteTenant: async (id: string) => {
-        const { error } = await supabase.functions.invoke('admin-delete-tenant', {
-            body: { tenantId: id }
-        });
-        if (error) throw error;
-    },
-
     // --- USERS ---
     getUsers: async (tenantId?: string) => {
-        // 1. Fetch Profiles - Relaxed filter to include null roles
         let query = supabase.from('profiles').select('*');
-        // REMOVED manual filtered: if (tenantId) query = query.eq('tenant_id', tenantId);
-        // We rely on RLS (secure_profiles.sql) which enforces tenant_id = public.get_current_tenant_id()
+        if (tenantId) query = query.eq('tenant_id', tenantId);
 
-        // Filter super_admin in memory or with complex OR query. Memory is safer for nulls.
         const { data: profiles, error: errProfiles } = await query;
         if (errProfiles) {
             console.error('Error fetching users:', errProfiles);
             throw errProfiles;
         }
 
-        if (!profiles) return []; // Safeguard against null data
+        if (!profiles) return [];
 
-        // Filter out super_admins (handling nulls gracefully)
         const validProfiles = profiles.filter((p: any) => p.role !== 'super_admin');
 
-        // 2. Fetch Permissions (Manual Join to avoid schema issues)
-        // We only fetch permissions for these users
         const userIds = validProfiles.map(u => u.id);
-        let permsQuery = supabase.from('user_permissions').select('*');
-        if (userIds.length > 0) {
-            permsQuery = permsQuery.in('user_id', userIds);
-            if (tenantId) permsQuery = permsQuery.eq('tenant_id', tenantId);
-        } else {
-            // specific edge case: no users found
-            return [];
-        }
+        if (userIds.length === 0) return [];
+
+        let permsQuery = supabase.from('user_permissions').select('*').in('user_id', userIds);
+        if (tenantId) permsQuery = permsQuery.eq('tenant_id', tenantId);
 
         const { data: allPerms, error: errPerms } = await permsQuery;
-        // If error fetching permissions (e.g. table missing), log but don't crash main list
         if (errPerms) console.warn("Could not fetch permissions:", errPerms);
 
-        // 3. Merge
         return validProfiles.map((u: any) => {
             const userPerms = allPerms?.filter(p => p.user_id === u.id) || [];
             return {
@@ -322,6 +280,49 @@ export const api = {
             };
         }) as User[];
     },
+
+    // --- TEAMS ---
+    getTeams: async (tenantId?: string) => {
+        let query = supabase.from('teams').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
+        if (error) throw error;
+
+        return data.map((t: any) => ({
+            ...t,
+            leaderId: t.lead_id,
+            tenantId: t.tenant_id,
+            memberIds: t.member_ids,
+            logs: t.logs
+        })) as Team[];
+    },
+
+    addTeam: async (team: Partial<Team>) => {
+        const { error } = await supabase.from('teams').insert({
+            name: team.name,
+            description: team.description,
+            lead_id: team.leaderId,
+            member_ids: team.memberIds,
+            links: team.links || [],
+            logs: team.logs || [],
+            tenant_id: team.tenantId
+        });
+        if (error) throw error;
+    },
+
+    updateTeam: async (team: Team) => {
+        const dbTeam = {
+            name: team.name,
+            description: team.description,
+            lead_id: team.leaderId,
+            member_ids: team.memberIds,
+            links: team.links,
+            logs: team.logs
+        };
+        const { error } = await supabase.from('teams').update(dbTeam).eq('id', team.id);
+        if (error) throw error;
+    },
+
     getGlobalUsers: async () => {
         // Only super admin triggers this
         const { data, error } = await supabase.from('profiles').select('*, tenants(name)');

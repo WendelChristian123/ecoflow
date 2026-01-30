@@ -93,6 +93,13 @@ export const TasksPage: React.FC = () => {
     }
   };
 
+  const handleCreateSuccess = (newTask?: Task) => {
+    loadData();
+    if (newTask) {
+      setSelectedTask(newTask);
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId);
     e.dataTransfer.effectAllowed = 'move';
@@ -338,7 +345,7 @@ export const TasksPage: React.FC = () => {
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={loadData}
+        onSuccess={handleCreateSuccess}
         projects={projects}
         teams={teams}
         users={assignableUsers} // STRICT

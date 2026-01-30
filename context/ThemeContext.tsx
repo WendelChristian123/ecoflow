@@ -12,55 +12,18 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Inicializa com o valor do localStorage ou 'system'
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('ecoflow-theme');
-    return (saved as Theme) || 'system';
-  });
-
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+  // Always dark
+  const theme = 'dark';
+  const resolvedTheme = 'dark';
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    
-    const applyTheme = () => {
-      let finalTheme: 'light' | 'dark' = 'dark';
-
-      if (theme === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        finalTheme = systemTheme;
-      } else {
-        finalTheme = theme;
-      }
-
-      setResolvedTheme(finalTheme);
-
-      // Tailwind usa a classe 'dark' no html/body
-      if (finalTheme === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    };
-
-    applyTheme();
-
-    // Listener para mudanças no sistema operacional
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      if (theme === 'system') applyTheme();
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    
-    // Persistência
-    localStorage.setItem('ecoflow-theme', theme);
-
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+    // Ensure .dark class is present for Tailwind (just in case)
+    document.documentElement.classList.add('dark');
+  }, []);
 
   const setTheme = (t: Theme) => {
-    setThemeState(t);
+    // No-op
+    // console.log("Theme switching is disabled. Enforced Dark Mode.");
   };
 
   return (

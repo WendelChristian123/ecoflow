@@ -567,6 +567,19 @@ export const ProjectsPage: React.FC = () => {
         onSuccess={loadData}
         users={users}
         initialData={editingProject}
+        onDuplicate={(project) => {
+          setEditingProject({
+            ...project,
+            id: undefined,
+            name: `${project.name} (Cópia)`,
+            status: 'active',
+            progress: 0,
+            // Keep other fields like description, members, dueDate?
+            // User said "Resetar... Datas de criação...". DueDate is deadline, optional reset.
+            // I'll keep DueDate as is or maybe reset? Project deadline usually shifts.
+            // But for "Duplicate", keeping it is safer than empty.
+          });
+        }}
       />
     </div>
   );

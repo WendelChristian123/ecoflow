@@ -4,7 +4,16 @@ import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar,
 import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
-import { CheckCircle2, Clock, Trash2, Edit2, X, Calendar, User as UserIcon, Link as LinkIcon, Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, Copy, FileText, ArrowRight, RotateCcw, PlayCircle, CheckSquare, Plus } from 'lucide-react';
+import {
+    X, Check, AlertCircle, Calendar as CalendarIcon, Clock, Paperclip,
+    MoreHorizontal, Trash2, Edit2, Play, Pause, ChevronRight, ChevronDown,
+    MessageSquare, CheckCircle2, User as UserIcon, Calendar, ArrowRight,
+    Flag, Plus, Copy, History,
+    Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, FileText, RotateCcw, PlayCircle, CheckSquare, Link as LinkIcon
+} from 'lucide-react';
+import { TransferModal, HistoryTimeline } from './DetailComponents';
+import { useAuth } from '../context/AuthContext';
+import { LogEntry } from '../types';
 import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ContactModal } from './CommercialModals';
@@ -819,7 +828,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 interface TaskModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: () => void;
+    onSuccess: (newTask?: Task) => void;
     projects: Project[];
     teams: Team[];
     users: User[];
@@ -830,219 +839,242 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     const [formData, setFormData] = useState<Partial<Task>>({
         title: '', description: '', status: 'todo', priority: 'medium', assigneeId: '', projectId: '', teamId: '', dueDate: '', links: []
     });
-    const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'weekly', repeatCount: 0 });
+    const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'weekly', repeatCount: 12 });
     const [isIndefinite, setIsIndefinite] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            // Helper to get local string for input
-            const toLocalString = (isoStr?: string) => {
+            // Helper to format Date for datetime-local input (YYYY-MM-DDTHH:mm)
+            const toLocalInputValue = (isoStr?: string) => {
                 const d = isoStr ? new Date(isoStr) : new Date();
-                const pad = (n: number) => n.toString().padStart(2, '0');
-                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                // Adjust for timezone offset to get "local" YYYY-MM-DDTHH:mm part
+                const offset = d.getTimezoneOffset() * 60000;
+                const localDate = new Date(d.getTime() - offset);
+                // Return YYYY-MM-DDTHH:mm (slice first 16 chars)
+                return localDate.toISOString().slice(0, 16);
             };
 
-            setFormData(initialData ? {
-                ...initialData,
-                dueDate: initialData.dueDate ? toLocalString(initialData.dueDate) : '',
-                links: initialData.links || []
-            } : {
-                title: '', description: '', status: 'todo', priority: 'medium', assigneeId: users[0]?.id || '', projectId: '', teamId: '',
-                dueDate: toLocalString(new Date().toISOString()),
+            setFormData(initialData || {
+                title: '',
+                description: '',
+                status: 'todo',
+                priority: 'medium',
+                dueDate: toLocalInputValue(new Date().toISOString()),
+                tags: [],
                 links: []
             });
 
-            if (initialData?.recurrence) {
-                setRecurrence({ ...initialData.recurrence, isRecurring: true });
-                setIsIndefinite(!initialData.recurrence.endDate && !initialData.recurrence.occurrences);
-            } else {
-                setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 0 });
-                setIsIndefinite(false);
+            // If editing, convert existing ISO date to local datetime-local format
+            if (initialData?.dueDate) {
+                setFormData(prev => ({
+                    ...prev,
+                    dueDate: toLocalInputValue(initialData.dueDate)
+                }));
             }
+
+            setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 12 });
+            setIsIndefinite(false);
         }
-    }, [isOpen, initialData, users]);
+    }, [isOpen, initialData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const finalFormData = {
-                ...formData,
-                dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : formData.dueDate
-            };
+            // Ensure we send a valid ISO string with timezone (UTC) to backend
+            const finalFormData = { ...formData };
+            if (formData.dueDate) {
+                // formData.dueDate is "YYYY-MM-DDTHH:mm" (Local)
+                // We construct a Date object from it, which interprets it as Local time
+                const d = new Date(formData.dueDate);
+                // Convert to ISO (UTC) for storage
+                finalFormData.dueDate = d.toISOString();
+            }
 
             if (initialData?.id) {
                 await api.updateTask({ ...initialData, ...finalFormData } as Task);
+                onSuccess();
             } else {
-                const finalRecurrence = recurrence.isRecurring ? {
-                    frequency: recurrence.frequency,
-                    interval: 1,
-                    occurrences: isIndefinite ? 12 : (recurrence.repeatCount > 0 ? recurrence.repeatCount : undefined)
+                const recurrenceConfig = recurrence.isRecurring ? {
+                    ...recurrence,
+                    occurrences: isIndefinite ? undefined : recurrence.repeatCount
+                    // endDate handles indefinite if needed, simplified here
                 } : undefined;
-                await api.addTask(finalFormData as Task, finalRecurrence);
+
+                const newTask = await api.addTask(finalFormData, recurrenceConfig);
+                onSuccess(newTask);
             }
-            onSuccess();
             onClose();
-        } catch (e) {
-            console.error(e);
-            alert(`Erro ao salvar tarefa: ${getErrorMessage(e)}`);
+        } catch (e: any) {
+            console.error("Error saving task:", e);
+            alert(`Erro ao salvar tarefa: ${e.message || getErrorMessage(e)}`);
         } finally { setLoading(false); }
     };
 
-    const handleQuickComplete = () => {
-        setFormData({ ...formData, status: 'done' });
-    };
+    const handleQuickComplete = async () => {
+        if (!initialData?.id) return;
+        if (confirm("Concluir tarefa?")) {
+            setLoading(true);
+            try {
+                await api.updateTaskStatus(initialData.id, 'done');
+                onSuccess();
+                onClose();
+            } catch (e) { alert("Erro ao concluir"); } finally { setLoading(false); }
+        }
+    }
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Tarefa" : "Nova Tarefa"} className="max-w-5xl">
+        <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Tarefa" : "Nova Tarefa"} className="max-w-4xl">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left Column */}
-                    <div className="space-y-4">
-                        <Input label="Título da Tarefa" placeholder="Ex: Criar relatório mensal" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
-                        <div className="h-full flex flex-col">
-                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
-                            <Textarea placeholder="Detalhes da tarefa..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="flex-1 min-h-[160px]" />
+                <Input
+                    label="Título"
+                    placeholder="Ex: Revisar contrato..."
+                    value={formData.title}
+                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                    required
+                    autoFocus
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select
+                        label="Projeto (Opcional)"
+                        value={formData.projectId || ''}
+                        onChange={e => setFormData({ ...formData, projectId: e.target.value || undefined })}
+                    >
+                        <option value="">Nenhum Projeto</option>
+                        {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </Select>
+
+                    <Select
+                        label="Equipe (Opcional)"
+                        value={formData.teamId || ''}
+                        onChange={e => setFormData({ ...formData, teamId: e.target.value || undefined })}
+                    >
+                        <option value="">Nenhuma Equipe</option>
+                        {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </Select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select
+                        label="Status"
+                        value={formData.status}
+                        onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                    >
+                        <option value="todo">A Fazer</option>
+                        <option value="in_progress">Em Progresso</option>
+                        <option value="review">Revisão</option>
+                        <option value="done">Concluído</option>
+                    </Select>
+
+                    <Select
+                        label="Prioridade"
+                        value={formData.priority}
+                        onChange={e => setFormData({ ...formData, priority: e.target.value as any })}
+                    >
+                        <option value="low">Baixa</option>
+                        <option value="medium">Média</option>
+                        <option value="high">Alta</option>
+                        <option value="urgent">Urgente</option>
+                    </Select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Responsável</label>
+                        <div className="relative">
+                            <UserIcon className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
+                            <select
+                                className="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-md text-sm focus:ring-1 focus:ring-primary outline-none appearance-none"
+                                value={formData.assigneeId || ''}
+                                onChange={e => setFormData({ ...formData, assigneeId: e.target.value || undefined })}
+                            >
+                                <option value="">Sem responsável</option>
+                                {users.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
+                    <Input
+                        label="Prazo"
+                        type="datetime-local"
+                        value={formData.dueDate || ''}
+                        onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
+                    />
+                </div>
 
-                    {/* Right Column */}
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
-                                <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as Status })}>
-                                    <option value="todo">A Fazer</option>
-                                    <option value="in_progress">Em Progresso</option>
-                                    <option value="review">Revisão</option>
-                                    <option value="done">Concluído</option>
-                                </Select>
+                <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Descrição</label>
+                    <Textarea
+                        placeholder="Adicione detalhes..."
+                        value={formData.description}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        className="h-24 resize-none"
+                    />
+                </div>
+
+                <div className="space-y-4 pt-2">
+                    <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+
+                    {!initialData?.id && (
+                        <div className="bg-secondary/20 p-3 rounded-lg border border-border">
+                            <div className="flex items-center gap-2 mb-2">
+                                <input
+                                    type="checkbox"
+                                    id="task-recurrence-toggle"
+                                    checked={recurrence.isRecurring}
+                                    onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })}
+                                    className="w-4 h-4 rounded bg-background border-input accent-emerald-500"
+                                />
+                                <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                                    Repetir esta tarefa?
+                                </label>
                             </div>
-                            <div>
-                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prioridade</label>
-                                <Select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value as Priority })}>
-                                    <option value="low">Baixa</option>
-                                    <option value="medium">Média</option>
-                                    <option value="high">Alta</option>
-                                    <option value="urgent">Urgente</option>
-                                </Select>
-                            </div>
-                        </div>
 
-                        <div>
-                            <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Responsável</label>
-                            <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
-                                <option value="">Selecione...</option>
-                                {(() => {
-                                    let filtered = users;
-
-                                    // Filter by Team
-                                    if (formData.teamId) {
-                                        const team = teams.find(t => t.id === formData.teamId);
-                                        if (team && team.memberIds && team.memberIds.length > 0) {
-                                            filtered = filtered.filter(u => team.memberIds.includes(u.id));
-                                        }
-                                    }
-
-                                    // Filter by Project
-                                    if (formData.projectId) {
-                                        const project = projects.find(p => p.id === formData.projectId);
-                                        // Strict filtering: If project has members defined, use them.
-                                        if (project && project.members && project.members.length > 0) {
-                                            filtered = filtered.filter(u => project.members.includes(u.id));
-                                        }
-                                    }
-
-                                    return filtered.sort((a, b) => a.name.localeCompare(b.name)).map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ));
-                                })()}
-                            </Select>
-                        </div>
-                        <div>
-                            <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
-                            <Input type="datetime-local" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} required />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Projeto</label>
-                                <Select value={formData.projectId || ''} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
-                                    <option value="">Nenhum</option>
-                                    {[...projects].sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </Select>
-                            </div>
-                            <div>
-                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Equipe</label>
-                                <Select value={formData.teamId || ''} onChange={e => setFormData({ ...formData, teamId: e.target.value })}>
-                                    <option value="">Nenhuma</option>
-                                    {[...teams].sort((a, b) => a.name.localeCompare(b.name)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                </Select>
-                            </div>
-                        </div>
-
-                        <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
-
-                        {/* Recurrence Section (New) */}
-                        {!initialData?.id && (
-                            <div className="bg-secondary/20 p-3 rounded-lg border border-border">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <input
-                                        type="checkbox"
-                                        id="task-recurrence-toggle"
-                                        checked={recurrence.isRecurring}
-                                        onChange={e => setRecurrence({ ...recurrence, isRecurring: e.target.checked })}
-                                        className="w-4 h-4 rounded bg-background border-input accent-emerald-500"
-                                    />
-                                    <label htmlFor="task-recurrence-toggle" className="text-sm font-medium text-foreground select-none cursor-pointer">
-                                        Repetir esta tarefa?
-                                    </label>
-                                </div>
-
-                                {recurrence.isRecurring && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-border">
-                                        <div>
-                                            <label className="text-xs text-muted-foreground mb-1 block">Frequência</label>
+                            {recurrence.isRecurring && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-border">
+                                    <div>
+                                        <label className="text-xs text-muted-foreground mb-1 block">Frequência</label>
+                                        <Select
+                                            value={recurrence.frequency}
+                                            onChange={e => setRecurrence({ ...recurrence, frequency: e.target.value as any })}
+                                        >
+                                            <option value="daily">Diário</option>
+                                            <option value="weekly">Semanal</option>
+                                            <option value="monthly">Mensal</option>
+                                            <option value="yearly">Anual</option>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-end gap-2">
+                                        <div className="flex-1">
+                                            <label className="text-xs text-muted-foreground mb-1 block">Fim</label>
                                             <Select
-                                                value={recurrence.frequency}
-                                                onChange={e => setRecurrence({ ...recurrence, frequency: e.target.value as any })}
+                                                value={isIndefinite ? 'indefinite' : 'count'}
+                                                onChange={e => setIsIndefinite(e.target.value === 'indefinite')}
                                             >
-                                                <option value="daily">Diário</option>
-                                                <option value="weekly">Semanal</option>
-                                                <option value="monthly">Mensal</option>
-                                                <option value="yearly">Anual</option>
+                                                <option value="count">Após ocorrências</option>
+                                                <option value="indefinite">Indefinido (Máx 12)</option>
                                             </Select>
                                         </div>
-                                        <div className="flex items-end gap-2">
-                                            <div className="flex-1">
-                                                <label className="text-xs text-muted-foreground mb-1 block">Fim</label>
-                                                <Select
-                                                    value={isIndefinite ? 'indefinite' : 'count'}
-                                                    onChange={e => setIsIndefinite(e.target.value === 'indefinite')}
-                                                >
-                                                    <option value="count">Após ocorrências</option>
-                                                    <option value="indefinite">Indefinido (Máx 12)</option>
-                                                </Select>
+                                        {!isIndefinite && (
+                                            <div className="w-16">
+                                                <label className="text-xs text-muted-foreground mb-1 block">Qtd</label>
+                                                <Input
+                                                    type="number"
+                                                    min="2"
+                                                    max="50"
+                                                    value={recurrence.repeatCount || 0}
+                                                    onChange={e => setRecurrence({ ...recurrence, repeatCount: parseInt(e.target.value) })}
+                                                />
                                             </div>
-                                            {!isIndefinite && (
-                                                <div className="w-16">
-                                                    <label className="text-xs text-muted-foreground mb-1 block">Qtd</label>
-                                                    <Input
-                                                        type="number"
-                                                        min="2"
-                                                        max="50"
-                                                        value={recurrence.repeatCount || 0}
-                                                        onChange={e => setRecurrence({ ...recurrence, repeatCount: parseInt(e.target.value) })}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-between items-center gap-2 pt-4 border-t border-border">
@@ -1081,6 +1113,51 @@ interface TaskDetailModalProps {
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClose, onSuccess, task, users, projects, teams }) => {
     // ... Implementation logic ...
     const [isEditing, setIsEditing] = useState(false);
+    const [isDuplicating, setIsDuplicating] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+
+    const { user: currentUser } = useAuth();
+
+    const addLog = (task: Task, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
+        const newLog: LogEntry = {
+            id: crypto.randomUUID(),
+            action,
+            userId: currentUser?.id || 'system', // Ideally useAuth().user.id
+            timestamp: new Date().toISOString(),
+            details,
+            comment,
+            link
+        };
+        return [newLog, ...(task.logs || [])];
+    };
+
+    const handleAction = async (status: Status) => {
+        const newLogs = addLog(task, 'status_change', `Alterou status de ${translateStatus(task.status)} para ${translateStatus(status)}`);
+
+        // Optimistic update
+        const updatedTask = { ...task, status, logs: newLogs };
+        try {
+            await api.updateTask(updatedTask);
+            onSuccess(); // Refresh
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao atualizar status.");
+        }
+    };
+
+    const handleTransfer = async (userId: string, comment?: string, link?: string) => {
+        const targetUser = users.find(u => u.id === userId);
+        const newLogs = addLog(task, 'transfer', `Transferiu para ${targetUser?.name || 'usuário'}`, comment, link);
+
+        try {
+            await api.updateTask({ ...task, assigneeId: userId, logs: newLogs });
+            onSuccess();
+        } catch (e) {
+            console.error(e);
+            throw e; // Modal handles alert
+        }
+    };
 
     if (!task) return null;
 
@@ -1091,6 +1168,24 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
     const handleEditSuccess = () => {
         setIsEditing(false);
         onSuccess();
+    }
+
+    const handleDuplicateSuccess = () => {
+        setIsDuplicating(false);
+        onSuccess();
+        // Optional: Close detail modal to focus on new list or something? 
+        // User behavior: "Abrir automaticamente o modal do novo item para edição". 
+        // Since `TaskModal` (the create one) is the "modal do novo item", checking "onSuccess" means we finished creating it.
+        // The user says: "Criar um novo registro independente... Abrir automaticamente o modal do novo item para edição"
+        // Wait, `TaskModal` IS the edit/create modal. 
+        // So clicking "Duplicate" -> Opens `TaskModal` with pre-filled data. User edits and saves. = "Abrir ... para edição".
+        // Once saved (`onSuccess`), the new item exists. 
+        // Should we close the *original* detail modal? Probably yes, to avoid confusion.
+        onClose();
+    }
+
+    const handleDuplicate = () => {
+        setIsDuplicating(true);
     }
 
     const handleStatusChange = async (newStatus: Status) => {
@@ -1105,87 +1200,141 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
 
     return (
         <>
-            <Modal isOpen={isOpen && !isEditing} onClose={onClose} title="Detalhes da Tarefa" className="max-w-2xl">
-                <div className="space-y-6">
-                    <div className="flex justify-between items-start">
-                        <h2 className="text-xl font-bold text-foreground">{task.title}</h2>
-                        <button onClick={() => setIsEditing(true)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-accent rounded"><Edit2 size={18} /></button>
-                    </div>
-                    {/* ... Rest of Task Detail Modal ... */}
-                    <div className="flex flex-wrap gap-2">
-                        <Badge variant={task.status === 'done' ? 'success' : 'neutral'}>{translateStatus(task.status)}</Badge>
-                        <Badge variant={task.priority === 'urgent' ? 'error' : 'warning'}>{translatePriority(task.priority)}</Badge>
-                        {project && <Badge variant="default">{project.name}</Badge>}
-                        {team && <Badge variant="neutral">{team.name}</Badge>}
+            <Modal isOpen={isOpen && !isEditing && !isDuplicating} onClose={onClose} title="Detalhes da Tarefa" className="max-w-5xl">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Left Sidebar - History */}
+                    <div className="md:col-span-1 border-gray-100 dark:border-gray-800 md:border-r md:pr-4 overflow-y-auto max-h-[calc(80vh-100px)] custom-scrollbar order-2 md:order-1">
+                        <div className="sticky top-0 bg-background z-10 pb-4 pt-1 mb-2 border-b border-border/50">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
+                                <History size={14} /> Histórico
+                            </h3>
+                        </div>
+                        <HistoryTimeline logs={task.logs || []} users={users} />
                     </div>
 
-                    <div className="bg-card p-4 rounded-lg text-foreground text-sm whitespace-pre-wrap border border-border min-h-[100px]">
-                        {task.description || "Sem descrição."}
-                    </div>
+                    {/* Right Content - Details */}
+                    <div className="md:col-span-2 space-y-6 order-1 md:order-2">
+                        <div className="flex justify-between items-start">
+                            <h2 className="text-xl font-bold text-foreground">{task.title}</h2>
+                        </div>
 
-                    {/* Action Buttons Row - Workflow */}
-                    <div className="bg-muted p-3 rounded-xl border border-border">
-                        <label className="text-xs text-muted-foreground block mb-2 font-semibold uppercase tracking-wider">Mover para Etapa</label>
-                        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
-                            {['todo', 'in_progress', 'review'].map((st) => (
-                                <button
-                                    key={st}
-                                    onClick={() => handleStatusChange(st as Status)}
-                                    disabled={task.status === st}
-                                    className={cn(
-                                        "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap",
-                                        task.status === st
-                                            ? "bg-primary text-primary-foreground border-primary cursor-default"
-                                            : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground"
-                                    )}
-                                >
-                                    {translateStatus(st)}
-                                </button>
-                            ))}
-                            <div className="w-px h-6 bg-border mx-2 hidden sm:block"></div>
+                        <div className="flex items-center gap-2 pb-2">
                             <Button
+                                variant="outline"
                                 size="sm"
-                                className={cn("gap-2 ml-auto sm:ml-0", task.status === 'done' ? "opacity-50 cursor-not-allowed" : "")}
-                                variant={task.status === 'done' ? 'secondary' : 'primary'}
-                                onClick={() => task.status !== 'done' && handleStatusChange('done')}
-                                disabled={task.status === 'done'}
+                                onClick={() => setIsTransferModalOpen(true)}
+                                className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                title="Transferir Responsabilidade"
                             >
-                                <CheckCircle2 size={14} /> Concluir Tarefa
+                                <UserIcon size={14} />
+                                Transferir
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDuplicate}
+                                className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                title="Duplicar Tarefa"
+                            >
+                                <Copy size={14} />
+                                Duplicar
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsEditing(true)}
+                                className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                title="Editar Tarefa"
+                            >
+                                <Edit2 size={14} />
+                                Editar
                             </Button>
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm pt-2">
-                        <div>
-                            <span className="text-muted-foreground block mb-1">Responsável</span>
-                            <div className="flex items-center gap-2 text-foreground">
-                                {assignee && <Avatar size="sm" src={assignee.avatarUrl} name={assignee.name} />}
-                                <span>{assignee?.name || 'N/A'}</span>
-                            </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Badge variant={task.status === 'done' ? 'success' : 'neutral'}>{translateStatus(task.status)}</Badge>
+                            <Badge variant={task.priority === 'urgent' ? 'error' : 'warning'}>{translatePriority(task.priority)}</Badge>
+                            {project && <Badge variant="default">{project.name}</Badge>}
+                            {team && <Badge variant="neutral">{team.name}</Badge>}
                         </div>
-                        <div>
-                            <span className="text-muted-foreground block mb-1">Prazo</span>
-                            <div className="flex items-center gap-2 text-foreground">
-                                <Calendar size={16} />
-                                <span>{new Date(task.dueDate).toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    {task.links && task.links.length > 0 && (
-                        <div>
-                            <span className="text-muted-foreground block mb-2 text-sm">Links Anexados</span>
-                            <div className="space-y-1">
-                                {task.links.map((link, i) => (
-                                    <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-500 hover:underline">
-                                        <LinkIcon size={12} /> {link}
-                                    </a>
+                        <div className="bg-card p-4 rounded-lg text-foreground text-sm whitespace-pre-wrap border border-border min-h-[100px]">
+                            {task.description || "Sem descrição."}
+                        </div>
+
+                        <div className="bg-muted p-3 rounded-xl border border-border">
+                            <label className="text-xs text-muted-foreground block mb-2 font-semibold uppercase tracking-wider">Mover para Etapa</label>
+                            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
+                                {['todo', 'in_progress', 'review'].map((st) => (
+                                    <button
+                                        key={st}
+                                        onClick={() => handleAction(st as Status)}
+                                        disabled={task.status === st}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap",
+                                            task.status === st
+                                                ? "bg-primary text-primary-foreground border-primary cursor-default"
+                                                : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground"
+                                        )}
+                                    >
+                                        {translateStatus(st)}
+                                    </button>
                                 ))}
+                                <div className="w-px h-6 bg-border mx-2 hidden sm:block"></div>
+                                <Button
+                                    size="sm"
+                                    className={cn("gap-2 ml-auto sm:ml-0", task.status === 'done' ? "opacity-50 cursor-not-allowed" : "")}
+                                    variant={task.status === 'done' ? 'secondary' : 'primary'}
+                                    onClick={() => task.status !== 'done' && handleAction('done')}
+                                    disabled={task.status === 'done'}
+                                >
+                                    <CheckCircle2 size={14} /> Concluir Tarefa
+                                </Button>
                             </div>
                         </div>
-                    )}
+
+                        <div className="grid grid-cols-2 gap-4 text-sm pt-2">
+                            <div>
+                                <span className="text-muted-foreground block mb-1">Responsável</span>
+                                <div className="flex items-center gap-2 text-foreground">
+                                    {assignee && <Avatar size="sm" src={assignee.avatarUrl} name={assignee.name} />}
+                                    <span>{assignee?.name || 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground block mb-1">Prazo</span>
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <Calendar size={16} />
+                                    <span>{task.dueDate ? new Date(task.dueDate).toLocaleString() : 'Sem prazo'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {task.links && task.links.length > 0 && (
+                            <div>
+                                <span className="text-muted-foreground block mb-2 text-sm">Links Anexados</span>
+                                <div className="space-y-1">
+                                    {task.links.map((link, i) => (
+                                        <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-500 hover:underline">
+                                            <LinkIcon size={12} /> {link}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Modal>
+
+            {isTransferModalOpen && (
+                <TransferModal
+                    isOpen={isTransferModalOpen}
+                    onClose={() => setIsTransferModalOpen(false)}
+                    onConfirm={handleTransfer}
+                    users={users}
+                    currentAssigneeId={task.assigneeId}
+                />
+            )}
 
             {isEditing && (
                 <TaskModal
@@ -1196,6 +1345,27 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                     teams={teams}
                     users={users}
                     initialData={task}
+                />
+            )}
+
+            {isDuplicating && (
+                <TaskModal
+                    isOpen={isDuplicating}
+                    onClose={() => setIsDuplicating(false)}
+                    onSuccess={handleDuplicateSuccess}
+                    projects={projects}
+                    teams={teams}
+                    users={users}
+                    initialData={{
+                        ...task,
+                        id: undefined,
+                        title: `${task.title} (Cópia)`,
+                        status: 'todo',
+                        dueDate: '',
+                        logs: [],
+                        createdAt: undefined,
+                        updatedAt: undefined
+                    }}
                 />
             )}
         </>
@@ -1310,13 +1480,46 @@ interface ProjectModalProps {
     onSuccess: () => void;
     users: User[];
     initialData?: Partial<Project>;
+    onDuplicate?: (project: Partial<Project>) => void;
 }
 
-export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onSuccess, users, initialData }) => {
+export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onSuccess, users, initialData, onDuplicate }) => {
     const [formData, setFormData] = useState<Partial<Project>>({
         name: '', description: '', status: 'active', progress: 0, dueDate: '', members: [], links: []
     });
     const [loading, setLoading] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const { user: currentUser } = useAuth();
+    const isEditing = !!initialData?.id; // Use id check for editing mode safely
+
+    // Duplicated addLog helper
+    const addLog = (project: Project, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
+        const newLog: LogEntry = {
+            id: crypto.randomUUID(),
+            action,
+            userId: currentUser?.id || 'system',
+            timestamp: new Date().toISOString(),
+            details,
+            comment,
+            link
+        };
+        return [newLog, ...(project.logs || [])];
+    };
+
+    const handleTransfer = async (userId: string, comment?: string, link?: string) => {
+        if (!initialData?.id) return;
+        const project = { ...initialData, ...formData } as Project; // Merge current form data
+        const targetUser = users.find(u => u.id === userId);
+        const newLogs = addLog(project, 'transfer', `Transferiu para ${targetUser?.name || 'usuário'}`, comment, link);
+
+        try {
+            await api.updateProject({ ...project, ownerId: userId, logs: newLogs });
+            onSuccess();
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -1352,50 +1555,110 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Projeto" : "Novo Projeto"} className="max-w-4xl">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ... Form Content ... */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-5">
-                        <Input label="Nome do Projeto" placeholder="Ex: Redesign do Site" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                        <div>
-                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
-                            <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-40" />
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Projeto" : "Novo Projeto"} className="max-w-5xl">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Left Sidebar - History */}
+                    <div className="md:col-span-1 border-gray-100 dark:border-gray-800 md:border-r md:pr-4 overflow-y-auto max-h-[calc(80vh-100px)] custom-scrollbar order-2 md:order-1">
+                        <div className="sticky top-0 bg-background z-10 pb-4 pt-1 mb-2 border-b border-border/50">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
+                                <History size={14} /> Histórico
+                            </h3>
                         </div>
-                    </div>
-                    <div className="space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
-                                <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
-                                    <option value="active">Ativo</option>
-                                    <option value="on_hold">Em Espera</option>
-                                    <option value="completed">Concluído</option>
-                                </Select>
+                        {initialData?.id ? (
+                            <HistoryTimeline logs={initialData.logs || []} users={users} />
+                        ) : (
+                            <div className="text-sm text-muted-foreground p-4 text-center">
+                                O histórico estará disponível após a criação do projeto.
                             </div>
-                            <div>
-                                <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
-                                <Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} required />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Progresso ({formData.progress}%)</label>
-                            <input type="range" min="0" max="100" value={formData.progress} onChange={e => setFormData({ ...formData, progress: parseInt(e.target.value) })} className="w-full accent-emerald-500" />
-                        </div>
-                        <div>
-                            <label className="text-xs text-muted-foreground mb-2 block ml-1">Membros</label>
-                            <UserMultiSelect users={users} selectedIds={formData.members || []} onChange={ids => setFormData({ ...formData, members: ids })} />
-                        </div>
-                        <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+                        )}
                     </div>
-                </div>
 
-                <div className="flex justify-end gap-2 pt-4 border-t border-border">
-                    <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-                    <Button type="submit" disabled={loading}>Salvar</Button>
-                </div>
-            </form>
-        </Modal>
+                    {/* Right Content - Form */}
+                    <div className="md:col-span-2 space-y-6 order-1 md:order-2">
+                        {/* Standardized Action Buttons - Only if Editing */}
+                        {isEditing && (
+                            <div className="flex items-center gap-2 pb-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsTransferModalOpen(true)}
+                                    className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                    title="Transferir Responsabilidade"
+                                >
+                                    <UserIcon size={14} />
+                                    Transferir
+                                </Button>
+                                {onDuplicate && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onDuplicate({ ...formData, id: undefined })}
+                                        className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                        title="Duplicar"
+                                    >
+                                        <Copy size={14} />
+                                        Duplicar
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Form Content */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-5">
+                                <Input label="Nome do Projeto" placeholder="Ex: Redesign do Site" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                                <div>
+                                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
+                                    <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-40" />
+                                </div>
+                            </div>
+                            <div className="space-y-5">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
+                                        <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
+                                            <option value="active">Ativo</option>
+                                            <option value="on_hold">Em Espera</option>
+                                            <option value="completed">Concluído</option>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
+                                        <Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} required />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Progresso ({formData.progress}%)</label>
+                                    <input type="range" min="0" max="100" value={formData.progress} onChange={e => setFormData({ ...formData, progress: parseInt(e.target.value) })} className="w-full accent-emerald-500" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-2 block ml-1">Membros</label>
+                                    <UserMultiSelect users={users} selectedIds={formData.members || []} onChange={ids => setFormData({ ...formData, members: ids })} />
+                                </div>
+                                <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-4 border-t border-border">
+                            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+                            <Button type="submit" disabled={loading}>Salvar</Button>
+                        </div>
+                    </div>
+                </form>
+            </Modal>
+            {isTransferModalOpen && (
+                <TransferModal
+                    isOpen={isTransferModalOpen}
+                    onClose={() => setIsTransferModalOpen(false)}
+                    onConfirm={handleTransfer}
+                    users={users}
+                    currentAssigneeId={initialData?.ownerId}
+                />
+            )}
+        </>
     );
 };
 
@@ -1405,11 +1668,44 @@ interface TeamModalProps {
     onSuccess: () => void;
     users: User[];
     initialData?: Partial<Team>;
+    onDuplicate?: (team: Partial<Team>) => void;
 }
 
-export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess, users, initialData }) => {
+export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess, users, initialData, onDuplicate }) => {
     const [formData, setFormData] = useState<Partial<Team>>({ name: '', description: '', memberIds: [], links: [] });
     const [loading, setLoading] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const { user: currentUser } = useAuth();
+    const isEditing = !!initialData?.id;
+
+    // Duplicated addLog helper
+    const addLog = (team: Team, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
+        const newLog: LogEntry = {
+            id: crypto.randomUUID(),
+            action,
+            userId: currentUser?.id || 'system',
+            timestamp: new Date().toISOString(),
+            details,
+            comment,
+            link
+        };
+        return [newLog, ...(team.logs || [])];
+    };
+
+    const handleTransfer = async (userId: string, comment?: string, link?: string) => {
+        if (!initialData?.id) return;
+        const team = { ...initialData, ...formData } as Team;
+        const targetUser = users.find(u => u.id === userId);
+        const newLogs = addLog(team, 'transfer', `Transferiu liderança para ${targetUser?.name || 'usuário'}`, comment, link);
+
+        try {
+            await api.updateTeam({ ...team, leaderId: userId, logs: newLogs });
+            onSuccess();
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    };
 
     useEffect(() => {
         if (isOpen) setFormData(initialData || { name: '', description: '', memberIds: [], links: [] });
@@ -1433,30 +1729,87 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Equipe" : "Nova Equipe"} className="max-w-3xl">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-5">
-                        <Input label="Nome da Equipe" placeholder="Ex: Marketing" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                        <div>
-                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
-                            <Textarea placeholder="Função da equipe..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-40" />
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} title={initialData?.id ? "Editar Equipe" : "Nova Equipe"} className="max-w-5xl">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Left Sidebar - History */}
+                    <div className="md:col-span-1 border-gray-100 dark:border-gray-800 md:border-r md:pr-4 overflow-y-auto max-h-[calc(80vh-100px)] custom-scrollbar order-2 md:order-1">
+                        <div className="sticky top-0 bg-background z-10 pb-4 pt-1 mb-2 border-b border-border/50">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
+                                <History size={14} /> Histórico
+                            </h3>
+                        </div>
+                        {initialData?.id ? (
+                            <HistoryTimeline logs={initialData.logs || []} users={users} />
+                        ) : (
+                            <div className="text-sm text-muted-foreground p-4 text-center">
+                                O histórico estará disponível após a criação da equipe.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Content - Form */}
+                    <div className="md:col-span-2 space-y-6 order-1 md:order-2">
+                        {/* Standardized Action Buttons - Only if Editing */}
+                        {isEditing && (
+                            <div className="flex items-center gap-2 pb-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsTransferModalOpen(true)}
+                                    className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                    title="Transferir Responsabilidade (Liderança)"
+                                >
+                                    <UserIcon size={14} />
+                                    Transferir
+                                </Button>
+                                {onDuplicate && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onDuplicate({ ...formData, id: undefined })}
+                                        className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                        title="Duplicar"
+                                    >
+                                        <Copy size={14} />
+                                        Duplicar
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="space-y-5">
+                            <Input label="Nome da Equipe" placeholder="Ex: Marketing Digital" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                            <div>
+                                <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
+                                <Textarea placeholder="Responsabilidades e objetivos da equipe..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-32" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-2 block ml-1">Membros</label>
+                                <UserMultiSelect users={users} selectedIds={formData.memberIds || []} onChange={ids => setFormData({ ...formData, memberIds: ids })} />
+                            </div>
+                            <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-4 border-t border-border">
+                            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+                            <Button type="submit" disabled={loading}>Salvar</Button>
                         </div>
                     </div>
-                    <div>
-                        <div className="mb-4">
-                            <label className="text-xs text-muted-foreground mb-2 block ml-1">Membros da Equipe</label>
-                            <UserMultiSelect users={users} selectedIds={formData.memberIds || []} onChange={ids => setFormData({ ...formData, memberIds: ids })} />
-                        </div>
-                        <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
-                    </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4 border-t border-border">
-                    <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-                    <Button type="submit" disabled={loading}>Salvar</Button>
-                </div>
-            </form>
-        </Modal>
+                </form>
+            </Modal>
+            {isTransferModalOpen && (
+                <TransferModal
+                    isOpen={isTransferModalOpen}
+                    onClose={() => setIsTransferModalOpen(false)}
+                    onConfirm={handleTransfer}
+                    users={users}
+                    currentAssigneeId={initialData?.leaderId}
+                />
+            )}
+        </>
     );
 };
 
@@ -1832,6 +2185,7 @@ interface EventDetailModalProps {
     event: any; // Using any for compatibility or import UnifiedEvent
     users: User[];
     onEdit: () => void;
+    onDuplicate?: (event: any) => void;
 }
 
 const translateEventType = (type: string | undefined): string => {
@@ -1848,8 +2202,42 @@ const translateEventType = (type: string | undefined): string => {
     return map[type.toLowerCase()] || type;
 };
 
-export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onClose, onSuccess, event, users, onEdit }) => {
+export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onClose, onSuccess, event, users, onEdit, onDuplicate }) => {
     const [loading, setLoading] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const { user: currentUser } = useAuth();
+
+    const addLog = (task: Task, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
+        const newLog: LogEntry = {
+            id: crypto.randomUUID(),
+            action,
+            userId: currentUser?.id || 'system',
+            timestamp: new Date().toISOString(),
+            details,
+            comment,
+            link
+        };
+        return [newLog, ...(task.logs || [])];
+    };
+
+    const handleTransfer = async (userId: string, comment?: string, link?: string) => {
+        if (isTask && event.metadata) {
+            const task = event.metadata as Task;
+            const targetUser = users.find(u => u.id === userId);
+            const newLogs = addLog(task, 'transfer', `Transferiu para ${targetUser?.name || 'usuário'}`, comment, link);
+
+            try {
+                await api.updateTask({ ...task, assigneeId: userId, logs: newLogs });
+                onSuccess();
+            } catch (e) {
+                console.error(e);
+                throw e;
+            }
+        } else {
+            // console.log("Transfer not implemented for generic events yet.");
+            onSuccess();
+        }
+    };
 
     if (!event) return null;
 
@@ -1938,219 +2326,262 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
     };
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={isFinance ? "Detalhes Financeiros" : (isTask ? "Detalhes da Tarefa" : "Detalhes do Evento")}
-        >
-            <div className="space-y-5">
-                {/* Header */}
-                <div className="flex justify-between items-start gap-4">
-                    <div>
-                        <h2 className="text-xl font-bold text-foreground leading-tight">{event.title}</h2>
-                        {isFinance && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                                {event.metadata?.category?.name || 'Geral'} • {event.metadata?.account?.name || 'Conta Padrão'}
-                            </p>
-                        )}
-                        {/* Task specific subtitle/badges moved below */}
-                    </div>
-                    {/* Edit Actions */}
-                    <button onClick={onEdit} className="text-muted-foreground hover:text-foreground shrink-0"><Edit2 size={18} /></button>
-                </div>
-
-                {/* Badges */}
-                {isTask ? renderTaskBadges() : (
-                    <div className="flex flex-wrap gap-2">
-                        {!isAgenda && !isTask && (
-                            <Badge variant="neutral" className="uppercase tracking-wider text-[10px]">Financeiro</Badge>
-                        )}
-                        {isAgenda && <Badge variant={event.status === 'completed' ? 'success' : 'neutral'}>{translateStatus(event.status)}</Badge>}
-                        {isFinance && (
-                            <Badge variant={event.metadata?.isPaid ? 'success' : 'warning'}>
-                                {event.metadata?.isPaid ? 'PAGO' : 'PENDENTE'}
-                            </Badge>
-                        )}
-                        {isAgenda && <Badge variant="default">{translateEventType(event.type)}</Badge>}
-                    </div>
-                )}
-
-                {/* Finance Amount */}
-                {isFinance && event.metadata?.amount && (
-                    <div className="bg-secondary/20 p-4 rounded-lg border border-border flex items-center justify-between">
-                        <span className="text-muted-foreground text-sm">Valor</span>
-                        <span className={`text-2xl font-bold ${event.origin === 'finance_receivable' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata.amount)}
-                        </span>
-                    </div>
-                )}
-
-                {/* Description */}
-                <div className="bg-card p-3 rounded-lg text-muted-foreground text-sm whitespace-pre-wrap border border-border min-h-[80px]">
-                    {event.description || "Sem descrição."}
-                </div>
-
-                {/* Task Stage Mover */}
-                {isTask && renderTaskStageMover()}
-
-                {/* Grid Details */}
-                <div className={`grid ${isTask ? 'grid-cols-2 mt-4' : 'grid-cols-2 gap-4'} text-sm`}>
-                    {/* Task Specific Footer */}
-                    {isTask ? (
-                        <>
-                            <div>
-                                <span className="text-muted-foreground block mb-1">Responsável</span>
-                                <div className="flex items-center gap-2 text-foreground">
-                                    {(() => {
-                                        const assigneeId = event.metadata?.assigneeId;
-                                        const assigneeUser = users.find(u => u.id === assigneeId);
-                                        return assigneeUser ? (
-                                            <>
-                                                <Avatar name={assigneeUser.name} src={assigneeUser.avatarUrl} size="sm" />
-                                                <span className="font-medium text-foreground">{assigneeUser.name}</span>
-                                            </>
-                                        ) : <span className="text-muted-foreground">-</span>;
-                                    })()}
-                                </div>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground block mb-1">Prazo</span>
-                                <div className="flex items-center gap-2 text-foreground">
-                                    <Calendar size={16} />
-                                    <span>{new Date(event.startDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}</span>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        // Standard Agenda/Finance Footer
-                        <>
-                            <div>
-                                <span className="text-muted-foreground block mb-1">Início / Vencimento</span>
-                                <div className="flex items-center gap-2 text-foreground">
-                                    <Calendar size={16} />
-                                    <span>{new Date(event.startDate).toLocaleDateString()} {new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-                            </div>
-                            {isAgenda && (
-                                <div>
-                                    <span className="text-muted-foreground block mb-1">Fim</span>
-                                    <div className="flex items-center gap-2 text-foreground">
-                                        <Clock size={16} />
-                                        <span>{new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                {/* Task Links */}
-                {isTask && event.links && event.links.length > 0 && (
-                    <div className="mt-4">
-                        <span className="text-muted-foreground block mb-2 text-sm">Links Anexados</span>
-                        <div className="space-y-1">
-                            {event.links.map((link: any, i: number) => {
-                                const url = typeof link === 'string' ? link : link.url;
-                                const title = typeof link === 'string' ? link : (link.title || link.url);
-                                return (
-                                    <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-500 hover:text-emerald-400 hover:underline transition-colors">
-                                        <LinkIcon size={12} /> {title}
-                                    </a>
-                                );
-                            })}
+        <>
+            <Modal
+                isOpen={isOpen}
+                onClose={onClose}
+                title={isFinance ? "Detalhes Financeiros" : (isTask ? "Detalhes da Tarefa" : "Detalhes do Evento")}
+                className="max-w-5xl"
+            >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Left Sidebar - History */}
+                    <div className="md:col-span-1 border-gray-100 dark:border-gray-800 md:border-r md:pr-4 overflow-y-auto max-h-[calc(80vh-100px)] custom-scrollbar order-2 md:order-1">
+                        <div className="sticky top-0 bg-background z-10 pb-4 pt-1 mb-2 border-b border-border/50">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
+                                <History size={14} /> Histórico
+                            </h3>
                         </div>
+                        <HistoryTimeline logs={event.logs || []} users={users} />
                     </div>
-                )}
 
-
-                {/* Participants (Agenda) */}
-                {isAgenda && event.participants && event.participants.length > 0 && (
-                    <div>
-                        <span className="text-muted-foreground block mb-2 text-sm">Participantes</span>
-                        <div className="flex flex-wrap gap-2">
-                            {event.participants.map((pid: string) => {
-                                const u = users.find(user => user.id === pid);
-                                return u ? (
-                                    <div key={pid} className="flex items-center gap-1 bg-secondary/20 px-2 py-1 rounded text-xs text-muted-foreground border border-border">
-                                        <Avatar src={u.avatarUrl} name={u.name} size="sm" />
-                                        <span>{u.name}</span>
-                                    </div>
-                                ) : null;
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Footer Buttons (Non-Task) */}
-                {!isTask && (
-                    <div className="pt-4 border-t border-border flex justify-between gap-3">
-                        {/* DELETE BUTTON - Admin/Owner Only */}
-                        {(users.find(u => u.id === event.participants?.[0])?.role === 'admin' || true) && (
-                            // NOTE: Ideally check actual user role from context, but for now filtering by existence. 
-                            // The 'true' is a placeholder because we don't have 'currentUser' prop here easily without refactor.
-                            // However, the policy will reject it if not allowed.
-                            // Better: Pass `currentUser` or check `localStorage`.
-                            // Let's rely on the policy failing if unauthorized, but show the button.
+                    {/* Right Content - Details */}
+                    <div className="md:col-span-2 space-y-5 order-1 md:order-2">
+                        {/* Header */}
+                        {/* Standardized Action Buttons */}
+                        <div className="flex items-center gap-2 pb-2 mt-2">
                             <Button
-                                variant="danger"
-                                onClick={async () => {
-                                    if (!window.confirm("Tem certeza que deseja excluir este item?")) return;
-                                    setLoading(true);
-                                    try {
-                                        if (isFinance && event.metadata?.id) {
-                                            await api.deleteTransaction(event.metadata.id);
-                                        } else if (isAgenda && event.id) {
-                                            await api.deleteEvent(event.id);
-                                        }
-                                        onSuccess();
-                                        onClose();
-                                    } catch (e) {
-                                        console.error(e);
-                                        alert("Erro ao excluir item.");
-                                    } finally { setLoading(false); }
-                                }}
-                                disabled={loading}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsTransferModalOpen(true)}
+                                className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                title="Transferir Responsabilidade"
                             >
-                                <Trash2 size={16} />
+                                <UserIcon size={14} />
+                                Transferir
                             </Button>
+                            {onDuplicate && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onDuplicate(event)}
+                                    className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                    title="Duplicar"
+                                >
+                                    <Copy size={14} />
+                                    Duplicar
+                                </Button>
+                            )}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onEdit}
+                                className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                title="Editar"
+                            >
+                                <Edit2 size={14} />
+                                Editar
+                            </Button>
+                        </div>
+
+                        {/* Badges */}
+                        {isTask ? renderTaskBadges() : (
+                            <div className="flex flex-wrap gap-2">
+                                {!isAgenda && !isTask && (
+                                    <Badge variant="neutral" className="uppercase tracking-wider text-[10px]">Financeiro</Badge>
+                                )}
+                                {isAgenda && <Badge variant={event.status === 'completed' ? 'success' : 'neutral'}>{translateStatus(event.status)}</Badge>}
+                                {isFinance && (
+                                    <Badge variant={event.metadata?.isPaid ? 'success' : 'warning'}>
+                                        {event.metadata?.isPaid ? 'PAGO' : 'PENDENTE'}
+                                    </Badge>
+                                )}
+                                {isAgenda && <Badge variant="default">{translateEventType(event.type)}</Badge>}
+                            </div>
                         )}
 
-                        <div className="flex gap-2">
-                            <Button variant="ghost" onClick={onClose}>Fechar</Button>
+                        {/* Finance Amount */}
+                        {isFinance && event.metadata?.amount && (
+                            <div className="bg-secondary/20 p-4 rounded-lg border border-border flex items-center justify-between">
+                                <span className="text-muted-foreground text-sm">Valor</span>
+                                <span className={`text-2xl font-bold ${event.origin === 'finance_receivable' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata.amount)}
+                                </span>
+                            </div>
+                        )}
 
-                            {isAgenda && (
-                                <Button
-                                    variant={event.status === 'completed' ? 'secondary' : 'primary'}
-                                    onClick={() => handleStatusUpdate()}
-                                    disabled={loading}
-                                    className="gap-2"
-                                >
-                                    {event.status === 'completed' ? (
-                                        <><RotateCcw size={16} /> Reabrir</>
-                                    ) : (
-                                        <><CheckCircle2 size={16} /> Concluir</>
-                                    )}
-                                </Button>
-                            )}
+                        {/* Description */}
+                        <div className="bg-card p-3 rounded-lg text-muted-foreground text-sm whitespace-pre-wrap border border-border min-h-[80px]">
+                            {event.description || "Sem descrição."}
+                        </div>
 
-                            {isFinance && (
-                                <Button
-                                    variant={event.metadata?.isPaid ? 'secondary' : 'success'}
-                                    onClick={() => handleStatusUpdate()}
-                                    disabled={loading}
-                                    className="gap-2"
-                                >
-                                    {event.metadata?.isPaid ? (
-                                        <><RotateCcw size={16} /> Reabrir (Não Pago)</>
-                                    ) : (
-                                        <><ThumbsUp size={16} /> Confirmar Pagamento</>
+                        {/* Task Stage Mover */}
+                        {isTask && renderTaskStageMover()}
+
+                        {/* Grid Details */}
+                        <div className={`grid ${isTask ? 'grid-cols-2 mt-4' : 'grid-cols-2 gap-4'} text-sm`}>
+                            {/* Task Specific Footer */}
+                            {isTask ? (
+                                <>
+                                    <div>
+                                        <span className="text-muted-foreground block mb-1">Responsável</span>
+                                        <div className="flex items-center gap-2 text-foreground">
+                                            {(() => {
+                                                const assigneeId = event.metadata?.assigneeId;
+                                                const assigneeUser = users.find(u => u.id === assigneeId);
+                                                return assigneeUser ? (
+                                                    <>
+                                                        <Avatar name={assigneeUser.name} src={assigneeUser.avatarUrl} size="sm" />
+                                                        <span className="font-medium text-foreground">{assigneeUser.name}</span>
+                                                    </>
+                                                ) : <span className="text-muted-foreground">-</span>;
+                                            })()}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground block mb-1">Prazo</span>
+                                        <div className="flex items-center gap-2 text-foreground">
+                                            <Calendar size={16} />
+                                            <span>{new Date(event.startDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}</span>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                // Standard Agenda/Finance Footer
+                                <>
+                                    <div>
+                                        <span className="text-muted-foreground block mb-1">Início / Vencimento</span>
+                                        <div className="flex items-center gap-2 text-foreground">
+                                            <Calendar size={16} />
+                                            <span>{new Date(event.startDate).toLocaleDateString()} {new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                    </div>
+                                    {isAgenda && (
+                                        <div>
+                                            <span className="text-muted-foreground block mb-1">Fim</span>
+                                            <div className="flex items-center gap-2 text-foreground">
+                                                <Clock size={16} />
+                                                <span>{new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                        </div>
                                     )}
-                                </Button>
+                                </>
                             )}
                         </div>
+
+                        {/* Task Links */}
+                        {isTask && event.links && event.links.length > 0 && (
+                            <div className="mt-4">
+                                <span className="text-muted-foreground block mb-2 text-sm">Links Anexados</span>
+                                <div className="space-y-1">
+                                    {event.links.map((link: any, i: number) => {
+                                        const url = typeof link === 'string' ? link : link.url;
+                                        const title = typeof link === 'string' ? link : (link.title || link.url);
+                                        return (
+                                            <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-emerald-500 hover:text-emerald-400 hover:underline transition-colors">
+                                                <LinkIcon size={12} /> {title}
+                                            </a>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+
+                        {/* Participants (Agenda) */}
+                        {isAgenda && event.participants && event.participants.length > 0 && (
+                            <div>
+                                <span className="text-muted-foreground block mb-2 text-sm">Participantes</span>
+                                <div className="flex flex-wrap gap-2">
+                                    {event.participants.map((pid: string) => {
+                                        const u = users.find(user => user.id === pid);
+                                        return u ? (
+                                            <div key={pid} className="flex items-center gap-1 bg-secondary/20 px-2 py-1 rounded text-xs text-muted-foreground border border-border">
+                                                <Avatar src={u.avatarUrl} name={u.name} size="sm" />
+                                                <span>{u.name}</span>
+                                            </div>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Footer Buttons (Non-Task) */}
+                        {!isTask && (
+                            <div className="pt-4 border-t border-border flex justify-between gap-3">
+                                {/* DELETE BUTTON - Admin/Owner Only */}
+                                {(users.find(u => u.id === event.participants?.[0])?.role === 'admin' || true) && (
+                                    <Button
+                                        variant="danger"
+                                        onClick={async () => {
+                                            if (!window.confirm("Tem certeza que deseja excluir este item?")) return;
+                                            setLoading(true);
+                                            try {
+                                                if (isFinance && event.metadata?.id) {
+                                                    await api.deleteTransaction(event.metadata.id);
+                                                } else if (isAgenda && event.id) {
+                                                    await api.deleteEvent(event.id);
+                                                }
+                                                onSuccess();
+                                                onClose();
+                                            } catch (e) {
+                                                console.error(e);
+                                                alert("Erro ao excluir item.");
+                                            } finally { setLoading(false); }
+                                        }}
+                                        disabled={loading}
+                                    >
+                                        <Trash2 size={16} />
+                                    </Button>
+                                )}
+
+                                <div className="flex gap-2">
+                                    <Button variant="ghost" onClick={onClose}>Fechar</Button>
+
+                                    {isAgenda && (
+                                        <Button
+                                            variant={event.status === 'completed' ? 'secondary' : 'primary'}
+                                            onClick={() => handleStatusUpdate()}
+                                            disabled={loading}
+                                            className="gap-2"
+                                        >
+                                            {event.status === 'completed' ? (
+                                                <><RotateCcw size={16} /> Reabrir</>
+                                            ) : (
+                                                <><CheckCircle2 size={16} /> Concluir</>
+                                            )}
+                                        </Button>
+                                    )}
+
+                                    {isFinance && (
+                                        <Button
+                                            variant={event.metadata?.isPaid ? 'secondary' : 'success'}
+                                            onClick={() => handleStatusUpdate()}
+                                            disabled={loading}
+                                            className="gap-2"
+                                        >
+                                            {event.metadata?.isPaid ? (
+                                                <><RotateCcw size={16} /> Reabrir (Não Pago)</>
+                                            ) : (
+                                                <><ThumbsUp size={16} /> Confirmar Pagamento</>
+                                            )}
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-        </Modal>
+                </div>
+            </Modal>
+            {isTransferModalOpen && (
+                <TransferModal
+                    isOpen={isTransferModalOpen}
+                    onClose={() => setIsTransferModalOpen(false)}
+                    onConfirm={handleTransfer}
+                    users={users}
+                    currentAssigneeId={event.metadata?.assigneeId}
+                />
+            )
+            }
+        </>
     );
 };

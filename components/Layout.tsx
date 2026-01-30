@@ -2,11 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-    LayoutDashboard, CheckSquare, Briefcase, Users, Calendar, Settings, LogOut, Menu, X, Bell, ChevronDown, ChevronRight, PieChart, Wallet, CreditCard, Tags, FileText, DollarSign, PanelLeftClose, PanelLeftOpen, Sun, Moon, Monitor, User as UserIcon, Briefcase as CommercialIcon, ShoppingBag, RefreshCw, BarChart2, Building2, Globe, ShieldCheck, Lock, ArrowLeftCircle
+    LayoutDashboard, CheckSquare, Briefcase, Users, Calendar, Settings, LogOut, Menu, X, Bell, ChevronDown, ChevronRight, PieChart, Wallet, CreditCard, Tags, FileText, DollarSign, PanelLeftClose, PanelLeftOpen, User as UserIcon, Briefcase as CommercialIcon, ShoppingBag, RefreshCw, BarChart2, Building2, Globe, ShieldCheck, Lock, ArrowLeftCircle
 } from 'lucide-react';
 import { Avatar, cn } from './Shared';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+// import { useTheme } from '../context/ThemeContext'; // Unused now in Layout UI but context still exists if needed for logic
 import { useRBAC } from '../context/RBACContext';
 import { useTenant } from '../context/TenantContext';
 import { UserProfileModal } from './UserModals';
@@ -112,7 +112,7 @@ const SidebarGroup: React.FC<{
 const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }) => {
     const [isOpen, setIsOpen] = useState(false);
     const { user, signOut, refreshSession } = useAuth();
-    const { theme, setTheme } = useTheme();
+    // const { theme, setTheme } = useTheme(); // Removed UI toggle
     const { role, isSuperAdmin } = useRBAC();
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -183,12 +183,7 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
                     </div>
 
                     <div className="p-2">
-                        <div className="text-xs text-slate-500 font-semibold px-2 py-1 mb-1">APARÊNCIA</div>
-                        <div className="flex bg-slate-800 p-1 rounded-lg">
-                            <button onClick={() => setTheme('light')} className={cn("flex-1 p-1.5 rounded flex justify-center hover:bg-slate-700 transition-colors", theme === 'light' && "bg-slate-700 text-emerald-400")} title="Claro"><Sun size={16} /></button>
-                            <button onClick={() => setTheme('dark')} className={cn("flex-1 p-1.5 rounded flex justify-center hover:bg-slate-700 transition-colors", theme === 'dark' && "bg-slate-700 text-emerald-400")} title="Escuro"><Moon size={16} /></button>
-                            <button onClick={() => setTheme('system')} className={cn("flex-1 p-1.5 rounded flex justify-center hover:bg-slate-700 transition-colors", theme === 'system' && "bg-slate-700 text-emerald-400")} title="Sistema"><Monitor size={16} /></button>
-                        </div>
+
                     </div>
 
                     <div className="border-t border-slate-800 p-2 space-y-1">

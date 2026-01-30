@@ -161,6 +161,17 @@ export interface RecurrenceConfig {
   occurrences?: number;
 }
 
+
+export interface LogEntry {
+  id: string;
+  action: 'create' | 'transfer' | 'status_change' | 'update' | 'completion' | 'reopen';
+  userId: string;
+  timestamp: string;
+  details?: string;
+  comment?: string;
+  link?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -176,10 +187,10 @@ export interface Task {
   links: string[];
   tags: string[];
   tenantId?: string;
+  logs?: LogEntry[];
 }
 
 export interface Project {
-  // ... (keep unchanged)
   id: string;
   name: string;
   description: string;
@@ -187,20 +198,22 @@ export interface Project {
   progress: number;
   dueDate: string;
   teamIds: string[];
-  members: string[];
+  members: string[]; // User IDs
   links: string[];
   tenantId?: string;
+  ownerId?: string; // Add ownerId as it was used in ProjectModal
+  logs?: LogEntry[];
 }
 
 export interface Team {
-  // ... (keep unchanged)
   id: string;
   name: string;
   description: string;
   memberIds: string[];
-  leadId: string;
+  leaderId?: string; // Add leaderId as it was used in TeamModal
   links: string[];
   tenantId?: string;
+  logs?: LogEntry[];
 }
 
 export interface CalendarEvent {
@@ -212,6 +225,7 @@ export interface CalendarEvent {
   recurrence?: RecurrenceConfig;
   recurrenceId?: string;
   type: 'meeting' | 'task' | 'reminder' | 'other';
+  logs?: LogEntry[];
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   participants: string[]; // JSONB of user IDs
   links?: { title: string; url: string }[];

@@ -533,6 +533,15 @@ export const TeamsPage: React.FC = () => {
         onSuccess={loadData}
         users={users}
         initialData={editingTeam}
+        onDuplicate={(team) => {
+          setEditingTeam({
+            ...team,
+            id: undefined,
+            name: `${team.name} (Cópia)`,
+            // Reset fields
+            members: team.members || [] // Keep members or reset? User said "Campos Duplicados: ... Responsável (Task), Projeto...". For Teams: "Campos Duplicados: (Implied same approach)". I'll keep members.
+          });
+        }}
       />
     </div>
   );

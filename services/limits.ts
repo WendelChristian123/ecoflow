@@ -50,8 +50,8 @@ export const checkUserLimit = async (tenantId: string): Promise<UserLimitStatus>
     const { count, error: countError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId);
-    // .neq('status', 'blocked') // Optional: if blocked users don't count
+        .eq('tenant_id', tenantId)
+        .neq('role', 'super_admin');
 
     if (countError) {
         console.error('Error counting users:', countError);
