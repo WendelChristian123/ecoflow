@@ -36,6 +36,7 @@ export const api = {
     },
 
     // --- TASKS ---
+    // --- TASKS ---
     getTasks: async (tenantId?: string) => {
         let query = supabase.from('tasks').select('*');
         if (tenantId) query = query.eq('tenant_id', tenantId);
@@ -50,53 +51,84 @@ export const api = {
             dueDate: t.due_date,
         })) as Task[];
     },
+
+    // Unified Logs Fetcher
+    getLogs: async (entityId: string) => {
+        const { data, error } = await supabase
+            .from('activity_logs')
+            .select(`
+                *,
+                user:user_id ( id, name, avatar_url )
+            `)
+            .eq('entity_id', entityId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        return data.map((log: any) => ({
+            id: log.id,
+            entityId: log.entity_id,
+            entityType: log.entity_type,
+            action: log.action,
+            userId: log.user_id,
+            timestamp: log.created_at,
+            details: log.details,
+            metadata: log.metadata,
+            user: log.user // Optional, for UI display
+        }));
+    },
+
+    // Generic Log Inserter
+    addActivityLog: async (entry: {
+        entityId: string,
+        entityType: string,
+        action: string,
+        details?: string,
+        metadata?: any
+    }) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return; // Should likely throw, but safe return for now
+
+        const { error } = await supabase.from('activity_logs').insert({
+            entity_id: entry.entityId,
+            entity_type: entry.entityType,
+            action: entry.action,
+            user_id: user.id,
+            details: entry.details,
+            metadata: entry.metadata || {}
+        });
+        if (error) console.error("Error adding log:", error);
+    },
+
     addTask: async (task: Partial<Task>, recurrence?: RecurrenceConfig) => {
         const tenantId = getCurrentTenantId();
         const createdTasks: any[] = [];
         const baseRecurrenceId = recurrence ? crypto.randomUUID() : null;
 
-        // Fetch current user for the log (synchronously if possible, or assume valid session)
-        const { data: { user } } = await supabase.auth.getUser();
+        // Note: logs are now handled by DB Trigger (trg_log_task_creation)
+        // Note: created_by is handled by DB Default/Trigger
 
         const createDbTask = (t: Partial<Task>, date: string, recId: string | null) => {
-            // Ensure logs initialized with Creation event
-            const initialLog = {
-                id: crypto.randomUUID(),
-                action: 'create',
-                userId: user?.id || 'system',
-                timestamp: new Date().toISOString(),
-                details: 'Criou a tarefa',
-                comment: ''
-            };
-
-            const existingLogs = t.logs || [];
-            // Prepend creation log if not present (simple check)
-            const finalLogs = existingLogs.length > 0 && existingLogs[existingLogs.length - 1].action === 'create'
-                ? existingLogs
-                : [...existingLogs, initialLog];
-
-            const dbTask = {
+            return {
                 title: t.title,
                 description: t.description,
-                status: t.status || 'todo', // Force default
-                priority: t.priority || 'medium', // Force default
+                status: t.status || 'todo',
+                priority: t.priority || 'medium',
                 assignee_id: uuidOrNull(t.assigneeId),
                 project_id: uuidOrNull(t.projectId),
                 team_id: uuidOrNull(t.teamId),
-                due_date: date,
+                due_date: date, // Expecting valid ISO string (UTC) from frontend
                 tags: t.tags || [],
                 links: t.links || [],
                 tenant_id: tenantId,
                 recurrence_id: recId,
-                logs: finalLogs
+                // logs: REMOVED
             };
-            return dbTask;
         };
 
         if (recurrence) {
-            const count = recurrence.occurrences || (recurrence.endDate ? 0 : 12); // Default 12 if indefinite
-            // If endDate is present, calculation is more complex, for now support occurrences or fixed count
-            const actualCount = count > 0 ? count : 12; // Fallback
+            const count = recurrence.occurrences || (recurrence.endDate ? 0 : 12);
+            const actualCount = count > 0 ? count : 12;
             const startDate = new Date(task.dueDate || new Date());
 
             for (let i = 0; i < actualCount; i++) {
@@ -107,11 +139,9 @@ export const api = {
                 if (recurrence.frequency === 'monthly') nextDate = addMonths(startDate, i * interval);
                 if (recurrence.frequency === 'yearly') nextDate = addYears(startDate, i * interval);
 
-                // Stop if endDate is exceeded (if provided)
                 if (recurrence.endDate && nextDate > new Date(recurrence.endDate)) break;
 
-                const dateStr = nextDate.toISOString().split('T')[0]; // Store as YYYY-MM-DD for tasks if possible, or ISO
-                // Note: Using ISO string to preserve time component if it exists
+                // Pass full ISO string to preserve time (DB will store as TIMESTAMPTZ)
                 const isoStr = nextDate.toISOString();
                 createdTasks.push(createDbTask(task, isoStr, baseRecurrenceId));
             }
@@ -125,7 +155,7 @@ export const api = {
             .select();
 
         if (error) throw error;
-        // Return the first created task
+
         const firstData = data[0];
         return {
             ...firstData,
@@ -134,7 +164,8 @@ export const api = {
             teamId: firstData.team_id,
             tenantId: firstData.tenant_id,
             dueDate: firstData.due_date,
-            links: firstData.links, // Ensure links are returned
+            links: firstData.links,
+            // Logs are not returned inline anymore, specifically requested to fetch separate or just rely on IDs
         } as Task;
     },
     updateTask: async (task: Task) => {
@@ -149,7 +180,7 @@ export const api = {
             due_date: task.dueDate,
             tags: task.tags,
             links: task.links,
-            logs: task.logs
+            // logs: REMOVED field
         };
 
         const { error } = await supabase
@@ -159,8 +190,25 @@ export const api = {
         if (error) throw error;
     },
     updateTaskStatus: async (id: string, status: string) => {
+        // This is a status change, we should log it!
+        // Wait, the caller is often "drag and drop". It's better if the logging happens explicitly or via this method.
+        // Let's add the log here manually as it's a specific "Business Action" method.
+
         const { error } = await supabase.from('tasks').update({ status }).eq('id', id);
         if (error) throw error;
+
+        // Log it
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            await supabase.from('activity_logs').insert({
+                entity_id: id,
+                entity_type: 'task',
+                action: 'status_change',
+                user_id: user.id,
+                details: `Alterou status para ${status}`,
+                metadata: { to: status }
+            });
+        }
     },
     deleteTask: async (id: string) => {
         const { error } = await supabase.from('tasks').delete().eq('id', id);

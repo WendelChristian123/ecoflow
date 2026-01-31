@@ -162,14 +162,29 @@ export interface RecurrenceConfig {
 }
 
 
+// --- Activity & Logging Types ---
+
+export type ActivityAction = 'create' | 'update' | 'transfer' | 'status_change' | 'completion' | 'reopen' | 'delete';
+export type ActivityEntity = 'task' | 'project' | 'team' | 'event';
+
 export interface LogEntry {
   id: string;
-  action: 'create' | 'transfer' | 'status_change' | 'update' | 'completion' | 'reopen';
+  entityId: string;
+  entityType: ActivityEntity;
+  action: ActivityAction;
   userId: string;
-  timestamp: string;
+  timestamp: string; // created_at
   details?: string;
-  comment?: string;
-  link?: string;
+  metadata?: {
+    comment?: string;
+    link?: string;
+    diff?: {
+      field: string;
+      from: any;
+      to: any;
+    };
+    [key: string]: any;
+  };
 }
 
 export interface Task {
@@ -181,13 +196,14 @@ export interface Task {
   projectId?: string;
   teamId?: string;
   assigneeId: string;
-  dueDate: string;
+  dueDate: string; // ISO String (TIMESTAMPTZ)
   recurrence?: RecurrenceConfig;
   recurrenceId?: string;
   links: string[];
   tags: string[];
   tenantId?: string;
-  logs?: LogEntry[];
+  createdBy?: string;
+  // logs property removed from interface as it's fetched separately now
 }
 
 export interface Project {

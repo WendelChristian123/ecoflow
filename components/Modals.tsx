@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput, CurrencyInput } from './Shared';
 import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
@@ -1118,28 +1118,30 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
     const [showHistory, setShowHistory] = useState(false);
 
     const { user: currentUser } = useAuth();
+    const [fetchedLogs, setFetchedLogs] = useState<LogEntry[]>([]);
 
-    const addLog = (task: Task, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
-        const newLog: LogEntry = {
-            id: crypto.randomUUID(),
-            action,
-            userId: currentUser?.id || 'system', // Ideally useAuth().user.id
-            timestamp: new Date().toISOString(),
-            details,
-            comment,
-            link
-        };
-        return [newLog, ...(task.logs || [])];
-    };
+    // Fetch logs separately now that they aren't on the Task object
+    const refreshLogs = useCallback(async () => {
+        if (task?.id) {
+            try {
+                const logs = await api.getLogs(task.id);
+                setFetchedLogs(logs);
+            } catch (error) {
+                console.error("Error fetching logs:", error);
+            }
+        }
+    }, [task?.id]);
+
+    useEffect(() => {
+        refreshLogs();
+    }, [refreshLogs]);
 
     const handleAction = async (status: Status) => {
-        const newLogs = addLog(task, 'status_change', `Alterou status de ${translateStatus(task.status)} para ${translateStatus(status)}`);
-
-        // Optimistic update
-        const updatedTask = { ...task, status, logs: newLogs };
         try {
-            await api.updateTask(updatedTask);
-            onSuccess(); // Refresh
+            // Status update now handles logging internally in api.ts (for status_change)
+            await api.updateTaskStatus(task.id, status);
+            onSuccess(); // Refresh parent list
+            refreshLogs(); // Refresh local logs
         } catch (e) {
             console.error(e);
             alert("Erro ao atualizar status.");
@@ -1148,11 +1150,27 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
 
     const handleTransfer = async (userId: string, comment?: string, link?: string) => {
         const targetUser = users.find(u => u.id === userId);
-        const newLogs = addLog(task, 'transfer', `Transferiu para ${targetUser?.name || 'usuário'}`, comment, link);
 
         try {
-            await api.updateTask({ ...task, assigneeId: userId, logs: newLogs });
+            // 1. Update the task assignee
+            await api.updateTask({ ...task, assigneeId: userId } as Task);
+
+            // 2. Add explicit log for transfer
+            await api.addActivityLog({
+                entityId: task.id,
+                entityType: 'task',
+                action: 'transfer',
+                details: `Transferiu para ${targetUser?.name || 'usuário'}`,
+                metadata: {
+                    comment,
+                    link,
+                    from: task.assigneeId,
+                    to: userId
+                }
+            });
+
             onSuccess();
+            refreshLogs();
         } catch (e) {
             console.error(e);
             throw e; // Modal handles alert
@@ -1209,7 +1227,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                                 <History size={14} /> Histórico
                             </h3>
                         </div>
-                        <HistoryTimeline logs={task.logs || []} users={users} />
+                        <HistoryTimeline logs={fetchedLogs} users={users} />
                     </div>
 
                     {/* Right Content - Details */}
@@ -1362,7 +1380,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                         title: `${task.title} (Cópia)`,
                         status: 'todo',
                         dueDate: '',
-                        logs: [],
                         createdAt: undefined,
                         updatedAt: undefined
                     }}
@@ -1492,7 +1509,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
     const { user: currentUser } = useAuth();
     const isEditing = !!initialData?.id; // Use id check for editing mode safely
 
-    // Duplicated addLog helper
+    // Duplicated addLog helper - Fixed to use metadata for comment/link
     const addLog = (project: Project, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
         const newLog: LogEntry = {
             id: crypto.randomUUID(),
@@ -1500,8 +1517,12 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
             userId: currentUser?.id || 'system',
             timestamp: new Date().toISOString(),
             details,
-            comment,
-            link
+            entityId: project.id,
+            entityType: 'project',
+            metadata: {
+                comment,
+                link
+            }
         };
         return [newLog, ...(project.logs || [])];
     };
@@ -1678,7 +1699,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
     const { user: currentUser } = useAuth();
     const isEditing = !!initialData?.id;
 
-    // Duplicated addLog helper
+    // Duplicated addLog helper - Fixed to use metadata
     const addLog = (team: Team, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
         const newLog: LogEntry = {
             id: crypto.randomUUID(),
@@ -1686,8 +1707,12 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
             userId: currentUser?.id || 'system',
             timestamp: new Date().toISOString(),
             details,
-            comment,
-            link
+            entityId: team.id,
+            entityType: 'team',
+            metadata: {
+                comment,
+                link
+            }
         };
         return [newLog, ...(team.logs || [])];
     };
@@ -2207,27 +2232,28 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const { user: currentUser } = useAuth();
 
-    const addLog = (task: Task, action: LogEntry['action'], details: string, comment?: string, link?: string): LogEntry[] => {
-        const newLog: LogEntry = {
-            id: crypto.randomUUID(),
-            action,
-            userId: currentUser?.id || 'system',
-            timestamp: new Date().toISOString(),
-            details,
-            comment,
-            link
-        };
-        return [newLog, ...(task.logs || [])];
-    };
-
     const handleTransfer = async (userId: string, comment?: string, link?: string) => {
         if (isTask && event.metadata) {
             const task = event.metadata as Task;
             const targetUser = users.find(u => u.id === userId);
-            const newLogs = addLog(task, 'transfer', `Transferiu para ${targetUser?.name || 'usuário'}`, comment, link);
 
             try {
-                await api.updateTask({ ...task, assigneeId: userId, logs: newLogs });
+                // 1. Update Task
+                await api.updateTask({ ...task, assigneeId: userId });
+
+                // 2. Add Activity Log
+                await api.addActivityLog({
+                    entityId: task.id,
+                    entityType: 'task',
+                    action: 'transfer',
+                    details: `Transferiu para ${targetUser?.name || 'usuário'}`,
+                    metadata: {
+                        comment,
+                        link,
+                        from: task.assigneeId,
+                        to: userId
+                    }
+                });
                 onSuccess();
             } catch (e) {
                 console.error(e);

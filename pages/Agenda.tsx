@@ -42,6 +42,7 @@ export const AgendaPage: React.FC = () => {
   // UI State
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'upcoming' | 'overdue' | 'completed'>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -174,22 +175,15 @@ export const AgendaPage: React.FC = () => {
           ]);
 
           // Process using Cash Mode logic to get Virtual Invoices and filtered views
-          // Use 'cash' mode to generate Virtual Invoices for Credit Cards
           const processed = processTransactions(transactions, cards, 'cash');
 
           processed.forEach(t => {
-            // Filter out internal/technical if needed, or keeping them?
-            // Usually we want to show what the logic returned.
-
             // 1. Credit Card Invoices (Virtual)
             if (t.isVirtual && fin?.credit_card !== false) {
-              // Extract Card Name from description "Fatura – [Name]" or use ID mapping if possible.
-              // Logic usually sets description. Let's use it or metadata if available.
-              // Actually, t.description is "Fatura – [CardName]" from logic.
               newEvents.push({
-                id: t.id, // e.g. virtual-invoice-cardId-date
+                id: t.id,
                 title: `Vencimento: ${t.description.replace('Fatura – ', '')}`,
-                description: `Valor da Fatura`, // Will be shown as metadata amount too
+                description: `Valor da Fatura`,
                 startDate: t.date,
                 endDate: t.date,
                 status: 'pending',
@@ -200,7 +194,7 @@ export const AgendaPage: React.FC = () => {
                 origin: 'finance_card',
                 metadata: {
                   ...t,
-                  amount: t.amount // Ensure amount is passed for Card component to render
+                  amount: t.amount
                 },
                 color: 'bg-rose-500/20 text-rose-300 border-l-4 border-rose-500',
                 icon: <CreditCard size={14} />
@@ -208,10 +202,6 @@ export const AgendaPage: React.FC = () => {
             }
             // 2. Real Transactions (Receivables / Payables)
             else if (!t.isVirtual && !t.isPaid) {
-              // Exclude Credit Card individual purchases if they are hidden (which processTransactions 'cash' mode often does? 
-              // Wait, 'cash' mode HIDES individual card expenses. So we are good.
-              // We only see "Direct" expenses/incomes.
-
               // Receivables
               if (t.type === 'income' && fin?.receivable !== false) {
                 newEvents.push({
@@ -311,8 +301,21 @@ export const AgendaPage: React.FC = () => {
     // Filter Assignee (Strict)
     if (assigneeFilter !== 'all') {
       filtered = filtered.filter(e => {
-        // Check participants array (which includes task assignee)
         return e.participants && e.participants.includes(assigneeFilter);
+      });
+    }
+
+    // Filter Status (New)
+    if (statusFilter !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(e => {
+        const isCompleted = e.status === 'completed' || e.status === 'done' || e.metadata?.isPaid === true;
+        const eventDate = parseISO(e.startDate); // Ensure Date object
+
+        if (statusFilter === 'completed') return isCompleted;
+        if (statusFilter === 'overdue') return !isCompleted && eventDate < now;
+        if (statusFilter === 'upcoming' || statusFilter === 'todo') return !isCompleted && eventDate >= now; // "A Vencer"
+        return true;
       });
     }
 
@@ -389,11 +392,21 @@ export const AgendaPage: React.FC = () => {
             </h2>
             <div className="flex items-center gap-2">
               <Select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value as any)}
+                className="h-7 text-xs py-1 rounded-md bg-secondary border-border w-28 focus:ring-emerald-500/50"
+              >
+                <option value="all">Status</option>
+                <option value="upcoming">A Vencer</option>
+                <option value="overdue">Atrasado</option>
+                <option value="completed">Concluído</option>
+              </Select>
+              <Select
                 value={assigneeFilter}
                 onChange={e => setAssigneeFilter(e.target.value)}
                 className="h-7 text-xs py-1 rounded-md bg-secondary border-border w-32 focus:ring-emerald-500/50"
               >
-                <option value="all">Todos</option>
+                <option value="all">Responsável</option>
                 {users.map(u => (
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
