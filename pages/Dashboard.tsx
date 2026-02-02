@@ -64,6 +64,7 @@ export const Dashboard: React.FC = () => {
     const [selectedModules, setSelectedModules] = useState<string[]>(['tasks', 'events', 'finance', 'quotes']);
     const [assigneeFilter, setAssigneeFilter] = useState<'all' | string>('all');
     const [isModulesOpen, setIsModulesOpen] = useState(false);
+    const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
 
     // UI States
     const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, type: 'tasks' | 'events' | 'finance' | 'quotes', data: any[] }>({
@@ -227,45 +228,52 @@ export const Dashboard: React.FC = () => {
 
         // Semantic Colors only for Icons and Text - STRONG Contrast
         const colorMap = {
-            danger: { text: "text-red-500", bg: "bg-red-500/10", border: "group-hover:border-red-500/40", title: "text-red-500" },
-            warning: { text: "text-amber-500", bg: "bg-amber-500/10", border: "group-hover:border-amber-500/40", title: "text-amber-500" },
-            info: { text: "text-emerald-500", bg: "bg-emerald-500/10", border: "group-hover:border-emerald-500/40", title: "text-emerald-500" }
+            danger: { text: "text-red-500", bg: "bg-red-500/10", border: "group-hover:border-red-500/40", title: "text-red-500", header: "bg-red-500" },
+            warning: { text: "text-amber-500", bg: "bg-amber-500/10", border: "group-hover:border-amber-500/40", title: "text-amber-500", header: "bg-amber-500" },
+            info: { text: "text-emerald-500", bg: "bg-emerald-500/10", border: "group-hover:border-emerald-500/40", title: "text-emerald-500", header: "bg-emerald-500" }
         };
 
         const theme = colorMap[variant];
 
-        // Standard Card Structure - PREMIUM
+        // Standard Card Structure - PREMIUM with Header Bar
         return (
             <div
                 onClick={onClick}
                 className={cn(
-                    "bg-card border border-border shadow-sm rounded-2xl p-6 flex flex-col justify-between cursor-pointer min-h-[160px] select-none group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg relative overflow-hidden",
+                    "bg-card border border-border shadow-sm rounded-2xl flex flex-col justify-between cursor-pointer min-h-[160px] select-none group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg relative overflow-hidden",
                     theme.border
                 )}
             >
-                {/* Background Decoration */}
-                <div className={cn("absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none", theme.bg.replace('/10', ''))} />
-
-                <div className="flex justify-between items-start relative z-10">
-                    <span className={cn("text-[10px] uppercase tracking-widest transition-colors",
-                        theme.title ? theme.title : "font-bold text-muted-foreground group-hover:text-foreground"
-                    )}>
+                {/* 🎨 Header Bar with Module Name */}
+                <div className={cn(
+                    "px-4 py-2.5 flex items-center justify-between border-b border-white/10 transition-all",
+                    theme.header
+                )}>
+                    <span className="text-[11px] uppercase tracking-widest text-white font-bold">
                         {title}
                     </span>
-                    <div className={cn("p-2.5 rounded-xl transition-all duration-300 group-hover:scale-110 shadow-sm", theme.bg, theme.text)}>
-                        {icon}
+                    <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-lg">
+                        <div className="text-white">
+                            {icon}
+                        </div>
                     </div>
                 </div>
 
-                <div className="mt-auto relative z-10">
-                    <div className={cn("text-5xl font-black tracking-tighter leading-none mb-2 transition-transform duration-300 group-hover:translate-x-1",
-                        variant === 'info' ? "text-foreground" : theme.text
-                    )}>
-                        {count}
+                {/* Background Decoration */}
+                <div className={cn("absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none", theme.bg.replace('/10', ''))} />
+
+                {/* Content Area */}
+                <div className="p-6 pt-4 flex flex-col justify-between flex-1 relative z-10">
+                    <div className="mt-auto">
+                        <div className={cn("text-5xl font-black tracking-tighter leading-none mb-2 transition-transform duration-300 group-hover:translate-x-1",
+                            variant === 'info' ? "text-emerald-500" : theme.text  // 🎨 VERDE para "Próximos Dias"
+                        )}>
+                            {count}
+                        </div>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block opacity-70">
+                            Itens Pendentes
+                        </span>
                     </div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block opacity-70">
-                        Itens Pendentes
-                    </span>
                 </div>
             </div>
         );
@@ -381,44 +389,44 @@ export const Dashboard: React.FC = () => {
         );
     }
 
-    // --- Filter Bar Component (Compact) ---
+    // --- Filter Bar Component (Premium) ---
     const FilterBar = () => {
         const moduleNames: Record<string, string> = { tasks: 'Tarefas', events: 'Agenda', finance: 'Financeiro', quotes: 'Orçamentos' };
 
         return (
-            <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md py-4 -mx-6 px-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm border-b border-border/50">
-                <div className="flex items-center gap-2 text-muted-foreground flex-wrap py-1">
-                    <Filter size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider mr-2">Filtros</span>
-
-                    {/* Modules Dropdown */}
+            <div className="sticky top-0 z-30 bg-background/98 backdrop-blur-lg py-4 -mx-6 px-6 flex items-center justify-between shadow-sm border-b border-border/50">
+                {/* Grupo 1: Filtros de Conteúdo */}
+                <div className="flex items-center gap-3">
+                    {/* Modules Dropdown - Premium */}
                     <div className="relative">
                         <button
                             onClick={() => setIsModulesOpen(!isModulesOpen)}
-                            className="flex items-center gap-2 bg-secondary/50 border border-border hover:bg-secondary text-foreground px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all"
+                            className="flex items-center gap-2 bg-card border border-border hover:border-emerald-500/50 text-foreground px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm"
                         >
-                            <Layers size={14} className="text-primary" />
+                            <Layers size={16} className="text-emerald-600 dark:text-emerald-500" />
                             <span>Módulos ({selectedModules.length})</span>
-                            <ChevronDown size={12} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isModulesOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsModulesOpen(false)} />
-                                <div className="absolute top-full left-0 mt-2 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 p-2 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-2 pt-1">Exibir Módulos</div>
+                                <div className="absolute top-full left-0 mt-2 w-52 bg-popover border border-border rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Exibir Módulos</div>
                                     <div className="space-y-1">
                                         {['tasks', 'events', 'finance', 'quotes'].map(m => (
                                             <button
                                                 key={m}
                                                 onClick={() => toggleModule(m)}
                                                 className={cn(
-                                                    "w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-colors",
-                                                    selectedModules.includes(m) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
+                                                    selectedModules.includes(m)
+                                                        ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold"
+                                                        : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
                                                 )}
                                             >
-                                                <span className="font-medium">{moduleNames[m]}</span>
-                                                {selectedModules.includes(m) && <CheckCircle2 size={12} />}
+                                                <span>{moduleNames[m]}</span>
+                                                {selectedModules.includes(m) && <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-500" />}
                                             </button>
                                         ))}
                                     </div>
@@ -427,17 +435,19 @@ export const Dashboard: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="w-px h-4 bg-border mx-1" />
+                    <div className="h-6 w-px bg-border" />
 
-                    {/* Horizon Toggle */}
-                    <div className="flex bg-secondary rounded-md p-0.5 border border-border gap-0.5">
+                    {/* Horizon Toggle - Premium */}
+                    <div className="flex bg-secondary/50 rounded-lg p-1 border border-border gap-1">
                         {[3, 7, 15, 30].map(d => (
                             <button
                                 key={d}
                                 onClick={() => setHorizon(d as any)}
                                 className={cn(
-                                    "px-3 py-1 text-[10px] rounded-[4px] transition-all font-bold",
-                                    horizon === d ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                    "px-4 py-1.5 text-sm rounded-md transition-all font-semibold min-w-[50px]",
+                                    horizon === d
+                                        ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-background/80"
                                 )}
                             >
                                 {d}d
@@ -446,40 +456,88 @@ export const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Right Side: Assignee & Date */}
+                {/* Grupo 2: Usuário e Ações */}
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <UserCircle size={14} className="text-muted-foreground" />
-                        <select
-                            value={assigneeFilter}
-                            onChange={(e) => setAssigneeFilter(e.target.value)}
-                            className="bg-card border border-border text-foreground text-[10px] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring uppercase tracking-wide font-medium cursor-pointer hover:bg-secondary transition-colors shadow-sm"
+                    {/* Assignee Dropdown - Premium Custom */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
+                            className="flex items-center gap-2 bg-card border border-border hover:border-emerald-500/30 rounded-lg px-3 py-2 h-9 shadow-sm transition-all min-w-[140px]"
                         >
-                            <option value="all" className="bg-card text-foreground">Resp: Todos</option>
-                            {assignees.map(u => (
-                                <option key={u.id} value={u.id} className="bg-card text-foreground">{u.name.split(' ')[0]}</option>
-                            ))}
-                        </select>
+                            <UserCircle size={16} className="text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground flex-1 text-left">
+                                {assigneeFilter === 'all'
+                                    ? 'Resp: Todos'
+                                    : assignees.find(u => u.id === assigneeFilter)?.name.split(' ')[0] || 'Todos'}
+                            </span>
+                            <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isAssigneeOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isAssigneeOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsAssigneeOpen(false)} />
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-popover border border-border rounded-xl shadow-xl z-50 p-2 transform origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Responsável</div>
+                                    <div className="space-y-0.5">
+                                        <button
+                                            onClick={() => { setAssigneeFilter('all'); setIsAssigneeOpen(false); }}
+                                            className={cn(
+                                                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
+                                                assigneeFilter === 'all'
+                                                    ? "bg-emerald-600 dark:bg-emerald-500 text-white font-semibold shadow-sm"
+                                                    : "text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium"
+                                            )}
+                                        >
+                                            <span>Todos</span>
+                                            {assigneeFilter === 'all' && <CheckCircle2 size={16} />}
+                                        </button>
+                                        {assignees.map(u => (
+                                            <button
+                                                key={u.id}
+                                                onClick={() => { setAssigneeFilter(u.id); setIsAssigneeOpen(false); }}
+                                                className={cn(
+                                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
+                                                    assigneeFilter === u.id
+                                                        ? "bg-emerald-600 dark:bg-emerald-500 text-white font-semibold shadow-sm"
+                                                        : "text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium"
+                                                )}
+                                            >
+                                                <span>{u.name.split(' ')[0]}</span>
+                                                {assigneeFilter === u.id && <CheckCircle2 size={16} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
 
-                    <div className="h-4 w-px bg-border" />
+                    <div className="h-6 w-px bg-border" />
 
-                    <div className="text-right flex flex-col leading-none">
-                        <span className="text-sm font-bold text-foreground tracking-tighter">
+                    {/* Date Display - Premium */}
+                    <div className="flex flex-col items-end leading-none">
+                        <span className="text-base font-bold text-foreground tracking-tight">
                             {format(new Date(), 'dd/MM', { locale: ptBR })}
                         </span>
-                        <span className="text-[9px] text-primary font-bold uppercase tracking-widest">
+                        <span className="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-500 tracking-wider">
                             {format(new Date(), 'EEE', { locale: ptBR }).replace('.', '')}
                         </span>
                     </div>
 
-                    <Button onClick={loadDashboard} variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-secondary text-muted-foreground">
-                        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                    </Button>
+                    {/* Refresh Button - Premium */}
+                    <button
+                        onClick={loadDashboard}
+                        className="h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors group"
+                    >
+                        <RefreshCw size={16} className={cn(
+                            "text-muted-foreground group-hover:text-foreground transition-colors",
+                            loading && "animate-spin"
+                        )} />
+                    </button>
                 </div>
             </div>
         );
-    }
+    };
 
     return (
         <div className="h-full w-full bg-background flex flex-col overflow-y-auto custom-scrollbar">

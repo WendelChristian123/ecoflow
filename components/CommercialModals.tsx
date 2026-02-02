@@ -593,13 +593,16 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
         <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Detalhes do Contrato" : "Novo Contrato Recorrente"} className="max-w-2xl">
             <div className="space-y-6">
                 {/* Wizard Steps Indicator */}
-                <div className="flex items-center justify-between px-8 border-b border-slate-800 pb-4">
+                <div className="flex items-center justify-between px-8 border-b border-border pb-6">
                     {[1, 2, 3, 4].map(s => (
-                        <div key={s} className={`flex items-center gap-2 ${step >= s ? 'text-emerald-400' : 'text-slate-600'}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 ${step >= s ? 'border-emerald-400 bg-emerald-400/10' : 'border-slate-700 bg-slate-800'}`}>
+                        <div key={s} className={`flex items-center gap-2 transition-colors ${step >= s ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 transition-all ${step >= s
+                                ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-600 dark:bg-emerald-400/10 text-white dark:text-emerald-400 shadow-lg shadow-emerald-500/20'
+                                : 'border-border bg-secondary text-muted-foreground'
+                                }`}>
                                 {s}
                             </div>
-                            <span className="text-xs font-bold uppercase hidden sm:block">
+                            <span className="text-xs font-bold uppercase hidden sm:block tracking-widest">
                                 {s === 1 ? 'Cliente' : s === 2 ? 'Implantação' : s === 3 ? 'Recorrência' : 'Confirmação'}
                             </span>
                         </div>
@@ -608,15 +611,17 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
 
                 {/* STEP 1: CLIENT */}
                 {step === 1 && (
-                    <div className="space-y-4 py-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h3 className="text-lg font-medium text-white text-center">Quem é o contratante?</h3>
-                        <div className="max-w-sm mx-auto">
-                            <label className="text-xs text-slate-400 block mb-1">Cliente</label>
-                            <Select value={formData.contactId} onChange={e => setFormData({ ...formData, contactId: e.target.value })} className="text-lg">
-                                <option value="">Selecione...</option>
-                                {contacts.filter(c => c.scope !== 'supplier').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </Select>
-                            <p className="text-center text-slate-500 text-xs mt-4">Selecione o cliente para prosseguir.</p>
+                    <div className="space-y-6 py-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <h3 className="text-xl font-semibold text-foreground text-center">Quem é o contratante?</h3>
+                        <div className="max-w-sm mx-auto space-y-4">
+                            <div>
+                                <label className="text-xs font-medium text-muted-foreground block mb-2">Cliente *</label>
+                                <Select value={formData.contactId} onChange={e => setFormData({ ...formData, contactId: e.target.value })} className="text-base">
+                                    <option value="">Selecione um cliente...</option>
+                                    {contacts.filter(c => c.scope !== 'supplier').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </Select>
+                            </div>
+                            <p className="text-center text-muted-foreground text-sm mt-6 bg-secondary/50 p-3 rounded-lg border border-border">💡 Selecione o cliente para iniciar o contrato</p>
                         </div>
                     </div>
                 )}
@@ -624,111 +629,116 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
 
                 {/* STEP 2: SETUP (IMPLANTAÇÃO) */}
                 {step === 2 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 max-w-lg mx-auto">
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-medium text-white text-center mb-4">Configuração de Implantação</h3>
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 max-w-lg mx-auto py-6">
+                        <h3 className="text-xl font-semibold text-foreground text-center mb-6">Configuração de Implantação</h3>
 
-                            <CurrencyInput label="Taxa de Implantação / Setup (Única)" value={formData.setupFee} onValueChange={(val) => setFormData({ ...formData, setupFee: val || 0 })} />
+                        <CurrencyInput label="Taxa de Implantação / Setup (Única)" value={formData.setupFee} onValueChange={(val) => setFormData({ ...formData, setupFee: val || 0 })} />
 
-                            {formData.setupFee && formData.setupFee > 0 ? (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                                    <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Categoria Financeira (Setup) *</label>
-                                        <Select
-                                            value={formData.setupCategoryId}
-                                            onChange={e => setFormData({ ...formData, setupCategoryId: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">Selecione...</option>
-                                            {financialCategories.filter(c => c.type === 'income').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </Select>
-                                    </div>
-
-                                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-4">
-                                        <div className="flex gap-4">
-                                            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                                                <input type="radio" name="setupType" checked={setupPaymentMethod === 'spot'} onChange={() => setSetupPaymentMethod('spot')} className="accent-emerald-500" />
-                                                À Vista
-                                            </label>
-                                            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                                                <input type="radio" name="setupType" checked={setupPaymentMethod === 'split'} onChange={() => setSetupPaymentMethod('split')} className="accent-emerald-500" />
-                                                Entrada + Restante
-                                            </label>
-                                        </div>
-
-                                        {setupPaymentMethod === 'spot' ? (
-                                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                                <Input type="date" label="Data de Recebimento *" value={formData.setupSpotDate || ''} onChange={(e) => setFormData({ ...formData, setupSpotDate: e.target.value })} required />
-                                                <p className="text-xs text-slate-500">O valor total de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.setupFee)} será lançado nesta data.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-                                                <div className="space-y-2">
-                                                    <CurrencyInput label="Valor Entrada" value={formData.setupEntryAmount} onValueChange={(val) => setFormData({ ...formData, setupEntryAmount: val || 0 })} />
-                                                    <Input type="date" label="Data Entrada *" value={formData.setupEntryDate || ''} onChange={(e) => setFormData({ ...formData, setupEntryDate: e.target.value })} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <CurrencyInput label="Valor Restante" value={formData.setupRemainingAmount} onValueChange={(val) => setFormData({ ...formData, setupRemainingAmount: val || 0 })} />
-                                                    <Input type="date" label="Data Restante *" value={formData.setupRemainingDate || ''} onChange={(e) => setFormData({ ...formData, setupRemainingDate: e.target.value })} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                        {formData.setupFee && formData.setupFee > 0 ? (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
+                                <div>
+                                    <label className="text-xs font-medium text-muted-foreground mb-2 block">Categoria Financeira (Setup) *</label>
+                                    <Select
+                                        value={formData.setupCategoryId}
+                                        onChange={e => setFormData({ ...formData, setupCategoryId: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Selecione uma categoria...</option>
+                                        {financialCategories.filter(c => c.type === 'income').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </Select>
                                 </div>
-                            ) : (
-                                <p className="text-center text-slate-500 text-sm italic py-4">
-                                    Sem taxa de setup configurada. Opcional.
-                                </p>
-                            )}
-                        </div>
+
+                                <div className="bg-card border border-border p-6 rounded-xl space-y-6">
+                                    <div className="flex gap-6">
+                                        <label className="flex items-center gap-3 text-sm text-foreground cursor-pointer">
+                                            <input type="radio" name="setupType" checked={setupPaymentMethod === 'spot'} onChange={() => setSetupPaymentMethod('spot')} className="accent-emerald-600 w-4 h-4" />
+                                            À Vista
+                                        </label>
+                                        <label className="flex items-center gap-3 text-sm text-foreground cursor-pointer">
+                                            <input type="radio" name="setupType" checked={setupPaymentMethod === 'split'} onChange={() => setSetupPaymentMethod('split')} className="accent-emerald-600 w-4 h-4" />
+                                            Entrada + Restante
+                                        </label>
+                                    </div>
+
+                                    {setupPaymentMethod === 'spot' ? (
+                                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                            <Input type="date" label="Data de Recebimento *" value={formData.setupSpotDate || ''} onChange={(e) => setFormData({ ...formData, setupSpotDate: e.target.value })} required />
+                                            <p className="text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg">💰 O valor total de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.setupFee)} será lançado nesta data.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                                            <div className="space-y-2">
+                                                <CurrencyInput label="Valor Entrada" value={formData.setupEntryAmount} onValueChange={(val) => setFormData({ ...formData, setupEntryAmount: val || 0 })} />
+                                                <Input type="date" label="Data Entrada *" value={formData.setupEntryDate || ''} onChange={(e) => setFormData({ ...formData, setupEntryDate: e.target.value })} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <CurrencyInput label="Valor Restante" value={formData.setupRemainingAmount} onValueChange={(val) => setFormData({ ...formData, setupRemainingAmount: val || 0 })} />
+                                                <Input type="date" label="Data Restante *" value={formData.setupRemainingDate || ''} onChange={(e) => setFormData({ ...formData, setupRemainingDate: e.target.value })} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-center text-muted-foreground text-sm italic py-6 bg-secondary/30 p-4 rounded-lg border border-dashed border-border">
+                                ✓ Sem taxa de setup configurada. Opcional.
+                            </p>
+                        )}
                     </div>
                 )}
 
                 {/* STEP 3: RECURRENCE (RECORRÊNCIA) */}
                 {step === 3 && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 py-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="border border-slate-700 rounded-lg p-3 bg-slate-900/50">
-                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Serviços do Catálogo (Opcional)</h4>
-                                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                            {/* Seleção de Serviços */}
+                            <div className="border border-border rounded-xl p-4 bg-card">
+                                <h4 className="text-sm font-bold text-foreground uppercase mb-4 tracking-wider">Serviços do Catálogo</h4>
+                                <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
                                     {catalog.filter(i => i.type === 'service').map(item => {
                                         const isSelected = !!selectedServices.find(s => s.id === item.id);
                                         return (
                                             <div
                                                 key={item.id}
                                                 onClick={() => toggleService(item)}
-                                                className={`p-2 rounded border cursor-pointer flex justify-between items-center transition-all ${isSelected ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-slate-800 border-slate-700 hover:bg-slate-700'}`}
+                                                className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center transition-all ${isSelected
+                                                    ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-600 dark:border-emerald-500/50 shadow-sm'
+                                                    : 'bg-secondary border-border hover:bg-secondary/80 hover:border-emerald-500/30'
+                                                    }`}
                                             >
-                                                <span className={`text-sm ${isSelected ? 'text-emerald-300' : 'text-slate-300'}`}>{item.name}</span>
-                                                <span className="text-xs font-mono">R$ {item.price}</span>
+                                                <span className={`text-sm font-medium ${isSelected ? 'text-emerald-700 dark:text-emerald-300' : 'text-foreground'}`}>{item.name}</span>
+                                                <span className="text-xs font-mono font-semibold text-muted-foreground">R$ {item.price.toFixed(2)}</span>
                                             </div>
                                         );
                                     })}
                                 </div>
                             </div>
-                            <div className="space-y-4">
+
+                            {/* Resumo e Configurações */}
+                            <div className="space-y-6">
                                 <CurrencyInput label="Adicional Recorrente" value={extraAmount} onValueChange={(val) => setExtraAmount(val || 0)} />
                                 <CurrencyInput label="Desconto Mensal" value={discount} onValueChange={(val) => setDiscount(val || 0)} />
 
-                                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center mt-4">
-                                    <span className="text-xs text-slate-400 uppercase block mb-1">Mensalidade Final</span>
-                                    <span className="text-3xl font-bold text-emerald-400">R$ {formData.recurringAmount?.toFixed(2)}</span>
+                                {/* Resumo Financeiro Destacado */}
+                                <div className="bg-emerald-50 dark:bg-emerald-950/20 p-6 rounded-xl border-2 border-emerald-600 dark:border-emerald-500/50 text-center mt-4">
+                                    <span className="text-xs uppercase tracking-widest font-bold text-emerald-700 dark:text-emerald-400 block mb-2">Mensalidade Final</span>
+                                    <span className="text-4xl font-black text-emerald-600 dark:text-emerald-500">R$ {formData.recurringAmount?.toFixed(2)}</span>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Categoria Financeira (Recorrência) *</label>
+                                    <label className="text-xs font-medium text-muted-foreground mb-2 block">Categoria Financeira (Recorrência) *</label>
                                     <Select
                                         value={formData.financialCategoryId}
                                         onChange={e => setFormData({ ...formData, financialCategoryId: e.target.value })}
                                         required
                                     >
-                                        <option value="">Selecione...</option>
+                                        <option value="">Selecione uma categoria...</option>
                                         {financialCategories.filter(c => c.type === 'income').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </Select>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Conta Bancária (Recebimento)</label>
+                                    <label className="text-xs font-medium text-muted-foreground mb-2 block">Conta Bancária (Recebimento)</label>
                                     <Select
                                         value={formData.bankAccountId}
                                         onChange={e => setFormData({ ...formData, bankAccountId: e.target.value })}
@@ -748,12 +758,12 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                                             setFormData({
                                                 ...formData,
                                                 firstRecurrenceDate: newDate,
-                                                startDate: newDate // Sync: Start of contract validity = First Recurrence
+                                                startDate: newDate
                                             });
                                         }}
                                         required
                                     />
-                                    <p className="text-[10px] text-slate-500 mt-1">Data que será gerada a primeira mensalidade.</p>
+                                    <p className="text-[10px] text-muted-foreground mt-2 bg-secondary/30 p-2 rounded">📅 Data em que será gerada a primeira mensalidade.</p>
                                 </div>
                             </div>
                         </div>
@@ -762,29 +772,30 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
 
                 {/* STEP 4: CONFIRMATION (CONFIRMAÇÃO) */}
                 {step === 4 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 max-w-md mx-auto">
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 max-w-md mx-auto py-6">
+                        <div className="grid grid-cols-2 gap-6">
                             <Input label="Início da Vigência (Contrato)" type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
                             <div>
-                                <label className="text-xs text-slate-400 mb-1 block">Duração (Meses)</label>
+                                <label className="text-xs font-medium text-muted-foreground mb-2 block">Duração (Meses)</label>
                                 <Input type="number" placeholder="0 = Indeterminado" value={formData.contractMonths} onChange={e => setFormData({ ...formData, contractMonths: parseInt(e.target.value) })} />
                             </div>
                         </div>
 
-                        <div className="bg-slate-800/50 p-4 rounded border border-slate-700">
-                            <h5 className="font-bold text-slate-300 mb-2 border-b border-slate-700 pb-1">Resumo</h5>
-                            <dl className="space-y-1 text-sm">
-                                <div className="flex justify-between text-slate-400">
-                                    <dt>Setup / Implantação:</dt>
-                                    <dd className="text-slate-200">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.setupFee || 0)}</dd>
+                        {/* Resumo Destacado */}
+                        <div className="bg-card border border-border p-6 rounded-xl">
+                            <h5 className="font-bold text-foreground mb-4 border-b border-border pb-3 text-base">Resumo do Contrato</h5>
+                            <dl className="space-y-3 text-sm">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <dt className="font-medium">Setup / Implantação:</dt>
+                                    <dd className="text-foreground font-semibold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.setupFee || 0)}</dd>
                                 </div>
-                                <div className="flex justify-between text-slate-400">
-                                    <dt>Valor Mensal:</dt>
-                                    <dd className="text-emerald-400 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.recurringAmount || 0)}</dd>
+                                <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-950/20 -mx-3 px-3 py-2 rounded-lg">
+                                    <dt className="font-medium text-emerald-700 dark:text-emerald-400">Valor Mensal:</dt>
+                                    <dd className="text-emerald-600 dark:text-emerald-500 font-bold text-lg">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.recurringAmount || 0)}</dd>
                                 </div>
-                                <div className="flex justify-between text-slate-400">
-                                    <dt>Duração:</dt>
-                                    <dd className="text-slate-200">{formData.contractMonths ? `${formData.contractMonths} meses` : 'Indeterminado'}</dd>
+                                <div className="flex justify-between text-muted-foreground">
+                                    <dt className="font-medium">Duração:</dt>
+                                    <dd className="text-foreground font-semibold">{formData.contractMonths ? `${formData.contractMonths} meses` : 'Indeterminado'}</dd>
                                 </div>
                             </dl>
                         </div>
@@ -792,7 +803,7 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                 )}
 
                 {/* Footer Navigation */}
-                <div className="flex justify-between pt-4 border-t border-slate-800">
+                <div className="flex justify-between items-center pt-6 border-t border-border">
                     {step > 1 ? (
                         <Button variant="ghost" onClick={() => setStep(step - 1)} type="button" className="flex items-center gap-2">
                             <ArrowLeft className="w-4 h-4" /> Voltar
@@ -803,7 +814,7 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                         <Button
                             type="button"
                             onClick={() => setStep(step + 1)}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                             disabled={
                                 (step === 1 && !formData.contactId) ||
                                 (step === 2 && formData.setupFee! > 0 && (
@@ -812,7 +823,8 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                                     (setupPaymentMethod === 'spot' && !formData.setupSpotDate)
                                 )) ||
                                 (step === 3 && (!formData.financialCategoryId || !formData.firstRecurrenceDate))
-                            }                      >
+                            }
+                        >
                             Próximo <ArrowRight className="w-4 h-4" />
                         </Button>
                     ) : (
@@ -820,9 +832,9 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                             type="button"
                             onClick={handleSave}
                             disabled={loading || !formData.startDate}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg px-8"
                         >
-                            {loading ? 'Salvando...' : 'Finalizar Contrato'}
+                            {loading ? 'Salvando...' : '✓ Finalizar Contrato'}
                         </Button>
                     )}
                 </div>
