@@ -370,6 +370,11 @@ export const api = {
         const { error } = await supabase.from('teams').update(dbTeam).eq('id', team.id);
         if (error) throw error;
     },
+    deleteTeam: async (id: string) => {
+        const { error } = await supabase.from('teams').delete().eq('id', id);
+        if (error) throw error;
+    },
+
 
     getGlobalUsers: async () => {
         // Only super admin triggers this

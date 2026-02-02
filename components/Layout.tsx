@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRBAC } from '../context/RBACContext';
 import { useTenant } from '../context/TenantContext';
 import { UserProfileModal } from './UserModals';
+import { CompactThemeToggle } from './CompactThemeToggle';
 import { User } from '../types';
 import { api } from '../services/api';
 
@@ -489,11 +490,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                         <div className="relative">
                             <Bell size={20} className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors" />
                             <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full animate-pulse"></span>
                         </div>
+                        <CompactThemeToggle />
                         <div className="h-6 w-px bg-border"></div>
                         <UserDropdown onOpenProfile={handleOpenProfile} />
                     </div>

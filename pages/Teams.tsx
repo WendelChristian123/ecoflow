@@ -4,11 +4,103 @@ import { Mail, Shield, ArrowLeft, Plus, Search, LayoutList, Kanban, Edit2, Trash
 import { Card, Avatar, Loader, Badge, Button, TaskTableView, cn } from '../components/Shared';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { KanbanBoard } from '../components/Kanban';
+// import { KanbanBoard } from '../components/Kanban'; // REMOVED
 import { TaskModal, TeamModal, TaskDetailModal } from '../components/Modals';
 import { api } from '../services/api';
 import { Team, User, Task, Project, Status } from '../types';
 import { useAuth } from '../context/AuthContext';
+
+import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
+import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
+import { KanbanHeader } from '../components/Kanban/KanbanHeader';
+import { TeamCard } from '../components/Teams/TeamCard';
+import { TaskCard } from '../components/Tasks/TaskCard';
+
+const TeamKanbanWithContext: React.FC<{
+  teams: Team[];
+  users: User[];
+  onDelete: (id: string, e: React.MouseEvent) => void;
+  onEdit: (team: Team, e: React.MouseEvent) => void;
+  onClick: (team: Team) => void;
+  canMove: boolean;
+  valETarget: any; // unused
+  isAdmin: boolean;
+}> = ({ teams, users, onDelete, onEdit, onClick, canMove, isAdmin }) => {
+  const { currentKanban } = useKanban();
+
+  const groupByStage = (entities: Team[], stageId: string) => {
+    if (!currentKanban) return [];
+    // Teams don't have 'status' usually, maybe just stage?
+    // Let's assume they rely purely on kanbanStageId
+    return entities.filter(t => t.kanbanStageId === stageId);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <KanbanHeader />
+      <div className="flex-1 min-h-0">
+        <GenericKanbanBoard
+          entities={teams}
+          groupByStage={groupByStage}
+          renderCard={(team: Team) => (
+            <TeamCard
+              key={team.id}
+              team={team}
+              users={users}
+              onClick={onClick}
+              onDelete={onDelete}
+              onEdit={onEdit}
+              canMove={canMove}
+              isAdmin={isAdmin}
+            />
+          )}
+        />
+      </div>
+    </div>
+  );
+};
+
+const TeamTasksKanban: React.FC<{
+  tasks: Task[];
+  users: User[];
+  onDelete: (id: string) => void;
+  onTaskClick: (task: Task) => void;
+  canMove: boolean;
+}> = ({ tasks, users, onDelete, onTaskClick, canMove }) => {
+  const { currentKanban } = useKanban();
+
+  const groupByStage = (entities: Task[], stageId: string) => {
+    if (!currentKanban) return [];
+    const stage = currentKanban.stages.find(s => s.id === stageId);
+    return entities.filter(t => {
+      if (t.kanbanStageId === stageId) return true;
+      if (!t.kanbanStageId && stage?.systemStatus && t.status === stage.systemStatus) return true;
+      return false;
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <KanbanHeader />
+      <div className="flex-1 min-h-0">
+        <GenericKanbanBoard
+          entities={tasks}
+          groupByStage={groupByStage}
+          renderCard={(task: Task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              users={users}
+              onClick={onTaskClick}
+              onDelete={onDelete}
+              canMove={canMove}
+            />
+          )}
+        />
+      </div>
+    </div>
+  );
+};
 
 export const TeamsPage: React.FC = () => {
   const { user } = useAuth();
@@ -24,7 +116,8 @@ export const TeamsPage: React.FC = () => {
   const [editingTeam, setEditingTeam] = useState<Team | undefined>(undefined);
 
   // Standardized Filters State
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  /* Filters State */
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'board'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [memberFilter, setMemberFilter] = useState('all');
 
@@ -297,14 +390,15 @@ export const TeamsPage: React.FC = () => {
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
-            <KanbanBoard
-              tasks={teamTasks}
-              users={users}
-              onDrop={handleDropTask}
-              onDragStart={handleDragStartTask}
-              onDelete={handleDeleteTask}
-              onTaskClick={setSelectedTask}
-            />
+            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true}>
+              <TeamTasksKanban
+                tasks={teamTasks}
+                users={users}
+                onDelete={handleDeleteTask}
+                onTaskClick={setSelectedTask}
+                canMove={true}
+              />
+            </KanbanProvider>
           ) : (
             <div className="overflow-y-auto h-full custom-scrollbar pr-2">
               <TaskTableView
@@ -383,7 +477,26 @@ export const TeamsPage: React.FC = () => {
         </div>
       </div>
 
-      {viewMode === 'grid' ? (
+      {viewMode === 'board' ? (
+        <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
+          <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true}>
+            <TeamKanbanWithContext
+              teams={filteredTeams}
+              users={users}
+              onDelete={(id, e) => handleDeleteTeam(e, id)}
+              onEdit={(team, e) => {
+                e.stopPropagation();
+                setEditingTeam(team);
+                setIsTeamModalOpen(true);
+              }}
+              onClick={setSelectedTeam}
+              canMove={['admin', 'owner', 'super_admin'].includes(user?.role || '')}
+              valETarget={null}
+              isAdmin={['admin', 'owner', 'super_admin'].includes(user?.role || '')}
+            />
+          </KanbanProvider>
+        </div>
+      ) : viewMode === 'grid' ? (
         <div className="space-y-4">
 
           {teams.length === 0 ? (

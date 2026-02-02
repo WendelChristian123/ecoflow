@@ -4,7 +4,7 @@ import { Plus, Filter, LayoutList, Kanban, ChevronDown, ChevronRight, ChevronLef
 import { Button, Loader, TaskTableView, Select as SelectComponent } from '../components/Shared';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { KanbanBoard } from '../components/Kanban';
+// import { KanbanBoard } from '../components/Kanban'; // REMOVED
 import { TaskModal, TaskDetailModal, ConfirmationModal } from '../components/Modals';
 import { api } from '../services/api';
 import { Task, User, Status, Project, Team } from '../types';
@@ -12,6 +12,52 @@ import { useLocation } from 'react-router-dom';
 import { useTenant } from '../context/TenantContext';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
+import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
+import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
+import { KanbanHeader } from '../components/Kanban/KanbanHeader';
+import { TaskCard } from '../components/Tasks/TaskCard';
+
+const TaskKanbanWithContext: React.FC<{
+  tasks: Task[];
+  users: User[];
+  onDelete: (id: string) => void;
+  onTaskClick: (task: Task) => void;
+  canMove: boolean;
+}> = ({ tasks, users, onDelete, onTaskClick, canMove }) => {
+  const { currentKanban } = useKanban();
+
+  const groupByStage = (entities: Task[], stageId: string) => {
+    if (!currentKanban) return [];
+    const stage = currentKanban.stages.find(s => s.id === stageId);
+    return entities.filter(t => {
+      if (t.kanbanStageId === stageId) return true;
+      if (!t.kanbanStageId && stage?.systemStatus && t.status === stage.systemStatus) return true;
+      return false;
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <KanbanHeader />
+      <div className="flex-1 min-h-0">
+        <GenericKanbanBoard
+          entities={tasks}
+          groupByStage={groupByStage}
+          renderCard={(task: Task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              users={users}
+              onClick={onTaskClick}
+              onDelete={onDelete}
+              canMove={canMove}
+            />
+          )}
+        />
+      </div>
+    </div>
+  );
+};
 
 export const TasksPage: React.FC = () => {
   const { user } = useAuth();
@@ -294,15 +340,15 @@ export const TasksPage: React.FC = () => {
               Nenhuma tarefa encontrada com os filtros atuais.
             </div>
           ) : (
-            <KanbanBoard
-              tasks={filteredTasks}
-              users={users}
-              onDrop={handleDrop}
-              onDragStart={handleDragStart}
-              onDelete={requestDelete}
-              onTaskClick={setSelectedTask}
-              canMove={canEdit}
-            />
+            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true}>
+              <TaskKanbanWithContext
+                tasks={filteredTasks}
+                users={users}
+                onDelete={requestDelete}
+                onTaskClick={setSelectedTask}
+                canMove={canEdit}
+              />
+            </KanbanProvider>
           )}
         </div>
       ) : (

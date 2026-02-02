@@ -4,14 +4,106 @@ import { Plus, Search, MoreVertical, ArrowLeft, LayoutList, Kanban, Edit2, Trash
 import { Card, Badge, ProgressBar, Button, Loader, Avatar, TaskTableView } from '../components/Shared';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { KanbanBoard } from '../components/Kanban';
+// import { KanbanBoard } from '../components/Kanban'; // REMOVED
 import { TaskModal, ProjectModal, TaskDetailModal } from '../components/Modals';
 import { api } from '../services/api';
 import { Project, User, Team, Task, Status } from '../types';
 import { useLocation } from 'react-router-dom';
 
+
 import { useTenant } from '../context/TenantContext';
 import { useAuth } from '../context/AuthContext';
+import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
+import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
+import { KanbanHeader } from '../components/Kanban/KanbanHeader';
+import { ProjectCard } from '../components/Projects/ProjectCard';
+import { TaskCard } from '../components/Tasks/TaskCard';
+
+const ProjectKanbanWithContext: React.FC<{
+  projects: Project[];
+  users: User[];
+  onDelete: (id: string) => void;
+  onClick: (project: Project) => void;
+  canMove: boolean;
+}> = ({ projects, users, onDelete, onClick, canMove }) => {
+  const { currentKanban } = useKanban();
+
+  const groupByStage = (entities: Project[], stageId: string) => {
+    if (!currentKanban) return [];
+    const stage = currentKanban.stages.find(s => s.id === stageId);
+    return entities.filter(p => {
+      if (p.kanbanStageId === stageId) return true;
+      // Fallback: Map 'systemStatus' to 'status'
+      if (!p.kanbanStageId && stage?.systemStatus && p.status === stage.systemStatus) return true;
+      return false;
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <KanbanHeader />
+      <div className="flex-1 min-h-0">
+        <GenericKanbanBoard
+          entities={projects}
+          groupByStage={groupByStage}
+          renderCard={(project: Project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              users={users}
+              onClick={onClick}
+              onDelete={onDelete}
+              canMove={canMove}
+            />
+          )}
+        />
+      </div>
+    </div>
+  );
+};
+
+const ProjectTasksKanban: React.FC<{
+  tasks: Task[];
+  users: User[];
+  onDelete: (id: string) => void;
+  onTaskClick: (task: Task) => void;
+  canMove: boolean;
+}> = ({ tasks, users, onDelete, onTaskClick, canMove }) => {
+  const { currentKanban } = useKanban();
+
+  const groupByStage = (entities: Task[], stageId: string) => {
+    if (!currentKanban) return [];
+    const stage = currentKanban.stages.find(s => s.id === stageId);
+    return entities.filter(t => {
+      if (t.kanbanStageId === stageId) return true;
+      if (!t.kanbanStageId && stage?.systemStatus && t.status === stage.systemStatus) return true;
+      return false;
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <KanbanHeader />
+      <div className="flex-1 min-h-0">
+        <GenericKanbanBoard
+          entities={tasks}
+          groupByStage={groupByStage}
+          renderCard={(task: Task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              users={users}
+              onClick={onTaskClick}
+              onDelete={onDelete}
+              canMove={canMove}
+            />
+          )}
+        />
+      </div>
+    </div>
+  );
+};
+
 
 export const ProjectsPage: React.FC = () => {
   const { currentTenant } = useTenant();
@@ -41,7 +133,7 @@ export const ProjectsPage: React.FC = () => {
   const [editingProject, setEditingProject] = useState<Project | undefined>(undefined);
 
   // Standardized Filters State
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'board'>('grid');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState('all');
   const [memberFilter, setMemberFilter] = useState('all');
@@ -346,14 +438,15 @@ export const ProjectsPage: React.FC = () => {
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
-            <KanbanBoard
-              tasks={projectTasks}
-              users={users}
-              onDrop={handleDropTask}
-              onDragStart={handleDragStartTask}
-              onDelete={handleDeleteTask}
-              onTaskClick={setSelectedTask}
-            />
+            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true}>
+              <ProjectTasksKanban
+                tasks={projectTasks}
+                users={users}
+                onDelete={handleDeleteTask}
+                onTaskClick={setSelectedTask}
+                canMove={true} // Detail view usually allows move
+              />
+            </KanbanProvider>
           ) : (
             <div className="overflow-y-auto h-full custom-scrollbar pr-2">
               <TaskTableView
@@ -416,13 +509,41 @@ export const ProjectsPage: React.FC = () => {
             />
           </div>
 
+          <div className="flex bg-card border border-border rounded-lg p-0.5 ml-2">
+            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <LayoutList size={16} />
+            </button>
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <span className="text-xs font-bold px-1">Grid</span>
+            </button>
+            <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Kanban size={16} />
+            </button>
+          </div>
+
           <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
             <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
           </Button>
         </div>
       </div>
 
-      {viewMode === 'grid' ? (
+      {viewMode === 'board' ? (
+        <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
+          <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true}>
+            <ProjectKanbanWithContext
+              projects={filteredProjects}
+              users={users}
+              onDelete={(id) => {
+                // We need project object for handleDeleteProject
+                const proj = projects.find(p => p.id === id);
+                if (proj) handleDeleteProject({ stopPropagation: () => { } } as any, proj);
+              }}
+              onClick={setSelectedProject}
+              canMove={user?.role === 'admin'}
+            />
+          </KanbanProvider>
+        </div>
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
           {filteredProjects.map(project => (
             <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">

@@ -201,8 +201,9 @@ export interface Task {
   recurrenceId?: string;
   links: string[];
   tags: string[];
-  tenantId?: string;
   createdBy?: string;
+  kanbanId?: string;
+  kanbanStageId?: string;
   // logs property removed from interface as it's fetched separately now
 }
 
@@ -219,6 +220,8 @@ export interface Project {
   tenantId?: string;
   ownerId?: string; // Add ownerId as it was used in ProjectModal
   logs?: LogEntry[];
+  kanbanId?: string;
+  kanbanStageId?: string;
 }
 
 export interface Team {
@@ -230,6 +233,8 @@ export interface Team {
   links: string[];
   tenantId?: string;
   logs?: LogEntry[];
+  kanbanId?: string;
+  kanbanStageId?: string;
 }
 
 export interface CalendarEvent {
@@ -378,6 +383,8 @@ export interface Quote {
   contact?: Contact;
   items?: QuoteItem[];
   tenantId?: string;
+  kanbanId?: string;
+  kanbanStageId?: string;
 }
 
 export interface RecurringService {
@@ -470,4 +477,26 @@ export interface AuditLog {
   userAgent?: string;
   createdAt: string;
   user?: User; // Joined payload
+}
+
+// --- Kanban System Types ---
+
+export interface KanbanStage {
+  id: string;
+  kanbanId: string;
+  name: string;
+  color: string;
+  position: number;
+  systemStatus?: string; // Mapped to internal status (e.g. 'approved', 'draft')
+  createdAt: string;
+}
+
+export interface Kanban {
+  id: string;
+  tenantId: string;
+  name: string;
+  module: 'crm' | 'tasks' | 'projects' | 'teams';
+  isDefault: boolean;
+  stages: KanbanStage[];
+  createdAt: string;
 }

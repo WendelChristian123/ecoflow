@@ -144,3 +144,31 @@
     backdrop-filter: blur(4px);
   }
 }
+
+@media print {
+  body>* {
+    display: none !important;
+  }
+
+  body>#print-portal {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+    z-index: 9999;
+  }
+
+  /* Reset visibility for children of the portal */
+  #print-portal * {
+    visibility: visible;
+  }
+
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+}

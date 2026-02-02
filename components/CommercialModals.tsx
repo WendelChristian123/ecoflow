@@ -1,11 +1,16 @@
 
+import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select, Textarea, Badge, CurrencyInput } from './Shared';
-import { Contact, CatalogItem, RecurringService, Quote, FinancialCategory, FinancialAccount, ContactScope, PersonType, CatalogType, QuoteItem } from '../types';
+import { Contact, CatalogItem, RecurringService, Quote, FinancialCategory, FinancialAccount, ContactScope, PersonType, CatalogType, QuoteItem, Kanban, KanbanStage } from '../types';
 import { api, getErrorMessage } from '../services/api';
-import { Plus, Trash2, ShoppingBag, User as UserIcon, Building, FileText, Check, AlertCircle, UserPlus, X, Box, Calendar, DollarSign, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
+import { kanbanService } from '../services/kanbanService';
+import { Plus, Trash2, ShoppingBag, User as UserIcon, Building, FileText, Check, AlertCircle, UserPlus, X, Box, Calendar, DollarSign, ArrowRight, ArrowLeft, RefreshCw, Printer } from 'lucide-react';
 import { format, parseISO, addMonths, differenceInDays, addDays } from 'date-fns';
 import { formatDate } from '../utils/formatters';
+import { supabase } from '../services/supabase';
+import { QuotePrintTemplate } from './Commercial/QuotePrintTemplate';
+import { Tenant } from '../types';
 
 const getLocalDateISO = () => {
     const date = new Date();
@@ -251,6 +256,65 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
     const [loading, setLoading] = useState(false);
     const [isGuest, setIsGuest] = useState(false);
 
+    // Print / Tenant Logic
+    const [showPreview, setShowPreview] = useState(false);
+    const [tenant, setTenant] = useState<Tenant>({ name: 'Minha Empresa' } as Tenant);
+
+    useEffect(() => {
+        if (isOpen) {
+            const fetchTenant = async () => {
+                const id = localStorage.getItem('ecoflow-tenant-id');
+                if (id) {
+                    const { data } = await supabase.from('tenants').select('*').eq('id', id).single();
+                    if (data) setTenant(data as Tenant);
+                }
+            };
+            fetchTenant();
+        }
+    }, [isOpen]);
+
+    // Kanban Logic
+    const [kanbans, setKanbans] = useState<Kanban[]>([]);
+    const [stages, setStages] = useState<KanbanStage[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            const loadKanbans = async () => {
+                try {
+                    const kbs = await kanbanService.listKanbans('crm');
+                    setKanbans(kbs);
+                } catch (e) { console.error(e); }
+            };
+            loadKanbans();
+        }
+    }, [isOpen]);
+
+    // Sync Stages when Kanban changes or init
+    useEffect(() => {
+        if (kanbans.length > 0) {
+            let selectedK = kanbans.find(k => k.id === formData.kanbanId);
+            if (!selectedK && !formData.kanbanId) {
+                // Default to first 'isDefault' or just first
+                selectedK = kanbans.find(k => k.isDefault) || kanbans[0];
+                if (selectedK) {
+                    setFormData(prev => ({ ...prev, kanbanId: selectedK!.id }));
+                }
+            }
+            if (selectedK) setStages(selectedK.stages || []);
+        }
+    }, [kanbans, formData.kanbanId]);
+
+    // Auto-set status when Stage changes
+    useEffect(() => {
+        if (formData.kanbanStageId && stages.length > 0) {
+            const stage = stages.find(s => s.id === formData.kanbanStageId);
+            if (stage && stage.systemStatus) {
+                // Map systemStatus to QuoteStatus if possible, or just string match
+                setFormData(prev => ({ ...prev, status: stage.systemStatus as any }));
+            }
+        }
+    }, [formData.kanbanStageId, stages]);
+
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
@@ -325,10 +389,10 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
         <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Editar Orçamento" : "Novo Orçamento"} className="max-w-4xl">
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Header Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-800/50 p-4 rounded-xl border border-slate-800">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/30 p-4 rounded-xl border border-border">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <label className="text-xs text-slate-400 block ml-1">Cliente</label>
+                            <label className="text-xs text-muted-foreground block ml-1">Cliente</label>
                             <button type="button" onClick={() => setIsGuest(!isGuest)} className="text-xs text-emerald-400 hover:underline flex items-center gap-1">
                                 {isGuest ? <><UserIcon size={12} /> Selecionar Cadastrado</> : <><UserPlus size={12} /> Novo / Prospect</>}
                             </button>
@@ -354,23 +418,29 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                             <Input label="Data Emissão" type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
                             <Input label="Validade" type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} />
                         </div>
-                        <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Status</label>
-                            <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
-                                <option value="draft">Rascunho</option>
-                                <option value="sent">Enviado</option>
-                                <option value="approved">Aprovado</option>
-                                <option value="rejected">Rejeitado</option>
-                                <option value="expired">Expirado</option>
-                            </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">Funil (Kanban)</label>
+                                <Select value={formData.kanbanId || ''} onChange={e => setFormData({ ...formData, kanbanId: e.target.value, kanbanStageId: '' })}>
+                                    {kanbans.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
+                                </Select>
+                            </div>
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">Etapa</label>
+                                <Select value={formData.kanbanStageId || ''} onChange={e => setFormData({ ...formData, kanbanStageId: e.target.value })}>
+                                    <option value="">Selecione...</option>
+                                    {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </Select>
+                            </div>
                         </div>
+
                     </div>
                 </div>
 
                 {/* Items Table */}
                 <div>
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">Itens do Orçamento</h3>
+                        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Itens do Orçamento</h3>
                         <div className="flex gap-2">
                             <Select className="w-48 py-1 text-xs" onChange={(e) => {
                                 if (e.target.value) {
@@ -385,9 +455,9 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                         </div>
                     </div>
 
-                    <div className="border border-slate-700 rounded-lg overflow-hidden">
+                    <div className="border border-border rounded-lg overflow-hidden">
                         <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-800 text-slate-400">
+                            <thead className="bg-secondary text-muted-foreground">
                                 <tr>
                                     <th className="p-3 w-1/2">Descrição</th>
                                     <th className="p-3 w-20">Qtd</th>
@@ -396,14 +466,14 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                                     <th className="p-3 w-10"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800 bg-slate-900/50">
+                            <tbody className="divide-y divide-border bg-card">
                                 {items.map((item, idx) => (
                                     <tr key={idx}>
                                         <td className="p-2">
-                                            <input className="w-full bg-transparent outline-none text-slate-200 placeholder:text-slate-600" placeholder="Item..." value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)} />
+                                            <input className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground" placeholder="Item..." value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)} />
                                         </td>
                                         <td className="p-2">
-                                            <input type="number" className="w-full bg-transparent outline-none text-slate-200 text-center" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseFloat(e.target.value))} />
+                                            <input type="number" className="w-full bg-transparent outline-none text-foreground text-center" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseFloat(e.target.value))} />
                                         </td>
                                         <td className="p-2">
                                             <CurrencyInput
@@ -417,18 +487,18 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                                             R$ {(item.total || 0).toFixed(2)}
                                         </td>
                                         <td className="p-2 text-center">
-                                            <button type="button" onClick={() => removeItem(idx)} className="text-slate-600 hover:text-rose-500"><Trash2 size={14} /></button>
+                                            <button type="button" onClick={() => removeItem(idx)} className="text-muted-foreground hover:text-rose-500"><Trash2 size={14} /></button>
                                         </td>
                                     </tr>
                                 ))}
                                 {items.length === 0 && (
-                                    <tr><td colSpan={5} className="p-8 text-center text-slate-500 italic">Nenhum item adicionado.</td></tr>
+                                    <tr><td colSpan={5} className="p-8 text-center text-muted-foreground italic">Nenhum item adicionado.</td></tr>
                                 )}
                             </tbody>
-                            <tfoot className="bg-slate-800 font-bold text-white">
+                            <tfoot className="bg-secondary font-bold text-foreground">
                                 <tr>
-                                    <td colSpan={3} className="p-3 text-right text-slate-400 uppercase text-xs">Total Final</td>
-                                    <td className="p-3 text-right text-emerald-400">R$ {totalValue.toFixed(2)}</td>
+                                    <td colSpan={3} className="p-3 text-right text-muted-foreground uppercase text-xs">Total Final</td>
+                                    <td className="p-3 text-right text-emerald-600 dark:text-emerald-400">R$ {totalValue.toFixed(2)}</td>
                                     <td></td>
                                 </tr>
                             </tfoot>
@@ -438,11 +508,46 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
 
                 <Textarea placeholder="Termos, condições ou notas internas..." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="h-20" />
 
-                <div className="flex justify-end items-center pt-4 border-t border-slate-800 gap-2">
-                    <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-                    <Button type="submit" disabled={loading}>Salvar Orçamento</Button>
+                <div className="flex justify-between items-center pt-4 border-t border-border">
+                    <Button type="button" variant="outline" onClick={() => setShowPreview(true)} className="gap-2">
+                        <Printer size={16} /> Imprimir / PDF
+                    </Button>
+                    <div className="flex gap-2">
+                        <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+                        <Button type="submit" disabled={loading}>Salvar Orçamento</Button>
+                    </div>
                 </div>
             </form>
+
+            {/* Print Preview Modal */}
+            {showPreview && (
+                <>
+                    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
+                        <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-800">
+                            <div className="p-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
+                                <h3 className="font-bold text-lg text-slate-100">Visualizar Impressão</h3>
+                                <button onClick={() => setShowPreview(false)} className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-full"><X size={20} /></button>
+                            </div>
+                            <div className="flex-1 overflow-auto p-8 bg-black/50 flex justify-center">
+                                <div className="shadow-2xl shadow-black scale-90 origin-top">
+                                    <QuotePrintTemplate quote={{ ...initialData, ...formData, items } as Quote} tenant={tenant} contact={contacts.find(c => c.id === formData.contactId)} />
+                                </div>
+                            </div>
+                            <div className="p-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-2">
+                                <Button variant="ghost" onClick={() => setShowPreview(false)}>Fechar</Button>
+                                <Button onClick={() => window.print()} className="gap-2"><Printer size={16} /> Imprimir Agora</Button>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Portal for Actual Printing - Isolated from Modal Styles */}
+                    {createPortal(
+                        <div id="print-portal" className="hidden print:block">
+                            <QuotePrintTemplate quote={{ ...initialData, ...formData, items } as Quote} tenant={tenant} contact={contacts.find(c => c.id === formData.contactId)} />
+                        </div>,
+                        document.body
+                    )}
+                </>
+            )}
         </Modal>
     );
 };
