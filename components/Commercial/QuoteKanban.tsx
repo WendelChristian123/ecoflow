@@ -66,23 +66,25 @@ const KanbanColumn: React.FC<{
     return (
         <div
             className={cn(
-                "flex-1 min-w-[300px] flex flex-col bg-secondary/30 rounded-xl border transition-colors h-full",
-                isDragOver ? "border-emerald-500/50 bg-secondary/50" : "border-border"
+                "flex-1 min-w-[300px] flex flex-col rounded-xl border transition-colors h-full overflow-hidden",
+                isDragOver ? "border-emerald-500/50 bg-secondary/50" : "border-border bg-card"
             )}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
-            {/* Header */}
-            <div className="p-3 border-b border-border flex flex-col gap-1 sticky top-0 bg-secondary/90 backdrop-blur rounded-t-xl z-10">
+            {/* 🎨 Header Bar with Colored Background */}
+            <div className={cn(
+                "px-4 py-3 border-b border-white/10 flex flex-col gap-1 sticky top-0 backdrop-blur z-10",
+                column.color
+            )}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 rounded-full ${column.color}`} />
-                        <span className="font-bold text-foreground text-sm uppercase">{column.title}</span>
-                        <span className="bg-background text-muted-foreground text-xs px-2 py-0.5 rounded-full border border-border">{quotes.length}</span>
+                        <span className="font-bold text-white text-xs uppercase tracking-widest">{column.title}</span>
+                        <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-bold">{quotes.length}</span>
                     </div>
                 </div>
-                <div className="text-xs text-muted-foreground font-mono">
+                <div className="text-xs text-white/90 font-mono font-bold">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
                 </div>
             </div>

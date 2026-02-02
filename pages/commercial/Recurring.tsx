@@ -61,7 +61,7 @@ export const RecurringPage: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3"><RefreshCw className="text-emerald-500" /> Contratos Recorrentes</h1>
+                <h1 className="text-2xl font-bold text-foreground dark:text-white flex items-center gap-3"><RefreshCw className="text-emerald-500" /> Contratos Recorrentes</h1>
                 <div className="flex gap-2">
                     <Button variant="ghost" className="gap-2" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
                     <Button className="gap-2" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
@@ -84,19 +84,19 @@ export const RecurringPage: React.FC = () => {
                         <div
                             key={s.id}
                             onClick={() => setDetailService(s)}
-                            className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group"
+                            className="bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group"
                         >
                             <div className="flex items-center gap-6">
                                 {/* Contract ID */}
-                                <div className="flex flex-col items-center justify-center h-12 w-16 bg-slate-800 rounded text-slate-400 font-mono text-xs border border-slate-700">
-                                    <span className="text-[10px] uppercase text-slate-500">Contrato</span>
-                                    <span className="font-bold text-slate-300">#{s.id.substring(0, 4)}</span>
+                                <div className="flex flex-col items-center justify-center h-12 w-16 bg-emerald-100 dark:bg-slate-800 rounded text-muted-foreground dark:text-slate-400 font-mono text-xs border border-emerald-200 dark:border-slate-700">
+                                    <span className="text-[10px] uppercase text-muted-foreground dark:text-slate-500">Contrato</span>
+                                    <span className="font-bold text-foreground dark:text-slate-300">#{s.id.substring(0, 4)}</span>
                                 </div>
 
                                 {/* Client Name */}
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-slate-500 font-medium uppercase mb-0.5">Cliente</span>
-                                    <h3 className="font-bold text-white text-lg leading-none">{s.contactName || s.contact?.name || '---'}</h3>
+                                    <span className="text-xs text-muted-foreground dark:text-slate-500 font-medium uppercase mb-0.5">Cliente</span>
+                                    <h3 className="font-bold text-foreground dark:text-white text-lg leading-none">{s.contactName || s.contact?.name || '---'}</h3>
                                 </div>
                             </div>
 
@@ -104,17 +104,17 @@ export const RecurringPage: React.FC = () => {
                                 {/* Dates */}
                                 <div className="hidden md:flex items-center gap-6 text-sm">
                                     <div className="flex flex-col items-start">
-                                        <span className="text-xs text-slate-500 uppercase">Início</span>
-                                        <div className="flex items-center gap-1.5 text-slate-300">
+                                        <span className="text-xs text-muted-foreground dark:text-slate-500 uppercase">Início</span>
+                                        <div className="flex items-center gap-1.5 text-foreground dark:text-slate-300">
                                             <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                                             {formatDate(s.startDate)}
                                         </div>
                                     </div>
-                                    <div className="h-8 w-px bg-slate-800"></div>
+                                    <div className="h-8 w-px bg-emerald-200 dark:bg-slate-800"></div>
                                     <div className="flex flex-col items-start">
-                                        <span className="text-xs text-slate-500 uppercase">Fim</span>
-                                        <div className="flex items-center gap-1.5 text-slate-300">
-                                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                                        <span className="text-xs text-muted-foreground dark:text-slate-500 uppercase">Fim</span>
+                                        <div className="flex items-center gap-1.5 text-foreground dark:text-slate-300">
+                                            <Calendar className="w-3.5 h-3.5 text-muted-foreground dark:text-slate-500" />
                                             {format(endDate, 'dd/MM/yyyy')}
                                         </div>
                                     </div>
@@ -124,14 +124,14 @@ export const RecurringPage: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <Button
                                         variant="ghost"
-                                        className="h-9 w-9 p-0 rounded-full hover:bg-slate-800 hover:text-emerald-400 text-slate-500 transition-colors"
+                                        className="h-9 w-9 p-0 rounded-full hover:bg-emerald-200 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 text-muted-foreground dark:text-slate-500 transition-colors"
                                         onClick={(e) => { e.stopPropagation(); setEditingService(s); setIsModalOpen(true); }}
                                     >
                                         <Edit2 className="w-4 h-4" />
                                     </Button>
                                     <Button
                                         variant="ghost"
-                                        className="h-9 w-9 p-0 rounded-full hover:bg-slate-800 hover:text-rose-500 text-slate-500 transition-colors"
+                                        className="h-9 w-9 p-0 rounded-full hover:bg-rose-100 dark:hover:bg-slate-800 hover:text-rose-600 dark:hover:text-rose-500 text-muted-foreground dark:text-slate-500 transition-colors"
                                         onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(s.id); }}
                                     >
                                         <Trash2 className="w-4 h-4" />

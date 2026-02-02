@@ -44,6 +44,28 @@
     --ring: 155 60% 50%;
 
     --radius: 0.75rem;
+
+    /* 🎨 Cores Vibrantes para Status (Experimental) */
+    --status-overdue: 350 85% 60%;
+    /* Vermelho/Rosa - Vencido */
+    --status-today: 45 100% 60%;
+    /* Amarelo Vibrante - Hoje */
+    --status-tomorrow: 25 95% 60%;
+    /* Laranja - Amanhã */
+    --status-upcoming: 210 85% 55%;
+    /* Azul - A Vencer */
+    --status-done: 155 60% 50%;
+    /* Verde - Concluído */
+
+    /* 🎨 Prioridades Vibrantes */
+    --priority-urgent: 350 90% 55%;
+    /* Vermelho forte */
+    --priority-high: 25 90% 55%;
+    /* Laranja forte */
+    --priority-medium: 45 85% 50%;
+    /* Amarelo */
+    --priority-low: 155 50% 50%;
+    /* Verde suave */
   }
 
   .dark {

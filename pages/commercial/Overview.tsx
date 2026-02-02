@@ -21,11 +21,11 @@ const KpiCard: React.FC<{
     onClick?: () => void;
 }> = ({ title, value, icon, color, subtitle, onClick }) => {
     const colors = {
-        emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'hover:border-emerald-500/50' },
-        rose: { bg: 'bg-rose-500/10', text: 'text-rose-500', border: 'hover:border-rose-500/50' },
-        amber: { bg: 'bg-amber-500/10', text: 'text-amber-500', border: 'hover:border-amber-500/50' },
-        indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-500', border: 'hover:border-indigo-500/50' },
-        slate: { bg: 'bg-secondary', text: 'text-muted-foreground', border: 'hover:border-border' },
+        emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'hover:border-emerald-500/50', header: 'bg-emerald-500' },
+        rose: { bg: 'bg-rose-500/10', text: 'text-rose-500', border: 'hover:border-rose-500/50', header: 'bg-rose-500' },
+        amber: { bg: 'bg-amber-500/10', text: 'text-amber-500', border: 'hover:border-amber-500/50', header: 'bg-amber-500' },
+        indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-500', border: 'hover:border-indigo-500/50', header: 'bg-indigo-500' },
+        slate: { bg: 'bg-secondary', text: 'text-muted-foreground', border: 'hover:border-border', header: 'bg-slate-600' },
     };
 
     const theme = colors[color];
@@ -33,19 +33,32 @@ const KpiCard: React.FC<{
     return (
         <Card
             variant="solid"
+            noPadding={true}
             onClick={onClick}
             className={cn(
                 "relative overflow-hidden flex flex-col justify-between h-full transition-all group",
                 onClick ? `cursor-pointer hover:shadow-lg hover:-translate-y-1 ${theme.border}` : ""
             )}
         >
-            <div className="flex justify-between items-start mb-4 relative z-10">
-                <span className="text-muted-foreground text-sm font-bold uppercase tracking-wide group-hover:text-foreground transition-colors">{title}</span>
-                <div className={cn("p-2 rounded-lg transition-colors", theme.bg, theme.text)}>{icon}</div>
+            {/* 🎨 Header Bar with Module Name */}
+            <div className={cn(
+                "px-4 py-2.5 flex items-center justify-between border-b border-white/10 transition-all",
+                theme.header
+            )}>
+                <span className="text-[11px] uppercase tracking-widest text-white font-bold">{title}</span>
+                <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-lg">
+                    <div className="text-white">
+                        {icon}
+                    </div>
+                </div>
             </div>
-            <div className="relative z-10">
-                <div className="text-2xl font-black text-foreground tracking-tight">{value}</div>
-                {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
+
+            {/* Content Area */}
+            <div className="p-4 flex flex-col justify-between flex-1 relative z-10">
+                <div className="mt-auto">
+                    <div className="text-2xl font-black text-foreground tracking-tight">{value}</div>
+                    {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
+                </div>
             </div>
         </Card>
     );

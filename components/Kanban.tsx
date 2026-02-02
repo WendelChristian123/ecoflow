@@ -52,11 +52,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, users
   };
 
   const getPriorityColor = (p: Priority) => {
+    // Retorna classes customizadas para cores vibrantes
     switch (p) {
-      case 'urgent': return 'destructive';
-      case 'high': return 'destructive';
-      case 'medium': return 'neutral';
-      case 'low': return 'success';
+      case 'urgent': return 'bg-[hsl(var(--priority-urgent))] text-white border-0';
+      case 'high': return 'bg-[hsl(var(--priority-high))] text-white border-0';
+      case 'medium': return 'bg-[hsl(var(--priority-medium))] text-gray-900 border-0';
+      case 'low': return 'bg-[hsl(var(--priority-low))] text-white border-0';
       default: return 'neutral';
     }
   };
@@ -78,6 +79,30 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, users
     onDrop(e, status);
   };
 
+  // 🎨 Função para cor do cabeçalho baseado no status
+  const getStatusHeaderColor = (s: Status) => {
+    switch (s) {
+      case 'todo': return 'bg-[hsl(var(--status-upcoming))] text-white';
+      case 'in_progress': return 'bg-[hsl(var(--status-today))] text-gray-900';
+      case 'review': return 'bg-[hsl(var(--status-tomorrow))] text-white';
+      case 'done': return 'bg-[hsl(var(--status-done))] text-white';
+    }
+  };
+
+  // 🎨 Função para borda do card baseado na data de vencimento
+  const getTaskBorderColor = (task: Task) => {
+    if (!task.dueDate) return '';
+    const today = new Date().setHours(0, 0, 0, 0);
+    const due = new Date(task.dueDate).setHours(0, 0, 0, 0);
+    const diff = Math.floor((due - today) / (1000 * 60 * 60 * 24));
+
+    if (diff < 0) return 'border-l-4 border-l-[hsl(var(--status-overdue))]'; // Vencido
+    if (diff === 0) return 'border-l-4 border-l-[hsl(var(--status-today))]'; // Hoje
+    if (diff === 1) return 'border-l-4 border-l-[hsl(var(--status-tomorrow))]'; // Amanhã
+    return 'border-l-2 border-l-[hsl(var(--status-upcoming))]'; // Futuro
+  };
+
+
   return (
     <div
       className={cn(
@@ -88,20 +113,17 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, users
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      {/* Column Header */}
+      {/* Column Header - VIBRANT */}
       <div className={cn(
-        "p-4 flex items-center justify-between sticky top-0 backdrop-blur-sm rounded-t-xl z-10 border-b transition-colors shrink-0",
-        isDragOver ? "bg-secondary/90 border-primary/30" : "bg-muted/50 border-border/50"
+        "p-4 flex items-center justify-between sticky top-0 rounded-t-xl z-10 border-b-2 border-white/20 shrink-0 shadow-sm transition-all",
+        getStatusHeaderColor(status)
       )}>
         <div className="flex items-center gap-2">
-          <div className={cn("w-2 h-2 rounded-full",
-            status === 'todo' ? 'bg-muted-foreground' :
-              status === 'in_progress' ? 'bg-secondary' :
-                status === 'review' ? 'bg-secondary/70' : 'bg-primary'
-          )}></div>
-          <h3 className="font-semibold text-foreground">{title}</h3>
-          <span className="bg-card text-muted-foreground text-xs px-2 py-0.5 rounded-full border border-border">{filteredTasks.length}</span>
+          <h3 className="font-bold text-sm uppercase tracking-wide">{title}</h3>
         </div>
+        <span className="bg-white/20 backdrop-blur-sm text-current text-xs font-bold px-2.5 py-1 rounded-full border border-white/30">
+          {filteredTasks.length}
+        </span>
       </div>
 
       {/* Cards Area */}
@@ -123,13 +145,17 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, users
               onClick={() => onTaskClick && onTaskClick(task)}
               className={cn(
                 "p-4 hover:border-primary/30 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border",
-                canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default"
+                canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default",
+                getTaskBorderColor(task) // 🎨 Borda colorida por vencimento
               )}
             >
               <div className="flex justify-between items-start mb-2">
-                <Badge variant={getPriorityColor(task.priority)}>
+                <span className={cn(
+                  "inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold",
+                  getPriorityColor(task.priority)
+                )}>
                   {translatePriority(task.priority)}
-                </Badge>
+                </span>
                 <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive">
                   <Trash2 size={16} />
                 </button>
