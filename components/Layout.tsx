@@ -152,29 +152,29 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-3 hover:bg-slate-800 p-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-700"
+                className="flex items-center gap-3 hover:bg-secondary/50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-border"
             >
                 <div className="text-right hidden md:block leading-tight">
-                    <p className="text-sm font-semibold text-slate-100 max-w-[150px] truncate">{userName}</p>
-                    <p className="text-[11px] text-slate-400 max-w-[150px] truncate opacity-60 font-medium">
+                    <p className="text-sm font-semibold text-foreground max-w-[150px] truncate">{userName}</p>
+                    <p className="text-[11px] text-muted-foreground max-w-[150px] truncate font-medium">
                         {user?.email}
                     </p>
                 </div>
                 <div className="relative">
                     <Avatar name={userName} />
                     {isSuperAdmin && (
-                        <div className="absolute -top-1 -right-1 bg-primary rounded-full p-0.5 border border-slate-900" title="Super Admin">
+                        <div className="absolute -top-1 -right-1 bg-primary rounded-full p-0.5 border border-background" title="Super Admin">
                             <Globe size={8} className="text-white" />
                         </div>
                     )}
                 </div>
-                <ChevronDown size={14} className={cn("text-slate-500 transition-transform", isOpen && "rotate-180")} />
+                <ChevronDown size={14} className={cn("text-muted-foreground transition-transform", isOpen && "rotate-180")} />
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="p-4 border-b border-slate-800">
-                        <p className="text-sm font-medium text-white truncate">{user?.email}</p>
+                <div className="absolute right-0 top-full mt-2 w-56 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-4 border-b border-border">
+                        <p className="text-sm font-medium text-foreground truncate">{user?.email}</p>
                         {isSuperAdmin && (
                             <span className="inline-flex items-center gap-1 mt-1 bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded border border-primary/20">
                                 <Globe size={10} /> SUPER ADMIN
@@ -186,11 +186,11 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
 
                     </div>
 
-                    <div className="border-t border-slate-800 p-2 space-y-1">
-                        <button onClick={() => { onOpenProfile(); setIsOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors text-left">
+                    <div className="border-t border-border p-2 space-y-1">
+                        <button onClick={() => { onOpenProfile(); setIsOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-secondary/50 rounded-lg transition-colors text-left">
                             <UserIcon size={16} /> Ver Perfil
                         </button>
-                        <NavLink to="/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors" onClick={() => setIsOpen(false)}>
+                        <NavLink to="/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-secondary/50 rounded-lg transition-colors" onClick={() => setIsOpen(false)}>
                             <Settings size={16} /> Configurações
                         </NavLink>
                         <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors mt-1">
@@ -224,7 +224,7 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
     return (
         <div className={cn("mb-4 px-3", isCollapsed && "px-2")} ref={wrapperRef}>
             <div className="mb-1 px-1">
-                {!isCollapsed && <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ambiente Atual</span>}
+                {!isCollapsed && <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Ambiente Atual</span>}
             </div>
             <div className="relative">
                 <button
@@ -242,9 +242,9 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
                 </button>
 
                 {isOpen && (
-                    <div className="absolute top-full left-0 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 mt-2 p-1 overflow-hidden animate-in fade-in zoom-in-95 origin-top-left">
-                        <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-800 mb-1">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Alternar Empresa</p>
+                    <div className="absolute top-full left-0 w-64 bg-popover border border-border rounded-xl shadow-2xl z-50 mt-2 p-1 overflow-hidden animate-in fade-in zoom-in-95 origin-top-left">
+                        <div className="px-3 py-2 bg-secondary/50 border-b border-border mb-1">
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Alternar Empresa</p>
                         </div>
                         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                             {availableTenants.map(t => (
@@ -255,7 +255,7 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
                                         "w-full text-left px-3 py-2 text-sm rounded-lg mb-1 flex items-center gap-2",
                                         currentTenant?.id === t.id
                                             ? "bg-primary/10 text-primary"
-                                            : "text-slate-300 hover:bg-slate-800"
+                                            : "text-foreground hover:bg-secondary/50"
                                     )}
                                 >
                                     <Building2 size={14} />
@@ -264,7 +264,7 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
                                 </button>
                             ))}
                         </div>
-                        <div className="border-t border-slate-800 mt-1 pt-1">
+                        <div className="border-t border-border mt-1 pt-1">
                             <NavLink to="/super-admin/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors">
                                 <Settings size={12} /> Gerenciar Empresas
                             </NavLink>

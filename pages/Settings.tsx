@@ -5,11 +5,12 @@ import { User, Delegation } from '../types';
 import { Loader, Button, Avatar, Badge, Card, Input } from '../components/Shared';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
+import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil, Palette } from 'lucide-react';
 import { CreateUserModal, EditUserModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
 import { SharedAccessPanel } from '../components/Permissions/SharedAccessPanel';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { checkUserLimit, UserLimitStatus } from '../services/limits';
 
 export const SettingsPage: React.FC = () => {
@@ -25,7 +26,7 @@ export const SettingsPage: React.FC = () => {
     const [userLimits, setUserLimits] = useState<UserLimitStatus | null>(null);
 
     // UI State
-    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'audit'>('delegation');
+    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'audit' | 'appearance'>('delegation');
     const [pendingMode, setPendingMode] = useState<'competence' | 'cash'>('competence');
 
     // Modals State
@@ -162,6 +163,12 @@ export const SettingsPage: React.FC = () => {
                     className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'calendar' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                 >
                     Calendário
+                </button>
+                <button
+                    onClick={() => setActiveTab('appearance')}
+                    className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'appearance' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                >
+                    Aparência
                 </button>
                 {isAdmin && (
                     <button
@@ -375,6 +382,25 @@ export const SettingsPage: React.FC = () => {
                     initialSettings={financeSettings?.calendar}
                     onSave={(newSettings) => setFinanceSettings({ ...financeSettings, calendar: newSettings })}
                 />
+            )}
+
+            {/* TAB: APPEARANCE */}
+            {activeTab === 'appearance' && (
+                <Card className="p-6 max-w-2xl" variant="solid">
+                    <div className="mb-6">
+                        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                            <Palette size={20} className="text-emerald-500" />
+                            Aparência do Sistema
+                        </h2>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Personalize a aparência da interface com temas claro, escuro ou automático.
+                        </p>
+                    </div>
+
+                    <div className="p-4 bg-secondary/20 rounded-xl border border-border">
+                        <ThemeToggle />
+                    </div>
+                </Card>
             )}
 
             {/* TAB: AUDIT */}

@@ -4,17 +4,63 @@
 
 @layer base {
   :root {
-    /* --- Enforced Dark Mode (Premium "Glass" Feel) --- */
-    --background: 224 71% 4%;     /* Slate 950 (Deep Blue/Black) */
+    /* --- Light Mode (Premium Clean Feel with Better Contrast) --- */
+    --background: 210 40% 98%;
+    /* Soft Gray Background (não branco puro) */
+    --foreground: 222.2 84% 12%;
+    /* Dark foreground para bom contraste */
+
+    --card: 0 0% 100%;
+    /* Cards brancos se destacam do background */
+    --card-foreground: 222.2 84% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 12%;
+
+    --primary: 155 60% 50%;
+    /* Emerald 500 - Same primary color */
+    --primary-foreground: 144.9 80.4% 10%;
+
+    --secondary: 210 40% 94%;
+    /* Lighter gray for secondary */
+    --secondary-foreground: 222.2 47.4% 20%;
+    /* Darker for contrast */
+
+    --muted: 210 40% 94%;
+    --muted-foreground: 215.4 16.3% 40%;
+    /* Darker muted text */
+
+    --accent: 210 40% 94%;
+    --accent-foreground: 222.2 47.4% 20%;
+
+    --destructive: 353 84% 49%;
+    /* Same red */
+    --destructive-foreground: 0 0% 100%;
+    /* White text on red */
+
+    --border: 214.3 31.8% 88%;
+    /* Slightly darker border */
+    --input: 214.3 31.8% 88%;
+    --ring: 155 60% 50%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* --- Dark Mode (Premium "Glass" Feel) --- */
+    --background: 224 71% 4%;
+    /* Slate 950 (Deep Blue/Black) */
     --foreground: 210 40% 98%;
 
-    --card: 224 71% 4%;           /* Matches background for glass effect base */
+    --card: 224 71% 4%;
+    /* Matches background for glass effect base */
     --card-foreground: 210 40% 98%;
 
     --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 155 60% 50%;       /* Emerald 500 - Vibrant Green Accents */
+    --primary: 155 60% 50%;
+    /* Emerald 500 - Same primary color */
     --primary-foreground: 144.9 80.4% 10%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -32,12 +78,15 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 155 60% 50%;
-
-    --radius: 0.75rem;
   }
 
-  /* Force Dark Mode Options for Selects */
+  /* Select options adapted to theme */
   select option {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .dark select option {
     background-color: #0f172a;
     color: #f8fafc;
   }
