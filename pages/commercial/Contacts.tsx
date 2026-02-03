@@ -46,55 +46,63 @@ export const ContactsPage: React.FC = () => {
     if (loading) return <Loader />;
 
     const ContactTable = ({ items, type }: { items: Contact[], type: 'supplier' | 'client' }) => (
-        <Card className="rounded-xl border border-border overflow-hidden flex flex-col h-full shadow-sm" variant="solid">
-            <div className={`px-4 py-2 border-b border-border flex justify-between items-center shrink-0 ${type === 'client' ? 'bg-emerald-500/5' : 'bg-amber-500/5'}`}>
-                <div className="flex items-center gap-2 font-bold text-foreground text-sm">
-                    {type === 'client' ? <UserIcon size={16} className="text-emerald-500" /> : <Building size={16} className="text-amber-500" />}
-                    {type === 'client' ? 'Clientes' : 'Fornecedores'}
+        <Card className="rounded-xl border border-border flex flex-col h-full max-h-full shadow-sm overflow-hidden" variant="solid" noPadding>
+            {/* HEADER FIXO */}
+            <div className={`px-4 py-3.5 border-b border-white/10 flex items-center justify-between shrink-0 ${type === 'client' ? 'bg-emerald-500' : 'bg-amber-500'}`}>
+                <div className="flex items-center gap-3">
+                    <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
+                        {type === 'client' ? <UserIcon size={18} className="text-white" /> : <Building size={18} className="text-white" />}
+                    </div>
+                    <span className="text-sm uppercase tracking-widest text-white font-bold">
+                        {type === 'client' ? 'Clientes' : 'Fornecedores'}
+                    </span>
                 </div>
-                <Badge variant="neutral" className="text-xs px-1.5 py-0">{items.length}</Badge>
+                <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg text-white text-sm font-bold">
+                    {items.length}
+                </div>
             </div>
 
-            <div className="overflow-y-auto custom-scrollbar flex-1 p-0">
-                <table className="w-full text-left text-xs text-muted-foreground">
-                    <thead className="bg-secondary/50 text-muted-foreground uppercase text-[9px] font-bold tracking-wider sticky top-0 backdrop-blur-sm z-10 border-b border-border/50">
+            {/* ÁREA SCROLLÁVEL INTERNA */}
+            <div className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar w-full ${type === 'client' ? 'bg-emerald-500/10' : 'bg-amber-500/10'}`}>
+                <table className="w-full min-w-full text-left text-xs text-muted-foreground table-fixed">
+                    <thead className={`w-full text-muted-foreground uppercase text-[9px] font-bold tracking-wider sticky top-0 backdrop-blur-sm z-10 border-b ${type === 'client' ? 'bg-emerald-500/30 border-emerald-500/30' : 'bg-amber-500/30 border-amber-500/30'}`}>
                         <tr>
-                            <th className="px-3 py-2">Nome</th>
-                            <th className="px-3 py-2 hidden sm:table-cell">Contato</th>
-                            <th className="px-3 py-2 text-right">Ações</th>
+                            <th className="pl-3 py-2 w-[40%]">Nome</th>
+                            <th className="pl-4 py-2 w-[40%] hidden sm:table-cell">Contato</th>
+                            <th className="pr-3 py-2 w-[20%] text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
                         {items.length === 0 ? (
                             <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground italic">Nenhum registro.</td></tr>
                         ) : items.map(c => (
-                            <tr key={c.id} className="hover:bg-secondary/30 transition-colors group">
-                                <td className="px-3 py-1.5">
-                                    <div className="flex items-center gap-3">
+                            <tr key={c.id} className={`transition-colors group ${type === 'client' ? 'hover:bg-emerald-500/30' : 'hover:bg-amber-500/30'}`}>
+                                <td className="pl-3 py-1.5 overflow-hidden">
+                                    <div className="flex items-center gap-3 min-w-0">
                                         <div className="w-7 h-7 rounded-md bg-secondary/50 flex items-center justify-center text-muted-foreground shrink-0 border border-border">
                                             {c.type === 'pj' ? <Building size={12} /> : <UserIcon size={12} />}
                                         </div>
-                                        <div className="min-w-0">
-                                            <div className="font-medium text-foreground truncate max-w-[140px] lg:max-w-[180px]" title={c.name}>{c.name}</div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-medium text-foreground truncate" title={c.name}>{c.name}</div>
                                             {(c.fantasyName || c.scope === 'both') && (
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    {c.fantasyName && <span className="text-[9px] text-muted-foreground truncate max-w-[100px]">{c.fantasyName}</span>}
-                                                    {c.scope === 'both' && <span className="text-[8px] bg-secondary border border-border/50 px-1 rounded text-muted-foreground uppercase tracking-tight">Ambos</span>}
+                                                <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                                                    {c.fantasyName && <span className="text-[9px] text-muted-foreground truncate">{c.fantasyName}</span>}
+                                                    {c.scope === 'both' && <span className="text-[8px] bg-secondary border border-border/50 px-1 rounded text-muted-foreground uppercase tracking-tight shrink-0">Ambos</span>}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-3 py-1.5 hidden sm:table-cell">
-                                    <div className="space-y-0.5">
-                                        {c.phone && <div className="text-[10px] flex items-center gap-1.5 font-mono opacity-80"><Phone size={9} className="text-muted-foreground" /> {c.phone}</div>}
-                                        {c.email && <div className="text-[10px] flex items-center gap-1.5 truncate max-w-[140px] opacity-80" title={c.email}><Mail size={9} className="text-muted-foreground" /> {c.email}</div>}
+                                <td className="pl-4 py-1.5 hidden sm:table-cell overflow-hidden">
+                                    <div className="space-y-0.5 min-w-0">
+                                        {c.phone && <div className="text-[10px] flex items-center gap-1.5 font-mono opacity-80 truncate"><Phone size={9} className="text-muted-foreground shrink-0" /> <span className="truncate">{c.phone}</span></div>}
+                                        {c.email && <div className="text-[10px] flex items-center gap-1.5 opacity-80 truncate" title={c.email}><Mail size={9} className="text-muted-foreground shrink-0" /> <span className="truncate">{c.email}</span></div>}
                                     </div>
                                 </td>
-                                <td className="px-3 py-1.5 text-right">
+                                <td className="pr-3 py-1.5 text-right overflow-hidden">
                                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => { setEditingContact(c); setIsModalOpen(true); }} className="p-1 hover:bg-emerald-500/20 hover:text-emerald-500 rounded.md transition-colors"><Edit2 size={13} /></button>
-                                        <button onClick={() => setConfirmDeleteId(c.id)} className="p-1 hover:bg-rose-500/20 hover:text-rose-500 rounded.md transition-colors"><Trash2 size={13} /></button>
+                                        <button onClick={() => { setEditingContact(c); setIsModalOpen(true); }} className="p-1 hover:bg-emerald-500/20 hover:text-emerald-500 rounded-md transition-colors shrink-0"><Edit2 size={13} /></button>
+                                        <button onClick={() => setConfirmDeleteId(c.id)} className="p-1 hover:bg-rose-500/20 hover:text-rose-500 rounded-md transition-colors shrink-0"><Trash2 size={13} /></button>
                                     </div>
                                 </td>
                             </tr>

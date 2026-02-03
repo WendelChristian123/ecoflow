@@ -201,6 +201,16 @@ export const CommercialOverview: React.FC = () => {
     }, [quotes]);
 
     // --- CHARTS DATA ---
+    const STATUS_COLORS: Record<string, string> = {
+        'Rascunho': '#64748b',   // slate-500
+        'Enviado': '#f59e0b',    // amber-500
+        'Visualizado': '#3b82f6', // blue-500
+        'Negociação': '#6366f1', // indigo-500
+        'Aprovado': '#10b981',   // emerald-500
+        'Rejeitado': '#f43f5e',  // rose-500
+    };
+    const DEFAULT_COLOR = '#94a3b8';
+
     const statusDistribution = useMemo(() => {
         const counts: Record<string, number> = {};
         quotes.forEach(q => {
@@ -212,7 +222,13 @@ export const CommercialOverview: React.FC = () => {
                                 q.status === 'rejected' ? 'Rejeitado' : q.status;
             counts[s] = (counts[s] || 0) + 1;
         });
-        return Object.entries(counts).map(([name, value]) => ({ name, value }));
+        return Object.entries(counts)
+            .map(([name, value]) => ({ 
+                name, 
+                value, 
+                color: STATUS_COLORS[name] || DEFAULT_COLOR 
+            }))
+            .sort((a, b) => b.value - a.value);
     }, [quotes]);
 
     const recentActivity = useMemo(() => {
@@ -231,7 +247,7 @@ export const CommercialOverview: React.FC = () => {
         );
     }
 
-    const COLORS = ['#10b981', '#f59e0b', '#6366f1', '#f43f5e', '#64748b'];
+
 
     // Drilldown Helper
     const getDrilldownData = () => {
@@ -316,34 +332,58 @@ export const CommercialOverview: React.FC = () => {
                     <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2 shrink-0">
                         <PieChart size={18} className="text-primary" /> Distribuição por Status
                     </h3>
-                    <div className="flex-1 w-full min-h-0 relative">
-                        <ResponsiveContainer width="99%" height="100%">
-                            <RechartsPieChart>
-                                <Pie
-                                    data={statusDistribution}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius="60%"
-                                    outerRadius="80%"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {statusDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip
-                                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--foreground)' }}
-                                    itemStyle={{ color: 'var(--foreground)' }}
-                                />
-                            </RechartsPieChart>
-                        </ResponsiveContainer>
-                        {/* Center Label */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="text-center">
-                                <span className="text-4xl font-black text-foreground">{kpiData.totalQuotes}</span>
-                                <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total</div>
+                    <div className="flex-1 w-full min-h-0 relative flex items-center gap-4">
+                        {/* Chart Area */}
+                        <div className="h-full aspect-square relative shrink-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RechartsPieChart>
+                                    <Pie
+                                        data={statusDistribution}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius="60%"
+                                        outerRadius="80%"
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {statusDistribution.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--foreground)' }}
+                                        itemStyle={{ color: 'var(--foreground)' }}
+                                    />
+                                </RechartsPieChart>
+                            </ResponsiveContainer>
+                            {/* Center Label */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="text-center">
+                                    <span className="text-3xl font-black text-foreground">{kpiData.totalQuotes}</span>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total</div>
+                                </div>
                             </div>
+                        </div>
+
+                        {/* Legend Area */}
+                        <div className="flex-1 h-full overflow-y-auto custom-scrollbar flex flex-col justify-center pr-2 gap-3">
+                            {statusDistribution.length > 0 ? statusDistribution.map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between group p-1.5 rounded-lg hover:bg-muted/50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
+                                        <span className="text-sm font-medium text-foreground">{item.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-foreground">{item.value}</span>
+                                        <span className="text-xs text-muted-foreground w-8 text-right">
+                                            {Math.round((item.value / kpiData.totalQuotes) * 100)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="text-center text-sm text-muted-foreground italic">Sem dados para exibir</div>
+                            )}
                         </div>
                     </div>
                 </Card>

@@ -124,11 +124,11 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, onS
                         </Select>
                     </div>
                     <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Pessoa</label>
-                        <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
-                            <button type="button" onClick={() => setFormData({ ...formData, type: 'pf' })} className={`flex - 1 text - xs py - 1.5 rounded ${formData.type === 'pf' ? 'bg-slate-700 text-white' : 'text-slate-400'} `}>Pessoa Física</button>
-                            <button type="button" onClick={() => setFormData({ ...formData, type: 'pj' })} className={`flex - 1 text - xs py - 1.5 rounded ${formData.type === 'pj' ? 'bg-slate-700 text-white' : 'text-slate-400'} `}>Pessoa Jurídica</button>
-                        </div>
+                        <label className="text-xs text-slate-400 mb-1 block">Tipo de Pessoa</label>
+                        <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as PersonType })}>
+                            <option value="pj">Pessoa Jurídica</option>
+                            <option value="pf">Pessoa Física</option>
+                        </Select>
                     </div>
                 </div>
 
