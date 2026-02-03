@@ -186,19 +186,8 @@ export const QuotesPage: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background text-foreground">
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Orçamentos</h1>
-                    <p className="text-muted-foreground mt-1">Gerencie suas propostas comerciais</p>
-                </div>
-                <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
-                    <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
-                </Button>
-            </div>
-
-            {/* Filters Bar */}
+        <div className="h-full flex flex-col overflow-y-hidden bg-background text-foreground pb-2 pr-2">
+            {/* Filters Bar with Actions */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
                 {/* 1. Search */}
                 <div className="relative mr-auto">
@@ -214,14 +203,19 @@ export const QuotesPage: React.FC = () => {
                     />
                 </div>
 
-                {/* 2. Month Nav */}
+                {/* 2. New Button - Before Month */}
+                <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
+                    <Plus size={16} /> Novo
+                </Button>
+
+                {/* 3. Month Nav */}
                 <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
                     <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
                     <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
                     <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
                 </div>
 
-                {/* 3. Status */}
+                {/* 4. Status */}
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
@@ -234,7 +228,7 @@ export const QuotesPage: React.FC = () => {
                     <option value="rejected">Rejeitados</option>
                 </select>
 
-                {/* 4. View Toggle */}
+                {/* 5. View Toggle */}
                 <div className="flex bg-card border border-border rounded-lg p-0.5">
                     <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                         <List size={16} />
@@ -249,7 +243,7 @@ export const QuotesPage: React.FC = () => {
 
 
             {viewMode === 'kanban' ? (
-                <div className="h-[calc(100vh-220px)]">
+                <div className="flex-1 min-h-0 bg-transparent rounded-xl overflow-hidden">
                     <QuoteKanban
                         quotes={filteredQuotes}
                         onStatusChange={handleStatusChange}

@@ -16,6 +16,8 @@ import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
 import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
 import { KanbanHeader } from '../components/Kanban/KanbanHeader';
 import { TaskCard } from '../components/Tasks/TaskCard';
+import { Settings } from 'lucide-react';
+import { StageManagerModal } from '../components/Kanban/StageManagerModal';
 
 const TaskKanbanWithContext: React.FC<{
   tasks: Task[];
@@ -23,7 +25,10 @@ const TaskKanbanWithContext: React.FC<{
   onDelete: (id: string) => void;
   onTaskClick: (task: Task) => void;
   canMove: boolean;
-}> = ({ tasks, users, onDelete, onTaskClick, canMove }) => {
+  hideHeader?: boolean;
+  isStageManagerOpen: boolean;
+  onCloseStageManager: () => void;
+}> = ({ tasks, users, onDelete, onTaskClick, canMove, hideHeader, isStageManagerOpen, onCloseStageManager }) => {
   const { currentKanban } = useKanban();
 
   const groupByStage = (entities: Task[], stageId: string) => {
@@ -37,25 +42,32 @@ const TaskKanbanWithContext: React.FC<{
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <KanbanHeader />
-      <div className="flex-1 min-h-0">
-        <GenericKanbanBoard
-          entities={tasks}
-          groupByStage={groupByStage}
-          renderCard={(task: Task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              users={users}
-              onClick={onTaskClick}
-              onDelete={onDelete}
-              canMove={canMove}
-            />
-          )}
-        />
+    <>
+      <div className="flex flex-col h-full">
+        {!hideHeader && <KanbanHeader />}
+        <div className="flex-1 min-h-0">
+          <GenericKanbanBoard
+            entities={tasks}
+            groupByStage={groupByStage}
+            renderCard={(task: Task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                users={users}
+                onClick={onTaskClick}
+                onDelete={onDelete}
+                canMove={canMove}
+              />
+            )}
+          />
+        </div>
       </div>
-    </div>
+
+      <StageManagerModal
+        isOpen={isStageManagerOpen}
+        onClose={onCloseStageManager}
+      />
+    </>
   );
 };
 
@@ -82,6 +94,7 @@ export const TasksPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
   const [showCompleted, setShowCompleted] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -245,23 +258,8 @@ export const TasksPage: React.FC = () => {
   return (
     // FULL HEIGHT CONTAINER
     <div className="h-full flex flex-col gap-4">
-      {/* Standardized Header */}
-      {/* Standardized Header */}
-      {/* Standardized Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Tarefas</h1>
-          <p className="text-muted-foreground mt-1">Gerencie suas atividades diárias</p>
-        </div>
-        {can('routines', 'create') && (
-          <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
-            <Plus size={16} /> <span className="hidden sm:inline">Nova</span>
-          </Button>
-        )}
-      </div>
-
-      {/* Filters Bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      {/* Filters Bar with Actions */}
+      <div className="flex flex-nowrap items-center gap-2 mb-4 shrink-0 overflow-x-auto">
         {/* 1. Search */}
         <div className="relative mr-auto">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -276,14 +274,21 @@ export const TasksPage: React.FC = () => {
           />
         </div>
 
-        {/* 2. Month Nav */}
+        {/* 2. New Task Button */}
+        {can('routines', 'create') && (
+          <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
+            <Plus size={16} /> Nova
+          </Button>
+        )}
+
+        {/* 3. Month Nav */}
         <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
           <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
           <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(currentDate, 'MMM/yyyy', { locale: ptBR })}</span>
           <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
         </div>
 
-        {/* 3. Status */}
+        {/* 4. Status */}
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -296,7 +301,7 @@ export const TasksPage: React.FC = () => {
           <option value="done">Concluído</option>
         </select>
 
-        {/* 4. Priority */}
+        {/* 5. Priority */}
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
@@ -309,7 +314,7 @@ export const TasksPage: React.FC = () => {
           <option value="urgent">Urgente</option>
         </select>
 
-        {/* 5. Assignee */}
+        {/* 6. Assignee */}
         <select
           value={filterAssignee}
           onChange={(e) => setFilterAssignee(e.target.value)}
@@ -321,7 +326,8 @@ export const TasksPage: React.FC = () => {
           ))}
         </select>
 
-        {/* 6. View Toggle */}
+
+        {/* 7. View Toggle */}
         <div className="flex bg-card border border-border rounded-lg p-0.5">
           <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
             <LayoutList size={16} />
@@ -330,6 +336,17 @@ export const TasksPage: React.FC = () => {
             <Kanban size={16} />
           </button>
         </div>
+
+        {/* 8. Manage Stages - Only in Board View */}
+        {view === 'board' && (
+          <button
+            onClick={() => setIsStageManagerOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px] whitespace-nowrap"
+          >
+            <Settings size={14} />
+            Etapas
+          </button>
+        )}
       </div>
 
       {/* Content Area */}
@@ -347,6 +364,9 @@ export const TasksPage: React.FC = () => {
                 onDelete={requestDelete}
                 onTaskClick={setSelectedTask}
                 canMove={canEdit}
+                hideHeader={true}
+                isStageManagerOpen={isStageManagerOpen}
+                onCloseStageManager={() => setIsStageManagerOpen(false)}
               />
             </KanbanProvider>
           )}

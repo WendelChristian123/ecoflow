@@ -18,6 +18,8 @@ import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBo
 import { KanbanHeader } from '../components/Kanban/KanbanHeader';
 import { ProjectCard } from '../components/Projects/ProjectCard';
 import { TaskCard } from '../components/Tasks/TaskCard';
+import { Settings } from 'lucide-react';
+import { StageManagerModal } from '../components/Kanban/StageManagerModal';
 
 const ProjectKanbanWithContext: React.FC<{
   projects: Project[];
@@ -25,7 +27,10 @@ const ProjectKanbanWithContext: React.FC<{
   onDelete: (id: string) => void;
   onClick: (project: Project) => void;
   canMove: boolean;
-}> = ({ projects, users, onDelete, onClick, canMove }) => {
+  hideHeader?: boolean;
+  isStageManagerOpen: boolean;
+  onCloseStageManager: () => void;
+}> = ({ projects, users, onDelete, onClick, canMove, hideHeader, isStageManagerOpen, onCloseStageManager }) => {
   const { currentKanban } = useKanban();
 
   const groupByStage = (entities: Project[], stageId: string) => {
@@ -33,32 +38,38 @@ const ProjectKanbanWithContext: React.FC<{
     const stage = currentKanban.stages.find(s => s.id === stageId);
     return entities.filter(p => {
       if (p.kanbanStageId === stageId) return true;
-      // Fallback: Map 'systemStatus' to 'status'
       if (!p.kanbanStageId && stage?.systemStatus && p.status === stage.systemStatus) return true;
       return false;
     });
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <KanbanHeader />
-      <div className="flex-1 min-h-0">
-        <GenericKanbanBoard
-          entities={projects}
-          groupByStage={groupByStage}
-          renderCard={(project: Project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              users={users}
-              onClick={onClick}
-              onDelete={onDelete}
-              canMove={canMove}
-            />
-          )}
-        />
+    <>
+      <div className="flex flex-col h-full">
+        {!hideHeader && <KanbanHeader />}
+        <div className="flex-1 min-h-0">
+          <GenericKanbanBoard
+            entities={projects}
+            groupByStage={groupByStage}
+            renderCard={(project: Project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                users={users}
+                onClick={onClick}
+                onDelete={onDelete}
+                canMove={canMove}
+              />
+            )}
+          />
+        </div>
       </div>
-    </div>
+
+      <StageManagerModal
+        isOpen={isStageManagerOpen}
+        onClose={onCloseStageManager}
+      />
+    </>
   );
 };
 
@@ -83,7 +94,7 @@ const ProjectTasksKanban: React.FC<{
 
   return (
     <div className="flex flex-col h-full">
-      <KanbanHeader />
+      {/* Removed Internal KanbanHeader to use Main Toolbar */}
       <div className="flex-1 min-h-0">
         <GenericKanbanBoard
           entities={tasks}
@@ -130,13 +141,16 @@ export const ProjectsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  // Separate stage manager state for Tasks in Project Detail View
+  const [isTaskStageManagerOpen, setIsTaskStageManagerOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>(undefined);
 
   // Standardized Filters State
-  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'board'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'board'>('grid');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState('all');
   const [memberFilter, setMemberFilter] = useState('all');
+  const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
   // No priority for projects
 
   useEffect(() => {
@@ -434,6 +448,17 @@ export const ProjectsPage: React.FC = () => {
                 <Kanban size={16} />
               </button>
             </div>
+
+            {/* 7. Manage Stages - Same Row */}
+            {detailViewMode === 'board' && (
+              <button
+                onClick={() => setIsTaskStageManagerOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px] whitespace-nowrap"
+              >
+                <Settings size={14} />
+                Etapas
+              </button>
+            )}
           </div>
         </div>
 
@@ -446,6 +471,10 @@ export const ProjectsPage: React.FC = () => {
                 onDelete={handleDeleteTask}
                 onTaskClick={setSelectedTask}
                 canMove={true} // Detail view usually allows move
+              />
+              <StageManagerModal
+                isOpen={isTaskStageManagerOpen}
+                onClose={() => setIsTaskStageManagerOpen(false)}
               />
             </KanbanProvider>
           ) : (
@@ -488,14 +517,14 @@ export const ProjectsPage: React.FC = () => {
   return (
     <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
 
-      {/* Standardized Header */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 shrink-0">
+      {/* Header with Controls */}
+      <div className="flex flex-col gap-4 mb-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Projetos</h1>
           <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto padding-b-2">
           {/* Search */}
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -510,41 +539,19 @@ export const ProjectsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex bg-card border border-border rounded-lg p-0.5 ml-2">
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <LayoutList size={16} />
-            </button>
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <span className="text-xs font-bold px-1">Grid</span>
-            </button>
-            <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <Kanban size={16} />
-            </button>
-          </div>
-
+          {/* New Button */}
           <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
-            <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
+            <Plus size={16} /> Novo
           </Button>
+
+
+          {/* View Toggle Removed */}
+
+          {/* View Toggle Removed - Only Grid View Available */}
         </div>
       </div>
 
-      {viewMode === 'board' ? (
-        <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
-          <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true} onEntityMove={() => loadData(false)}>
-            <ProjectKanbanWithContext
-              projects={filteredProjects}
-              users={users}
-              onDelete={(id) => {
-                // We need project object for handleDeleteProject
-                const proj = projects.find(p => p.id === id);
-                if (proj) handleDeleteProject({ stopPropagation: () => { } } as any, proj);
-              }}
-              onClick={setSelectedProject}
-              canMove={user?.role === 'admin'}
-            />
-          </KanbanProvider>
-        </div>
-      ) : viewMode === 'grid' ? (
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
           {filteredProjects.map(project => (
             <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
@@ -624,64 +631,7 @@ export const ProjectsPage: React.FC = () => {
             <span className="font-medium">Criar Novo Projeto</span>
           </button>
         </div>
-      ) : (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-left text-sm text-muted-foreground">
-            <thead className="bg-secondary text-foreground font-medium uppercase text-xs">
-              <tr>
-                <th className="p-4">Projeto</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Progresso</th>
-                <th className="p-4">Prazo</th>
-                <th className="p-4">Membros</th>
-                <th className="p-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredProjects.map(p => (
-                <tr key={p.id} onClick={() => setSelectedProject(p)} className="hover:bg-muted/50 cursor-pointer transition-colors">
-                  <td className="p-4 font-medium text-foreground">{p.name}</td>
-                  <td className="p-4">
-                    <Badge variant={p.status === 'active' ? 'success' : p.status === 'completed' ? 'default' : 'neutral'}>
-                      {translateStatus(p.status)}
-                    </Badge>
-                  </td>
-                  <td className="p-4 w-48">
-                    <div className="flex items-center gap-2">
-                      <ProgressBar progress={calculateProgress(p.id)} className="flex-1" />
-                      <span className="text-xs">{calculateProgress(p.id)}%</span>
-                    </div>
-                  </td>
-                  <td className="p-4">{p.dueDate ? format(parseISO(p.dueDate), 'dd/MM/yyyy') : '-'}</td>
-                  <td className="p-4">
-                    <div className="flex -space-x-2">
-                      {p.members.slice(0, 3).map(memberId => {
-                        const u = users.find(user => user.id === memberId);
-                        return u ? (
-                          <div key={u.id} className="ring-2 ring-card rounded-full">
-                            <Avatar size="sm" src={u.avatarUrl} name={u.name} />
-                          </div>
-                        ) : null;
-                      })}
-                      {p.members.length > 3 && (
-                        <div className="h-6 w-6 rounded-full bg-secondary ring-2 ring-card flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                          +{p.members.length - 3}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-4 text-right">
-                    <button className="p-2 hover:bg-secondary rounded text-muted-foreground hover:text-foreground"><ChevronRight size={16} /></button>
-                  </td>
-                </tr>
-              ))}
-              {filteredProjects.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Nenhum projeto encontrado.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </div>
 
       <ProjectModal
         isOpen={isModalOpen}
@@ -703,6 +653,6 @@ export const ProjectsPage: React.FC = () => {
           });
         }}
       />
-    </div>
+    </div >
   );
 };
