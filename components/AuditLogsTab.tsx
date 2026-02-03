@@ -173,27 +173,27 @@ export const AuditLogsTab: React.FC = () => {
             <div className="flex flex-col gap-4">
                 {/* Header */}
                 <div>
-                    <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-foreground dark:text-white flex items-center gap-2">
                         <ShieldAlert size={20} className="text-indigo-500" />
                         Registro de Auditoria
                     </h2>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                         Histórico completo de segurança e atividades sensíveis no sistema.
                     </p>
                 </div>
 
                 {/* Filters Bar */}
-                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <div className="bg-secondary/30 dark:bg-slate-800/50 p-4 rounded-xl border border-border dark:border-slate-700/50 flex flex-col lg:flex-row gap-4 items-center justify-between">
 
                     {/* Search */}
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 flex items-center gap-2 focus-within:ring-1 focus-within:ring-indigo-500 w-full lg:w-64">
-                        <Search size={14} className="text-slate-500" />
+                    <div className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 flex items-center gap-2 focus-within:ring-1 focus-within:ring-indigo-500 w-full lg:w-64">
+                        <Search size={14} className="text-muted-foreground dark:text-slate-500" />
                         <input
                             type="text"
                             placeholder="Buscar logs, ref..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="bg-transparent border-none outline-none text-sm text-white placeholder-slate-500 w-full"
+                            className="bg-transparent border-none outline-none text-sm text-foreground dark:text-white placeholder-muted-foreground dark:placeholder-slate-500 w-full"
                         />
                     </div>
 
@@ -201,22 +201,22 @@ export const AuditLogsTab: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
 
                         {/* Improved Date Filter */}
-                        <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 gap-3 group focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
-                            <Calendar size={14} className="text-slate-500 group-focus-within:text-indigo-500" />
+                        <div className="flex items-center bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 gap-3 group focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+                            <Calendar size={14} className="text-muted-foreground dark:text-slate-500 group-focus-within:text-indigo-500" />
                             <div className="flex items-center gap-2">
                                 <input
                                     type="date"
                                     value={dateFrom}
                                     onChange={e => setDateFrom(e.target.value)}
-                                    className="bg-transparent text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert w-24 cursor-pointer"
+                                    className="bg-transparent text-xs text-foreground dark:text-white outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert-0 w-24 cursor-pointer"
                                     placeholder="Início"
                                 />
-                                <span className="text-slate-600 text-[10px] uppercase font-bold">Até</span>
+                                <span className="text-muted-foreground dark:text-slate-600 text-[10px] uppercase font-bold">Até</span>
                                 <input
                                     type="date"
                                     value={dateTo}
                                     onChange={e => setDateTo(e.target.value)}
-                                    className="bg-transparent text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert w-24 cursor-pointer"
+                                    className="bg-transparent text-xs text-foreground dark:text-white outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert-0 w-24 cursor-pointer"
                                     placeholder="Fim"
                                 />
                             </div>
@@ -227,19 +227,19 @@ export const AuditLogsTab: React.FC = () => {
                             <select
                                 value={selectedUser}
                                 onChange={e => setSelectedUser(e.target.value)}
-                                className="bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none min-w-[120px] cursor-pointer"
+                                className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-foreground dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none min-w-[120px] cursor-pointer"
                             >
                                 <option value="ALL">Todos Usuários</option>
                                 {uniqueUsers.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
-                            <UserIcon size={12} className="absolute left-2.5 top-2.5 text-slate-500 pointer-events-none" />
+                            <UserIcon size={12} className="absolute left-2.5 top-2.5 text-muted-foreground dark:text-slate-500 pointer-events-none" />
                         </div>
 
                         {/* Module Select */}
                         <select
                             value={selectedModule}
                             onChange={e => setSelectedModule(e.target.value)}
-                            className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer"
+                            className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-foreground dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer"
                         >
                             <option value="ALL">Todos Módulos</option>
                             {uniqueModules.map(m => <option key={m} value={m}>{m}</option>)}
@@ -249,7 +249,7 @@ export const AuditLogsTab: React.FC = () => {
                         <select
                             value={actionFilter}
                             onChange={e => setActionFilter(e.target.value as any)}
-                            className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none font-medium cursor-pointer"
+                            className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-foreground dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none font-medium cursor-pointer"
                         >
                             <option value="ALL">Todas as Ações</option>
                             <option value="CRITICAL">⚠️ Críticas</option>
@@ -270,7 +270,7 @@ export const AuditLogsTab: React.FC = () => {
                                     setSelectedModule('ALL');
                                     setActionFilter('ALL');
                                 }}
-                                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                className="p-2 hover:bg-secondary dark:hover:bg-slate-700 rounded-lg text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors"
                                 title="Limpar Filtros"
                             >
                                 <X size={16} />
@@ -280,10 +280,10 @@ export const AuditLogsTab: React.FC = () => {
                 </div>
             </div>
 
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden shadow-lg">
+            <div className="bg-secondary/30 dark:bg-slate-800/50 rounded-xl border border-border dark:border-slate-700/50 overflow-hidden shadow-lg">
                 <div className="overflow-x-auto min-h-[400px]">
-                    <table className="w-full text-left text-sm text-slate-400">
-                        <thead className="bg-slate-900/50 text-slate-200 uppercase text-xs font-semibold sticky top-0 z-10 backdrop-blur-sm">
+                    <table className="w-full text-left text-sm text-muted-foreground dark:text-slate-400">
+                        <thead className="bg-secondary dark:bg-slate-900/50 text-foreground dark:text-slate-200 uppercase text-xs font-semibold sticky top-0 z-10 backdrop-blur-sm">
                             <tr>
                                 <th className="px-4 py-3">Data / ID</th>
                                 <th className="px-4 py-3">Usuário</th>
@@ -292,11 +292,11 @@ export const AuditLogsTab: React.FC = () => {
                                 <th className="px-4 py-3">Descrição Detalhada</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-700/50">
+                        <tbody className="divide-y divide-border dark:divide-slate-700/50">
                             {filteredLogs.map(log => (
                                 <tr
                                     key={log.id}
-                                    className="hover:bg-slate-700/30 transition-colors cursor-pointer group"
+                                    className="hover:bg-secondary/50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group"
                                     onClick={() => {
                                         if (log.recordId) {
                                             setSelectedRecordId(log.recordId);
@@ -306,10 +306,10 @@ export const AuditLogsTab: React.FC = () => {
                                 >
                                     <td className="px-4 py-3 whitespace-nowrap">
                                         <div className="flex flex-col">
-                                            <div className="flex items-center gap-2 text-slate-300 font-medium group-hover:text-indigo-400 transition-colors">
+                                            <div className="flex items-center gap-2 text-foreground dark:text-slate-300 font-medium group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                                 {format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm')}
                                             </div>
-                                            <div className="text-[9px] font-mono text-slate-600 mt-0.5" title="ID Imutável">
+                                            <div className="text-[9px] font-mono text-muted-foreground dark:text-slate-600 mt-0.5" title="ID Imutável">
                                                 {log.id.split('-')[0]}
                                             </div>
                                         </div>
@@ -318,13 +318,13 @@ export const AuditLogsTab: React.FC = () => {
                                         <div className="flex items-center gap-2">
                                             <Avatar src={log.user?.avatarUrl} name={log.user?.name || '?'} size="sm" />
                                             <div>
-                                                <div className="font-medium text-white text-xs whitespace-nowrap">{log.user?.name || 'Sistema'}</div>
-                                                <div className="text-[10px] text-slate-500">{log.user?.role === 'admin' ? 'Administrador' : 'Usuário'}</div>
+                                                <div className="font-medium text-foreground dark:text-white text-xs whitespace-nowrap">{log.user?.name || 'Sistema'}</div>
+                                                <div className="text-[10px] text-muted-foreground dark:text-slate-500">{log.user?.role === 'admin' ? 'Administrador' : 'Usuário'}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <span className="text-[10px] font-bold tracking-wider text-slate-400 bg-slate-900/50 px-2 py-1 rounded border border-slate-800 uppercase whitespace-nowrap">
+                                        <span className="text-[10px] font-bold tracking-wider text-muted-foreground dark:text-slate-400 bg-secondary dark:bg-slate-900/50 px-2 py-1 rounded border border-border dark:border-slate-800 uppercase whitespace-nowrap">
                                             {getModule(log.tableName)}
                                         </span>
                                     </td>
@@ -334,16 +334,16 @@ export const AuditLogsTab: React.FC = () => {
                                         </Badge>
                                     </td>
                                     <td className="px-4 py-3 w-full">
-                                        <div className="text-sm text-slate-200 leading-relaxed break-words">
+                                        <div className="text-sm text-foreground dark:text-slate-200 leading-relaxed break-words">
                                             {log.description || '-'}
                                         </div>
                                         {/* Friendly Ref Name displayed here */}
                                         {log.recordId && (
-                                            <div className="text-[10px] text-slate-600 mt-1 font-mono flex items-center gap-1 group-hover:opacity-100 transition-opacity">
+                                            <div className="text-[10px] text-muted-foreground dark:text-slate-600 mt-1 font-mono flex items-center gap-1 group-hover:opacity-100 transition-opacity">
                                                 <span className='opacity-70'>Ref:</span>
-                                                <span className='text-slate-500'>{getFriendlyTableName(log.tableName)}</span>
+                                                <span className='text-muted-foreground dark:text-slate-500'>{getFriendlyTableName(log.tableName)}</span>
                                                 <span className='opacity-50'>#{log.recordId.split('-')[0]}</span>
-                                                <ChevronRight size={10} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
+                                                <ChevronRight size={10} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 dark:text-indigo-400" />
                                             </div>
                                         )}
                                     </td>
@@ -352,8 +352,8 @@ export const AuditLogsTab: React.FC = () => {
                         </tbody>
                     </table>
                     {filteredLogs.length === 0 && (
-                        <div className="text-center py-20 text-slate-500 italic flex flex-col items-center gap-3">
-                            <div className="bg-slate-800/50 p-4 rounded-full">
+                        <div className="text-center py-20 text-muted-foreground dark:text-slate-500 italic flex flex-col items-center gap-3">
+                            <div className="bg-secondary dark:bg-slate-800/50 p-4 rounded-full">
                                 <Search size={24} className="opacity-50" />
                             </div>
                             <p>Nenhum registro encontrado para estes filtros.</p>
@@ -366,7 +366,7 @@ export const AuditLogsTab: React.FC = () => {
                                     setSelectedModule('ALL');
                                     setActionFilter('ALL');
                                 }}
-                                className="text-xs text-indigo-400 hover:text-indigo-300 underline"
+                                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline"
                             >
                                 Limpar filtros
                             </button>
@@ -375,7 +375,7 @@ export const AuditLogsTab: React.FC = () => {
                 </div>
             </div>
 
-            <div className="text-center text-[10px] text-slate-600">
+            <div className="text-center text-[10px] text-muted-foreground dark:text-slate-600">
                 Exibindo últimos {logs.length} registros. Para auditoria profunda, exporte os dados.
             </div>
 

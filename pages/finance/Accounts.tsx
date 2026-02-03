@@ -98,7 +98,7 @@ export const FinancialAccounts: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-foreground dark:text-white flex items-center gap-3">
                     <Wallet className="text-emerald-500" /> Contas & Bancos
                 </h1>
                 <Button className="gap-2" onClick={handleCreate}>
@@ -108,19 +108,19 @@ export const FinancialAccounts: React.FC = () => {
 
             {/* Summary */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 flex items-center justify-between">
+                <div className="bg-secondary/50 dark:bg-slate-800 p-6 rounded-xl border border-border dark:border-slate-700 flex items-center justify-between">
                     <div>
-                        <span className="text-slate-400 text-sm font-medium uppercase">Total de Contas</span>
-                        <div className="text-3xl font-bold text-white mt-1">{accounts.length}</div>
+                        <span className="text-muted-foreground dark:text-slate-400 text-sm font-medium uppercase">Total de Contas</span>
+                        <div className="text-3xl font-bold text-foreground dark:text-white mt-1">{accounts.length}</div>
                     </div>
-                    <div className="p-3 bg-slate-700/50 rounded-lg text-slate-400"><Landmark size={24} /></div>
+                    <div className="p-3 bg-secondary dark:bg-slate-700/50 rounded-lg text-muted-foreground dark:text-slate-400"><Landmark size={24} /></div>
                 </div>
-                <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 flex items-center justify-between">
+                <div className="bg-secondary/50 dark:bg-slate-800 p-6 rounded-xl border border-border dark:border-slate-700 flex items-center justify-between">
                     <div>
-                        <span className="text-slate-400 text-sm font-medium uppercase">Saldo Total Consolidado</span>
-                        <div className="text-3xl font-bold text-emerald-400 mt-1">{fmt(totalBalance)}</div>
+                        <span className="text-muted-foreground dark:text-slate-400 text-sm font-medium uppercase">Saldo Total Consolidado</span>
+                        <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{fmt(totalBalance)}</div>
                     </div>
-                    <div className="p-3 bg-slate-700/50 rounded-lg text-emerald-400"><DollarSign size={24} /></div>
+                    <div className="p-3 bg-emerald-500/10 dark:bg-slate-700/50 rounded-lg text-emerald-600 dark:text-emerald-400"><DollarSign size={24} /></div>
                 </div>
             </div>
 
@@ -181,13 +181,13 @@ export const FinancialAccounts: React.FC = () => {
                             </div>
 
                             <div>
-                                <h3 className="text-lg font-semibold text-white mb-1">{acc.name}</h3>
-                                <p className="text-sm text-slate-500 capitalize">{acc.type === 'checking' ? 'Conta Corrente' : acc.type === 'savings' ? 'Poupança' : acc.type === 'investment' ? 'Investimento' : 'Caixa'}</p>
+                                <h3 className="text-lg font-semibold text-foreground dark:text-white mb-1">{acc.name}</h3>
+                                <p className="text-sm text-muted-foreground capitalize">{acc.type === 'checking' ? 'Conta Corrente' : acc.type === 'savings' ? 'Poupança' : acc.type === 'investment' ? 'Investimento' : 'Caixa'}</p>
                             </div>
 
-                            <div className="pt-4 border-t border-slate-700/50 flex justify-between items-end">
-                                <span className="text-xs text-slate-500">Saldo Atual</span>
-                                <span className="text-xl font-bold text-slate-200">{fmt(balance)}</span>
+                            <div className="pt-4 border-t border-border dark:border-slate-700/50 flex justify-between items-end">
+                                <span className="text-xs text-muted-foreground">Saldo Atual</span>
+                                <span className="text-xl font-bold text-foreground dark:text-slate-200">{fmt(balance)}</span>
                             </div>
                         </Card>
                     );
