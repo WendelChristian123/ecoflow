@@ -104,9 +104,9 @@ export const TasksPage: React.FC = () => {
     }
   }, [loading, tasks, location.state]);
 
-  const loadData = async () => {
+  const loadData = async (showLoading = true) => {
     if (!currentTenant) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const [t, u, p, tm, delegatorIds] = await Promise.all([
         api.getTasks(currentTenant.id),
@@ -340,7 +340,7 @@ export const TasksPage: React.FC = () => {
               Nenhuma tarefa encontrada com os filtros atuais.
             </div>
           ) : (
-            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true}>
+            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
               <TaskKanbanWithContext
                 tasks={filteredTasks}
                 users={users}

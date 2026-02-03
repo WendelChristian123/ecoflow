@@ -259,9 +259,11 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                 <td>
                                     ${t.isPaid
                     ? '<span style="color: #10b981; font-weight: bold;">Realizado</span>'
-                    : isBefore(transactionDate, startOfDay(new Date()))
-                        ? '<span style="color: #ef4444; font-weight: bold;">Atrasado</span>'
-                        : '<span style="color: #f59e0b; font-weight: bold;">Pendente</span>'
+                    : t.creditCardId
+                        ? '<span style="color: #10b981; font-weight: bold;">Pago via Cartão</span>'
+                        : isBefore(transactionDate, startOfDay(new Date()))
+                            ? '<span style="color: #ef4444; font-weight: bold;">Atrasado</span>'
+                            : '<span style="color: #f59e0b; font-weight: bold;">Pendente</span>'
                 }
                                 </td>
                                 <td class="text-right">
@@ -426,14 +428,14 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                                 {renderAccountInfo(t)}
                                             </td>
                                             <td className="px-6 py-4 text-center align-top pt-5">
-                                                <Badge variant={t.isPaid ? 'success' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'error' : 'warning'} className="px-3 py-1">
-                                                    {t.isPaid ? 'Realizado' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'Atrasado' : 'Pendente'}
+                                                <Badge variant={t.isPaid ? 'success' : t.creditCardId ? 'success' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'error' : 'warning'} className="px-3 py-1">
+                                                    {t.isPaid ? 'Realizado' : t.creditCardId ? 'Pago via Cartão' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'Atrasado' : 'Pendente'}
                                                 </Badge>
                                             </td>
                                             <td className="px-6 py-4 text-right align-top pt-5">
                                                 <div className={`text-lg font-bold tabular-nums ${t.type === 'transfer' ? 'text-blue-400' :
-                                                        (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? 'text-yellow-400' :
-                                                            t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
+                                                    (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? 'text-yellow-400' :
+                                                        t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
                                                     }`}>
                                                     {t.type === 'expense' || t.type === 'transfer' ? '-' : ''}{fmt(t.amount)}
                                                 </div>

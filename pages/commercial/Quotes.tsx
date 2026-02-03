@@ -46,8 +46,8 @@ export const QuotesPage: React.FC = () => {
 
     useEffect(() => { loadData(); }, []);
 
-    const loadData = async () => {
-        setLoading(true);
+    const loadData = async (showLoading = true) => {
+        if (showLoading) setLoading(true);
         try {
             const [q, c, cat, fc, acc] = await Promise.all([
                 api.getQuotes(),
@@ -254,6 +254,7 @@ export const QuotesPage: React.FC = () => {
                         quotes={filteredQuotes}
                         onStatusChange={handleStatusChange}
                         onQuoteClick={(q) => { setEditingQuote(q); setIsModalOpen(true); }}
+                        onMove={() => loadData(false)}
                     />
                 </div>
             ) : (

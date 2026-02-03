@@ -154,8 +154,9 @@ export const ProjectsPage: React.FC = () => {
     }
   }, [projects, location.state]);
 
-  const loadData = async () => {
+  const loadData = async (showLoading = true) => {
     if (!currentTenant) return;
+    if (showLoading) setLoading(true);
     try {
       const [p, u, t, tk] = await Promise.all([
         api.getProjects(currentTenant.id),
@@ -438,7 +439,7 @@ export const ProjectsPage: React.FC = () => {
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
-            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true}>
+            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
               <ProjectTasksKanban
                 tasks={projectTasks}
                 users={users}
@@ -529,7 +530,7 @@ export const ProjectsPage: React.FC = () => {
 
       {viewMode === 'board' ? (
         <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
-          <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true}>
+          <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true} onEntityMove={() => loadData(false)}>
             <ProjectKanbanWithContext
               projects={filteredProjects}
               users={users}

@@ -155,7 +155,8 @@ export const TeamsPage: React.FC = () => {
     init();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [tk, t] = await Promise.all([api.getTasks(), api.getTeams()]);
       setTasks(tk);
@@ -390,7 +391,7 @@ export const TeamsPage: React.FC = () => {
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
-            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true}>
+            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
               <TeamTasksKanban
                 tasks={teamTasks}
                 users={users}
@@ -479,7 +480,7 @@ export const TeamsPage: React.FC = () => {
 
       {viewMode === 'board' ? (
         <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
-          <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true}>
+          <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true} onEntityMove={() => loadData(false)}>
             <TeamKanbanWithContext
               teams={filteredTeams}
               users={users}

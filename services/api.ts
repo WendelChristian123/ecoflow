@@ -1197,6 +1197,8 @@ export const api = {
             validUntil: q.valid_until,
             totalValue: q.total_value,
             tenantId: q.tenant_id,
+            kanbanId: q.kanban_id,
+            kanbanStageId: q.kanban_stage_id,
             // Deep map relations if necessary
             contact: q.contacts ? { ...q.contacts, fantasyName: q.contacts.fantasy_name } : undefined,
             items: q.quote_items.map((qi: any) => ({
@@ -1214,11 +1216,13 @@ export const api = {
             customer_name: q.customerName,
             customer_phone: q.customerPhone,
             status: q.status || 'draft',
-            date: q.date,
-            valid_until: q.validUntil,
+            date: sanitizeDate(q.date),
+            valid_until: sanitizeDate(q.validUntil),
             total_value: q.totalValue,
             notes: q.notes,
-            tenant_id: tenantId
+            tenant_id: tenantId,
+            kanban_id: uuidOrNull(q.kanbanId),
+            kanban_stage_id: uuidOrNull(q.kanbanStageId)
         }]).select().single();
 
         if (qError) throw qError;
@@ -1243,8 +1247,10 @@ export const api = {
             contact_id: uuidOrNull(q.contactId),
             status: q.status,
             total_value: q.totalValue,
-            valid_until: q.validUntil,
-            notes: q.notes
+            valid_until: sanitizeDate(q.validUntil),
+            notes: q.notes,
+            kanban_id: uuidOrNull(q.kanbanId),
+            kanban_stage_id: uuidOrNull(q.kanbanStageId)
         }).eq('id', q.id);
         if (error) throw error;
 

@@ -318,7 +318,11 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
-                setFormData({ ...initialData, date: initialData.date.substring(0, 10) });
+                setFormData({
+                    ...initialData,
+                    date: initialData.date?.substring(0, 10) || '',
+                    validUntil: initialData.validUntil?.substring(0, 10) || ''
+                });
                 setItems(initialData.items || []);
                 setIsGuest(!initialData.contactId);
             } else {

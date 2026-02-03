@@ -12,6 +12,7 @@ interface QuoteKanbanProps {
     quotes: Quote[];
     onStatusChange: (quoteId: string, newStatus: string) => void;
     onQuoteClick: (quote: Quote) => void;
+    onMove?: () => void;
 }
 
 const QuoteKanbanContent: React.FC<QuoteKanbanProps> = ({ quotes, onQuoteClick }) => {
@@ -57,6 +58,7 @@ export const QuoteKanban: React.FC<QuoteKanbanProps> = (props) => {
                 // But props.onStatusChange expects a status string, not stageId
                 // We might rely on the context to handle the DB update
                 console.log('Moved', id, stageId);
+                if (props.onMove) props.onMove();
             }}
         >
             <QuoteKanbanContent {...props} />
