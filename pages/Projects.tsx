@@ -20,7 +20,10 @@ import { ProjectCard } from '../components/Projects/ProjectCard';
 import { TaskCard } from '../components/Tasks/TaskCard';
 import { Settings } from 'lucide-react';
 import { StageManagerModal } from '../components/Kanban/StageManagerModal';
+<<<<<<< HEAD
 import { FilterSelect } from '../components/FilterSelect';
+=======
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
 
 const ProjectKanbanWithContext: React.FC<{
   projects: Project[];
@@ -29,9 +32,13 @@ const ProjectKanbanWithContext: React.FC<{
   onClick: (project: Project) => void;
   canMove: boolean;
   hideHeader?: boolean;
+<<<<<<< HEAD
   isStageManagerOpen: boolean;
   onCloseStageManager: () => void;
 }> = ({ projects, users, onDelete, onClick, canMove, hideHeader, isStageManagerOpen, onCloseStageManager }) => {
+=======
+}> = ({ projects, users, onDelete, onClick, canMove, hideHeader }) => {
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
   const { currentKanban } = useKanban();
 
   const groupByStage = (entities: Project[], stageId: string) => {
@@ -45,6 +52,7 @@ const ProjectKanbanWithContext: React.FC<{
   };
 
   return (
+<<<<<<< HEAD
     <>
       <div className="flex flex-col h-full">
         {!hideHeader && <KanbanHeader />}
@@ -64,6 +72,25 @@ const ProjectKanbanWithContext: React.FC<{
             )}
           />
         </div>
+=======
+    <div className="flex flex-col h-full">
+      {!hideHeader && <KanbanHeader />}
+      <div className="flex-1 min-h-0">
+        <GenericKanbanBoard
+          entities={projects}
+          groupByStage={groupByStage}
+          renderCard={(project: Project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              users={users}
+              onClick={onClick}
+              onDelete={onDelete}
+              canMove={canMove}
+            />
+          )}
+        />
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
       </div>
 
       <StageManagerModal
@@ -527,7 +554,11 @@ export const ProjectsPage: React.FC = () => {
     <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
 
       {/* Header with Controls */}
+<<<<<<< HEAD
       <div className="flex flex-col gap-4 mb-4 shrink-0">
+=======
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Projetos</h1>
           <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
@@ -548,6 +579,7 @@ export const ProjectsPage: React.FC = () => {
             />
           </div>
 
+<<<<<<< HEAD
           {/* Member Filter */}
           <FilterSelect
             label="MEMBRO"
@@ -574,6 +606,57 @@ export const ProjectsPage: React.FC = () => {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+=======
+          {/* New Button */}
+          <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
+            <Plus size={16} /> Novo
+          </Button>
+
+          {/* View Toggle */}
+          <div className="flex bg-card border border-border rounded-lg p-0.5">
+            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <LayoutList size={16} />
+            </button>
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <span className="text-xs font-bold px-1">Grid</span>
+            </button>
+            <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Kanban size={16} />
+            </button>
+          </div>
+
+          {/* Manage Stages - Only in Board View */}
+          {viewMode === 'board' && (
+            <button
+              onClick={() => setIsStageManagerOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px]"
+            >
+              <Settings size={14} />
+              Gerenciar Etapas
+            </button>
+          )}
+        </div>
+      </div>
+
+      {viewMode === 'board' ? (
+        <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
+          <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+            <ProjectKanbanWithContext
+              projects={filteredProjects}
+              users={users}
+              onDelete={(id) => {
+                // We need project object for handleDeleteProject
+                const proj = projects.find(p => p.id === id);
+                if (proj) handleDeleteProject({ stopPropagation: () => { } } as any, proj);
+              }}
+              onClick={setSelectedProject}
+              canMove={user?.role === 'admin'}
+              hideHeader={true}
+            />
+          </KanbanProvider>
+        </div>
+      ) : viewMode === 'grid' ? (
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
           {filteredProjects.map(project => (
             <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
@@ -675,6 +758,15 @@ export const ProjectsPage: React.FC = () => {
           });
         }}
       />
+<<<<<<< HEAD
     </div >
+=======
+
+      <StageManagerModal
+        isOpen={isStageManagerOpen}
+        onClose={() => setIsStageManagerOpen(false)}
+      />
+    </div>
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
   );
 };

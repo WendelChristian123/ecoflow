@@ -26,9 +26,13 @@ const TaskKanbanWithContext: React.FC<{
   onTaskClick: (task: Task) => void;
   canMove: boolean;
   hideHeader?: boolean;
+<<<<<<< HEAD
   isStageManagerOpen: boolean;
   onCloseStageManager: () => void;
 }> = ({ tasks, users, onDelete, onTaskClick, canMove, hideHeader, isStageManagerOpen, onCloseStageManager }) => {
+=======
+}> = ({ tasks, users, onDelete, onTaskClick, canMove, hideHeader }) => {
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
   const { currentKanban } = useKanban();
 
   const groupByStage = (entities: Task[], stageId: string) => {
@@ -42,6 +46,7 @@ const TaskKanbanWithContext: React.FC<{
   };
 
   return (
+<<<<<<< HEAD
     <>
       <div className="flex flex-col h-full">
         {!hideHeader && <KanbanHeader />}
@@ -61,6 +66,25 @@ const TaskKanbanWithContext: React.FC<{
             )}
           />
         </div>
+=======
+    <div className="flex flex-col h-full">
+      {!hideHeader && <KanbanHeader />}
+      <div className="flex-1 min-h-0">
+        <GenericKanbanBoard
+          entities={tasks}
+          groupByStage={groupByStage}
+          renderCard={(task: Task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              users={users}
+              onClick={onTaskClick}
+              onDelete={onDelete}
+              canMove={canMove}
+            />
+          )}
+        />
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
       </div>
 
       <StageManagerModal
@@ -259,7 +283,11 @@ export const TasksPage: React.FC = () => {
     // FULL HEIGHT CONTAINER
     <div className="h-full flex flex-col gap-4">
       {/* Filters Bar with Actions */}
+<<<<<<< HEAD
       <div className="flex flex-nowrap items-center gap-2 mb-4 shrink-0 overflow-x-auto">
+=======
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
         {/* 1. Search */}
         <div className="relative mr-auto">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -326,7 +354,10 @@ export const TasksPage: React.FC = () => {
           ))}
         </select>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
         {/* 7. View Toggle */}
         <div className="flex bg-card border border-border rounded-lg p-0.5">
           <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -341,10 +372,17 @@ export const TasksPage: React.FC = () => {
         {view === 'board' && (
           <button
             onClick={() => setIsStageManagerOpen(true)}
+<<<<<<< HEAD
             className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px] whitespace-nowrap"
           >
             <Settings size={14} />
             Etapas
+=======
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px]"
+          >
+            <Settings size={14} />
+            Gerenciar Etapas
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
           </button>
         )}
       </div>
@@ -365,8 +403,11 @@ export const TasksPage: React.FC = () => {
                 onTaskClick={setSelectedTask}
                 canMove={canEdit}
                 hideHeader={true}
+<<<<<<< HEAD
                 isStageManagerOpen={isStageManagerOpen}
                 onCloseStageManager={() => setIsStageManagerOpen(false)}
+=======
+>>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
               />
             </KanbanProvider>
           )}
@@ -428,6 +469,11 @@ export const TasksPage: React.FC = () => {
       />
 
       <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={executeDelete} title="Excluir Tarefa" />
+
+      <StageManagerModal
+        isOpen={isStageManagerOpen}
+        onClose={() => setIsStageManagerOpen(false)}
+      />
     </div>
   );
 };
