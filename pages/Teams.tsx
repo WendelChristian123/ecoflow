@@ -14,6 +14,7 @@ import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
 import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
 import { KanbanHeader } from '../components/Kanban/KanbanHeader';
 import { TeamCard } from '../components/Teams/TeamCard';
+import { FilterSelect } from '../components/FilterSelect';
 import { TaskCard } from '../components/Tasks/TaskCard';
 import { Settings } from 'lucide-react';
 import { StageManagerModal } from '../components/Kanban/StageManagerModal';
@@ -345,43 +346,54 @@ export const TeamsPage: React.FC = () => {
               </div>
 
               {/* Status */}
-              <select
-                className="bg-card border border-input text-foreground text-xs rounded-lg px-2 py-1.5 outline-none"
+
+              {/* Status Filter */}
+              <FilterSelect
+                label="STATUS"
                 value={detailFilterStatus}
-                onChange={(e) => setDetailFilterStatus(e.target.value)}
-              >
-                <option value="all">Status: Todos</option>
-                <option value="todo">A Fazer</option>
-                <option value="in_progress">Em Progresso</option>
-                <option value="review">Revisão</option>
-                <option value="done">Concluído</option>
-              </select>
+                onChange={setDetailFilterStatus}
+                options={[
+                  { value: 'all', label: 'Todos Status' },
+                  { value: 'todo', label: 'A Fazer' },
+                  { value: 'in_progress', label: 'Em Progresso' },
+                  { value: 'review', label: 'Revisão' },
+                  { value: 'done', label: 'Concluído' },
+                ]}
+                className="w-36"
+                placeholder="Status"
+              />
 
               {/* Priority */}
-              <select
-                className="bg-card border border-input text-foreground text-xs rounded-lg px-2 py-1.5 outline-none"
+              <FilterSelect
+                label="PRIORIDADE"
                 value={detailFilterPriority}
-                onChange={(e) => setDetailFilterPriority(e.target.value)}
-              >
-                <option value="all">Prioridade: Todas</option>
-                <option value="low">Baixa</option>
-                <option value="medium">Média</option>
-                <option value="high">Alta</option>
-                <option value="urgent">Urgente</option>
-              </select>
+                onChange={setDetailFilterPriority}
+                options={[
+                  { value: 'all', label: 'Todas Prioridades' },
+                  { value: 'low', label: 'Baixa' },
+                  { value: 'medium', label: 'Média' },
+                  { value: 'high', label: 'Alta' },
+                  { value: 'urgent', label: 'Urgente' },
+                ]}
+                className="w-36"
+                placeholder="Prioridade"
+              />
 
               {/* Assignee Filter */}
-              <select
-                className="bg-card border border-input text-foreground text-xs rounded-lg px-2 py-1.5 outline-none"
+              <FilterSelect
+                label="RESPONSÁVEL"
                 value={detailFilterAssignee}
-                onChange={(e) => setDetailFilterAssignee(e.target.value)}
-              >
-                <option value="all">Membro: Todos</option>
-                {selectedTeam.memberIds.map(memberId => {
-                  const member = users.find(u => u.id === memberId);
-                  return member ? <option key={member.id} value={member.id}>{member.name}</option> : null;
-                })}
-              </select>
+                onChange={setDetailFilterAssignee}
+                options={[
+                  { value: 'all', label: 'Membro: Todos' },
+                  ...selectedTeam.memberIds.map(memberId => {
+                    const member = users.find(u => u.id === memberId);
+                    return member ? { value: member.id, label: member.name, avatarUrl: member.avatarUrl } : null;
+                  }).filter(Boolean) as any[]
+                ]}
+                className="w-40"
+                placeholder="Responsável"
+              />
 
               {/* View Toggle */}
               <div className="flex bg-card rounded-lg border border-border p-0.5">

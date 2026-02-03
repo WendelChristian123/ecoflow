@@ -20,6 +20,7 @@ import { ProjectCard } from '../components/Projects/ProjectCard';
 import { TaskCard } from '../components/Tasks/TaskCard';
 import { Settings } from 'lucide-react';
 import { StageManagerModal } from '../components/Kanban/StageManagerModal';
+import { FilterSelect } from '../components/FilterSelect';
 
 const ProjectKanbanWithContext: React.FC<{
   projects: Project[];
@@ -402,42 +403,50 @@ export const ProjectsPage: React.FC = () => {
             </div>
 
             {/* 3. Status */}
-            <select
+            <FilterSelect
+              label="STATUS"
               value={detailFilterStatus}
-              onChange={(e) => setDetailFilterStatus(e.target.value)}
-              className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none"
-            >
-              <option value="all">Status: Todos</option>
-              <option value="todo">A Fazer</option>
-              <option value="in_progress">Em Progresso</option>
-              <option value="review">Revisão</option>
-              <option value="done">Concluído</option>
-            </select>
+              onChange={setDetailFilterStatus}
+              options={[
+                { value: 'all', label: 'Todos Status' },
+                { value: 'todo', label: 'A Fazer' },
+                { value: 'in_progress', label: 'Em Progresso' },
+                { value: 'review', label: 'Revisão' },
+                { value: 'done', label: 'Concluído' },
+              ]}
+              className="w-36"
+              placeholder="Status"
+            />
 
             {/* 4. Priority */}
-            <select
+            <FilterSelect
+              label="PRIORIDADE"
               value={detailFilterPriority}
-              onChange={(e) => setDetailFilterPriority(e.target.value)}
-              className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none"
-            >
-              <option value="all">Prioridade: Todas</option>
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-              <option value="urgent">Urgente</option>
-            </select>
+              onChange={setDetailFilterPriority}
+              options={[
+                { value: 'all', label: 'Todas Prioridades' },
+                { value: 'low', label: 'Baixa' },
+                { value: 'medium', label: 'Média' },
+                { value: 'high', label: 'Alta' },
+                { value: 'urgent', label: 'Urgente' },
+              ]}
+              className="w-36"
+              placeholder="Prioridade"
+            />
 
             {/* 5. Assignee */}
-            <select
+            {/* 5. Assignee */}
+            <FilterSelect
+              label="RESPONSÁVEL"
               value={detailFilterAssignee}
-              onChange={(e) => setDetailFilterAssignee(e.target.value)}
-              className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none max-w-[140px]"
-            >
-              <option value="all">Resp: Todos</option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
+              onChange={setDetailFilterAssignee}
+              options={[
+                { value: 'all', label: 'Todos' },
+                ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+              ]}
+              className="w-40"
+              placeholder="Responsável"
+            />
 
             {/* 6. View Toggle */}
             <div className="flex bg-card border border-border rounded-lg p-0.5">
@@ -538,6 +547,19 @@ export const ProjectsPage: React.FC = () => {
               className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
             />
           </div>
+
+          {/* Member Filter */}
+          <FilterSelect
+            label="MEMBRO"
+            value={memberFilter}
+            onChange={setMemberFilter}
+            options={[
+              { value: 'all', label: 'Todos Membros' },
+              ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+            ]}
+            className="w-48"
+            placeholder="Membros"
+          />
 
           {/* New Button */}
           <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>

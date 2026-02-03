@@ -12,6 +12,7 @@ import { startOfMonth, endOfMonth, isSameMonth, addMonths, subMonths, format, pa
 import { ptBR } from 'date-fns/locale';
 import { Select } from '../../components/Shared';
 import { QuoteKanban } from '../../components/Commercial/QuoteKanban';
+import { FilterSelect } from '../../components/FilterSelect';
 import { translateQuoteStatus } from '../../utils/i18n';
 import { LayoutGrid, List } from 'lucide-react';
 import { FinancialCategory, FinancialAccount, RecurringService } from '../../types';
@@ -216,17 +217,21 @@ export const QuotesPage: React.FC = () => {
                 </div>
 
                 {/* 4. Status */}
-                <select
+                {/* 4. Status */}
+                <FilterSelect
+                    label="STATUS"
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none w-36"
-                >
-                    <option value="all">Todos Status</option>
-                    <option value="draft">Rascunhos</option>
-                    <option value="sent">Enviados</option>
-                    <option value="approved">Aprovados</option>
-                    <option value="rejected">Rejeitados</option>
-                </select>
+                    onChange={setStatusFilter}
+                    options={[
+                        { value: 'all', label: 'Todos Status' },
+                        { value: 'draft', label: 'Rascunhos' },
+                        { value: 'sent', label: 'Enviados' },
+                        { value: 'approved', label: 'Aprovados' },
+                        { value: 'rejected', label: 'Rejeitados' }
+                    ]}
+                    className="w-36"
+                    placeholder="Status"
+                />
 
                 {/* 5. View Toggle */}
                 <div className="flex bg-card border border-border rounded-lg p-0.5">

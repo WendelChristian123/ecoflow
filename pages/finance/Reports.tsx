@@ -4,7 +4,8 @@ import { api } from '../../services/api';
 import { FinancialTransaction, FinancialCategory } from '../../types';
 import { Loader, Card, Button } from '../../components/Shared';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Printer, PieChart as PieChartIcon } from 'lucide-react';
+import { Printer, PieChart as PieChartIcon, Calendar } from 'lucide-react';
+import { FilterSelect } from '../../components/FilterSelect';
 import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths, parseISO, endOfDay } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
@@ -91,16 +92,20 @@ export const FinancialReports: React.FC = () => {
                 </h1>
 
                 <div className="flex items-center gap-2">
-                    <select
-                        className="bg-card border border-input text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring shadow-sm"
+                    <FilterSelect
+                        label="PERÍODO"
                         value={filterPeriod}
-                        onChange={(e) => setFilterPeriod(e.target.value as any)}
-                    >
-                        <option value="current" className="bg-card text-foreground">Este Mês</option>
-                        <option value="last" className="bg-card text-foreground">Mês Passado</option>
-                        <option value="custom" className="bg-card text-foreground">Personalizado</option>
-                        <option value="all" className="bg-card text-foreground">Todo o Período</option>
-                    </select>
+                        onChange={(val) => setFilterPeriod(val as any)}
+                        options={[
+                            { value: 'current', label: 'Este Mês' },
+                            { value: 'last', label: 'Mês Passado' },
+                            { value: 'custom', label: 'Personalizado' },
+                            { value: 'all', label: 'Todo o Período' }
+                        ]}
+                        className="w-48"
+                        icon={<Calendar size={14} />}
+                        placeholder="Período"
+                    />
                     {filterPeriod === 'custom' && (
                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
                             <input

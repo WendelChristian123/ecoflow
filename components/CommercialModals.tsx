@@ -1,7 +1,8 @@
 
 import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, Button, Select, Textarea, Badge, CurrencyInput } from './Shared';
+import { Modal, Input, Button, Textarea, Badge, CurrencyInput } from './Shared';
+import { FilterSelect } from './FilterSelect';
 import { Contact, CatalogItem, RecurringService, Quote, FinancialCategory, FinancialAccount, ContactScope, PersonType, CatalogType, QuoteItem, Kanban, KanbanStage } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { kanbanService } from '../services/kanbanService';
@@ -117,18 +118,30 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, onS
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="text-xs text-slate-400 mb-1 block">Tipo de Parceiro</label>
-                        <Select value={formData.scope} onChange={e => setFormData({ ...formData, scope: e.target.value as ContactScope })}>
-                            <option value="client">Cliente</option>
-                            <option value="supplier">Fornecedor</option>
-                            <option value="both">Ambos</option>
-                        </Select>
+                        <FilterSelect
+                            value={formData.scope}
+                            onChange={(val) => setFormData({ ...formData, scope: val as ContactScope })}
+                            options={[
+                                { value: 'client', label: 'Cliente' },
+                                { value: 'supplier', label: 'Fornecedor' },
+                                { value: 'both', label: 'Ambos' }
+                            ]}
+                            className="w-full"
+                            triggerClassName="w-full justify-between"
+                        />
                     </div>
                     <div>
                         <label className="text-xs text-slate-400 mb-1 block">Tipo de Pessoa</label>
-                        <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as PersonType })}>
-                            <option value="pj">Pessoa Jurídica</option>
-                            <option value="pf">Pessoa Física</option>
-                        </Select>
+                        <FilterSelect
+                            value={formData.type}
+                            onChange={(val) => setFormData({ ...formData, type: val as PersonType })}
+                            options={[
+                                { value: 'pj', label: 'Pessoa Jurídica' },
+                                { value: 'pf', label: 'Pessoa Física' }
+                            ]}
+                            className="w-full"
+                            triggerClassName="w-full justify-between"
+                        />
                     </div>
                 </div>
 
@@ -202,10 +215,16 @@ export const CatalogModal: React.FC<CatalogModalProps> = ({ isOpen, onClose, onS
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="text-xs text-slate-400 mb-1 block">Tipo</label>
-                    <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as CatalogType })}>
-                        <option value="service">Serviço</option>
-                        <option value="product">Produto</option>
-                    </Select>
+                    <FilterSelect
+                        value={formData.type}
+                        onChange={(val) => setFormData({ ...formData, type: val as CatalogType })}
+                        options={[
+                            { value: 'service', label: 'Serviço' },
+                            { value: 'product', label: 'Produto' }
+                        ]}
+                        className="w-full"
+                        triggerClassName="w-full justify-between"
+                    />
                 </div>
                 <Input label="Nome" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
 
@@ -213,14 +232,14 @@ export const CatalogModal: React.FC<CatalogModalProps> = ({ isOpen, onClose, onS
                     <CurrencyInput label="Valor Base" value={formData.price} onValueChange={(val) => setFormData({ ...formData, price: val || 0 })} />
                     <div>
                         <label className="text-xs text-slate-400 mb-1 block">Categoria Financeira (Receita)</label>
-                        <Select
+                        <FilterSelect
                             value={formData.financialCategoryId || ''}
-                            onChange={e => setFormData({ ...formData, financialCategoryId: e.target.value })}
-                            required
-                        >
-                            <option value="">Selecione...</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </Select>
+                            onChange={(val) => setFormData({ ...formData, financialCategoryId: val })}
+                            options={categories.map(c => ({ value: c.id, label: c.name }))}
+                            className="w-full"
+                            triggerClassName="w-full justify-between"
+                            placeholder="Selecione..."
+                        />
                     </div>
                 </div>
 
@@ -403,13 +422,17 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                         </div>
 
                         {!isGuest ? (
-                            <Select value={formData.contactId} onChange={e => {
-                                const c = contacts.find(contact => contact.id === e.target.value);
-                                setFormData({ ...formData, contactId: e.target.value, customerName: c?.name });
-                            }}>
-                                <option value="">Selecione um cliente...</option>
-                                {contacts.filter(c => c.scope !== 'supplier').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </Select>
+                            <FilterSelect
+                                value={formData.contactId}
+                                onChange={(val) => {
+                                    const c = contacts.find(contact => contact.id === val);
+                                    setFormData({ ...formData, contactId: val, customerName: c?.name });
+                                }}
+                                options={contacts.filter(c => c.scope !== 'supplier').map(c => ({ value: c.id, label: c.name }))}
+                                className="w-full"
+                                triggerClassName="w-full justify-between"
+                                placeholder="Selecione um cliente..."
+                            />
                         ) : (
                             <div className="space-y-2">
                                 <Input placeholder="Nome do Cliente (Prospect)" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value, contactId: '' })} required />
@@ -425,16 +448,24 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs text-muted-foreground mb-1 block">Funil (Kanban)</label>
-                                <Select value={formData.kanbanId || ''} onChange={e => setFormData({ ...formData, kanbanId: e.target.value, kanbanStageId: '' })}>
-                                    {kanbans.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
-                                </Select>
+                                <FilterSelect
+                                    value={formData.kanbanId || ''}
+                                    onChange={(val) => setFormData({ ...formData, kanbanId: val, kanbanStageId: '' })}
+                                    options={kanbans.map(k => ({ value: k.id, label: k.name }))}
+                                    className="w-full"
+                                    triggerClassName="w-full justify-between"
+                                />
                             </div>
                             <div>
                                 <label className="text-xs text-muted-foreground mb-1 block">Etapa</label>
-                                <Select value={formData.kanbanStageId || ''} onChange={e => setFormData({ ...formData, kanbanStageId: e.target.value })}>
-                                    <option value="">Selecione...</option>
-                                    {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </Select>
+                                <FilterSelect
+                                    value={formData.kanbanStageId || ''}
+                                    onChange={(val) => setFormData({ ...formData, kanbanStageId: val })}
+                                    options={stages.map(s => ({ value: s.id, label: s.name }))}
+                                    className="w-full"
+                                    triggerClassName="w-full justify-between"
+                                    placeholder="Selecione..."
+                                />
                             </div>
                         </div>
 
@@ -446,15 +477,19 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Itens do Orçamento</h3>
                         <div className="flex gap-2">
-                            <Select className="w-48 py-1 text-xs" noArrow onChange={(e) => {
-                                if (e.target.value) {
-                                    addItem(catalog.find(i => i.id === e.target.value));
-                                    e.target.value = "";
-                                }
-                            }}>
-                                <option value="">+ Adicionar do Catálogo</option>
-                                {catalog.map(i => <option key={i.id} value={i.id}>{i.name} - R$ {i.price}</option>)}
-                            </Select>
+                            <FilterSelect
+                                value=""
+                                onChange={(val) => {
+                                    if (val) {
+                                        addItem(catalog.find(i => i.id === val));
+                                        // Reset handled by value=""
+                                    }
+                                }}
+                                options={[{ value: '', label: '+ Adicionar do Catálogo' }, ...catalog.map(i => ({ value: i.id, label: `${i.name} - R$ ${i.price}` }))]}
+                                className="w-56"
+                                triggerClassName="w-full justify-between text-xs py-1 h-9"
+                                placeholder="+ Adicionar do Catálogo"
+                            />
                             <Button type="button" size="sm" variant="secondary" onClick={() => addItem()}>+ Item Manual</Button>
                         </div>
                     </div>
@@ -725,10 +760,14 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                         <div className="max-w-sm mx-auto space-y-4">
                             <div>
                                 <label className="text-xs font-medium text-muted-foreground block mb-2">Cliente *</label>
-                                <Select value={formData.contactId} onChange={e => setFormData({ ...formData, contactId: e.target.value })} className="text-base">
-                                    <option value="">Selecione um cliente...</option>
-                                    {contacts.filter(c => c.scope !== 'supplier').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </Select>
+                                <FilterSelect
+                                    value={formData.contactId}
+                                    onChange={(val) => setFormData({ ...formData, contactId: val })}
+                                    options={contacts.filter(c => c.scope !== 'supplier').map(c => ({ value: c.id, label: c.name }))}
+                                    className="w-full text-base"
+                                    triggerClassName="w-full justify-between"
+                                    placeholder="Selecione um cliente..."
+                                />
                             </div>
                             <p className="text-center text-muted-foreground text-sm mt-6 bg-secondary/50 p-3 rounded-lg border border-border">💡 Selecione o cliente para iniciar o contrato</p>
                         </div>
@@ -747,14 +786,14 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                             <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
                                 <div>
                                     <label className="text-xs font-medium text-muted-foreground mb-2 block">Categoria Financeira (Setup) *</label>
-                                    <Select
+                                    <FilterSelect
                                         value={formData.setupCategoryId}
-                                        onChange={e => setFormData({ ...formData, setupCategoryId: e.target.value })}
-                                        required
-                                    >
-                                        <option value="">Selecione uma categoria...</option>
-                                        {financialCategories.filter(c => c.type === 'income').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </Select>
+                                        onChange={(val) => setFormData({ ...formData, setupCategoryId: val })}
+                                        options={financialCategories.filter(c => c.type === 'income').map(c => ({ value: c.id, label: c.name }))}
+                                        className="w-full"
+                                        triggerClassName="w-full justify-between"
+                                        placeholder="Selecione uma categoria..."
+                                    />
                                 </div>
 
                                 <div className="bg-card border border-border p-6 rounded-xl space-y-6">
@@ -836,25 +875,29 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
 
                                 <div>
                                     <label className="text-xs font-medium text-muted-foreground mb-2 block">Categoria Financeira (Recorrência) *</label>
-                                    <Select
+                                    <FilterSelect
                                         value={formData.financialCategoryId}
-                                        onChange={e => setFormData({ ...formData, financialCategoryId: e.target.value })}
-                                        required
-                                    >
-                                        <option value="">Selecione uma categoria...</option>
-                                        {financialCategories.filter(c => c.type === 'income').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </Select>
+                                        onChange={(val) => setFormData({ ...formData, financialCategoryId: val })}
+                                        options={financialCategories.filter(c => c.type === 'income').map(c => ({ value: c.id, label: c.name }))}
+                                        className="w-full"
+                                        triggerClassName="w-full justify-between"
+                                        placeholder="Selecione uma categoria..."
+                                    />
                                 </div>
 
                                 <div>
                                     <label className="text-xs font-medium text-muted-foreground mb-2 block">Conta Bancária (Recebimento)</label>
-                                    <Select
+                                    <FilterSelect
                                         value={formData.bankAccountId}
-                                        onChange={e => setFormData({ ...formData, bankAccountId: e.target.value })}
-                                    >
-                                        <option value="">Sem conta definida</option>
-                                        {bankAccounts?.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                    </Select>
+                                        onChange={(val) => setFormData({ ...formData, bankAccountId: val })}
+                                        options={[
+                                            { value: '', label: 'Sem conta definida' },
+                                            ...(bankAccounts || []).map(a => ({ value: a.id, label: a.name }))
+                                        ]}
+                                        className="w-full"
+                                        triggerClassName="w-full justify-between"
+                                        placeholder="Sem conta definida"
+                                    />
                                 </div>
 
                                 <div>
