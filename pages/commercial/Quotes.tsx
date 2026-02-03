@@ -185,212 +185,203 @@ export const QuotesPage: React.FC = () => {
 
     if (loading) return <Loader />;
 
-    return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background text-foreground">
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Orçamentos</h1>
-                    <p className="text-muted-foreground mt-1">Gerencie suas propostas comerciais</p>
+    return <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background text-foreground">
+        {/* Filters Bar with Actions */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+            {/* 1. Search */}
+            <div className="relative mr-auto">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Filter size={14} />
                 </div>
-                <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
-                    <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
-                </Button>
+                <input
+                    type="text"
+                    placeholder="Buscar..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                />
             </div>
 
-            {/* Filters Bar */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-                {/* 1. Search */}
-                <div className="relative mr-auto">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        <Filter size={14} />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Buscar..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
-                    />
-                </div>
+            {/* 2. New Button - Before Month */}
+            <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
+                <Plus size={16} /> Novo
+            </Button>
 
-                {/* 2. Month Nav */}
-                <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
-                    <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
-                    <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
-                    <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
-                </div>
-
-                {/* 3. Status */}
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none w-36"
-                >
-                    <option value="all">Todos Status</option>
-                    <option value="draft">Rascunhos</option>
-                    <option value="sent">Enviados</option>
-                    <option value="approved">Aprovados</option>
-                    <option value="rejected">Rejeitados</option>
-                </select>
-
-                {/* 4. View Toggle */}
-                <div className="flex bg-card border border-border rounded-lg p-0.5">
-                    <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                        <List size={16} />
-                    </button>
-                    <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                        <LayoutGrid size={16} />
-                    </button>
-                </div>
+            {/* 3. Month Nav */}
+            <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
+                <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
+                <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
+                <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
             </div>
 
+            {/* 4. Status */}
+            <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-card border-border text-foreground text-sm h-[34px] rounded-lg px-2 border focus:ring-1 focus:ring-primary outline-none w-36"
+            >
+                <option value="all">Todos Status</option>
+                <option value="draft">Rascunhos</option>
+                <option value="sent">Enviados</option>
+                <option value="approved">Aprovados</option>
+                <option value="rejected">Rejeitados</option>
+            </select>
+
+            {/* 5. View Toggle */}
+            <div className="flex bg-card border border-border rounded-lg p-0.5">
+                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                    <List size={16} />
+                </button>
+                <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded transition-all ${viewMode === 'kanban' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                    <LayoutGrid size={16} />
+                </button>
+            </div>
+        </div>
 
 
-
-            {viewMode === 'kanban' ? (
-                <div className="h-[calc(100vh-220px)]">
-                    <QuoteKanban
-                        quotes={filteredQuotes}
-                        onStatusChange={handleStatusChange}
-                        onQuoteClick={(q) => { setEditingQuote(q); setIsModalOpen(true); }}
-                        onMove={() => loadData(false)}
-                    />
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {filteredQuotes.length === 0 ? (
-                        <div className="text-center py-10 text-muted-foreground">Nenhum orçamento encontrado.</div>
-                    ) : filteredQuotes.map(q => (
-                        <div
-                            key={q.id}
-                            onClick={() => { setEditingQuote(q); setIsModalOpen(true); }}
-                            className="bg-card border border-border hover:border-primary/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative shadow-sm"
-                        >
-                            <div className="flex items-center gap-6">
-                                {/* Quote ID */}
-                                <div className="flex flex-col items-center justify-center h-12 w-16 bg-secondary rounded text-muted-foreground font-mono text-xs border border-border">
-                                    <span className="text-[10px] uppercase text-muted-foreground">COD</span>
-                                    <span className="font-bold text-foreground">#{q.id.substring(0, 4)}</span>
-                                </div>
-
-                                {/* Client Name */}
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-0.5">
-                                        <span className="text-xs text-muted-foreground font-medium uppercase">Cliente</span>
-                                        {!q.contactId && <Badge variant="neutral" className="py-0 px-1 text-[10px]">Convidado</Badge>}
-                                    </div>
-                                    <h3 className="font-bold text-foreground text-lg leading-none truncate max-w-[200px] md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
-                                </div>
+        {viewMode === 'kanban' ? (
+            <div className="h-[calc(100vh-220px)]">
+                <QuoteKanban
+                    quotes={filteredQuotes}
+                    onStatusChange={handleStatusChange}
+                    onQuoteClick={(q) => { setEditingQuote(q); setIsModalOpen(true); }}
+                    onMove={() => loadData(false)}
+                />
+            </div>
+        ) : (
+            <div className="space-y-3">
+                {filteredQuotes.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground">Nenhum orçamento encontrado.</div>
+                ) : filteredQuotes.map(q => (
+                    <div
+                        key={q.id}
+                        onClick={() => { setEditingQuote(q); setIsModalOpen(true); }}
+                        className="bg-card border border-border hover:border-primary/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative shadow-sm"
+                    >
+                        <div className="flex items-center gap-6">
+                            {/* Quote ID */}
+                            <div className="flex flex-col items-center justify-center h-12 w-16 bg-secondary rounded text-muted-foreground font-mono text-xs border border-border">
+                                <span className="text-[10px] uppercase text-muted-foreground">COD</span>
+                                <span className="font-bold text-foreground">#{q.id.substring(0, 4)}</span>
                             </div>
 
-                            <div className="flex items-center gap-8">
-                                {/* Dates */}
-                                <div className="hidden md:flex items-center gap-6 text-sm">
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-xs text-muted-foreground uppercase">Emissão</span>
-                                        <div className="flex items-center gap-1.5 text-foreground">
-                                            <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                                            {formatDate(q.date)}
-                                        </div>
-                                    </div>
-                                    <div className="h-8 w-px bg-border"></div>
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-xs text-muted-foreground uppercase">Vencimento</span>
-                                        <div className="flex items-center gap-1.5 text-foreground">
-                                            <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                                            {formatDate(q.validUntil)}
-                                        </div>
-                                    </div>
+                            {/* Client Name */}
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-xs text-muted-foreground font-medium uppercase">Cliente</span>
+                                    {!q.contactId && <Badge variant="neutral" className="py-0 px-1 text-[10px]">Convidado</Badge>}
                                 </div>
-
-                                {/* Value & Status */}
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <div className="text-xs text-muted-foreground uppercase">{q.items?.length || 0} itens</div>
-                                        <div className="text-lg font-bold text-emerald-500">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}
-                                        </div>
-                                    </div>
-                                    <div onClick={(e) => e.stopPropagation()} className="w-32">
-                                        <select
-                                            value={q.status}
-                                            onChange={(e) => handleStatusChange(q.id, e.target.value)}
-                                            className={`
-                                                w-full appearance-none text-xs font-bold px-3 py-1.5 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
-                                                ${q.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' :
-                                                    q.status === 'sent' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' :
-                                                        q.status === 'rejected' || q.status === 'expired' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' :
-                                                            'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}
-                                            `}
-                                        >
-                                            <option value="draft" className="bg-popover text-muted-foreground">Rascunho</option>
-                                            <option value="sent" className="bg-popover text-amber-500">Enviado</option>
-                                            <option value="approved" className="bg-popover text-emerald-500">Aprovado</option>
-                                            <option value="rejected" className="bg-popover text-rose-500">Rejeitado</option>
-                                            <option value="expired" className="bg-popover text-rose-500">Expirado</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Actions Overlay */}
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(q.id); }}
-                                    className="p-1.5 bg-secondary hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500 rounded transition-colors"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
+                                <h3 className="font-bold text-foreground text-lg leading-none truncate max-w-[200px] md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
 
-            <QuoteModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={(savedQuote) => {
-                    loadData();
-                    if (savedQuote && savedQuote.status === 'approved') {
-                        // Small delay to ensure modal close animation allows seeing the new one? Not strictly necessary.
-                        // We pass the savedQuote directly
-                        handleApprovalFlow(savedQuote);
-                    }
-                }}
-                contacts={contacts}
-                catalog={catalog}
-                initialData={editingQuote}
-            />
+                        <div className="flex items-center gap-8">
+                            {/* Dates */}
+                            <div className="hidden md:flex items-center gap-6 text-sm">
+                                <div className="flex flex-col items-start">
+                                    <span className="text-xs text-muted-foreground uppercase">Emissão</span>
+                                    <div className="flex items-center gap-1.5 text-foreground">
+                                        <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                                        {formatDate(q.date)}
+                                    </div>
+                                </div>
+                                <div className="h-8 w-px bg-border"></div>
+                                <div className="flex flex-col items-start">
+                                    <span className="text-xs text-muted-foreground uppercase">Vencimento</span>
+                                    <div className="flex items-center gap-1.5 text-foreground">
+                                        <Calendar className="w-3.5 h-3.5 text-rose-500" />
+                                        {formatDate(q.validUntil)}
+                                    </div>
+                                </div>
+                            </div>
 
-            <QuoteApprovalModal
-                isOpen={isApprovalModalOpen}
-                onClose={() => setIsApprovalModalOpen(false)}
-                onOptionSelected={handleApprovalDecision}
-            />
+                            {/* Value & Status */}
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-xs text-muted-foreground uppercase">{q.items?.length || 0} itens</div>
+                                    <div className="text-lg font-bold text-emerald-500">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}
+                                    </div>
+                                </div>
+                                <div onClick={(e) => e.stopPropagation()} className="w-32">
+                                    <select
+                                        value={q.status}
+                                        onChange={(e) => handleStatusChange(q.id, e.target.value)}
+                                        className={`
+                                                w-full appearance-none text-xs font-bold px-3 py-1.5 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
+                                                ${q.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' :
+                                                q.status === 'sent' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' :
+                                                    q.status === 'rejected' || q.status === 'expired' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' :
+                                                        'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}
+                                            `}
+                                    >
+                                        <option value="draft" className="bg-popover text-muted-foreground">Rascunho</option>
+                                        <option value="sent" className="bg-popover text-amber-500">Enviado</option>
+                                        <option value="approved" className="bg-popover text-emerald-500">Aprovado</option>
+                                        <option value="rejected" className="bg-popover text-rose-500">Rejeitado</option>
+                                        <option value="expired" className="bg-popover text-rose-500">Expirado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
-            <TransactionModal
-                isOpen={isTransactionModalOpen}
-                onClose={() => setIsTransactionModalOpen(false)}
-                onSuccess={() => { loadData(); /* Maybe navigate to finance? */ }}
-                contacts={contacts}
-                categories={financialCategories}
-                accounts={accounts}
-                initialData={transactionInitialData}
-            />
+                        {/* Actions Overlay */}
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(q.id); }}
+                                className="p-1.5 bg-secondary hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500 rounded transition-colors"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
 
-            <RecurringModal
-                isOpen={isRecurringModalOpen}
-                onClose={() => setIsRecurringModalOpen(false)}
-                onSave={loadData}
-                contacts={contacts}
-                catalog={catalog}
-                financialCategories={financialCategories}
-                bankAccounts={accounts}
-                initialData={recurringInitialData}
-            />
-            <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={handleDelete} title="Excluir Orçamento" />
-        </div>
+        <QuoteModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={(savedQuote) => {
+                loadData();
+                if (savedQuote && savedQuote.status === 'approved') {
+                    // Small delay to ensure modal close animation allows seeing the new one? Not strictly necessary.
+                    // We pass the savedQuote directly
+                    handleApprovalFlow(savedQuote);
+                }
+            }}
+            contacts={contacts}
+            catalog={catalog}
+            initialData={editingQuote}
+        />
+
+        <QuoteApprovalModal
+            isOpen={isApprovalModalOpen}
+            onClose={() => setIsApprovalModalOpen(false)}
+            onOptionSelected={handleApprovalDecision}
+        />
+
+        <TransactionModal
+            isOpen={isTransactionModalOpen}
+            onClose={() => setIsTransactionModalOpen(false)}
+            onSuccess={() => { loadData(); /* Maybe navigate to finance? */ }}
+            contacts={contacts}
+            categories={financialCategories}
+            accounts={accounts}
+            initialData={transactionInitialData}
+        />
+
+        <RecurringModal
+            isOpen={isRecurringModalOpen}
+            onClose={() => setIsRecurringModalOpen(false)}
+            onSave={loadData}
+            contacts={contacts}
+            catalog={catalog}
+            financialCategories={financialCategories}
+            bankAccounts={accounts}
+            initialData={recurringInitialData}
+        />
+        <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={handleDelete} title="Excluir Orçamento" />
+    </div>
     );
 };

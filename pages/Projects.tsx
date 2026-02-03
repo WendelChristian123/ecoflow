@@ -18,6 +18,8 @@ import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBo
 import { KanbanHeader } from '../components/Kanban/KanbanHeader';
 import { ProjectCard } from '../components/Projects/ProjectCard';
 import { TaskCard } from '../components/Tasks/TaskCard';
+import { Settings } from 'lucide-react';
+import { StageManagerModal } from '../components/Kanban/StageManagerModal';
 
 const ProjectKanbanWithContext: React.FC<{
   projects: Project[];
@@ -25,7 +27,8 @@ const ProjectKanbanWithContext: React.FC<{
   onDelete: (id: string) => void;
   onClick: (project: Project) => void;
   canMove: boolean;
-}> = ({ projects, users, onDelete, onClick, canMove }) => {
+  hideHeader?: boolean;
+}> = ({ projects, users, onDelete, onClick, canMove, hideHeader }) => {
   const { currentKanban } = useKanban();
 
   const groupByStage = (entities: Project[], stageId: string) => {
@@ -41,7 +44,7 @@ const ProjectKanbanWithContext: React.FC<{
 
   return (
     <div className="flex flex-col h-full">
-      <KanbanHeader />
+      {!hideHeader && <KanbanHeader />}
       <div className="flex-1 min-h-0">
         <GenericKanbanBoard
           entities={projects}
@@ -137,6 +140,7 @@ export const ProjectsPage: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState('all');
   const [memberFilter, setMemberFilter] = useState('all');
+  const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
   // No priority for projects
 
   useEffect(() => {
@@ -488,8 +492,8 @@ export const ProjectsPage: React.FC = () => {
   return (
     <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
 
-      {/* Standardized Header */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 shrink-0">
+      {/* Header with Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Projetos</h1>
           <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
@@ -510,7 +514,13 @@ export const ProjectsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex bg-card border border-border rounded-lg p-0.5 ml-2">
+          {/* New Button */}
+          <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
+            <Plus size={16} /> Novo
+          </Button>
+
+          {/* View Toggle */}
+          <div className="flex bg-card border border-border rounded-lg p-0.5">
             <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
               <LayoutList size={16} />
             </button>
@@ -522,9 +532,16 @@ export const ProjectsPage: React.FC = () => {
             </button>
           </div>
 
-          <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
-            <Plus size={16} /> <span className="hidden sm:inline">Novo</span>
-          </Button>
+          {/* Manage Stages - Only in Board View */}
+          {viewMode === 'board' && (
+            <button
+              onClick={() => setIsStageManagerOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px]"
+            >
+              <Settings size={14} />
+              Gerenciar Etapas
+            </button>
+          )}
         </div>
       </div>
 
@@ -541,6 +558,7 @@ export const ProjectsPage: React.FC = () => {
               }}
               onClick={setSelectedProject}
               canMove={user?.role === 'admin'}
+              hideHeader={true}
             />
           </KanbanProvider>
         </div>
@@ -702,6 +720,11 @@ export const ProjectsPage: React.FC = () => {
             // But for "Duplicate", keeping it is safer than empty.
           });
         }}
+      />
+
+      <StageManagerModal
+        isOpen={isStageManagerOpen}
+        onClose={() => setIsStageManagerOpen(false)}
       />
     </div>
   );

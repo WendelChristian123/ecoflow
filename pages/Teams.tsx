@@ -15,6 +15,8 @@ import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBo
 import { KanbanHeader } from '../components/Kanban/KanbanHeader';
 import { TeamCard } from '../components/Teams/TeamCard';
 import { TaskCard } from '../components/Tasks/TaskCard';
+import { Settings } from 'lucide-react';
+import { StageManagerModal } from '../components/Kanban/StageManagerModal';
 
 const TeamKanbanWithContext: React.FC<{
   teams: Team[];
@@ -23,9 +25,10 @@ const TeamKanbanWithContext: React.FC<{
   onEdit: (team: Team, e: React.MouseEvent) => void;
   onClick: (team: Team) => void;
   canMove: boolean;
-  valETarget: any; // unused
+  valETarget: any;
   isAdmin: boolean;
-}> = ({ teams, users, onDelete, onEdit, onClick, canMove, isAdmin }) => {
+  hideHeader?: boolean;
+}> = ({ teams, users, onDelete, onEdit, onClick, canMove, isAdmin, hideHeader }) => {
   const { currentKanban } = useKanban();
 
   const groupByStage = (entities: Team[], stageId: string) => {
@@ -37,7 +40,7 @@ const TeamKanbanWithContext: React.FC<{
 
   return (
     <div className="flex flex-col h-full">
-      <KanbanHeader />
+      {!hideHeader && <KanbanHeader />}
       <div className="flex-1 min-h-0">
         <GenericKanbanBoard
           entities={teams}
@@ -131,6 +134,7 @@ export const TeamsPage: React.FC = () => {
   const [showDetailMonthFilter, setShowDetailMonthFilter] = useState(true);
   const [detailFilterAssignee, setDetailFilterAssignee] = useState<string>('all');
   const [detailFilterPriority, setDetailFilterPriority] = useState<string>('all');
+  const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
 
 
   useEffect(() => {
@@ -448,8 +452,8 @@ export const TeamsPage: React.FC = () => {
   return (
     <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
 
-      {/* Standardized Header */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4 shrink-0">
+      {/* Header with Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Equipes</h1>
           <p className="text-muted-foreground mt-1">Gerencie suas equipes e membros</p>
@@ -457,7 +461,7 @@ export const TeamsPage: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Search */}
-          <div className="relative mr-auto">
+          <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Filter size={14} />
             </div>
@@ -470,11 +474,34 @@ export const TeamsPage: React.FC = () => {
             />
           </div>
 
-
-
+          {/* New Button */}
           <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={handleCreate}>
-            <Plus size={16} /> <span className="hidden sm:inline">Nova</span>
+            <Plus size={16} /> Nova
           </Button>
+
+          {/* View Toggle */}
+          <div className="flex bg-card border border-border rounded-lg p-0.5">
+            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <LayoutList size={16} />
+            </button>
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <span className="text-xs font-bold px-1">Grid</span>
+            </button>
+            <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Kanban size={16} />
+            </button>
+          </div>
+
+          {/* Manage Stages - Only in Board View */}
+          {viewMode === 'board' && (
+            <button
+              onClick={() => setIsStageManagerOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px]"
+            >
+              <Settings size={14} />
+              Gerenciar Etapas
+            </button>
+          )}
         </div>
       </div>
 
@@ -494,6 +521,7 @@ export const TeamsPage: React.FC = () => {
               canMove={['admin', 'owner', 'super_admin'].includes(user?.role || '')}
               valETarget={null}
               isAdmin={['admin', 'owner', 'super_admin'].includes(user?.role || '')}
+              hideHeader={true}
             />
           </KanbanProvider>
         </div>
@@ -656,6 +684,11 @@ export const TeamsPage: React.FC = () => {
             members: team.members || [] // Keep members or reset? User said "Campos Duplicados: ... Responsável (Task), Projeto...". For Teams: "Campos Duplicados: (Implied same approach)". I'll keep members.
           });
         }}
+      />
+
+      <StageManagerModal
+        isOpen={isStageManagerOpen}
+        onClose={() => setIsStageManagerOpen(false)}
       />
     </div>
   );
