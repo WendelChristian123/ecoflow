@@ -123,7 +123,11 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
 };
 
 
-export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ className, ...props }) => (
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  noArrow?: boolean;
+}
+
+export const Select: React.FC<SelectProps> = ({ className, noArrow, ...props }) => (
   <div className="relative w-full">
     <select
       className={cn(
@@ -132,9 +136,11 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
       )}
       {...props}
     />
-    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-    </div>
+    {!noArrow && (
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+      </div>
+    )}
   </div>
 );
 
@@ -219,21 +225,24 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
 
 
 // --- Badge ---
-export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral' | 'outline'; className?: string }> = ({ children, variant = 'default', className }) => {
+export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral' | 'outline' | 'info'; className?: string }> = ({ children, variant = 'default', className }) => {
   const styles = {
     default: 'bg-primary/10 text-primary border-primary/20',
-    success: 'bg-primary/10 text-primary border-primary/20', // Emerald -> Primary
-    warning: 'bg-secondary/10 text-secondary-foreground border-secondary/20', // Amber -> Secondary (Neutral/Dark)
-    error: 'bg-destructive/10 text-destructive border-destructive/20',
-    neutral: 'bg-muted text-muted-foreground border-border',
+    success: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20', // Green
+    warning: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20', // Orange
+    error: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20', // Red
+    neutral: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20', // Gray (Default fallback)
+    info: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20', // Blue
     outline: 'bg-transparent text-muted-foreground border-border',
   };
   return (
-    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border', styles[variant], className)}>
+    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border uppercase tracking-wider', styles[variant], className)}>
       {children}
     </span>
   );
 };
+
+
 // --- Avatar ---
 export const Avatar: React.FC<{ src?: string; name: string; size?: 'sm' | 'md' | 'lg' }> = ({ src, name, size = 'md' }) => {
   const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -262,6 +271,7 @@ export const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => (
     />
   </div>
 );
+
 // --- Card ---
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'glass' | 'solid' | 'outline';
@@ -269,16 +279,11 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Card: React.FC<CardProps> = ({ children, className, variant = 'solid', noPadding = false, onClick, ...props }) => {
-  // EcoFlow Card Standard 2.2 - Unified Style
-  // Dark: bg-slate-950 (via --card) + border-white/10
-  // Light: bg-white (via --card) + border-slate-200
-  // No distinct variants allowed anymore.
-
   return (
     <div
       onClick={onClick}
       className={cn(
-        "rounded-xl transition-all duration-200 bg-card border border-border shadow-premium", // White Card + Consistent Border + Premium Depth
+        "rounded-xl transition-all duration-200 bg-card border border-border shadow-premium",
         !noPadding && "p-5 md:p-6",
         onClick && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
         className
@@ -362,6 +367,7 @@ export const UserMultiSelect: React.FC<{ users: User[], selectedIds: string[], o
   );
 };
 
+
 // --- Task Table View ---
 export const TaskTableView: React.FC<{
   tasks: Task[],
@@ -374,11 +380,11 @@ export const TaskTableView: React.FC<{
 
   const getPriorityColor = (p: Priority) => {
     switch (p) {
-      case 'urgent': return 'error';
-      case 'high': return 'warning';
-      case 'medium': return 'neutral';
-      case 'low': return 'success';
-      default: return 'default';
+      case 'urgent': return 'error'; // Red
+      case 'high': return 'warning'; // Orange
+      case 'medium': return 'info'; // Blue
+      case 'low': return 'success'; // Green
+      default: return 'neutral';
     }
   };
 
@@ -393,17 +399,26 @@ export const TaskTableView: React.FC<{
   };
 
   const getRowClass = (task: Task) => {
-    if (task.status === 'done') return 'border-l-4 border-l-primary/30 opacity-60 bg-muted/10';
+    if (task.status === 'done') return 'border-l-4 border-l-emerald-500/30 opacity-60 bg-muted/10 grayscale';
+
+    if (!task.dueDate) return 'border-l-4 border-l-slate-300 bg-card hover:bg-slate-50';
+
     const dueDate = parseISO(task.dueDate);
     const now = new Date();
+
+    // VENCIDO (Ontem ou antes e não feito)
     if (isPast(dueDate) && !isToday(dueDate)) {
-      return 'border-l-4 border-l-destructive bg-card hover:bg-destructive/5';
+      return 'border-l-4 border-l-rose-500 bg-rose-500/10 dark:bg-rose-950/20 hover:bg-rose-500/20';
     }
+
     const diff = differenceInDays(dueDate, now);
-    if (diff <= 3 && diff >= 0) {
-      return 'border-l-4 border-l-secondary bg-card hover:bg-secondary/5';
+    // HOJE ou AMANHÃ
+    if (diff <= 1 && diff >= 0) {
+      return 'border-l-4 border-l-amber-500 bg-amber-500/5 hover:bg-amber-500/10';
     }
-    return 'border-l-4 border-l-primary bg-card hover:bg-primary/5';
+
+    // NO PRAZO
+    return 'border-l-4 border-l-emerald-500 bg-card hover:bg-emerald-500/5';
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>, taskId: string) => {
@@ -435,6 +450,9 @@ export const TaskTableView: React.FC<{
           ) : (
             tasks.map(task => {
               const assignee = getUser(task.assigneeId);
+
+              const isOverdue = task.status !== 'done' && task.dueDate && isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate));
+
               return (
                 <tr
                   key={task.id}
@@ -455,9 +473,9 @@ export const TaskTableView: React.FC<{
                         onChange={(e) => handleStatusChange(e, task.id)}
                         className={cn(
                           "appearance-none w-full text-xs font-semibold px-3 py-1.5 rounded-md border outline-none cursor-pointer pr-8 transition-colors shadow-sm",
-                          task.status === 'done' ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' :
-                            task.status === 'todo' ? 'bg-secondary text-secondary-foreground border-input hover:bg-secondary/80' :
-                              'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'
+                          task.status === 'done' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                            task.status === 'todo' ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 border-border' :
+                              'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
                         )}
                       >
                         <option value="todo" className="bg-popover text-popover-foreground">A Fazer</option>
@@ -482,7 +500,15 @@ export const TaskTableView: React.FC<{
                     ) : <span className="text-muted-foreground italic">--</span>}
                   </td>
                   <td className="px-6 py-4 text-xs font-medium text-foreground">
-                    {new Date(task.dueDate).toLocaleDateString('pt-BR')} <span className="text-muted-foreground ml-1">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div className="flex flex-col">
+                      <span>{new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                      {isOverdue && (
+                        <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mt-0.5">Vencido</span>
+                      )}
+                      {!isOverdue && (
+                        <span className="text-muted-foreground text-[10px]">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button

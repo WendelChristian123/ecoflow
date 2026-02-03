@@ -61,7 +61,7 @@ export const CatalogPage: React.FC = () => {
                     <div
                         key={i.id}
                         onClick={() => { setEditingItem(i); setIsModalOpen(true); }}
-                        className="bg-card border border-border hover:border-primary/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group shadow-sm"
+                        className="bg-[#ECFDF5] dark:bg-[#0F172A]/30 border border-[#0F172A]/10 dark:border-white/5 hover:border-primary/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group shadow-sm"
                     >
                         <div className="flex items-center gap-4">
                             {/* Type Indicator */}
@@ -75,7 +75,7 @@ export const CatalogPage: React.FC = () => {
                             {/* Info */}
                             <div>
                                 <div className="flex items-center gap-2 mb-0.5">
-                                    <h3 className="font-bold text-foreground text-base">{i.name}</h3>
+                                    <h3 className="font-bold text-foreground text-lg">{i.name}</h3>
                                     {!i.active && <Badge variant="error">Inativo</Badge>}
                                 </div>
                                 <p className="text-xs text-muted-foreground line-clamp-1">{i.description || 'Sem descrição'}</p>

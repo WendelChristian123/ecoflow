@@ -346,159 +346,155 @@ export const FinancialOverview: React.FC = () => {
 
             {/* BLOCO 1 - RESUMO */}
             {/* BLOCO 1 - KPIS (HIERARQUIA: SALDO > FLUXO > RESULTADO) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
-                {/* SALDO - PROTAGONISTA (PREMIUM CARD) */}
-                <div className="lg:col-span-4 bg-card border border-border p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-sm transition-all hover:shadow-md">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Wallet size={120} className="text-foreground" />
-                    </div>
-                    <div>
-                        <span className="text-muted-foreground text-sm font-bold uppercase tracking-wider">Saldo Atual</span>
-                        <div className="mt-4 text-4xl xl:text-5xl font-black text-foreground tracking-tighter">
-                            {fmt(currentBalance)}
-                        </div>
-                    </div>
-                    <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="w-2 h-2 rounded-full bg-primary"></div>
-                        <span>Soma de todas as contas</span>
-                    </div>
-                </div>
+            {/* COMPONENT AUXILIAR LOCAL */}
+            {(() => {
+                const FinanceStatCard = ({ title, value, icon, color, onClick, subtitle }: { title: string, value: string, icon: React.ReactNode, color: 'emerald' | 'rose' | 'amber' | 'slate' | 'blue', onClick?: () => void, subtitle?: string }) => {
+                    const themes = {
+                        emerald: { header: 'bg-emerald-500', text: 'text-emerald-500', border: 'hover:border-emerald-500/50' },
+                        rose: { header: 'bg-rose-500', text: 'text-rose-500', border: 'hover:border-rose-500/50' },
+                        amber: { header: 'bg-amber-500', text: 'text-amber-500', border: 'hover:border-amber-500/50' },
+                        slate: { header: 'bg-slate-500', text: 'text-slate-500', border: 'hover:border-slate-500/50' },
+                        blue: { header: 'bg-blue-500', text: 'text-blue-500', border: 'hover:border-blue-500/50' },
+                    };
+                    const theme = themes[color];
 
-
-                {/* FLUXO - SECUNDÁRIO */}
-                <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Card
-                        variant="solid"
-                        className="flex flex-col justify-center cursor-pointer hover:border-primary/30 group relative overflow-hidden"
-                        onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)}
-                    >
-                        <div className="flex items-center gap-3 mb-2 relative z-10">
-                            <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-                                <TrendingUp size={20} />
-                            </div>
-                            <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Receitas</span>
-                        </div>
-                        <div className="text-3xl font-black text-foreground group-hover:text-primary transition-colors tracking-tighter relative z-10">
-                            {fmt(realizedIncome)}
-                        </div>
-                    </Card>
-
-                    <Card
-                        variant="solid"
-                        className="flex flex-col justify-center cursor-pointer hover:border-destructive/30 group relative overflow-hidden"
-                        onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)}
-                    >
-                        <div className="flex items-center gap-3 mb-2 relative z-10">
-                            <div className="p-2 rounded-lg bg-destructive/10 text-destructive group-hover:bg-destructive/20 transition-colors">
-                                <TrendingDown size={20} />
-                            </div>
-                            <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Despesas</span>
-                        </div>
-                        <div className="text-3xl font-black text-foreground group-hover:text-destructive transition-colors tracking-tighter relative z-10">
-                            {fmt(realizedExpense)}
-                        </div>
-                    </Card>
-
-                    <Card variant="solid" className="flex flex-col justify-center">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className={cn("p-2 rounded-lg transition-colors",
-                                (realizedIncome - realizedExpense) > 0 ? "bg-primary/10 text-primary" :
-                                    (realizedIncome - realizedExpense) < 0 ? "bg-destructive/10 text-destructive" :
-                                        "bg-secondary text-secondary-foreground"
-                            )}>
-                                <DollarSign size={20} />
-                            </div>
-                            <span className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Resultado</span>
-                        </div>
-                        <div className={cn("text-3xl font-black tracking-tighter transition-colors",
-                            (realizedIncome - realizedExpense) > 0 ? "text-primary" :
-                                (realizedIncome - realizedExpense) < 0 ? "text-destructive" :
-                                    "text-foreground"
-                        )}>
-                            {fmt(realizedIncome - realizedExpense)}
-                        </div>
-                    </Card>
-                </div>
-            </div>
-
-            {/* BLOCO 2 - RISCO (ATRASADOS vs FUTUROS) */}
-            <div className="mb-10">
-                <div className="flex items-center gap-3 mb-4 pl-1">
-                    <div className="h-px bg-border flex-1"></div>
-                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                        <AlertCircle size={14} /> Fluxo de Caixa Previsto
-                    </h2>
-                    <div className="h-px bg-border flex-1"></div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* PAYABLES OVERDUE - ALARM */}
-                    <Card
-                        variant="solid"
-                        className="cursor-pointer hover:border-destructive/40 group relative overflow-hidden border-l-4 border-l-destructive"
-                        onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)}
-                    >
-                        <div className="relative z-10 flex flex-col h-full justify-between">
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="text-destructive text-[10px] font-bold uppercase tracking-wider">Pagamentos em Atraso</span>
-                                <AlertCircle size={16} className="text-destructive" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-black text-destructive group-hover:scale-105 transition-transform origin-left">
-                                    {fmt(payablesOverdue)}
+                    return (
+                        <div
+                            onClick={onClick}
+                            className={cn(
+                                "bg-card border border-border rounded-xl flex flex-col justify-between cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group shadow-sm",
+                                theme.border
+                            )}
+                        >
+                            {/* Header Colorido */}
+                            <div className={cn("px-4 py-3 flex items-center justify-between", theme.header)}>
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-white">{title}</span>
+                                <div className="p-1.5 rounded-md bg-white/20 text-white backdrop-blur-sm">
+                                    {icon}
                                 </div>
                             </div>
-                        </div>
-                    </Card>
-
-                    {/* PAYABLES FUTURE - QUIET */}
-                    <Card
-                        variant="solid"
-                        className="cursor-pointer hover:border-amber-500/40 group flex flex-col justify-between"
-                        onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)}
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pagamentos a Vencer (7d)</span>
-                            <Clock size={16} className="text-muted-foreground group-hover:text-secondary-foreground transition-colors" />
-                        </div>
-                        <div className="text-2xl font-bold text-foreground group-hover:text-secondary-foreground transition-colors">
-                            {fmt(payablesFuture)}
-                        </div>
-                    </Card>
-
-                    {/* RECEIVABLES OVERDUE - ALARM */}
-                    <Card
-                        variant="solid"
-                        className="cursor-pointer hover:border-destructive/40 group relative overflow-hidden border-l-4 border-l-destructive"
-                        onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))}
-                    >
-                        <div className="relative z-10 flex flex-col h-full justify-between">
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="text-destructive text-[10px] font-bold uppercase tracking-wider">Recebimentos em Atraso</span>
-                                <AlertCircle size={16} className="text-destructive" />
-                            </div>
-                            <div className="text-2xl font-black text-destructive group-hover:scale-105 transition-transform origin-left">
-                                {fmt(receivablesOverdue)}
+                            {/* Content */}
+                            <div className="p-6 pt-5 flex flex-col gap-1">
+                                <div className={cn("text-3xl font-black tracking-tighter transition-colors", theme.text)}>
+                                    {value}
+                                </div>
+                                {subtitle && <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-70">{subtitle}</span>}
                             </div>
                         </div>
-                    </Card>
+                    );
+                };
 
-                    {/* RECEIVABLES FUTURE - QUIET */}
-                    <Card
-                        variant="solid"
-                        className="cursor-pointer hover:border-primary/40 group flex flex-col justify-between"
-                        onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))}
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Recebimentos a Vencer (7d)</span>
-                            <Clock size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                return (
+                    <>
+                        {/* BLOCO 1 - RESUMO */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+                            {/* SALDO - PROTAGONISTA (Mantido layout especial mas alinhado) */}
+                            <div className="lg:col-span-4 bg-card border border-border p-0 rounded-xl flex flex-col justify-between relative overflow-hidden group shadow-sm transition-all hover:shadow-md hover:-translate-y-1">
+                                <div className="bg-slate-900 dark:bg-slate-800 p-6 flex justify-between items-start border-b border-white/5">
+                                    <div>
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Saldo Atual</span>
+                                        <div className="mt-2 text-4xl xl:text-5xl font-black text-white tracking-tighter">
+                                            {fmt(currentBalance)}
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                        <Wallet size={32} className="text-emerald-400" />
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-950/30 flex-1 flex items-center">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                        <span>Consolidado de todas as contas</span>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            {/* FLUXO - SECUNDÁRIO */}
+                            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <FinanceStatCard
+                                    title="Receitas"
+                                    value={fmt(realizedIncome)}
+                                    icon={<TrendingUp size={18} />}
+                                    color="emerald"
+                                    subtitle="Realizadas este mês"
+                                    onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)}
+                                />
+
+                                <FinanceStatCard
+                                    title="Despesas"
+                                    value={fmt(realizedExpense)}
+                                    icon={<TrendingDown size={18} />}
+                                    color="rose"
+                                    subtitle="Realizadas este mês"
+                                    onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)}
+                                />
+
+                                <FinanceStatCard
+                                    title="Resultado"
+                                    value={fmt(realizedIncome - realizedExpense)}
+                                    icon={<DollarSign size={18} />}
+                                    color={(realizedIncome - realizedExpense) >= 0 ? 'emerald' : 'rose'}
+                                    subtitle="Balanço do Período"
+                                />
+                            </div>
                         </div>
-                        <div className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
-                            {fmt(receivablesFuture)}
+
+                        {/* BLOCO 2 - RISCO (ATRASADOS vs FUTUROS) */}
+                        <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-3 mb-5 pl-1">
+                                <div className="h-px bg-border flex-1"></div>
+                                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                    <AlertCircle size={14} /> Fluxo de Caixa Previsto
+                                </h2>
+                                <div className="h-px bg-border flex-1"></div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* PAYABLES OVERDUE - ALARM */}
+                                <FinanceStatCard
+                                    title="Contas Atrasadas"
+                                    value={fmt(payablesOverdue)}
+                                    icon={<AlertCircle size={18} />}
+                                    color="rose"
+                                    subtitle="Pagamentos Vencidos"
+                                    onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)}
+                                />
+
+                                {/* PAYABLES FUTURE */}
+                                <FinanceStatCard
+                                    title="A Vencer (7 dias)"
+                                    value={fmt(payablesFuture)}
+                                    icon={<Clock size={18} />}
+                                    color="amber"
+                                    subtitle="Próximos Pagamentos"
+                                    onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)}
+                                />
+
+                                {/* RECEIVABLES OVERDUE - ALARM */}
+                                <FinanceStatCard
+                                    title="Recebimentos Atrasados"
+                                    value={fmt(receivablesOverdue)}
+                                    icon={<AlertCircle size={18} />}
+                                    color="rose"
+                                    subtitle="Clientes Inadimplentes"
+                                    onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))}
+                                />
+
+                                {/* RECEIVABLES FUTURE */}
+                                <FinanceStatCard
+                                    title="A Receber (7 dias)"
+                                    value={fmt(receivablesFuture)}
+                                    icon={<Clock size={18} />}
+                                    color="emerald"
+                                    subtitle="Próximas Entradas"
+                                    onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))}
+                                />
+                            </div>
                         </div>
-                    </Card>
-                </div>
-            </div>
+                    </>
+                );
+            })()}
 
             {/* BLOCO 3 - CARTÕES DE CRÉDITO */}
             {

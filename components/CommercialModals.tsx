@@ -442,7 +442,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Itens do Orçamento</h3>
                         <div className="flex gap-2">
-                            <Select className="w-48 py-1 text-xs" onChange={(e) => {
+                            <Select className="w-48 py-1 text-xs" noArrow onChange={(e) => {
                                 if (e.target.value) {
                                     addItem(catalog.find(i => i.id === e.target.value));
                                     e.target.value = "";

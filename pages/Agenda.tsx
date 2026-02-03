@@ -334,7 +334,21 @@ export const AgendaPage: React.FC = () => {
     if (event.origin === 'agenda') {
       return event.isTeamEvent ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white';
     }
-    if (event.origin === 'task') return 'bg-blue-600 text-white';
+    if (event.origin === 'task') {
+      // Use metadata status to avoid TS conflict with CalendarEvent status type
+      const status = event.metadata?.status;
+      const isOverdue = status !== 'completed' && status !== 'done' && new Date(event.startDate) < new Date() && !isToday(parseISO(event.startDate));
+      if (isOverdue) return 'bg-rose-500 text-white font-bold';
+
+      const priority = event.metadata?.priority;
+      switch (priority) {
+        case 'urgent': return 'bg-rose-500 text-white';
+        case 'high': return 'bg-orange-500 text-white';
+        case 'medium': return 'bg-blue-500 text-white';
+        case 'low': return 'bg-emerald-500 text-white';
+        default: return 'bg-blue-600 text-white';
+      }
+    }
     if (event.origin === 'finance_budget') return 'bg-amber-600 text-white';
     if (event.origin === 'finance_payable') return 'bg-rose-600 text-white';
     if (event.origin === 'finance_receivable') return 'bg-emerald-600 text-white';
@@ -509,14 +523,7 @@ export const AgendaPage: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar relative">
             {/* Current Time Indicator only if Today */}
-            {isToday(selectedDate) && (
-              <div
-                className="absolute left-0 w-full border-t border-emerald-500/50 flex items-center pl-1 z-10 pointer-events-none"
-                style={{ top: `${Math.max(2, Math.min(98, (getHours(new Date()) * 60 + getMinutes(new Date())) / 1440 * 100))}%` }}
-              >
-                <span className="text-[8px] bg-emerald-500 text-white px-1 py-0.5 rounded uppercase font-bold tracking-wider">Agora</span>
-              </div>
-            )}
+
 
             <div className="flex items-center gap-1.5 mb-1 opacity-70">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />

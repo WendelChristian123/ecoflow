@@ -12,6 +12,7 @@ interface TaskCardProps {
     canMove: boolean;
 }
 
+// ... imports
 export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDelete, canMove }) => {
     const assignee = users.find(u => u.id === task.assigneeId);
 
@@ -27,24 +28,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
 
     const getPriorityColor = (p: string) => {
         switch (p) {
-            case 'urgent': return 'bg-[hsl(var(--priority-urgent))] text-white border-0';
-            case 'high': return 'bg-[hsl(var(--priority-high))] text-white border-0';
-            case 'medium': return 'bg-[hsl(var(--priority-medium))] text-gray-900 border-0';
-            case 'low': return 'bg-[hsl(var(--priority-low))] text-white border-0';
-            default: return 'neutral';
+            case 'urgent': return 'bg-rose-500 text-white border-0'; // Vermelho
+            case 'high': return 'bg-orange-500 text-white border-0'; // Laranja
+            case 'medium': return 'bg-blue-500 text-white border-0'; // Azul
+            case 'low': return 'bg-emerald-500 text-white border-0'; // Verde
+            default: return 'bg-slate-500 text-white border-0';
         }
     };
 
-    const getTaskBorderColor = (task: Task) => {
+    // Check if Overdue
+    const isOverdue = task.status !== 'done' && task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
+
+    const getTaskStyles = (task: Task) => {
         if (!task.dueDate) return '';
         const today = new Date().setHours(0, 0, 0, 0);
         const due = new Date(task.dueDate).setHours(0, 0, 0, 0);
         const diff = Math.floor((due - today) / (1000 * 60 * 60 * 24));
 
-        if (diff < 0) return 'border-l-4 border-l-[hsl(var(--status-overdue))]'; // Vencido
-        if (diff === 0) return 'border-l-4 border-l-[hsl(var(--status-today))]'; // Hoje
-        if (diff === 1) return 'border-l-4 border-l-[hsl(var(--status-tomorrow))]'; // Amanhã
-        return 'border-l-2 border-l-[hsl(var(--status-upcoming))]'; // Futuro
+        if (isOverdue) return 'border-l-4 border-l-rose-500 bg-rose-500/10 dark:bg-rose-950/20'; // Vencido
+        if (diff === 0) return 'border-l-4 border-l-amber-500'; // Hoje
+        if (diff === 1) return 'border-l-4 border-l-amber-500'; // Amanhã - Mantendo amber para "atenção"
+        return 'border-l-2 border-l-emerald-500'; // Futuro
     };
 
     return (
@@ -54,12 +58,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
                 className={cn(
                     "p-4 hover:border-primary/30 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border",
                     canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default",
-                    getTaskBorderColor(task)
+                    getTaskStyles(task)
                 )}
             >
                 <div className="flex justify-between items-start mb-2">
                     <span className={cn(
-                        "inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold",
+                        "inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
                         getPriorityColor(task.priority)
                     )}>
                         {translatePriority(task.priority)}
@@ -74,9 +78,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
 
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
                     <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div className={cn("flex items-center gap-1.5 text-xs", isOverdue ? "text-rose-600 font-bold" : "text-muted-foreground")}>
                             <Calendar size={12} />
                             <span>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }) : 'S/ Data'}</span>
+                            {isOverdue && <span className="text-[9px] bg-rose-500 text-white px-1 py-0.5 rounded ml-1 uppercase">Vencido</span>}
                         </div>
                     </div>
                     {assignee ? (

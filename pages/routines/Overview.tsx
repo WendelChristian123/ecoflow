@@ -53,35 +53,45 @@ const StatCard: React.FC<{
     subtitle?: string;
     onClick?: () => void;
 }> = ({ title, value, icon, color, subtitle, onClick }) => {
-    const colors = {
-        emerald: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-        rose: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-        amber: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-        indigo: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
-        slate: 'bg-secondary text-muted-foreground border-border',
+    const themes = {
+        emerald: { header: 'bg-emerald-500', text: 'text-emerald-500', border: 'hover:border-emerald-500/50' },
+        rose: { header: 'bg-rose-500', text: 'text-rose-500', border: 'hover:border-rose-500/50' },
+        amber: { header: 'bg-amber-500', text: 'text-amber-500', border: 'hover:border-amber-500/50' },
+        indigo: { header: 'bg-indigo-500', text: 'text-indigo-500', border: 'hover:border-indigo-500/50' },
+        slate: { header: 'bg-slate-500', text: 'text-slate-500', border: 'hover:border-slate-500/50' },
     };
+    const theme = themes[color];
 
     return (
         <div
             onClick={onClick}
             className={cn(
-                "bg-card border border-border p-6 rounded-xl relative overflow-hidden flex flex-col justify-between h-full transition-all group shadow-sm",
-                onClick && "cursor-pointer hover:bg-secondary/30 hover:border-primary/50"
+                "bg-card border border-border rounded-xl flex flex-col justify-between h-full cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group shadow-sm",
+                theme.border,
+                onClick ? "cursor-pointer" : ""
             )}
         >
-            <div className="flex justify-between items-start mb-4 relative z-10">
-                <span className="text-muted-foreground text-sm font-medium uppercase tracking-wide">{title}</span>
-                <div className={cn("p-2 rounded-lg", colors[color])}>{icon}</div>
-            </div>
-            <div className="relative z-10">
-                <div className="text-2xl font-bold text-foreground tracking-tight">{value}</div>
-                {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
-            </div>
-            {onClick && (
-                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight size={18} className="text-muted-foreground" />
+            {/* Header Colorido */}
+            <div className={cn("px-4 py-3 flex items-center justify-between", theme.header)}>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-white">{title}</span>
+                <div className="p-1.5 rounded-md bg-white/20 text-white backdrop-blur-sm">
+                    {icon}
                 </div>
-            )}
+            </div>
+
+            {/* Content */}
+            <div className="p-6 pt-5 flex flex-col gap-1 relative">
+                <div className={cn("text-3xl font-black tracking-tighter transition-colors", theme.text)}>
+                    {value}
+                </div>
+                {subtitle && <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-70">{subtitle}</span>}
+
+                {onClick && (
+                    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ArrowRight size={18} className="text-muted-foreground" />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -385,7 +395,12 @@ export const RoutinesOverview: React.FC = () => {
                                     return (
                                         <tr
                                             key={task.id}
-                                            className="hover:bg-secondary/30 transition-colors cursor-pointer"
+                                            className={cn(
+                                                "transition-colors cursor-pointer border-l-4",
+                                                isOverdue
+                                                    ? "bg-rose-500/10 hover:bg-rose-500/20 border-l-rose-500"
+                                                    : "bg-transparent hover:bg-secondary/30 border-l-transparent"
+                                            )}
                                             onClick={() => navigate('/tasks', { state: { taskId: task.id } })}
                                         >
                                             <td className="px-6 py-4">
@@ -401,14 +416,25 @@ export const RoutinesOverview: React.FC = () => {
                                                 ) : <span className="text-xs italic">--</span>}
                                             </td>
                                             <td className="px-6 py-4 font-mono text-xs">
-                                                <div className={isOverdue ? 'text-rose-500 font-bold flex items-center gap-1' : 'text-foreground'}>
-                                                    {isOverdue && <AlertCircle size={12} />}
-                                                    {new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                                                <div className={isOverdue ? 'text-rose-500 font-bold flex flex-col' : 'text-foreground'}>
+                                                    <div className="flex items-center gap-1">
+                                                        {isOverdue && <AlertCircle size={12} />}
+                                                        {new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                                                    </div>
+                                                    {isOverdue && <span className="text-[9px] uppercase tracking-wider font-extrabold mt-0.5">Vencido</span>}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <Badge variant={task.priority === 'urgent' ? 'error' : task.priority === 'high' ? 'warning' : 'neutral'}>
-                                                    {task.priority === 'urgent' ? 'Urgente' : task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}
+                                                <Badge variant={
+                                                    task.priority === 'urgent' ? 'error' :
+                                                        task.priority === 'high' ? 'warning' :
+                                                            task.priority === 'medium' ? 'info' :
+                                                                'success'
+                                                }>
+                                                    {task.priority === 'urgent' ? 'Urgente' :
+                                                        task.priority === 'high' ? 'Alta' :
+                                                            task.priority === 'medium' ? 'Média' :
+                                                                'Baixa'}
                                                 </Badge>
                                             </td>
                                         </tr>
