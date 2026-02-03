@@ -29,13 +29,7 @@ const TeamKanbanWithContext: React.FC<{
   valETarget: any;
   isAdmin: boolean;
   hideHeader?: boolean;
-<<<<<<< HEAD
-  isStageManagerOpen: boolean;
-  onCloseStageManager: () => void;
-}> = ({ teams, users, onDelete, onEdit, onClick, canMove, isAdmin, hideHeader, isStageManagerOpen, onCloseStageManager }) => {
-=======
 }> = ({ teams, users, onDelete, onEdit, onClick, canMove, isAdmin, hideHeader }) => {
->>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
   const { currentKanban } = useKanban();
 
   const groupByStage = (entities: Team[], stageId: string) => {
@@ -44,7 +38,6 @@ const TeamKanbanWithContext: React.FC<{
   };
 
   return (
-<<<<<<< HEAD
     <>
       <div className="flex flex-col h-full">
         {!hideHeader && <KanbanHeader />}
@@ -65,34 +58,13 @@ const TeamKanbanWithContext: React.FC<{
               />
             )}
           />
+
         </div>
-=======
-    <div className="flex flex-col h-full">
-      {!hideHeader && <KanbanHeader />}
-      <div className="flex-1 min-h-0">
-        <GenericKanbanBoard
-          entities={teams}
-          groupByStage={groupByStage}
-          renderCard={(team: Team) => (
-            <TeamCard
-              key={team.id}
-              team={team}
-              users={users}
-              onClick={onClick}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              canMove={canMove}
-              isAdmin={isAdmin}
-            />
-          )}
-        />
->>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
+
       </div>
 
-      <StageManagerModal
-        isOpen={isStageManagerOpen}
-        onClose={onCloseStageManager}
-      />
+
+
     </>
   );
 };
@@ -169,11 +141,8 @@ export const TeamsPage: React.FC = () => {
   const [detailFilterAssignee, setDetailFilterAssignee] = useState<string>('all');
   const [detailFilterPriority, setDetailFilterPriority] = useState<string>('all');
   const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
-<<<<<<< HEAD
   // Separate stage manager state for Tasks in Team Detail View
   const [isTaskStageManagerOpen, setIsTaskStageManagerOpen] = useState(false);
-=======
->>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
 
 
   useEffect(() => {
@@ -520,11 +489,7 @@ export const TeamsPage: React.FC = () => {
     <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
 
       {/* Header with Controls */}
-<<<<<<< HEAD
-      <div className="flex flex-col gap-4 mb-4 shrink-0">
-=======
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
->>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Equipes</h1>
           <p className="text-muted-foreground mt-1">Gerencie suas equipes e membros</p>
@@ -550,16 +515,7 @@ export const TeamsPage: React.FC = () => {
             <Plus size={16} /> Nova
           </Button>
 
-<<<<<<< HEAD
 
-          {/* View Toggle Removed */}
-
-          {/* Manage Stages Removed for Grid View Only */}
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-=======
           {/* View Toggle */}
           <div className="flex bg-card border border-border rounded-lg p-0.5">
             <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -607,7 +563,7 @@ export const TeamsPage: React.FC = () => {
           </KanbanProvider>
         </div>
       ) : viewMode === 'grid' ? (
->>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
+
         <div className="space-y-4">
 
           {teams.length === 0 ? (
@@ -685,15 +641,9 @@ export const TeamsPage: React.FC = () => {
               ))}
             </div>
           )}
-          <TeamModal
-            isOpen={isTeamModalOpen}
-            onClose={() => setIsTeamModalOpen(false)}
-            onSuccess={loadData}
-            users={users}
-            initialData={editingTeam}
-          />
         </div>
-      </div>
+      ) : null}
+
       <TeamModal
         isOpen={isTeamModalOpen}
         onClose={() => setIsTeamModalOpen(false)}
@@ -709,15 +659,11 @@ export const TeamsPage: React.FC = () => {
           });
         }}
       />
-<<<<<<< HEAD
-    </div >
-=======
 
       <StageManagerModal
         isOpen={isStageManagerOpen}
         onClose={() => setIsStageManagerOpen(false)}
       />
     </div>
->>>>>>> 6276c06546181c9926946c74548b0ed97d0b2ea7
   );
 };
