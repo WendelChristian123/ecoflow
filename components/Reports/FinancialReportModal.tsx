@@ -344,46 +344,46 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     <div className="p-5 grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Conta/Banco</label>
-                            <Select value={accountFilter} onChange={e => setAccountFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
-                                <option value="all">Todas Contas</option>
-                                <optgroup label="Contas Bancárias">
-                                    {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            <Select value={accountFilter} onChange={e => setAccountFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
+                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todas Contas</option>
+                                <optgroup label="Contas Bancárias" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">
+                                    {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{a.name}</option>)}
                                 </optgroup>
-                                <optgroup label="Cartões de Crédito">
-                                    {[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                <optgroup label="Cartões de Crédito" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">
+                                    {[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{c.name}</option>)}
                                 </optgroup>
                             </Select>
                         </div>
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Categoria</label>
-                            <Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
-                                <option value="all">Todas</option>
-                                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
+                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todas</option>
+                                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{c.name}</option>)}
                             </Select>
                         </div>
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Cliente/Fornecedor</label>
-                            <Select value={contactFilter} onChange={e => setContactFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
-                                <option value="all">Todos</option>
-                                {[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <Select value={contactFilter} onChange={e => setContactFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
+                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
+                                {[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{c.name}</option>)}
                             </Select>
                         </div>
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Tipo</label>
-                            <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
-                                <option value="all">Todos</option>
-                                <option value="income">Receitas</option>
-                                <option value="expense">Despesas</option>
-                                <option value="transfer">Transferências</option>
+                            <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
+                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
+                                <option value="income" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Receitas</option>
+                                <option value="expense" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Despesas</option>
+                                <option value="transfer" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Transferências</option>
                             </Select>
                         </div>
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Status</label>
-                            <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700">
-                                <option value="all">Todos</option>
-                                <option value="paid">Realizado</option>
-                                <option value="pending">A Vencer</option>
-                                <option value="overdue">Atrasado</option>
+                            <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
+                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
+                                <option value="paid" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Realizado</option>
+                                <option value="pending" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">A Vencer</option>
+                                <option value="overdue" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Atrasado</option>
                             </Select>
                         </div>
                     </div>

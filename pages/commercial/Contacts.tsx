@@ -83,10 +83,10 @@ export const ContactsPage: React.FC = () => {
                                             {c.type === 'pj' ? <Building size={12} /> : <UserIcon size={12} />}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="font-medium text-foreground truncate" title={c.name}>{c.name}</div>
+                                            <div className="font-semibold text-foreground truncate text-sm" title={c.name}>{c.name}</div>
                                             {(c.fantasyName || c.scope === 'both') && (
                                                 <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                                                    {c.fantasyName && <span className="text-[9px] text-muted-foreground truncate">{c.fantasyName}</span>}
+                                                    {c.fantasyName && <span className="text-[10px] text-muted-foreground truncate">{c.fantasyName}</span>}
                                                     {c.scope === 'both' && <span className="text-[8px] bg-secondary border border-border/50 px-1 rounded text-muted-foreground uppercase tracking-tight shrink-0">Ambos</span>}
                                                 </div>
                                             )}
@@ -95,8 +95,8 @@ export const ContactsPage: React.FC = () => {
                                 </td>
                                 <td className="pl-4 py-1.5 hidden sm:table-cell overflow-hidden">
                                     <div className="space-y-0.5 min-w-0">
-                                        {c.phone && <div className="text-[10px] flex items-center gap-1.5 font-mono opacity-80 truncate"><Phone size={9} className="text-muted-foreground shrink-0" /> <span className="truncate">{c.phone}</span></div>}
-                                        {c.email && <div className="text-[10px] flex items-center gap-1.5 opacity-80 truncate" title={c.email}><Mail size={9} className="text-muted-foreground shrink-0" /> <span className="truncate">{c.email}</span></div>}
+                                        {c.phone && <div className="text-xs flex items-center gap-1.5 font-mono opacity-80 truncate"><Phone size={11} className="text-muted-foreground shrink-0" /> <span className="truncate">{c.phone}</span></div>}
+                                        {c.email && <div className="text-xs flex items-center gap-1.5 opacity-80 truncate" title={c.email}><Mail size={11} className="text-muted-foreground shrink-0" /> <span className="truncate">{c.email}</span></div>}
                                     </div>
                                 </td>
                                 <td className="pr-3 py-1.5 text-right overflow-hidden">

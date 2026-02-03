@@ -30,16 +30,19 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, onClick, dep
             to={to}
             onClick={onClick}
             className={({ isActive }) => cn(
-                "flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium transition-all mb-1 group relative",
+                "flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 mb-1 group relative overflow-hidden",
                 isCollapsed ? "justify-center px-2" : "px-4",
                 (!isCollapsed && depth > 0) && "pl-11",
                 isActive
-                    ? "bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20"
-                    : "text-muted-foreground hover:bg-secondary/10 hover:text-foreground"
+                    ? "bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/30 scale-[1.02]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:shadow-sm hover:scale-[1.01] border border-transparent"
             )}
         >
-            <div className="shrink-0">{icon}</div>
-            {!isCollapsed && <span>{label}</span>}
+            {/* Glow Effect on Hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+            <div className="shrink-0 relative z-10 transition-transform group-hover:scale-110 duration-200">{icon}</div>
+            {!isCollapsed && <span className="relative z-10">{label}</span>}
 
             {isCollapsed && (
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded border border-border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-md">
@@ -69,10 +72,12 @@ const SidebarGroup: React.FC<{
                 onMouseLeave={() => setIsHovered(false)}
             >
                 <div className={cn(
-                    "w-full flex items-center justify-center py-2.5 rounded-lg transition-colors cursor-pointer",
-                    highlight ? "text-primary hover:bg-primary/10 font-semibold" : "text-muted-foreground hover:bg-secondary/10"
+                    "w-full flex items-center justify-center py-2.5 rounded-lg transition-all duration-200 cursor-pointer relative overflow-hidden border border-transparent group",
+                    highlight ? "text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/20 font-semibold hover:shadow-sm" : "text-muted-foreground hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-foreground hover:shadow-sm"
                 )}>
-                    {icon}
+                    {/* Glow Effect on Hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    <div className="relative z-10 transition-transform group-hover:scale-110 duration-200">{icon}</div>
                 </div>
 
                 <div className={cn(
@@ -93,15 +98,18 @@ const SidebarGroup: React.FC<{
             <button
                 onClick={onToggle}
                 className={cn(
-                    "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors",
-                    highlight ? "text-primary hover:bg-primary/10 font-semibold" : "text-muted-foreground hover:bg-secondary/10"
+                    "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group relative overflow-hidden border border-transparent",
+                    highlight ? "text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/20 font-semibold hover:shadow-sm" : "text-muted-foreground hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-foreground hover:shadow-sm"
                 )}
             >
-                <div className="flex items-center gap-3">
-                    {icon}
+                {/* Glow Effect on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+                <div className="flex items-center gap-3 relative z-10">
+                    <div className="transition-transform group-hover:scale-110 duration-200">{icon}</div>
                     <span>{label}</span>
                 </div>
-                {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <div className="relative z-10">{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</div>
             </button>
             <div className={cn("overflow-hidden transition-all duration-300", isOpen ? "max-h-[500px] opacity-100 mt-1" : "max-h-0 opacity-0")}>
                 {children}

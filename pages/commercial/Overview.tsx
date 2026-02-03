@@ -223,10 +223,10 @@ export const CommercialOverview: React.FC = () => {
             counts[s] = (counts[s] || 0) + 1;
         });
         return Object.entries(counts)
-            .map(([name, value]) => ({ 
-                name, 
-                value, 
-                color: STATUS_COLORS[name] || DEFAULT_COLOR 
+            .map(([name, value]) => ({
+                name,
+                value,
+                color: STATUS_COLORS[name] || DEFAULT_COLOR
             }))
             .sort((a, b) => b.value - a.value);
     }, [quotes]);
@@ -366,22 +366,38 @@ export const CommercialOverview: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Legend Area */}
-                        <div className="flex-1 h-full overflow-y-auto custom-scrollbar flex flex-col justify-center pr-2 gap-3">
-                            {statusDistribution.length > 0 ? statusDistribution.map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between group p-1.5 rounded-lg hover:bg-muted/50 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
-                                        <span className="text-sm font-medium text-foreground">{item.name}</span>
+                        {/* Legend Area with Progress Bars */}
+                        <div className="flex-1 h-full overflow-y-auto custom-scrollbar flex flex-col justify-center pr-2 gap-2.5">
+                            {statusDistribution.length > 0 ? statusDistribution.map((item, idx) => {
+                                const percentage = Math.round((item.value / kpiData.totalQuotes) * 100);
+                                return (
+                                    <div key={idx} className="group p-2.5 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50">
+                                        {/* Top Row: Icon, Name, Count, Percentage */}
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-3 h-3 rounded-full shrink-0 shadow-md" style={{ backgroundColor: item.color }} />
+                                                <span className="text-sm font-semibold text-foreground">{item.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-foreground tabular-nums">{item.value}</span>
+                                                <span className="text-xs font-bold text-muted-foreground w-9 text-right tabular-nums">
+                                                    {percentage}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {/* Progress Bar */}
+                                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full transition-all duration-300 ease-out shadow-sm"
+                                                style={{
+                                                    width: `${percentage}%`,
+                                                    backgroundColor: item.color
+                                                }}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-foreground">{item.value}</span>
-                                        <span className="text-xs text-muted-foreground w-8 text-right">
-                                            {Math.round((item.value / kpiData.totalQuotes) * 100)}%
-                                        </span>
-                                    </div>
-                                </div>
-                            )) : (
+                                );
+                            }) : (
                                 <div className="text-center text-sm text-muted-foreground italic">Sem dados para exibir</div>
                             )}
                         </div>
