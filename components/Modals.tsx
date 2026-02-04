@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput, CurrencyInput } from './Shared';
 import { FilterSelect } from './FilterSelect';
+import { DateTimePicker } from './DateTimePicker';
 import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
@@ -422,11 +423,16 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, o
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Nome" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                 <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-                    <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
-                        <option value="expense">Despesa</option>
-                        <option value="income">Receita</option>
-                    </Select>
+                    <FilterSelect
+                        inlineLabel="Tipo:"
+                        value={formData.type}
+                        onChange={(val) => setFormData({ ...formData, type: val as any })}
+                        options={[
+                            { value: 'expense', label: 'Despesa' },
+                            { value: 'income', label: 'Receita' }
+                        ]}
+                        className="w-full"
+                    />
                 </div>
                 <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Cor (Hex)</label>
@@ -686,17 +692,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                             {formData.type === 'transfer' ? (
                                 <>
                                     <div>
-                                        <label className="text-xs text-muted-foreground block mb-1.5 ml-1">Conta Origem</label>
-                                        <Select value={formData.accountId} onChange={e => setFormData({ ...formData, accountId: e.target.value })} required>
-                                            {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                        </Select>
+                                        <FilterSelect
+                                            inlineLabel="Conta Origem:"
+                                            value={formData.accountId || ''}
+                                            onChange={(val) => setFormData({ ...formData, accountId: val })}
+                                            options={[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ value: a.id, label: a.name }))}
+                                            className="w-full"
+                                            searchable
+                                        />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-muted-foreground block mb-1.5 ml-1">Conta Destino</label>
-                                        <Select value={formData.toAccountId} onChange={e => setFormData({ ...formData, toAccountId: e.target.value })} required>
-                                            <option value="">Selecione...</option>
-                                            {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).filter(a => a.id !== formData.accountId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                        </Select>
+                                        <FilterSelect
+                                            inlineLabel="Conta Destino:"
+                                            value={formData.toAccountId || ''}
+                                            onChange={(val) => setFormData({ ...formData, toAccountId: val })}
+                                            options={[{ value: '', label: 'Selecione...' }, ...[...accounts].sort((a, b) => a.name.localeCompare(b.name)).filter(a => a.id !== formData.accountId).map(a => ({ value: a.id, label: a.name }))]}
+                                            className="w-full"
+                                            searchable
+                                        />
                                     </div>
                                 </>
                             ) : (
@@ -704,13 +717,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                     {/* CONTACT SELECTION */}
                                     <div className="flex items-end gap-2">
                                         <div className="flex-1">
-                                            <label className="text-xs text-muted-foreground block mb-1.5 ml-1">
-                                                {formData.type === 'expense' ? 'Fornecedor (Opcional)' : 'Cliente (Opcional)'}
-                                            </label>
-                                            <Select value={formData.contactId || ''} onChange={e => setFormData({ ...formData, contactId: e.target.value })}>
-                                                <option value="">Selecione...</option>
-                                                {filteredContacts.sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                            </Select>
+                                            <FilterSelect
+                                                inlineLabel={formData.type === 'expense' ? 'Fornecedor:' : 'Cliente:'}
+                                                value={formData.contactId || ''}
+                                                onChange={(val) => setFormData({ ...formData, contactId: val })}
+                                                options={[{ value: '', label: 'Selecione...' }, ...filteredContacts.sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))]}
+                                                className="w-full"
+                                                searchable
+                                            />
                                         </div>
                                         <Button type="button" variant="secondary" onClick={() => setIsContactModalOpen(true)} className="h-[42px] w-[42px] p-0 flex items-center justify-center mb-[1px]">
                                             <Plus size={18} />
@@ -719,35 +733,34 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
                                     <div className="flex items-end gap-2">
                                         <div className="flex-1">
-                                            <label className="text-xs text-muted-foreground block mb-1.5 ml-1">Categoria</label>
-                                            <Select value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
-                                                <option value="">Geral</option>
-                                                {localCategories.filter(c => c.type === formData.type).sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                            </Select>
+                                            <FilterSelect
+                                                inlineLabel="Categoria:"
+                                                value={formData.categoryId || ''}
+                                                onChange={(val) => setFormData({ ...formData, categoryId: val })}
+                                                options={[{ value: '', label: 'Geral' }, ...localCategories.filter(c => c.type === formData.type).sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))]}
+                                                className="w-full"
+                                                searchable
+                                            />
                                         </div>
                                         <Button type="button" variant="secondary" onClick={() => setIsCategoryModalOpen(true)} className="h-[42px] w-[42px] p-0 flex items-center justify-center mb-[1px]">
                                             <Plus size={18} />
                                         </Button>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-muted-foreground block mb-1.5 ml-1">{formData.type === 'expense' ? 'Conta / Cartão' : 'Conta'}</label>
-                                        <Select
+                                        <FilterSelect
+                                            inlineLabel={formData.type === 'expense' ? 'Pagamento:' : 'Recebimento:'}
                                             value={formData.creditCardId ? `card:${formData.creditCardId}` : `acc:${formData.accountId}`}
-                                            onChange={e => {
-                                                const val = e.target.value;
+                                            onChange={(val) => {
                                                 if (val.startsWith('card:')) setFormData({ ...formData, creditCardId: val.split(':')[1], accountId: undefined });
                                                 else setFormData({ ...formData, accountId: val.split(':')[1], creditCardId: undefined });
                                             }}
-                                        >
-                                            <optgroup label="Contas">
-                                                {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={`acc:${a.id}`}>{a.name}</option>)}
-                                            </optgroup>
-                                            {formData.type === 'expense' && cards.length > 0 && (
-                                                <optgroup label="Cartões de Crédito">
-                                                    {[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={`card:${c.id}`}>{c.name}</option>)}
-                                                </optgroup>
-                                            )}
-                                        </Select>
+                                            options={[
+                                                ...[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ value: `acc:${a.id}`, label: a.name, group: 'Contas' })),
+                                                ...(formData.type === 'expense' ? [...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: `card:${c.id}`, label: c.name, group: 'Cartões de Crédito' })) : [])
+                                            ]}
+                                            className="w-full"
+                                            searchable
+                                        />
                                     </div>
                                 </>
                             )}
@@ -764,12 +777,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                     </div>
                                     {recurrence.isRecurring && (
                                         <div className="grid grid-cols-2 gap-2 pt-2">
-                                            <Select className="py-1.5 text-sm" value={recurrence.frequency} onChange={e => setRecurrence({ ...recurrence, frequency: e.target.value as any })}>
-                                                <option value="daily">Diário</option>
-                                                <option value="weekly">Semanal</option>
-                                                <option value="monthly">Mensal</option>
-                                                <option value="yearly">Anual</option>
-                                            </Select>
+                                            <FilterSelect
+                                                inlineLabel="Freq:"
+                                                value={recurrence.frequency}
+                                                onChange={(val) => setRecurrence({ ...recurrence, frequency: val as any })}
+                                                options={[
+                                                    { value: 'daily', label: 'Diário' },
+                                                    { value: 'weekly', label: 'Semanal' },
+                                                    { value: 'monthly', label: 'Mensal' },
+                                                    { value: 'yearly', label: 'Anual' }
+                                                ]}
+                                                className="w-full"
+                                            />
                                             <Input
                                                 className="py-1.5 text-sm"
                                                 type="number"
@@ -939,34 +958,31 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FilterSelect
-                        externalLabel="PROJETO (OPCIONAL)"
-                        label="PROJETO (OPCIONAL)"
+                        inlineLabel="Projeto:"
                         value={formData.projectId || 'none'}
                         onChange={(val) => setFormData({ ...formData, projectId: val === 'none' ? undefined : val })}
                         options={[
-                            { value: 'none', label: 'Nenhum Projeto' },
+                            { value: 'none', label: 'Nenhum' },
                             ...projects.map(p => ({ value: p.id, label: p.name }))
                         ]}
-                        darkMode={true}
+                        darkMode={false}
                     />
 
                     <FilterSelect
-                        externalLabel="EQUIPE (OPCIONAL)"
-                        label="EQUIPE (OPCIONAL)"
+                        inlineLabel="Equipe:"
                         value={formData.teamId || 'none'}
                         onChange={(val) => setFormData({ ...formData, teamId: val === 'none' ? undefined : val })}
                         options={[
-                            { value: 'none', label: 'Nenhuma Equipe' },
+                            { value: 'none', label: 'Nenhuma' },
                             ...teams.map(t => ({ value: t.id, label: t.name }))
                         ]}
-                        darkMode={true}
+                        darkMode={false}
                     />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FilterSelect
-                        externalLabel="STATUS"
-                        label="STATUS"
+                        inlineLabel="Status:"
                         value={formData.status}
                         onChange={(val) => setFormData({ ...formData, status: val as any })}
                         options={[
@@ -975,12 +991,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                             { value: 'review', label: 'Revisão' },
                             { value: 'done', label: 'Concluído' }
                         ]}
-                        darkMode={true}
+                        darkMode={false}
                     />
 
                     <FilterSelect
-                        externalLabel="PRIORIDADE"
-                        label="PRIORIDADE"
+                        inlineLabel="Prioridade:"
                         value={formData.priority}
                         onChange={(val) => setFormData({ ...formData, priority: val as any })}
                         options={[
@@ -989,27 +1004,25 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                             { value: 'high', label: 'Alta' },
                             { value: 'urgent', label: 'Urgente' }
                         ]}
-                        darkMode={true}
+                        darkMode={false}
                     />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FilterSelect
-                        externalLabel="RESPONSÁVEL"
-                        label="RESPONSÁVEL"
+                        inlineLabel="Resp:"
                         value={formData.assigneeId || 'none'}
                         onChange={(val) => setFormData({ ...formData, assigneeId: val === 'none' ? undefined : val })}
                         options={[
                             { value: 'none', label: 'Sem responsável' },
                             ...users.map(u => ({ value: u.id, label: u.name }))
                         ]}
-                        darkMode={true}
+                        darkMode={false}
                     />
-                    <Input
-                        label="Prazo"
-                        type="datetime-local"
-                        value={formData.dueDate || ''}
-                        onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
+                    <DateTimePicker
+                        inlineLabel="Prazo:"
+                        value={formData.dueDate || undefined}
+                        onChange={(val) => setFormData({ ...formData, dueDate: val || '' })}
                     />
                 </div>
 
@@ -1479,13 +1492,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onS
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Nome da Conta" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                 <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-                    <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
-                        <option value="checking">Conta Corrente</option>
-                        <option value="savings">Poupança</option>
-                        <option value="cash">Caixa Físico</option>
-                        <option value="investment">Investimento</option>
-                    </Select>
+                    <FilterSelect
+                        inlineLabel="Tipo de Conta:"
+                        value={formData.type}
+                        onChange={(val) => setFormData({ ...formData, type: val as any })}
+                        options={[
+                            { value: 'checking', label: 'Conta Corrente' },
+                            { value: 'savings', label: 'Poupança' },
+                            { value: 'cash', label: 'Caixa Físico' },
+                            { value: 'investment', label: 'Investimento' }
+                        ]}
+                        className="w-full"
+                    />
                 </div>
                 <CurrencyInput label="Saldo Inicial" value={formData.initialBalance} onValueChange={val => setFormData({ ...formData, initialBalance: val || 0 })} required />
                 <div className="flex justify-end gap-2 pt-4">
@@ -1647,8 +1665,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                             <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
                                     <FilterSelect
-                                        externalLabel="STATUS"
-                                        label="STATUS"
+                                        inlineLabel="Status:"
                                         value={formData.status}
                                         onChange={(val) => setFormData({ ...formData, status: val as any })}
                                         options={[
@@ -1656,7 +1673,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                                             { value: 'on_hold', label: 'Em Espera' },
                                             { value: 'completed', label: 'Concluído' }
                                         ]}
-                                        darkMode={true}
+                                        darkMode={false}
                                     />
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
@@ -2063,21 +2080,27 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Início</label>
-                                        <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
+                                        <DateTimePicker value={formData.startDate} onChange={val => setFormData({ ...formData, startDate: val || '' })} />
                                     </div>
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Fim</label>
-                                        <Input type="datetime-local" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} required />
+                                        <DateTimePicker value={formData.endDate} onChange={val => setFormData({ ...formData, endDate: val || '' })} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Tipo</label>
-                                        <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
-                                            <option value="meeting">Reunião</option>
-                                            <option value="deadline">Prazo</option>
-                                            <option value="review">Revisão</option>
-                                        </Select>
+                                        <FilterSelect
+                                            inlineLabel="Tipo:"
+                                            value={formData.type}
+                                            onChange={(val) => setFormData({ ...formData, type: val as any })}
+                                            options={[
+                                                { value: 'meeting', label: 'Reunião' },
+                                                { value: 'deadline', label: 'Prazo' },
+                                                { value: 'review', label: 'Revisão' }
+                                            ]}
+                                            darkMode={false}
+                                            className="w-full"
+                                        />
                                     </div>
                                     <div className="flex items-center gap-2 pt-6 px-1">
                                         <input type="checkbox" checked={formData.isTeamEvent} onChange={e => setFormData({ ...formData, isTeamEvent: e.target.checked })} className="rounded bg-muted border-border accent-emerald-500 w-4 h-4" />
@@ -2095,52 +2118,83 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 {/* Task Fields - Redesigned */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
-                                        <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
-                                            <option value="todo">A Fazer</option>
-                                            <option value="in_progress">Em Andamento</option>
-                                            <option value="review">Em Revisão</option>
-                                            <option value="done">Concluída</option>
-                                        </Select>
+                                        <FilterSelect
+                                            inlineLabel="Status:"
+                                            value={formData.status}
+                                            onChange={(val) => setFormData({ ...formData, status: val })}
+                                            options={[
+                                                { value: 'todo', label: 'A Fazer' },
+                                                { value: 'in_progress', label: 'Em Andamento' },
+                                                { value: 'review', label: 'Em Revisão' },
+                                                { value: 'done', label: 'Concluída' }
+                                            ]}
+                                            darkMode={false}
+                                            className="w-full"
+                                        />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prioridade</label>
-                                        <Select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })}>
-                                            <option value="low">Baixa</option>
-                                            <option value="medium">Média</option>
-                                            <option value="high">Alta</option>
-                                            <option value="urgent">Urgente</option>
-                                        </Select>
+                                        <FilterSelect
+                                            inlineLabel="Prioridade:"
+                                            value={formData.priority}
+                                            onChange={(val) => setFormData({ ...formData, priority: val })}
+                                            options={[
+                                                { value: 'low', label: 'Baixa' },
+                                                { value: 'medium', label: 'Média' },
+                                                { value: 'high', label: 'Alta' },
+                                                { value: 'urgent', label: 'Urgente' }
+                                            ]}
+                                            darkMode={false}
+                                            className="w-full"
+                                        />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Responsável</label>
-                                    <Select value={formData.assigneeId} onChange={e => setFormData({ ...formData, assigneeId: e.target.value })}>
-                                        <option value="">Selecione...</option>
-                                        {activeUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                                    </Select>
+                                    <FilterSelect
+                                        inlineLabel="Resp:"
+                                        icon={<UserIcon size={14} />}
+                                        value={formData.assigneeId || ''}
+                                        onChange={(val) => setFormData({ ...formData, assigneeId: val })}
+                                        options={[
+                                            { value: '', label: 'Selecione...' },
+                                            ...activeUsers.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+                                        ]}
+                                        darkMode={false}
+                                        className="w-full"
+                                    />
                                 </div>
 
                                 <div>
                                     <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
-                                    <Input type="datetime-local" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
+                                    <DateTimePicker value={formData.startDate} onChange={val => setFormData({ ...formData, startDate: val || '' })} />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Projeto</label>
-                                        <Select value={formData.projectId} onChange={e => setFormData({ ...formData, projectId: e.target.value })}>
-                                            <option value="">Nenhum</option>
-                                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                        </Select>
+                                        <FilterSelect
+                                            inlineLabel="Projeto:"
+                                            value={formData.projectId || ''}
+                                            onChange={(val) => setFormData({ ...formData, projectId: val })}
+                                            options={[
+                                                { value: '', label: 'Nenhum' },
+                                                ...projects.map(p => ({ value: p.id, label: p.name }))
+                                            ]}
+                                            darkMode={false}
+                                            className="w-full"
+                                        />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Equipe</label>
-                                        <Select value={formData.teamId} onChange={e => setFormData({ ...formData, teamId: e.target.value })}>
-                                            <option value="">Nenhuma</option>
-                                            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                        </Select>
+                                        <FilterSelect
+                                            inlineLabel="Equipe:"
+                                            value={formData.teamId || ''}
+                                            onChange={(val) => setFormData({ ...formData, teamId: val })}
+                                            options={[
+                                                { value: '', label: 'Nenhuma' },
+                                                ...teams.map(t => ({ value: t.id, label: t.name }))
+                                            ]}
+                                            darkMode={false}
+                                            className="w-full"
+                                        />
                                     </div>
                                 </div>
 

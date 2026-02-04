@@ -263,23 +263,22 @@ export const QuotesPage: React.FC = () => {
                             <div
                                 key={q.id}
                                 onClick={() => { setEditingQuote(q); setIsModalOpen(true); }}
-                                className="bg-card border border-border hover:border-primary/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative shadow-sm"
+                                className="bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative shadow-sm"
                             >
                                 <div className="flex items-center gap-6">
                                     {/* Quote ID */}
-                                    <div className="flex flex-col items-center justify-center h-12 w-16 bg-secondary rounded text-muted-foreground font-mono text-xs border border-border">
-                                        <span className="text-[10px] uppercase text-muted-foreground">COD</span>
-                                        <span className="font-bold text-foreground">#{q.id.substring(0, 4)}</span>
-
+                                    <div className="flex flex-col items-center justify-center h-12 w-16 bg-emerald-100 dark:bg-slate-800 rounded text-muted-foreground dark:text-slate-400 font-mono text-xs border border-emerald-200 dark:border-slate-700">
+                                        <span className="text-[10px] uppercase text-muted-foreground dark:text-slate-500">COD</span>
+                                        <span className="font-bold text-foreground dark:text-slate-300">#{q.id.substring(0, 4)}</span>
                                     </div>
 
                                     {/* Client Name */}
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-xs text-muted-foreground font-medium uppercase">Cliente</span>
+                                            <span className="text-xs text-muted-foreground dark:text-slate-500 font-medium uppercase">Cliente</span>
                                             {!q.contactId && <Badge variant="neutral" className="py-0 px-1 text-[10px]">Convidado</Badge>}
                                         </div>
-                                        <h3 className="font-bold text-foreground text-lg leading-none truncate max-w-[200px] md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
+                                        <h3 className="font-bold text-foreground dark:text-white text-lg leading-none truncate max-w-[200px] md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
                                     </div>
                                 </div>
 
@@ -287,16 +286,16 @@ export const QuotesPage: React.FC = () => {
                                     {/* Dates */}
                                     <div className="hidden md:flex items-center gap-6 text-sm">
                                         <div className="flex flex-col items-start">
-                                            <span className="text-xs text-muted-foreground uppercase">Emissão</span>
-                                            <div className="flex items-center gap-1.5 text-foreground">
+                                            <span className="text-xs text-muted-foreground dark:text-slate-500 uppercase">Emissão</span>
+                                            <div className="flex items-center gap-1.5 text-foreground dark:text-slate-300">
                                                 <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                                                 {formatDate(q.date)}
                                             </div>
                                         </div>
-                                        <div className="h-8 w-px bg-border"></div>
+                                        <div className="h-8 w-px bg-emerald-200 dark:bg-slate-800"></div>
                                         <div className="flex flex-col items-start">
-                                            <span className="text-xs text-muted-foreground uppercase">Vencimento</span>
-                                            <div className="flex items-center gap-1.5 text-foreground">
+                                            <span className="text-xs text-muted-foreground dark:text-slate-500 uppercase">Vencimento</span>
+                                            <div className="flex items-center gap-1.5 text-foreground dark:text-slate-300">
                                                 <Calendar className="w-3.5 h-3.5 text-rose-500" />
                                                 {formatDate(q.validUntil)}
                                             </div>
@@ -306,7 +305,7 @@ export const QuotesPage: React.FC = () => {
                                     {/* Value & Status */}
                                     <div className="flex items-center gap-4">
                                         <div className="text-right">
-                                            <div className="text-xs text-muted-foreground uppercase">{q.items?.length || 0} itens</div>
+                                            <div className="text-xs text-muted-foreground dark:text-slate-500 uppercase">{q.items?.length || 0} itens</div>
                                             <div className="text-lg font-bold text-emerald-500">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}
                                             </div>
@@ -337,7 +336,7 @@ export const QuotesPage: React.FC = () => {
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(q.id); }}
-                                        className="p-1.5 bg-secondary hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500 rounded transition-colors"
+                                        className="p-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-rose-500 hover:text-rose-600 dark:text-rose-500 rounded transition-colors"
                                     >
                                         <Trash2 size={14} />
                                     </button>

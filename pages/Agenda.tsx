@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { processTransactions } from '../services/financeLogic';
-import { ChevronLeft, ChevronRight, Clock, Plus, Users as UsersIcon, Calendar as CalendarIcon, CheckCircle2, AlertCircle, DollarSign, CreditCard, FileText, CheckSquare, Search, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Plus, Users as UsersIcon, Calendar as CalendarIcon, CheckCircle2, AlertCircle, DollarSign, CreditCard, FileText, CheckSquare, Search, Filter, User as UserIcon } from 'lucide-react';
 import { Card, Loader, Button, Badge, Avatar, Input, Select } from '../components/Shared';
 import { EventModal, EventDetailModal } from '../components/Modals';
+import { FilterSelect } from '../components/FilterSelect';
 import { api } from '../services/api';
 import { CalendarEvent, User, CalendarSettings, Task, FinancialTransaction, Quote, CreditCard as ICreditCard, Project, Team } from '../types';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, parseISO, isValid, getHours, getMinutes } from 'date-fns';
@@ -405,26 +406,31 @@ export const AgendaPage: React.FC = () => {
               {format(viewDate, 'MMMM yyyy', { locale: ptBR })}
             </h2>
             <div className="flex items-center gap-2">
-              <Select
+              <FilterSelect
+                inlineLabel="Status:"
                 value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value as any)}
-                className="h-7 text-xs py-1 rounded-md bg-secondary border-border w-28 focus:ring-emerald-500/50"
-              >
-                <option value="all">Status</option>
-                <option value="upcoming">A Vencer</option>
-                <option value="overdue">Atrasado</option>
-                <option value="completed">Concluído</option>
-              </Select>
-              <Select
+                onChange={(val) => setStatusFilter(val as any)}
+                options={[
+                  { value: 'all', label: 'Todos' },
+                  { value: 'upcoming', label: 'A Vencer' },
+                  { value: 'overdue', label: 'Atrasado' },
+                  { value: 'completed', label: 'Concluído' }
+                ]}
+                darkMode={false}
+                className="min-w-[140px]"
+              />
+              <FilterSelect
+                inlineLabel="Resp:"
+                icon={<UserIcon size={14} />}
                 value={assigneeFilter}
-                onChange={e => setAssigneeFilter(e.target.value)}
-                className="h-7 text-xs py-1 rounded-md bg-secondary border-border w-32 focus:ring-emerald-500/50"
-              >
-                <option value="all">Responsável</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </Select>
+                onChange={setAssigneeFilter}
+                options={[
+                  { value: 'all', label: 'Todos' },
+                  ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+                ]}
+                darkMode={false}
+                className="min-w-[160px]"
+              />
             </div>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="sm" onClick={handlePrevMonth} className="rounded-full w-6 h-6 p-0 text-muted-foreground"><ChevronLeft size={14} /></Button>
@@ -441,7 +447,7 @@ export const AgendaPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex-1 grid grid-cols-7 grid-rows-6 h-full min-h-0 divide-x divide-y divide-border border-l border-t border-border bg-card">
+          <div className="flex-1 grid grid-cols-7 h-full min-h-0 divide-x divide-y divide-border border-l border-t border-border bg-card overflow-hidden" style={{ gridTemplateRows: 'repeat(6, minmax(100px, 1fr))' }}>
             {eachDayOfInterval({
               start: startOfWeek(startOfMonth(viewDate)),
               end: endOfWeek(endOfMonth(viewDate))
@@ -452,16 +458,16 @@ export const AgendaPage: React.FC = () => {
               const isTodayDate = isToday(day);
 
               // Show more events, but visually smaller
-              const visibleEvents = dayEvents.slice(0, 5);
-              const hiddenCount = dayEvents.length - 5;
+              const visibleEvents = dayEvents.slice(0, 2);
+              const hiddenCount = dayEvents.length - 2;
 
               return (
                 <div
                   key={day.toISOString()}
                   onClick={() => setSelectedDate(day)}
-                  className={`relative p-1 transition-all cursor-pointer group flex flex-col gap-0.5 overflow-hidden 
+                  className={`relative isolate p-2.5 h-full transition-colors cursor-pointer group flex flex-col gap-1.5 overflow-hidden 
                                         ${!isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-card'}
-                                        ${isSelected ? 'bg-secondary/80 shadow-[inset_0_0_0_2px_rgba(16,185,129,0.5)]' : 'hover:bg-secondary/20'}
+                                        ${isSelected ? 'bg-secondary/80 outline outline-2 outline-emerald-500/50' : 'hover:bg-secondary/20'}
                                     `}
                 >
                   <div className="flex justify-start items-start mb-0.5">
@@ -472,13 +478,13 @@ export const AgendaPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="flex-1 flex flex-col gap-0.5 overflow-hidden w-full px-0.5">
+                  <div className="flex-1 min-h-0 max-h-full flex flex-col gap-1.5 w-full overflow-hidden">
                     {visibleEvents.map(event => {
                       const isCompleted = event.status === 'completed' || event.status === 'done' || event.metadata?.isPaid === true;
                       return (
                         <div
                           key={event.id}
-                          className={`px-1.5 py-0.5 rounded-[2px] text-[9px] font-medium truncate w-full shadow-sm leading-tight
+                          className={`block max-w-full px-2 py-1 rounded text-[10px] font-medium truncate leading-tight relative
                                                       ${getEventPillClass(event)}
                                                       ${isCompleted ? 'line-through opacity-60 decoration-muted-foreground' : ''}
                                                   `}
@@ -490,8 +496,8 @@ export const AgendaPage: React.FC = () => {
                       );
                     })}
                     {hiddenCount > 0 && (
-                      <div className="px-1 text-center">
-                        <span className="text-[8px] leading-none text-muted-foreground font-medium hover:text-foreground transition-colors">+ {hiddenCount}</span>
+                      <div className="flex justify-center mt-1">
+                        <span className="text-[10px] leading-none px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500/30 transition-colors cursor-pointer">+ {hiddenCount}</span>
                       </div>
                     )}
                   </div>

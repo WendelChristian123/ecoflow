@@ -250,10 +250,10 @@ export const TasksPage: React.FC = () => {
   return (
     <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
       <div className="h-full flex flex-col gap-4">
-        {/* Filters Bar with Actions */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* Unified Controls Bar */}
+        <div className="flex items-center gap-2">
           {/* 1. Search */}
-          <div className="relative mr-auto">
+          <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Filter size={14} />
             </div>
@@ -262,7 +262,7 @@ export const TasksPage: React.FC = () => {
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-40 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+              className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-28 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
             />
           </div>
 
@@ -329,7 +329,6 @@ export const TasksPage: React.FC = () => {
             darkMode={false}
             className="min-w-[180px]"
           />
-
 
           {/* 7. View Toggle + Manage Stages */}
           <div className="flex bg-card border border-border rounded-lg p-0.5">

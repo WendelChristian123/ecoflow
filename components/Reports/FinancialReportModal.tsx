@@ -313,7 +313,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
                 {/* Header */}
                 {/* Header */}
@@ -334,20 +334,19 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     <div className="p-5">
                         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                             <div className="flex flex-col gap-2">
-                                <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Período</label>
                                 <DateRangePicker
                                     date={dateRange}
                                     setDate={setDateRange}
-                                    className="bg-slate-900 border-slate-700 text-slate-200"
                                 />
                             </div>
                             <div className="flex flex-col gap-2">
                                 <FilterSelect
                                     inlineLabel="Conta:"
+                                    label="CONTA/BANCO"
                                     value={accountFilter}
                                     onChange={setAccountFilter}
                                     options={[
-                                        { value: 'all', label: 'Todas' },
+                                        { value: 'all', label: 'Todas Contas' },
                                         ...[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ value: a.id, label: a.name })),
                                         ...[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: `💳 ${c.name}` }))
                                     ]}
@@ -357,6 +356,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                             <div className="flex flex-col gap-2">
                                 <FilterSelect
                                     inlineLabel="Categoria:"
+                                    label="CATEGORIA"
                                     value={categoryFilter}
                                     onChange={setCategoryFilter}
                                     options={[
@@ -368,7 +368,8 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                             </div>
                             <div className="flex flex-col gap-2">
                                 <FilterSelect
-                                    inlineLabel="Cliente:"
+                                    inlineLabel="Contato:"
+                                    label="CLIENTE/FORNECEDOR"
                                     value={contactFilter}
                                     onChange={setContactFilter}
                                     options={[
@@ -381,13 +382,14 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                             <div className="flex flex-col gap-2">
                                 <FilterSelect
                                     inlineLabel="Tipo:"
+                                    label="TIPO"
                                     value={typeFilter}
                                     onChange={setTypeFilter}
                                     options={[
                                         { value: 'all', label: 'Todos' },
                                         { value: 'income', label: 'Receitas' },
                                         { value: 'expense', label: 'Despesas' },
-                                        { value: 'transfer', label: 'Transferências' }
+                                        { value: 'transfer', label: 'Transferências' },
                                     ]}
                                     darkMode={true}
                                 />
@@ -395,13 +397,14 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                             <div className="flex flex-col gap-2">
                                 <FilterSelect
                                     inlineLabel="Status:"
+                                    label="STATUS"
                                     value={statusFilter}
                                     onChange={setStatusFilter}
                                     options={[
                                         { value: 'all', label: 'Todos' },
                                         { value: 'paid', label: 'Realizado' },
                                         { value: 'pending', label: 'A Vencer' },
-                                        { value: 'overdue', label: 'Atrasado' }
+                                        { value: 'overdue', label: 'Atrasado' },
                                     ]}
                                     darkMode={true}
                                 />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Input, Select, Badge, Loader } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { Share2, Trash2, Calendar, Clock, Lock, Plus, UserPlus } from 'lucide-react';
 import { api, getErrorMessage } from '../../services/api';
 import { supabase } from '../../services/supabase'; // logic fix
@@ -206,16 +207,14 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
                                     <label className="text-xs font-bold text-muted-foreground uppercase">
                                         Usuário ({usersList.length}) - T: {user?.tenantId ? user.tenantId.substring(0, 4) : 'N/A'}
                                     </label>
-                                    <select
-                                        className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    <FilterSelect
                                         value={selectedUserId}
-                                        onChange={e => setSelectedUserId(e.target.value)}
-                                    >
-                                        <option value="">Selecione um usuário...</option>
-                                        {usersList.map(u => (
-                                            <option key={u.id} value={u.id}>{u.name || u.email}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => setSelectedUserId(val)}
+                                        options={usersList.map(u => ({ value: u.id, label: u.name || u.email }))}
+                                        placeholder="Selecione um usuário..."
+                                        searchable
+                                        className="w-full"
+                                    />
                                 </div>
                                 <button onClick={fetchShares} className="h-10 px-3 bg-secondary rounded border border-input hover:bg-secondary/80" title="Recarregar Lista">
                                     ↻
@@ -223,30 +222,30 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-muted-foreground uppercase">Recurso</label>
-                                <select
-                                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                <FilterSelect
                                     value={selectedFeature}
-                                    onChange={e => setSelectedFeature(e.target.value)}
-                                >
-                                    <option value="">Selecione...</option>
-                                    <option value="all" className="font-bold">✨ Todos os Recursos</option>
-                                    {features.map(f => (
-                                        <option key={f.id} value={f.id}>{f.name}</option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setSelectedFeature(val)}
+                                    options={[
+                                        { value: 'all', label: '✨ Todos os Recursos' },
+                                        ...features.map(f => ({ value: f.id, label: f.name }))
+                                    ]}
+                                    placeholder="Selecione..."
+                                    className="w-full"
+                                />
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-muted-foreground uppercase">Validade</label>
-                                <select
-                                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                <FilterSelect
                                     value={validity}
-                                    onChange={e => setValidity(e.target.value)}
-                                >
-                                    <option value="24h">24 Horas</option>
-                                    <option value="7d">7 Dias</option>
-                                    <option value="30d">30 Dias</option>
-                                    <option value="permanent">Permanente</option>
-                                </select>
+                                    onChange={(val) => setValidity(val)}
+                                    options={[
+                                        { value: '24h', label: '24 Horas' },
+                                        { value: '7d', label: '7 Dias' },
+                                        { value: '30d', label: '30 Dias' },
+                                        { value: 'permanent', label: 'Permanente' }
+                                    ]}
+                                    className="w-full"
+                                />
                             </div>
                         </div>
                         <div className="flex justify-end">

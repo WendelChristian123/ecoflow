@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact, TenantSettings } from '../../types';
-import { Loader, Badge, cn, Button, Select, LinkInput } from '../../components/Shared';
+import { Loader, Badge, cn, Button, LinkInput } from '../../components/Shared';
+import { FilterSelect } from '../../components/FilterSelect';
 import { TransactionModal, DrilldownModal, ConfirmationModal, RecurrenceActionModal } from '../../components/Modals';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { TrendingUp, TrendingDown, Filter, Plus, Calendar, Search, ArrowRight, DollarSign, MoreVertical, Edit2, Trash2, CheckSquare, Square, ThumbsUp, ThumbsDown, Copy, CreditCard as CardIcon, ChevronLeft, ChevronRight, FileText, ShoppingBag, Briefcase, Zap, Home, Car, Utensils, PiggyBank } from 'lucide-react';
@@ -402,45 +403,41 @@ export const FinancialTransactions: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <Select
+                    <FilterSelect
                         value={filters.type}
-                        onChange={e => setFilters({ ...filters, type: e.target.value as any })}
-                        className="py-2.5 bg-card border-border text-sm focus:border-primary transition-all rounded-lg text-foreground font-medium"
-                    >
-                        <option value="all" className="bg-card">Todas Operações</option>
-                        <option value="income" className="bg-card">Receitas</option>
-                        <option value="expense" className="bg-card">Despesas</option>
-                        <option value="transfer" className="bg-card">Transferências</option>
-                    </Select>
+                        onChange={(val) => setFilters({ ...filters, type: val as any })}
+                        options={[
+                            { value: 'all', label: 'Todas Operações' },
+                            { value: 'income', label: 'Receitas' },
+                            { value: 'expense', label: 'Despesas' },
+                            { value: 'transfer', label: 'Transferências' }
+                        ]}
+                        className="w-full"
+                    />
 
-                    <Select
+                    <FilterSelect
                         value={filters.status}
-                        onChange={e => setFilters({ ...filters, status: e.target.value })}
-                        className="py-2.5 bg-card border-border text-sm focus:border-primary transition-all rounded-lg text-foreground font-medium"
-                    >
-                        <option value="all" className="bg-card">Todos Status</option>
-                        <option value="paid" className="bg-card">Pagos</option>
-                        <option value="pending" className="bg-card">Pendentes</option>
-                        <option value="overdue" className="bg-card">Vencidos</option>
-                    </Select>
+                        onChange={(val) => setFilters({ ...filters, status: val })}
+                        options={[
+                            { value: 'all', label: 'Todos Status' },
+                            { value: 'paid', label: 'Pagos' },
+                            { value: 'pending', label: 'Pendentes' },
+                            { value: 'overdue', label: 'Vencidos' }
+                        ]}
+                        className="w-full"
+                    />
 
-                    <Select
+                    <FilterSelect
                         value={filters.accountId}
-                        onChange={e => setFilters({ ...filters, accountId: e.target.value })}
-                        className="py-2.5 bg-card border-border text-sm focus:border-primary transition-all rounded-lg text-foreground font-medium"
-                    >
-                        <option value="all" className="bg-card">Contas e Cartões</option>
-                        <optgroup label="Contas Bancárias">
-                            {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id} className="bg-card">{acc.name}</option>
-                            ))}
-                        </optgroup>
-                        <optgroup label="Cartões de Crédito">
-                            {cards.map(card => (
-                                <option key={card.id} value={`card_${card.id}`} className="bg-card">{card.name}</option>
-                            ))}
-                        </optgroup>
-                    </Select>
+                        onChange={(val) => setFilters({ ...filters, accountId: val })}
+                        options={[
+                            { value: 'all', label: 'Contas e Cartões' },
+                            ...accounts.map(acc => ({ value: acc.id, label: acc.name, group: 'Contas Bancárias' })),
+                            ...cards.map(card => ({ value: `card_${card.id}`, label: card.name, group: 'Cartões de Crédito' }))
+                        ]}
+                        className="w-full"
+                        searchable
+                    />
 
                     <div className="relative group">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={16} />

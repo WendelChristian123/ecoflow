@@ -159,8 +159,8 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-[95vw] lg:max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
                 <div className="p-6 border-b border-slate-800 flex justify-between items-start">
                     <div>
                         <h2 className="text-2xl font-bold text-white flex items-center gap-2"><RefreshCw className="text-emerald-500" /> Relatório de Contratos</h2>
@@ -191,21 +191,19 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Start Date Range */}
                     <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500 mb-1">Filtrar por Início de Contrato</label>
                         <DateRangePicker
                             date={startDateRange}
                             setDate={setStartDateRange}
-                            className="bg-slate-800 border-slate-700 text-slate-200"
+                            inlineLabel="Início:"
                         />
                     </div>
 
                     {/* End Date Range */}
                     <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500 mb-1">Filtrar por Fim de Contrato</label>
                         <DateRangePicker
                             date={endDateRange}
                             setDate={setEndDateRange}
-                            className="bg-slate-800 border-slate-700 text-slate-200"
+                            inlineLabel="Fim:"
                         />
                     </div>
                 </div>
@@ -271,7 +269,7 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-end gap-3 rounded-b-2xl">
+                <div className="p-4 border-t border-slate-800 bg-slate-900 flex justify-end gap-3 rounded-b-2xl">
                     <Button variant="ghost" onClick={onClose}>Fechar</Button>
                     <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2" onClick={handlePrint}>
                         <Printer size={18} /> Imprimir / PDF

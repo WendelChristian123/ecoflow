@@ -113,8 +113,8 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-[95vw] lg:max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
                 <div className="p-6 border-b border-slate-800 flex justify-between items-start">
                     <div>
                         <h2 className="text-2xl font-bold text-white flex items-center gap-2"><Users className="text-emerald-500" /> Relatório de Contatos</h2>
@@ -194,7 +194,7 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-end gap-3 rounded-b-2xl">
+                <div className="p-4 border-t border-slate-800 bg-slate-900 flex justify-end gap-3 rounded-b-2xl">
                     <Button variant="ghost" onClick={onClose}>Fechar</Button>
                     <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2" onClick={handlePrint}>
                         <Printer size={18} /> Imprimir / PDF

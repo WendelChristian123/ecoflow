@@ -233,8 +233,8 @@ export const CreditCardReportModal: React.FC<CreditCardReportModalProps> = ({ is
     if (!isOpen || !card) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-slate-900 rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col border border-slate-800 shadow-2xl">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-slate-900 rounded-2xl w-full max-w-[95vw] lg:max-w-5xl h-[85vh] flex flex-col border border-slate-800 shadow-2xl overflow-hidden">
 
                 {/* Header (Screen Only) */}
                 <div className="flex justify-between items-center p-4 border-b border-slate-800">

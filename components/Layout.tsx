@@ -11,6 +11,7 @@ import { useRBAC } from '../context/RBACContext';
 import { useTenant } from '../context/TenantContext';
 import { UserProfileModal } from './UserModals';
 import { CompactThemeToggle } from './CompactThemeToggle';
+import { NotificationPopover } from './NotificationPopover';
 import { User } from '../types';
 import { api } from '../services/api';
 
@@ -364,13 +365,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[90] lg:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
 
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 bg-card border-r border-border transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-900/5",
+                "fixed inset-y-0 left-0 z-[100] bg-card border-r border-border transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-900/5",
                 "lg:static",
                 isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
                 (!isMobileMenuOpen && isCollapsed) ? "lg:w-20" : "lg:w-64"
@@ -488,7 +489,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </aside>
 
             <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-secondary/5">
-                <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-30 sticky top-0 shadow-sm">
+                <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-[60] sticky top-0 shadow-sm">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>
                         <div className="flex flex-col">
@@ -499,10 +500,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <Bell size={20} className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors" />
-                            <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full animate-pulse"></span>
-                        </div>
+                        <NotificationPopover />
                         <CompactThemeToggle />
                         <div className="h-6 w-px bg-border"></div>
                         <UserDropdown onOpenProfile={handleOpenProfile} />

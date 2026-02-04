@@ -45,11 +45,13 @@ export const Button: React.FC<ButtonProps> = ({ className, variant = 'primary', 
 };
 
 // --- Inputs ---
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   leftIcon?: React.ReactNode;
+  inlineLabel?: string; // New prop for inline internal labels
 }
-export const Input: React.FC<InputProps> = ({ className, label, leftIcon, ...props }) => (
+
+export const Input: React.FC<InputProps> = ({ className, label, leftIcon, inlineLabel, ...props }) => (
   <div className="w-full">
     {label && <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
     <div className="relative group">
@@ -58,10 +60,19 @@ export const Input: React.FC<InputProps> = ({ className, label, leftIcon, ...pro
           {leftIcon}
         </div>
       )}
+      {inlineLabel && (
+        <div className={cn(
+          "absolute inset-y-0 left-0 flex items-center pointer-events-none text-muted-foreground font-semibold text-sm select-none",
+          leftIcon ? "pl-10" : "pl-4"
+        )}>
+          {inlineLabel}
+        </div>
+      )}
       <input
         className={cn(
           "w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium shadow-sm",
           leftIcon && "pl-10",
+          inlineLabel && (leftIcon ? "pl-24" : "pl-16"), // Adjust padding for inline label
           className
         )}
         {...props}

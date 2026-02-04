@@ -3,7 +3,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../../services/api';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact } from '../../types';
-import { Loader, Card, Badge, cn, Button, Select } from '../../components/Shared';
+import { Loader, Card, Badge, cn, Button } from '../../components/Shared';
+import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
 import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText } from 'lucide-react';
 import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
@@ -608,12 +609,17 @@ export const FinancialOverview: React.FC = () => {
                         <BarChart2 size={16} /> Evolução Financeira
                     </h3>
                     <div className="flex items-center gap-2">
-                        <Select value={comparisonMode} onChange={(e) => setComparisonMode(e.target.value as any)} className="w-[160px] py-1 text-xs bg-secondary border-border rounded-lg text-foreground focus:border-primary">
-                            <option value="month">Mês Atual vs Anterior</option>
-                            <option value="semester">Últimos 6 Meses</option>
-                            <option value="year">Anual</option>
-                            <option value="custom">Personalizado</option>
-                        </Select>
+                        <FilterSelect
+                            value={comparisonMode}
+                            onChange={(val) => setComparisonMode(val as any)}
+                            options={[
+                                { value: 'month', label: 'Mês Atual vs Anterior' },
+                                { value: 'semester', label: 'Últimos 6 Meses' },
+                                { value: 'year', label: 'Anual' },
+                                { value: 'custom', label: 'Personalizado' }
+                            ]}
+                            className="w-[200px]"
+                        />
                         {comparisonMode === 'custom' && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 ml-2">
                                 <input

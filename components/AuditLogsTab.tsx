@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { AuditLog } from '../types';
-import { Loader, Badge, Avatar } from './Shared';
+import { Badge, Avatar } from './Shared';
+import { FilterSelect } from './FilterSelect';
 import { Search, Filter, ShieldAlert, Clock, User as UserIcon, Calendar, X, ExternalLink, ChevronRight, History, FileText } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -223,41 +224,51 @@ export const AuditLogsTab: React.FC = () => {
                         </div>
 
                         {/* User Select */}
-                        <div className="relative">
-                            <select
+                        <div className="min-w-[150px]">
+                            <FilterSelect
                                 value={selectedUser}
-                                onChange={e => setSelectedUser(e.target.value)}
-                                className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-foreground dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none min-w-[120px] cursor-pointer"
-                            >
-                                <option value="ALL">Todos Usuários</option>
-                                {uniqueUsers.map(u => <option key={u} value={u}>{u}</option>)}
-                            </select>
-                            <UserIcon size={12} className="absolute left-2.5 top-2.5 text-muted-foreground dark:text-slate-500 pointer-events-none" />
+                                onChange={(val) => setSelectedUser(val)}
+                                options={[
+                                    { value: 'ALL', label: 'Todos Usuários' },
+                                    ...uniqueUsers.map(u => ({ value: u, label: u }))
+                                ]}
+                                placeholder="Todos Usuários"
+                                className="w-full"
+                                searchable
+                            />
                         </div>
 
                         {/* Module Select */}
-                        <select
-                            value={selectedModule}
-                            onChange={e => setSelectedModule(e.target.value)}
-                            className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-foreground dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer"
-                        >
-                            <option value="ALL">Todos Módulos</option>
-                            {uniqueModules.map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
+                        <div className="min-w-[150px]">
+                            <FilterSelect
+                                value={selectedModule}
+                                onChange={(val) => setSelectedModule(val)}
+                                options={[
+                                    { value: 'ALL', label: 'Todos Módulos' },
+                                    ...uniqueModules.map(m => ({ value: m, label: m }))
+                                ]}
+                                placeholder="Todos Módulos"
+                                className="w-full"
+                            />
+                        </div>
 
                         {/* Action Select */}
-                        <select
-                            value={actionFilter}
-                            onChange={e => setActionFilter(e.target.value as any)}
-                            className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-foreground dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none font-medium cursor-pointer"
-                        >
-                            <option value="ALL">Todas as Ações</option>
-                            <option value="CRITICAL">⚠️ Críticas</option>
-                            <option value="LOGIN">Acessos</option>
-                            <option value="INSERT">Criação</option>
-                            <option value="UPDATE">Edição</option>
-                            <option value="DELETE">Exclusão</option>
-                        </select>
+                        <div className="min-w-[150px]">
+                            <FilterSelect
+                                value={actionFilter}
+                                onChange={(val) => setActionFilter(val as any)}
+                                options={[
+                                    { value: 'ALL', label: 'Todas as Ações' },
+                                    { value: 'CRITICAL', label: '⚠️ Críticas' },
+                                    { value: 'LOGIN', label: 'Acessos' },
+                                    { value: 'INSERT', label: 'Criação' },
+                                    { value: 'UPDATE', label: 'Edição' },
+                                    { value: 'DELETE', label: 'Exclusão' }
+                                ]}
+                                placeholder="Todas as Ações"
+                                className="w-full"
+                            />
+                        </div>
 
                         {/* Clear Filters Button */}
                         {(search || dateFrom || dateTo || selectedUser !== 'ALL' || selectedModule !== 'ALL' || actionFilter !== 'ALL') && (

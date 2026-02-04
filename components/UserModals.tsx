@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, cn } from './Shared';
+import { FilterSelect } from './FilterSelect';
 import { User, UserRole, LegacyUserPermissions, Delegation } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
@@ -200,14 +201,16 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                 />
 
                 <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Tipo de Acesso</label>
-                    <Select
+                    <FilterSelect
+                        inlineLabel="Tipo de Acesso:"
                         value={formData.role}
-                        onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
-                    >
-                        <option value="user">Usuário Padrão</option>
-                        <option value="admin">Administrador (Acesso Total)</option>
-                    </Select>
+                        onChange={(val) => setFormData({ ...formData, role: val as UserRole })}
+                        options={[
+                            { value: 'user', label: 'Usuário Padrão' },
+                            { value: 'admin', label: 'Administrador (Acesso Total)' }
+                        ]}
+                        className="w-full"
+                    />
                 </div>
 
                 {formData.role === 'user' && (
@@ -378,24 +381,28 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="text-xs text-muted-foreground mb-1 block">Tipo de Acesso</label>
-                            <Select
+                            <FilterSelect
                                 value={role}
-                                onChange={e => setRole(e.target.value)}
-                            >
-                                <option value="user">Usuário Padrão</option>
-                                <option value="admin">Administrador</option>
-                            </Select>
+                                onChange={(val) => setRole(val)}
+                                options={[
+                                    { value: 'user', label: 'Usuário Padrão' },
+                                    { value: 'admin', label: 'Administrador' }
+                                ]}
+                                className="w-full"
+                            />
                         </div>
                         <div>
                             <label className="text-xs text-muted-foreground mb-1 block">Status do Acesso</label>
-                            <Select
+                            <FilterSelect
                                 value={status}
-                                onChange={e => setStatus(e.target.value)}
-                            >
-                                <option value="active">Ativo (Acesso Liberado)</option>
-                                <option value="suspended">Suspenso (Login Bloqueado)</option>
-                                <option value="blocked">Banido</option>
-                            </Select>
+                                onChange={(val) => setStatus(val)}
+                                options={[
+                                    { value: 'active', label: 'Ativo (Acesso Liberado)' },
+                                    { value: 'suspended', label: 'Suspenso (Login Bloqueado)' },
+                                    { value: 'blocked', label: 'Banido' }
+                                ]}
+                                className="w-full"
+                            />
                         </div>
                     </div>
                 </div>
@@ -530,10 +537,20 @@ export const DelegationModal: React.FC<DelegationModalProps> = ({ isOpen, onClos
 
                 <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Quem receberá o acesso?</label>
-                    <Select value={delegateId} onChange={e => setDelegateId(e.target.value)} required disabled={!!initialDelegations}>
-                        <option value="">Selecione um usuário...</option>
-                        {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
-                    </Select>
+                    <FilterSelect
+                        value={delegateId}
+                        onChange={(val) => setDelegateId(val)}
+                        options={[
+                            ...[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => ({
+                                value: u.id,
+                                label: `${u.name} (${u.email})`
+                            }))
+                        ]}
+                        placeholder="Selecione um usuário..."
+                        disabled={!!initialDelegations}
+                        className="w-full"
+                        searchable
+                    />
                 </div>
 
                 <div className="bg-secondary/30 rounded-lg border border-border p-4">

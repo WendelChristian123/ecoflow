@@ -494,27 +494,7 @@ export const TeamsPage: React.FC = () => {
             </Button>
 
 
-            {/* View Toggle + Manage Stages */}
-            <div className="flex bg-card border border-border rounded-lg p-0.5">
-              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                <LayoutList size={16} />
-              </button>
-              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                <span className="text-xs font-bold px-1">Grid</span>
-              </button>
-              <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                <Kanban size={16} />
-              </button>
-              {viewMode === 'board' && (
-                <button
-                  onClick={() => setIsStageManagerOpen(true)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors border-l border-border"
-                >
-                  <Settings size={14} />
-                  <span className="hidden sm:inline">Etapas</span>
-                </button>
-              )}
-            </div>
+
           </div>
         </div>
 

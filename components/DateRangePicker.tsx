@@ -10,9 +10,10 @@ interface DateRangePickerProps {
     date: DateRange | undefined;
     setDate: (date: DateRange | undefined) => void;
     className?: string;
+    inlineLabel?: string;
 }
 
-export const DateRangePicker: React.FC<DateRangePickerProps> = ({ date, setDate, className }) => {
+export const DateRangePicker: React.FC<DateRangePickerProps> = ({ date, setDate, className, inlineLabel }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -106,8 +107,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ date, setDate,
 
     const formatDateRange = () => {
         if (!date?.from) return 'Selecione o período';
-        if (!date.to) return `${format(date.from, 'dd/MM/yyyy')} - ...`;
-        return `${format(date.from, 'dd/MM/yyyy')} - ${format(date.to, 'dd/MM/yyyy')}`;
+        if (!date.to) return `${format(date.from, 'dd/MM/yy')} - ...`;
+        return `${format(date.from, 'dd/MM/yy')} - ${format(date.to, 'dd/MM/yy')}`;
     };
 
     return (
@@ -115,19 +116,24 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ date, setDate,
             <style>{css}</style>
             <div
                 className={cn(
-                    "flex items-center justify-between w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-200 cursor-pointer hover:border-slate-600 transition-colors group",
-                    isOpen && "ring-2 ring-emerald-500/20 border-emerald-500"
+                    "flex items-center justify-between w-full bg-slate-800 border border-slate-700 rounded-lg px-3 h-[34px] text-sm text-slate-200 cursor-pointer hover:bg-slate-700 transition-colors group",
+                    isOpen && "ring-1 ring-emerald-500 border-emerald-500"
                 )}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <div className="flex items-center gap-3">
-                    <CalendarIcon size={18} className="text-slate-500 group-hover:text-emerald-500 transition-colors" />
-                    <span className={!date?.from ? "text-slate-500" : ""}>{formatDateRange()}</span>
+                <div className="flex items-center gap-2 overflow-hidden w-full">
+                    <CalendarIcon size={16} className="text-slate-500 group-hover:text-emerald-500 transition-colors shrink-0" />
+                    <span className="truncate flex items-center gap-1 w-full">
+                        {inlineLabel && <span className="text-slate-500 font-semibold header-label text-xs whitespace-nowrap">{inlineLabel}</span>}
+                        <span className={cn("truncate w-full", !date?.from ? "text-slate-500" : "font-medium")}>
+                            {date?.from ? formatDateRange() : !inlineLabel ? formatDateRange() : "Todo o período"}
+                        </span>
+                    </span>
                 </div>
                 {date?.from && (
                     <div
                         onClick={(e) => { e.stopPropagation(); setDate(undefined); }}
-                        className="p-1 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                        className="p-0.5 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors shrink-0 ml-1"
                     >
                         <X size={14} />
                     </div>
