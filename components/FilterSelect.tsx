@@ -11,6 +11,8 @@ export interface FilterOption {
 
 interface FilterSelectProps {
     label?: string; // Title inside the dropdown (e.g. "RESPONSÁVEL")
+    externalLabel?: string; // Label shown above the component
+    inlineLabel?: string; // Label shown as prefix inside button (e.g. "Resp: ")
     options: FilterOption[];
     value: string;
     onChange: (value: string) => void;
@@ -18,17 +20,21 @@ interface FilterSelectProps {
     className?: string;
     triggerClassName?: string;
     placeholder?: string;
+    darkMode?: boolean; // Force dark background
 }
 
 export const FilterSelect: React.FC<FilterSelectProps> = ({
     label,
+    externalLabel,
+    inlineLabel,
     options,
     value,
     onChange,
     icon,
     className,
     triggerClassName,
-    placeholder = "Selecione"
+    placeholder = "Selecione",
+    darkMode = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -48,12 +54,20 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
 
     return (
         <div className={cn("relative", className)} ref={containerRef}>
+            {externalLabel && (
+                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-2">
+                    {externalLabel}
+                </label>
+            )}
             {/* Trigger Button */}
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    "flex items-center gap-2 bg-card border border-border text-foreground text-sm h-[34px] rounded-lg px-3 focus:ring-1 focus:ring-primary outline-none hover:bg-muted/50 transition-colors min-w-[140px] justify-between",
+                    "flex items-center gap-2 text-sm h-[34px] rounded-lg px-3 focus:ring-1 focus:ring-primary outline-none transition-colors min-w-[140px] justify-between w-full",
+                    darkMode
+                        ? "bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800"
+                        : "bg-card border border-border text-foreground hover:bg-muted/50",
                     triggerClassName
                 )}
             >
@@ -64,10 +78,10 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
                             {selectedOption.avatarUrl !== undefined && (
                                 <Avatar name={selectedOption.label} src={selectedOption.avatarUrl} size="sm" />
                             )}
-                            {/* For "Resp: Todos" scenario, maybe we handle the specialized display externally or inside options?
-                        Let's assume the label passed in options is what we show.
-                     */}
-                            <span className="truncate">{selectedOption.label}</span>
+                            <span className="truncate">
+                                {inlineLabel && <span className="font-semibold text-muted-foreground">{inlineLabel} </span>}
+                                {selectedOption.label}
+                            </span>
                         </div>
                     ) : (
                         <span className="text-muted-foreground">{placeholder}</span>
@@ -78,7 +92,10 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-2xl z-[50] animate-in fade-in zoom-in-95 duration-100 p-2">
+                <div className={cn(
+                    "absolute top-full left-0 mt-2 w-64 border rounded-xl shadow-2xl z-[50] animate-in fade-in zoom-in-95 duration-100 p-2",
+                    darkMode ? "bg-slate-900 border-slate-700" : "bg-card border-border"
+                )}>
                     {label && (
                         <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                             {label}
@@ -99,7 +116,9 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
                                         "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left",
                                         isSelected
                                             ? "bg-emerald-500 text-white shadow-md font-medium"
-                                            : "text-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
+                                            : darkMode
+                                                ? "text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-400"
+                                                : "text-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
                                     )}
                                 >
                                     <div className="flex items-center gap-2 truncate">

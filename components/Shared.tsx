@@ -5,6 +5,7 @@ import { twMerge } from 'tailwind-merge';
 import { X, Trash2, Link as LinkIcon, Plus } from 'lucide-react';
 import { Task, User, Status, Priority } from '../types';
 import { parseISO, isPast, isToday, differenceInDays } from 'date-fns';
+import { FilterSelect } from './FilterSelect';
 
 // Utility for classes
 export function cn(...inputs: ClassValue[]) {
@@ -421,12 +422,6 @@ export const TaskTableView: React.FC<{
     return 'border-l-4 border-l-emerald-500 bg-card hover:bg-emerald-500/5';
   };
 
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>, taskId: string) => {
-    if (onStatusChange) {
-      onStatusChange(taskId, e.target.value as Status);
-    }
-  };
-
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
       <table className="w-full text-left text-sm text-muted-foreground">
@@ -467,25 +462,19 @@ export const TaskTableView: React.FC<{
                     {task.description && <div className="text-xs text-muted-foreground truncate max-w-[200px] mt-0.5">{task.description}</div>}
                   </td>
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="relative w-36">
-                      <select
+                    <div className="w-36">
+                      <FilterSelect
                         value={task.status}
-                        onChange={(e) => handleStatusChange(e, task.id)}
-                        className={cn(
-                          "appearance-none w-full text-xs font-semibold px-3 py-1.5 rounded-md border outline-none cursor-pointer pr-8 transition-colors shadow-sm",
-                          task.status === 'done' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                            task.status === 'todo' ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 border-border' :
-                              'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
-                        )}
-                      >
-                        <option value="todo" className="bg-popover text-popover-foreground">A Fazer</option>
-                        <option value="in_progress" className="bg-popover text-popover-foreground">Em Progresso</option>
-                        <option value="review" className="bg-popover text-popover-foreground">Revisão</option>
-                        <option value="done" className="bg-popover text-popover-foreground">Concluído</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-current opacity-50">
-                        <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                      </div>
+                        onChange={(val) => onStatusChange && onStatusChange(task.id, val as Status)}
+                        options={[
+                          { value: 'todo', label: 'A Fazer' },
+                          { value: 'in_progress', label: 'Em Progresso' },
+                          { value: 'review', label: 'Revisão' },
+                          { value: 'done', label: 'Concluído' }
+                        ]}
+                        darkMode={false}
+                        className="text-xs"
+                      />
                     </div>
                   </td>
                   <td className="px-6 py-4">

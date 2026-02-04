@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Quote } from '../../types';
-import { Button, Select, Badge } from '../Shared';
+import { Button, Badge } from '../Shared';
+import { FilterSelect, FilterOption } from '../FilterSelect';
 import { X, Printer, FileText } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -210,31 +211,42 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                 </div>
 
                 {/* Filters */}
-                <div className="p-5 bg-slate-950 border-b border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4 shadow-inner">
-                    <div className="flex flex-col gap-2 md:col-span-2">
-                        <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Período</label>
-                        <DateRangePicker
-                            date={dateRange}
-                            setDate={setDateRange}
-                            className="bg-slate-900 border-slate-700 text-slate-200 w-full"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Status</label>
-                        <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
-                            <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
-                            <option value="draft" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Rascunho</option>
-                            <option value="sent" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Enviado</option>
-                            <option value="approved" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Aprovado</option>
-                            <option value="rejected" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Rejeitado</option>
-                        </Select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Responsável</label>
-                        <Select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
-                            <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
-                            {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{u.name}</option>)}
-                        </Select>
+                <div className="p-5 bg-slate-950 border-b border-slate-800 shadow-inner">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Período</label>
+                            <DateRangePicker
+                                date={dateRange}
+                                setDate={setDateRange}
+                                className="bg-slate-900 border-slate-700 text-slate-200"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <FilterSelect
+                                inlineLabel="Status:"
+                                value={statusFilter}
+                                onChange={setStatusFilter}
+                                options={[
+                                    { value: 'all', label: 'Todos' },
+                                    { value: 'won', label: 'Ganhos' },
+                                    { value: 'lost', label: 'Perdidos' },
+                                    { value: 'in_progress', label: 'Em Andamento' }
+                                ]}
+                                darkMode={true}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <FilterSelect
+                                inlineLabel="Resp:"
+                                value={assigneeFilter}
+                                onChange={setAssigneeFilter}
+                                options={[
+                                    { value: 'all', label: 'Todos' },
+                                    ...users.map(u => ({ value: u.id, label: u.name }))
+                                ]}
+                                darkMode={true}
+                            />
+                        </div>
                     </div>
                 </div>
 

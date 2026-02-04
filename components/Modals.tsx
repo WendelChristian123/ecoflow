@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput, CurrencyInput } from './Shared';
+import { FilterSelect } from './FilterSelect';
 import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
@@ -937,66 +938,73 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select
-                        label="Projeto (Opcional)"
-                        value={formData.projectId || ''}
-                        onChange={e => setFormData({ ...formData, projectId: e.target.value || undefined })}
-                    >
-                        <option value="">Nenhum Projeto</option>
-                        {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </Select>
+                    <FilterSelect
+                        externalLabel="PROJETO (OPCIONAL)"
+                        label="PROJETO (OPCIONAL)"
+                        value={formData.projectId || 'none'}
+                        onChange={(val) => setFormData({ ...formData, projectId: val === 'none' ? undefined : val })}
+                        options={[
+                            { value: 'none', label: 'Nenhum Projeto' },
+                            ...projects.map(p => ({ value: p.id, label: p.name }))
+                        ]}
+                        darkMode={true}
+                    />
 
-                    <Select
-                        label="Equipe (Opcional)"
-                        value={formData.teamId || ''}
-                        onChange={e => setFormData({ ...formData, teamId: e.target.value || undefined })}
-                    >
-                        <option value="">Nenhuma Equipe</option>
-                        {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </Select>
+                    <FilterSelect
+                        externalLabel="EQUIPE (OPCIONAL)"
+                        label="EQUIPE (OPCIONAL)"
+                        value={formData.teamId || 'none'}
+                        onChange={(val) => setFormData({ ...formData, teamId: val === 'none' ? undefined : val })}
+                        options={[
+                            { value: 'none', label: 'Nenhuma Equipe' },
+                            ...teams.map(t => ({ value: t.id, label: t.name }))
+                        ]}
+                        darkMode={true}
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select
-                        label="Status"
+                    <FilterSelect
+                        externalLabel="STATUS"
+                        label="STATUS"
                         value={formData.status}
-                        onChange={e => setFormData({ ...formData, status: e.target.value as any })}
-                    >
-                        <option value="todo">A Fazer</option>
-                        <option value="in_progress">Em Progresso</option>
-                        <option value="review">Revisão</option>
-                        <option value="done">Concluído</option>
-                    </Select>
+                        onChange={(val) => setFormData({ ...formData, status: val as any })}
+                        options={[
+                            { value: 'todo', label: 'A Fazer' },
+                            { value: 'in_progress', label: 'Em Progresso' },
+                            { value: 'review', label: 'Revisão' },
+                            { value: 'done', label: 'Concluído' }
+                        ]}
+                        darkMode={true}
+                    />
 
-                    <Select
-                        label="Prioridade"
+                    <FilterSelect
+                        externalLabel="PRIORIDADE"
+                        label="PRIORIDADE"
                         value={formData.priority}
-                        onChange={e => setFormData({ ...formData, priority: e.target.value as any })}
-                    >
-                        <option value="low">Baixa</option>
-                        <option value="medium">Média</option>
-                        <option value="high">Alta</option>
-                        <option value="urgent">Urgente</option>
-                    </Select>
+                        onChange={(val) => setFormData({ ...formData, priority: val as any })}
+                        options={[
+                            { value: 'low', label: 'Baixa' },
+                            { value: 'medium', label: 'Média' },
+                            { value: 'high', label: 'Alta' },
+                            { value: 'urgent', label: 'Urgente' }
+                        ]}
+                        darkMode={true}
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Responsável</label>
-                        <div className="relative">
-                            <UserIcon className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
-                            <select
-                                className="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-md text-sm focus:ring-1 focus:ring-primary outline-none appearance-none"
-                                value={formData.assigneeId || ''}
-                                onChange={e => setFormData({ ...formData, assigneeId: e.target.value || undefined })}
-                            >
-                                <option value="">Sem responsável</option>
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
+                    <FilterSelect
+                        externalLabel="RESPONSÁVEL"
+                        label="RESPONSÁVEL"
+                        value={formData.assigneeId || 'none'}
+                        onChange={(val) => setFormData({ ...formData, assigneeId: val === 'none' ? undefined : val })}
+                        options={[
+                            { value: 'none', label: 'Sem responsável' },
+                            ...users.map(u => ({ value: u.id, label: u.name }))
+                        ]}
+                        darkMode={true}
+                    />
                     <Input
                         label="Prazo"
                         type="datetime-local"
@@ -1638,14 +1646,18 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                             </div>
                             <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Status</label>
-                                        <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
-                                            <option value="active">Ativo</option>
-                                            <option value="on_hold">Em Espera</option>
-                                            <option value="completed">Concluído</option>
-                                        </Select>
-                                    </div>
+                                    <FilterSelect
+                                        externalLabel="STATUS"
+                                        label="STATUS"
+                                        value={formData.status}
+                                        onChange={(val) => setFormData({ ...formData, status: val as any })}
+                                        options={[
+                                            { value: 'active', label: 'Ativo' },
+                                            { value: 'on_hold', label: 'Em Espera' },
+                                            { value: 'completed', label: 'Concluído' }
+                                        ]}
+                                        darkMode={true}
+                                    />
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Prazo</label>
                                         <Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} required />

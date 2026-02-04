@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Task, Project, User } from '../../types';
-import { Button, Select, Badge, Avatar } from '../Shared';
+import { Button, Badge, Avatar } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { X, Printer, FileText } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay, isBefore, isValid } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -209,31 +210,42 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
                 </div>
 
                 {/* Filters */}
-                <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="flex flex-col gap-1 md:col-span-2">
-                        <label className="text-xs font-semibold text-slate-500">Período</label>
-                        <DateRangePicker
-                            date={dateRange}
-                            setDate={setDateRange}
-                            className="bg-slate-800 border-slate-700 text-slate-200 max-w-[280px]"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-slate-500">Responsável</label>
-                        <Select value={selectedAssignee} onChange={e => setSelectedAssignee(e.target.value)}>
-                            <option value="all">Todos</option>
-                            {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                        </Select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-slate-500">Status</label>
-                        <Select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}>
-                            <option value="all">Todos</option>
-                            <option value="pending">Pendente</option>
-                            <option value="in_progress">Em Andamento</option>
-                            <option value="done">Concluída</option>
-                            <option value="late">Atrasada</option>
-                        </Select>
+                <div className="p-4 bg-slate-900/50 border-b border-slate-800">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Período</label>
+                            <DateRangePicker
+                                date={dateRange}
+                                setDate={setDateRange}
+                                className="bg-slate-800 border-slate-700 text-slate-200"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <FilterSelect
+                                inlineLabel="Resp:"
+                                value={selectedAssignee}
+                                onChange={setSelectedAssignee}
+                                options={[
+                                    { value: 'all', label: 'Todos' },
+                                    ...users.map(u => ({ value: u.id, label: u.name }))
+                                ]}
+                                darkMode={true}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <FilterSelect
+                                inlineLabel="Status:"
+                                value={selectedStatus}
+                                onChange={setSelectedStatus}
+                                options={[
+                                    { value: 'all', label: 'Todos' },
+                                    { value: 'active', label: 'Ativos' },
+                                    { value: 'completed', label: 'Concluídos' },
+                                    { value: 'late', label: 'Atrasados' }
+                                ]}
+                                darkMode={true}
+                            />
+                        </div>
                     </div>
                 </div>
 

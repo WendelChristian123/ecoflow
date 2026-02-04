@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CatalogItem } from '../../types';
-import { Button, Select, Badge } from '../Shared';
+import { Button, Badge } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { X, Printer, ShoppingBag, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { translateCatalogType } from '../../utils/i18n';
@@ -130,12 +131,19 @@ export const CatalogReportModal: React.FC<CatalogReportModalProps> = ({ isOpen, 
 
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800">
                     <div className="flex flex-col gap-1 w-48">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Filtrar Tipo</label>
-                        <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-[34px] text-xs">
-                            <option value="all">Todos</option>
-                            <option value="product">Produtos</option>
-                            <option value="service">Serviços</option>
-                        </Select>
+                        <FilterSelect
+                            inlineLabel="Tipo:"
+                            value={typeFilter}
+                            onChange={setTypeFilter}
+                            options={[
+                                { value: 'all', label: 'Todos' },
+                                { value: 'product', label: 'Produtos' },
+                                { value: 'service', label: 'Serviços' },
+                                { value: 'combo', label: 'Combos' },
+                                { value: 'package', label: 'Pacotes' }
+                            ]}
+                            darkMode={true}
+                        />
                     </div>
                 </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, Contact } from '../../types';
-import { Button, Select, Badge } from '../Shared';
+import { Button, Badge } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { DateRangePicker } from '../DateRangePicker';
 import { DateRange } from 'react-day-picker';
 import { X, Printer, FileText, Filter, DollarSign, TrendingUp, TrendingDown, AlertCircle, Clock } from 'lucide-react';
@@ -330,61 +331,81 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
 
                 {/* Filters */}
                 <div className="flex flex-col border-b border-slate-800 bg-slate-950 shadow-inner">
-                    <div className="p-5 border-b border-slate-800/50">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Período</label>
-                            <DateRangePicker
-                                date={dateRange}
-                                setDate={setDateRange}
-                                className="bg-slate-900 border-slate-700 text-slate-200 max-w-[300px]"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="p-5 grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Conta/Banco</label>
-                            <Select value={accountFilter} onChange={e => setAccountFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
-                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todas Contas</option>
-                                <optgroup label="Contas Bancárias" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">
-                                    {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{a.name}</option>)}
-                                </optgroup>
-                                <optgroup label="Cartões de Crédito" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">
-                                    {[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{c.name}</option>)}
-                                </optgroup>
-                            </Select>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Categoria</label>
-                            <Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
-                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todas</option>
-                                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{c.name}</option>)}
-                            </Select>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Cliente/Fornecedor</label>
-                            <Select value={contactFilter} onChange={e => setContactFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
-                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
-                                {[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">{c.name}</option>)}
-                            </Select>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Tipo</label>
-                            <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
-                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
-                                <option value="income" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Receitas</option>
-                                <option value="expense" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Despesas</option>
-                                <option value="transfer" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Transferências</option>
-                            </Select>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Status</label>
-                            <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-10 text-sm bg-slate-900 border-slate-700 text-slate-200 dark:text-slate-200">
-                                <option value="all" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Todos</option>
-                                <option value="paid" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Realizado</option>
-                                <option value="pending" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">A Vencer</option>
-                                <option value="overdue" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200">Atrasado</option>
-                            </Select>
+                    <div className="p-5">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Período</label>
+                                <DateRangePicker
+                                    date={dateRange}
+                                    setDate={setDateRange}
+                                    className="bg-slate-900 border-slate-700 text-slate-200"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <FilterSelect
+                                    inlineLabel="Conta:"
+                                    value={accountFilter}
+                                    onChange={setAccountFilter}
+                                    options={[
+                                        { value: 'all', label: 'Todas' },
+                                        ...[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ value: a.id, label: a.name })),
+                                        ...[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: `💳 ${c.name}` }))
+                                    ]}
+                                    darkMode={true}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <FilterSelect
+                                    inlineLabel="Categoria:"
+                                    value={categoryFilter}
+                                    onChange={setCategoryFilter}
+                                    options={[
+                                        { value: 'all', label: 'Todas' },
+                                        ...[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))
+                                    ]}
+                                    darkMode={true}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <FilterSelect
+                                    inlineLabel="Cliente:"
+                                    value={contactFilter}
+                                    onChange={setContactFilter}
+                                    options={[
+                                        { value: 'all', label: 'Todos' },
+                                        ...[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))
+                                    ]}
+                                    darkMode={true}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <FilterSelect
+                                    inlineLabel="Tipo:"
+                                    value={typeFilter}
+                                    onChange={setTypeFilter}
+                                    options={[
+                                        { value: 'all', label: 'Todos' },
+                                        { value: 'income', label: 'Receitas' },
+                                        { value: 'expense', label: 'Despesas' },
+                                        { value: 'transfer', label: 'Transferências' }
+                                    ]}
+                                    darkMode={true}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <FilterSelect
+                                    inlineLabel="Status:"
+                                    value={statusFilter}
+                                    onChange={setStatusFilter}
+                                    options={[
+                                        { value: 'all', label: 'Todos' },
+                                        { value: 'paid', label: 'Realizado' },
+                                        { value: 'pending', label: 'A Vencer' },
+                                        { value: 'overdue', label: 'Atrasado' }
+                                    ]}
+                                    darkMode={true}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

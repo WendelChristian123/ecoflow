@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { RecurringService } from '../../types';
-import { Button, Select, Badge } from '../Shared';
+import { Button, Badge } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { X, Printer, RefreshCw } from 'lucide-react';
 import { format, parseISO, addMonths, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { translateFrequency } from '../../utils/i18n';
@@ -171,12 +172,18 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                 {/* Filters */}
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Filtrar Status</label>
-                        <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-[34px] text-xs">
-                            <option value="all">Todos</option>
-                            <option value="active">Somente Ativos</option>
-                            <option value="inactive">Somente Inativos</option>
-                        </Select>
+                        <FilterSelect
+                            inlineLabel="Status:"
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            options={[
+                                { value: 'all', label: 'Todos' },
+                                { value: 'active', label: 'Ativos' },
+                                { value: 'paused', label: 'Pausados' },
+                                { value: 'completed', label: 'Concluídos' }
+                            ]}
+                            darkMode={true}
+                        />
                     </div>
                 </div>
 

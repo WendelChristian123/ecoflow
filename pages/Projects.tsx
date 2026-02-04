@@ -439,7 +439,7 @@ export const ProjectsPage: React.FC = () => {
               placeholder="Responsável"
             />
 
-            {/* 6. View Toggle */}
+            {/* 6. View Toggle + Manage Stages */}
             <div className="flex bg-card border border-border rounded-lg p-0.5">
               <button onClick={() => setDetailViewMode('list')} className={`p-1.5 rounded transition-all ${detailViewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                 <LayoutList size={16} />
@@ -447,18 +447,16 @@ export const ProjectsPage: React.FC = () => {
               <button onClick={() => setDetailViewMode('board')} className={`p-1.5 rounded transition-all ${detailViewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                 <Kanban size={16} />
               </button>
+              {detailViewMode === 'board' && (
+                <button
+                  onClick={() => setIsTaskStageManagerOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors border-l border-border"
+                >
+                  <Settings size={14} />
+                  <span className="hidden sm:inline">Etapas</span>
+                </button>
+              )}
             </div>
-
-            {/* 7. Manage Stages - Same Row */}
-            {detailViewMode === 'board' && (
-              <button
-                onClick={() => setIsTaskStageManagerOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px] whitespace-nowrap"
-              >
-                <Settings size={14} />
-                Etapas
-              </button>
-            )}
           </div>
         </div>
 
@@ -515,81 +513,77 @@ export const ProjectsPage: React.FC = () => {
 
   // --- Projects View ---
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
+    <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+      <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
 
-      {/* Header with Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Projetos</h1>
-          <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
-        </div>
+        {/* Header with Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Projetos</h1>
+            <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
+          </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto padding-b-2">
-          {/* Search */}
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <Filter size={14} />
+          <div className="flex items-center gap-2 overflow-x-auto padding-b-2">
+            {/* Search */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Filter size={14} />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar projetos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Buscar projetos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+
+
+            {/* Member Filter */}
+            <FilterSelect
+              label="MEMBRO"
+              value={memberFilter}
+              onChange={setMemberFilter}
+              options={[
+                { value: 'all', label: 'Todos Membros' },
+                ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+              ]}
+              className="w-48"
+              placeholder="Membros"
             />
-          </div>
 
 
-          {/* Member Filter */}
-          <FilterSelect
-            label="MEMBRO"
-            value={memberFilter}
-            onChange={setMemberFilter}
-            options={[
-              { value: 'all', label: 'Todos Membros' },
-              ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
-            ]}
-            className="w-48"
-            placeholder="Membros"
-          />
+            {/* New Button */}
+            <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
+              <Plus size={16} /> Novo
+            </Button>
 
-
-          {/* New Button */}
-          <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
-            <Plus size={16} /> Novo
-          </Button>
-
-          {/* View Toggle */}
-          <div className="flex bg-card border border-border rounded-lg p-0.5">
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <LayoutList size={16} />
-            </button>
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <span className="text-xs font-bold px-1">Grid</span>
-            </button>
-            <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <Kanban size={16} />
-            </button>
-          </div>
-
-          {/* Manage Stages - Only in Board View */}
-          {
-            viewMode === 'board' && (
-              <button
-                onClick={() => setIsStageManagerOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px]"
-              >
-                <Settings size={14} />
-                Gerenciar Etapas
+            {/* View Toggle + Manage Stages */}
+            <div className="flex bg-card border border-border rounded-lg p-0.5">
+              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <LayoutList size={16} />
               </button>
-            )
-          }
+              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <span className="text-xs font-bold px-1">Grid</span>
+              </button>
+              <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Kanban size={16} />
+              </button>
+              {viewMode === 'board' && (
+                <button
+                  onClick={() => setIsStageManagerOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors border-l border-border"
+                >
+                  <Settings size={14} />
+                  <span className="hidden sm:inline">Etapas</span>
+                </button>
+              )}
+            </div>
+          </div >
         </div >
-      </div >
 
-      {viewMode === 'board' ? (
-        <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
-          <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+        {viewMode === 'board' ? (
+          <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
             <ProjectKanbanWithContext
               projects={filteredProjects}
               users={users}
@@ -602,115 +596,115 @@ export const ProjectsPage: React.FC = () => {
               canMove={user?.role === 'admin'}
               hideHeader={true}
             />
-          </KanbanProvider>
-        </div>
-      ) : viewMode === 'grid' ? (
+          </div>
+        ) : viewMode === 'grid' ? (
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
-          {filteredProjects.map(project => (
-            <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
-              <div className="flex justify-between items-start mb-4">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-lg">
-                  {project.name.charAt(0)}
-                </div>
-                {user?.role === 'admin' && (
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingProject(project);
-                        setIsModalOpen(true);
-                      }}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      title="Editar"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      onClick={(e) => handleCompleteProject(e, project)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-500 hover:bg-secondary"
-                      title="Concluir"
-                    >
-                      <CheckCircle size={14} />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteProject(e, project)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-secondary"
-                      title="Excluir"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
+            {filteredProjects.map(project => (
+              <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-lg">
+                    {project.name.charAt(0)}
                   </div>
-                )}
-              </div>
-
-              <h3 className="text-lg font-semibold text-foreground mb-2">{project.name}</h3>
-              <p className="text-sm text-muted-foreground mb-6 line-clamp-2 flex-1">{project.description}</p>
-
-              <div className="space-y-4">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-muted-foreground">Progresso</span>
-                  <span className="text-foreground font-medium">{calculateProgress(project.id)}%</span>
+                  {user?.role === 'admin' && (
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProject(project);
+                          setIsModalOpen(true);
+                        }}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        title="Editar"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => handleCompleteProject(e, project)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-500 hover:bg-secondary"
+                        title="Concluir"
+                      >
+                        <CheckCircle size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteProject(e, project)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-secondary"
+                        title="Excluir"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <ProgressBar progress={calculateProgress(project.id)} />
 
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <div className="flex -space-x-2">
-                    {project.members.slice(0, 3).map(memberId => {
-                      const u = users.find(user => user.id === memberId);
-                      return u ? (
-                        <div key={u.id} className="ring-2 ring-card rounded-full">
-                          <Avatar size="sm" src={u.avatarUrl} name={u.name} />
+                <h3 className="text-lg font-semibold text-foreground mb-2">{project.name}</h3>
+                <p className="text-sm text-muted-foreground mb-6 line-clamp-2 flex-1">{project.description}</p>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">Progresso</span>
+                    <span className="text-foreground font-medium">{calculateProgress(project.id)}%</span>
+                  </div>
+                  <ProgressBar progress={calculateProgress(project.id)} />
+
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="flex -space-x-2">
+                      {project.members.slice(0, 3).map(memberId => {
+                        const u = users.find(user => user.id === memberId);
+                        return u ? (
+                          <div key={u.id} className="ring-2 ring-card rounded-full">
+                            <Avatar size="sm" src={u.avatarUrl} name={u.name} />
+                          </div>
+                        ) : null;
+                      })}
+                      {project.members.length > 3 && (
+                        <div className="h-6 w-6 rounded-full bg-secondary ring-2 ring-card flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                          +{project.members.length - 3}
                         </div>
-                      ) : null;
-                    })}
-                    {project.members.length > 3 && (
-                      <div className="h-6 w-6 rounded-full bg-secondary ring-2 ring-card flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                        +{project.members.length - 3}
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <Badge variant={project.status === 'active' ? 'success' : project.status === 'completed' ? 'default' : 'neutral'}>
+                      {translateStatus(project.status)}
+                    </Badge>
                   </div>
-                  <Badge variant={project.status === 'active' ? 'success' : project.status === 'completed' ? 'default' : 'neutral'}>
-                    {translateStatus(project.status)}
-                  </Badge>
                 </div>
+              </Card>
+            ))}
+
+            <button onClick={handleCreate} className="border border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all h-full min-h-[250px] gap-3 group">
+              <div className="h-12 w-12 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                <Plus size={24} />
               </div>
-            </Card>
-          ))}
+              <span className="font-medium">Criar Novo Projeto</span>
+            </button>
+          </div>
+        ) : null}
 
-          <button onClick={handleCreate} className="border border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all h-full min-h-[250px] gap-3 group">
-            <div className="h-12 w-12 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-              <Plus size={24} />
-            </div>
-            <span className="font-medium">Criar Novo Projeto</span>
-          </button>
-        </div>
-      ) : null}
-
-      <ProjectModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={loadData}
-        users={users}
-        initialData={editingProject}
-        onDuplicate={(project) => {
-          setEditingProject({
-            ...project,
-            id: undefined,
-            name: `${project.name} (Cópia)`,
-            status: 'active',
-            progress: 0,
-            // Keep other fields like description, members, dueDate?
-            // User said "Resetar... Datas de criação...". DueDate is deadline, optional reset.
-            // I'll keep DueDate as is or maybe reset? Project deadline usually shifts.
-            // But for "Duplicate", keeping it is safer than empty.
-          });
-        }}
-      />
-      <StageManagerModal
-        isOpen={isStageManagerOpen}
-        onClose={() => setIsStageManagerOpen(false)}
-      />
-    </div >
+        <ProjectModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={loadData}
+          users={users}
+          initialData={editingProject}
+          onDuplicate={(project) => {
+            setEditingProject({
+              ...project,
+              id: undefined,
+              name: `${project.name} (Cópia)`,
+              status: 'active',
+              progress: 0,
+              // Keep other fields like description, members, dueDate?
+              // User said "Resetar... Datas de criação...". DueDate is deadline, optional reset.
+              // I'll keep DueDate as is or maybe reset? Project deadline usually shifts.
+              // But for "Duplicate", keeping it is safer than empty.
+            });
+          }}
+        />
+        <StageManagerModal
+          isOpen={isStageManagerOpen}
+          onClose={() => setIsStageManagerOpen(false)}
+        />
+      </div>
+    </KanbanProvider>
   );
 };

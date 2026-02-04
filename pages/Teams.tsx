@@ -310,116 +310,93 @@ export const TeamsPage: React.FC = () => {
             </Button>
           </div>
 
-          {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-card/50 p-2 rounded-xl border border-border">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+          {/* Filters Bar */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {/* 1. Search - Pushed to Left */}
+            <div className="relative mr-auto">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Search size={14} />
+              </div>
               <input
                 type="text"
                 placeholder="Buscar tarefas..."
                 value={detailSearch}
                 onChange={(e) => setDetailSearch(e.target.value)}
-                className="w-full bg-card border border-input text-foreground text-sm rounded-lg pl-9 pr-3 py-1.5 focus:ring-1 focus:ring-primary outline-none"
+                className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-64 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              {/* Month Toggle & Selector */}
-              <div className="flex items-center gap-2 bg-card p-1 rounded-lg border border-border">
-                <button
-                  onClick={() => setShowDetailMonthFilter(!showDetailMonthFilter)}
-                  className={cn("px-2 py-1 rounded text-[10px] font-medium transition-colors", showDetailMonthFilter ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground')}
-                >
-                  {showDetailMonthFilter ? 'Mês' : 'Todos'}
-                </button>
-                {showDetailMonthFilter && (
-                  <div className="flex items-center gap-1 pl-1 border-l border-border">
-                    <button onClick={() => setDetailDate(subMonths(detailDate, 1))} className="hover:text-foreground text-muted-foreground"><ChevronLeft size={14} /></button>
-                    <span className="text-xs font-bold text-foreground uppercase w-20 text-center select-none">
-                      {format(detailDate, 'MMMM', { locale: ptBR })}
-                    </span>
-                    <button onClick={() => setDetailDate(addMonths(detailDate, 1))} className="hover:text-foreground text-muted-foreground"><ChevronRight size={14} /></button>
-                  </div>
-                )}
-              </div>
+            {/* 2. Month Nav */}
+            <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
+              <button onClick={() => setDetailDate(subMonths(detailDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
+              <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(detailDate, 'MMM/yyyy', { locale: ptBR })}</span>
+              <button onClick={() => setDetailDate(addMonths(detailDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
+            </div>
 
-              {/* Status */}
+            {/* 3. Status */}
+            <FilterSelect
+              label="STATUS"
+              value={detailFilterStatus}
+              onChange={setDetailFilterStatus}
+              options={[
+                { value: 'all', label: 'Todos Status' },
+                { value: 'todo', label: 'A Fazer' },
+                { value: 'in_progress', label: 'Em Progresso' },
+                { value: 'review', label: 'Revisão' },
+                { value: 'done', label: 'Concluído' },
+              ]}
+              className="w-36"
+              placeholder="Status"
+            />
 
-              {/* Status Filter */}
-              <FilterSelect
-                label="STATUS"
-                value={detailFilterStatus}
-                onChange={setDetailFilterStatus}
-                options={[
-                  { value: 'all', label: 'Todos Status' },
-                  { value: 'todo', label: 'A Fazer' },
-                  { value: 'in_progress', label: 'Em Progresso' },
-                  { value: 'review', label: 'Revisão' },
-                  { value: 'done', label: 'Concluído' },
-                ]}
-                className="w-36"
-                placeholder="Status"
-              />
+            {/* 4. Priority */}
+            <FilterSelect
+              label="PRIORIDADE"
+              value={detailFilterPriority}
+              onChange={setDetailFilterPriority}
+              options={[
+                { value: 'all', label: 'Todas Prioridades' },
+                { value: 'low', label: 'Baixa' },
+                { value: 'medium', label: 'Média' },
+                { value: 'high', label: 'Alta' },
+                { value: 'urgent', label: 'Urgente' },
+              ]}
+              className="w-36"
+              placeholder="Prioridade"
+            />
 
-              {/* Priority */}
-              <FilterSelect
-                label="PRIORIDADE"
-                value={detailFilterPriority}
-                onChange={setDetailFilterPriority}
-                options={[
-                  { value: 'all', label: 'Todas Prioridades' },
-                  { value: 'low', label: 'Baixa' },
-                  { value: 'medium', label: 'Média' },
-                  { value: 'high', label: 'Alta' },
-                  { value: 'urgent', label: 'Urgente' },
-                ]}
-                className="w-36"
-                placeholder="Prioridade"
-              />
+            {/* 5. Assignee */}
+            <FilterSelect
+              label="RESPONSÁVEL"
+              value={detailFilterAssignee}
+              onChange={setDetailFilterAssignee}
+              options={[
+                { value: 'all', label: 'Todos' },
+                ...selectedTeam.memberIds.map(memberId => {
+                  const member = users.find(u => u.id === memberId);
+                  return member ? { value: member.id, label: member.name, avatarUrl: member.avatarUrl } : null;
+                }).filter(Boolean) as any[]
+              ]}
+              className="w-40"
+              placeholder="Responsável"
+            />
 
-              {/* Assignee Filter */}
-              <FilterSelect
-                label="RESPONSÁVEL"
-                value={detailFilterAssignee}
-                onChange={setDetailFilterAssignee}
-                options={[
-                  { value: 'all', label: 'Membro: Todos' },
-                  ...selectedTeam.memberIds.map(memberId => {
-                    const member = users.find(u => u.id === memberId);
-                    return member ? { value: member.id, label: member.name, avatarUrl: member.avatarUrl } : null;
-                  }).filter(Boolean) as any[]
-                ]}
-                className="w-40"
-                placeholder="Responsável"
-              />
-
-              {/* View Toggle */}
-              <div className="flex bg-card rounded-lg border border-border p-0.5">
-                <button
-                  onClick={() => setDetailViewMode('list')}
-                  className={cn("p-1.5 rounded transition-all", detailViewMode === 'list' ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground')}
-                >
-                  <LayoutList size={16} />
-                </button>
-                <button
-                  onClick={() => setDetailViewMode('board')}
-                  className={cn("p-1.5 rounded transition-all", detailViewMode === 'board' ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground')}
-                >
-                  <Kanban size={16} />
-                </button>
-              </div>
-
-              {/* Manage Stages - Same Row */}
+            {/* 6. View Toggle + Manage Stages */}
+            <div className="flex bg-card border border-border rounded-lg p-0.5">
+              <button onClick={() => setDetailViewMode('list')} className={`p-1.5 rounded transition-all ${detailViewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <LayoutList size={16} />
+              </button>
+              <button onClick={() => setDetailViewMode('board')} className={`p-1.5 rounded transition-all ${detailViewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Kanban size={16} />
+              </button>
               {detailViewMode === 'board' && (
-                <div className="flex bg-card rounded-lg border border-border p-0.5 ml-2">
-                  <button
-                    onClick={() => setIsTaskStageManagerOpen(true)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors h-[30px] whitespace-nowrap"
-                  >
-                    <Settings size={14} />
-                    Etapas
-                  </button>
-                </div>
+                <button
+                  onClick={() => setIsTaskStageManagerOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors border-l border-border"
+                >
+                  <Settings size={14} />
+                  <span className="hidden sm:inline">Etapas</span>
+                </button>
               )}
             </div>
           </div>
@@ -486,65 +463,63 @@ export const TeamsPage: React.FC = () => {
 
   // --- Teams Grid View ---
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
+    <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+      <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
 
-      {/* Header with Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Equipes</h1>
-          <p className="text-muted-foreground mt-1">Gerencie suas equipes e membros</p>
-        </div>
+        {/* Header with Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Equipes</h1>
+            <p className="text-muted-foreground mt-1">Gerencie suas equipes e membros</p>
+          </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto padding-b-2">
-          {/* Search */}
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <Filter size={14} />
+          <div className="flex items-center gap-2 overflow-x-auto padding-b-2">
+            {/* Search */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Filter size={14} />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar equipes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-card border border-input text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Buscar equipes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-card border border-input text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
-            />
+
+            {/* New Button */}
+            <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={handleCreate}>
+              <Plus size={16} /> Nova
+            </Button>
+
+
+            {/* View Toggle + Manage Stages */}
+            <div className="flex bg-card border border-border rounded-lg p-0.5">
+              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <LayoutList size={16} />
+              </button>
+              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <span className="text-xs font-bold px-1">Grid</span>
+              </button>
+              <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Kanban size={16} />
+              </button>
+              {viewMode === 'board' && (
+                <button
+                  onClick={() => setIsStageManagerOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors border-l border-border"
+                >
+                  <Settings size={14} />
+                  <span className="hidden sm:inline">Etapas</span>
+                </button>
+              )}
+            </div>
           </div>
-
-          {/* New Button */}
-          <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={handleCreate}>
-            <Plus size={16} /> Nova
-          </Button>
-
-
-          {/* View Toggle */}
-          <div className="flex bg-card border border-border rounded-lg p-0.5">
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <LayoutList size={16} />
-            </button>
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <span className="text-xs font-bold px-1">Grid</span>
-            </button>
-            <button onClick={() => setViewMode('board')} className={`p-1.5 rounded transition-all ${viewMode === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <Kanban size={16} />
-            </button>
-          </div>
-
-          {/* Manage Stages - Only in Board View */}
-          {viewMode === 'board' && (
-            <button
-              onClick={() => setIsStageManagerOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded hover:bg-secondary transition-colors border border-border h-[34px]"
-            >
-              <Settings size={14} />
-              Gerenciar Etapas
-            </button>
-          )}
         </div>
-      </div>
 
-      {viewMode === 'board' ? (
-        <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
-          <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+        {viewMode === 'board' ? (
+          <div className="flex-1 min-h-0 overflow-x-auto bg-transparent rounded-xl">
             <TeamKanbanWithContext
               teams={filteredTeams}
               users={users}
@@ -560,110 +535,110 @@ export const TeamsPage: React.FC = () => {
               isAdmin={['admin', 'owner', 'super_admin'].includes(user?.role || '')}
               hideHeader={true}
             />
-          </KanbanProvider>
-        </div>
-      ) : viewMode === 'grid' ? (
+          </div>
+        ) : viewMode === 'grid' ? (
 
-        <div className="space-y-4">
+          <div className="space-y-4">
 
-          {teams.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground border border-dashed border-border rounded-xl">
-              Nenhuma equipe encontrada.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredTeams.map(team => (
-                <Card
-                  key={team.id}
-                  className="p-5 flex flex-col gap-4 hover:bg-accent group cursor-pointer transition-all border border-border hover:border-border/80"
-                  onClick={() => setSelectedTeam(team)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                        {team.name}
-                      </h2>
-                      <p className="text-muted-foreground text-sm line-clamp-2 mt-1">{team.description}</p>
-                    </div>
-                    {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingTeam(team);
-                            setIsTeamModalOpen(true);
-                          }}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                          title="Editar Equipe"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteTeam(e, team.id)}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-secondary transition-colors"
-                          title="Excluir Equipe"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+            {teams.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground border border-dashed border-border rounded-xl">
+                Nenhuma equipe encontrada.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredTeams.map(team => (
+                  <Card
+                    key={team.id}
+                    className="p-5 flex flex-col gap-4 hover:bg-accent group cursor-pointer transition-all border border-border hover:border-border/80"
+                    onClick={() => setSelectedTeam(team)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                          {team.name}
+                        </h2>
+                        <p className="text-muted-foreground text-sm line-clamp-2 mt-1">{team.description}</p>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-border">
-                    <div className="flex -space-x-2 overflow-hidden py-1">
-                      {team.memberIds.length === 0 ? (
-                        <span className="text-xs text-muted-foreground italic">Sem membros</span>
-                      ) : (
-                        <>
-                          {team.memberIds.slice(0, 5).map(memberId => {
-                            const u = users.find(user => user.id === memberId);
-                            if (!u) return null;
-                            const isLead = team.leadId === u.id;
-                            return (
-                              <div key={u.id} className={cn("ring-2 ring-card rounded-full", isLead ? 'ring-primary/50' : '')} title={`${u.name}${isLead ? ' (Líder)' : ''}`}>
-                                <Avatar size="sm" src={u.avatarUrl} name={u.name} />
-                              </div>
-                            );
-                          })}
-                          {team.memberIds.length > 5 && (
-                            <div className="h-8 w-8 rounded-full bg-secondary ring-2 ring-card flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                              +{team.memberIds.length - 5}
-                            </div>
-                          )}
-                        </>
+                      {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTeam(team);
+                              setIsTeamModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                            title="Editar Equipe"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteTeam(e, team.id)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-secondary transition-colors"
+                            title="Excluir Equipe"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" className="text-xs ml-auto">
-                      {team.memberIds.length} membros
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : null}
 
-      <TeamModal
-        isOpen={isTeamModalOpen}
-        onClose={() => setIsTeamModalOpen(false)}
-        onSuccess={loadData}
-        users={users}
-        initialData={editingTeam}
-        onDuplicate={(team) => {
-          setEditingTeam({
-            ...team,
-            id: undefined,
-            name: `${team.name} (Cópia)`,
-            members: team.members || []
-          });
-        }}
-      />
+                    <div className="mt-auto pt-4 flex items-center justify-between border-t border-border">
+                      <div className="flex -space-x-2 overflow-hidden py-1">
+                        {team.memberIds.length === 0 ? (
+                          <span className="text-xs text-muted-foreground italic">Sem membros</span>
+                        ) : (
+                          <>
+                            {team.memberIds.slice(0, 5).map(memberId => {
+                              const u = users.find(user => user.id === memberId);
+                              if (!u) return null;
+                              const isLead = team.leadId === u.id;
+                              return (
+                                <div key={u.id} className={cn("ring-2 ring-card rounded-full", isLead ? 'ring-primary/50' : '')} title={`${u.name}${isLead ? ' (Líder)' : ''}`}>
+                                  <Avatar size="sm" src={u.avatarUrl} name={u.name} />
+                                </div>
+                              );
+                            })}
+                            {team.memberIds.length > 5 && (
+                              <div className="h-8 w-8 rounded-full bg-secondary ring-2 ring-card flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                                +{team.memberIds.length - 5}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-xs ml-auto">
+                        {team.memberIds.length} membros
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
 
-      <StageManagerModal
-        isOpen={isStageManagerOpen}
-        onClose={() => setIsStageManagerOpen(false)}
-      />
-    </div>
+        <TeamModal
+          isOpen={isTeamModalOpen}
+          onClose={() => setIsTeamModalOpen(false)}
+          onSuccess={loadData}
+          users={users}
+          initialData={editingTeam}
+          onDuplicate={(team) => {
+            setEditingTeam({
+              ...team,
+              id: undefined,
+              name: `${team.name} (Cópia)`,
+              members: team.members || []
+            });
+          }}
+        />
+
+        <StageManagerModal
+          isOpen={isStageManagerOpen}
+          onClose={() => setIsStageManagerOpen(false)}
+        />
+      </div>
+    </KanbanProvider>
   );
 };

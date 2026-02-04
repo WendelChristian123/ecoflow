@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Contact } from '../../types';
-import { Button, Select, Badge } from '../Shared';
+import { Button, Badge } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { X, Printer, User, Building, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -124,12 +125,19 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
 
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800">
                     <div className="flex flex-col gap-1 w-48">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Filtrar Tipo</label>
-                        <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-[34px] text-xs">
-                            <option value="all">Todos</option>
-                            <option value="client">Somente Clientes</option>
-                            <option value="supplier">Somente Fornecedores</option>
-                        </Select>
+                        <FilterSelect
+                            inlineLabel="Tipo:"
+                            value={typeFilter}
+                            onChange={setTypeFilter}
+                            options={[
+                                { value: 'all', label: 'Todos' },
+                                { value: 'customer', label: 'Clientes' },
+                                { value: 'supplier', label: 'Fornecedores' },
+                                { value: 'partner', label: 'Parceiros' },
+                                { value: 'lead', label: 'Leads' }
+                            ]}
+                            darkMode={true}
+                        />
                     </div>
                 </div>
 

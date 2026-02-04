@@ -1,8 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Task, Project, Delegation, User } from '../../types';
 import { Loader, Card, cn, Button, Select, Avatar, Badge } from '../../components/Shared';
+import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal } from '../../components/Modals';
 import { useAuth } from '../../context/AuthContext';
 import { useRBAC } from '../../context/RBACContext';
@@ -17,7 +17,8 @@ import {
     Filter,
     ArrowRight,
     Users,
-    FileText
+    FileText,
+    User as UserIcon
 } from 'lucide-react';
 import { RoutineReportModal } from '../../components/Reports/RoutineReportModal';
 import {
@@ -259,38 +260,32 @@ export const RoutinesOverview: React.FC = () => {
                     </Button>
 
                     {/* User Filter */}
-                    <div className="bg-card p-1.5 rounded-xl border border-border flex items-center gap-2">
-                        <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2">
-                            <Users size={14} /> Resp.
-                        </div>
-                        <select
-                            value={selectedAssignee}
-                            onChange={(e) => setSelectedAssignee(e.target.value)}
-                            className="bg-card border border-border text-foreground text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-primary max-w-[150px]"
-                        >
-                            <option value="all">Todos</option>
-                            {availableUsers.map(u => (
-                                <option key={u.id} value={u.id}>{u.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <FilterSelect
+                        inlineLabel="Resp:"
+                        icon={<UserIcon size={14} />}
+                        value={selectedAssignee}
+                        onChange={setSelectedAssignee}
+                        options={[
+                            { value: 'all', label: 'Todos' },
+                            ...availableUsers.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+                        ]}
+                        darkMode={true}
+                        className="min-w-[180px]"
+                    />
 
                     {/* Period Filter */}
-                    <div className="bg-card p-1.5 rounded-xl border border-border flex items-center gap-2">
-                        <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2">
-                            <Filter size={14} /> Período
-                        </div>
-                        <select
-                            value={period}
-                            onChange={(e) => setPeriod(e.target.value as any)}
-                            className="bg-card border border-border text-foreground text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer focus:border-primary"
-                        >
-                            <option value="today">Hoje</option>
-                            <option value="week">Esta Semana</option>
-                            <option value="month">Este Mês</option>
-                            <option value="all">Tudo</option>
-                        </select>
-                    </div>
+                    <FilterSelect
+                        inlineLabel="Período:"
+                        value={period}
+                        onChange={(val) => setPeriod(val as any)}
+                        options={[
+                            { value: 'week', label: 'Semanal' },
+                            { value: 'month', label: 'Mensal' },
+                            { value: 'year', label: 'Anual' }
+                        ]}
+                        darkMode={true}
+                        className="min-w-[160px]"
+                    />
                 </div>
             </div>
 
