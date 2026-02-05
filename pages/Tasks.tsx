@@ -9,7 +9,7 @@ import { ptBR } from 'date-fns/locale';
 import { TaskModal, TaskDetailModal, ConfirmationModal } from '../components/Modals';
 import { api } from '../services/api';
 import { Task, User, Status, Project, Team } from '../types';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useTenant } from '../context/TenantContext';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
@@ -100,14 +100,19 @@ export const TasksPage: React.FC = () => {
     }
   }, [currentTenant]);
 
+  const [searchParams] = useSearchParams();
+
   useEffect(() => {
-    if (!loading && tasks.length > 0 && location.state?.taskId) {
-      const targetTask = tasks.find(t => t.id === location.state.taskId);
-      if (targetTask) {
-        setSelectedTask(targetTask);
+    if (!loading && tasks.length > 0) {
+      const targetId = searchParams.get('openModal') || location.state?.taskId;
+      if (targetId) {
+        const targetTask = tasks.find(t => t.id === targetId);
+        if (targetTask) {
+          setSelectedTask(targetTask);
+        }
       }
     }
-  }, [loading, tasks, location.state]);
+  }, [loading, tasks, location.state, searchParams]);
 
   const loadData = async (showLoading = true) => {
     if (!currentTenant) return;
@@ -203,13 +208,7 @@ export const TasksPage: React.FC = () => {
 
   let filteredTasks = tasks;
 
-  // 1. Month Filter
-  if (showMonthFilter) {
-    filteredTasks = filteredTasks.filter(t => {
-      if (!t.dueDate) return false; // If filtering by month, tasks without date might be hidden or shown? Usually hidden.
-      return isSameMonth(parseISO(t.dueDate), currentDate);
-    });
-  }
+
 
   // 2. Status Filter
   if (filterStatus !== 'all') {
@@ -273,12 +272,7 @@ export const TasksPage: React.FC = () => {
             </Button>
           )}
 
-          {/* 3. Month Nav */}
-          <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
-            <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
-            <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(currentDate, 'MMM/yyyy', { locale: ptBR })}</span>
-            <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
-          </div>
+
 
           {/* 4. Status */}
           <FilterSelect

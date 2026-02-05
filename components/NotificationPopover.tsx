@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Check, Calendar, Clock, DollarSign, Briefcase, Filter } from 'lucide-react';
 import { useNotifications, NotificationItem, NotificationType } from '../hooks/useNotifications';
+import { usePaymentConfirmation } from './PaymentConfirmation';
 import { cn } from './Shared';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 
 export const NotificationPopover: React.FC = () => {
-    const { notifications, isLoading, completeItem, refetch } = useNotifications();
+    const { notifications, isLoading, completeItem, refetch, removeNotification } = useNotifications();
+    const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
     const [isOpen, setIsOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState<'all' | NotificationType>('all');
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -33,9 +35,18 @@ export const NotificationPopover: React.FC = () => {
         return () => document.removeEventListener('keydown', handleEsc);
     }, []);
 
-    const handleComplete = (e: React.MouseEvent, id: string, type: NotificationType) => {
+    const handleComplete = (e: React.MouseEvent, item: NotificationItem) => {
         e.stopPropagation();
-        completeItem(id, type);
+
+        if (item.type === 'finance') {
+            const fakeTx = { id: item.id, date: item.date, isPaid: false } as any;
+            confirmPayment(fakeTx, (id, status) => {
+                // If confirmed, remove locally (Optimistic update via helper)
+                removeNotification(id);
+            });
+        } else {
+            completeItem(item.id, item.type);
+        }
     };
 
     const handleCardClick = (item: NotificationItem) => {
@@ -180,7 +191,7 @@ export const NotificationPopover: React.FC = () => {
 
                                     {/* Action */}
                                     <button
-                                        onClick={(e) => handleComplete(e, item.id, item.type)}
+                                        onClick={(e) => handleComplete(e, item)}
                                         className="mt-1 p-1.5 rounded-full hover:bg-emerald-500/10 hover:text-emerald-500 text-muted-foreground transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                                         title="Concluir"
                                     >
@@ -192,6 +203,7 @@ export const NotificationPopover: React.FC = () => {
                     </div>
                 </div>
             )}
+            {ConfirmationModalComponent}
         </div>
     );
 };

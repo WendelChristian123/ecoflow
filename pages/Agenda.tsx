@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { processTransactions } from '../services/financeLogic';
-import { ChevronLeft, ChevronRight, Clock, Plus, Users as UsersIcon, Calendar as CalendarIcon, CheckCircle2, AlertCircle, DollarSign, CreditCard, FileText, CheckSquare, Search, Filter, User as UserIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Plus, Users as UsersIcon, Calendar as CalendarIcon, CheckCircle2, AlertCircle, DollarSign, CreditCard as CreditCardIcon, FileText, CheckSquare, Search, Filter, User as UserIcon } from 'lucide-react';
 import { Card, Loader, Button, Badge, Avatar, Input, Select } from '../components/Shared';
-import { EventModal, EventDetailModal } from '../components/Modals';
+import { EventModal, EventDetailModal, TaskModal } from '../components/Modals';
 import { FilterSelect } from '../components/FilterSelect';
 import { api } from '../services/api';
-import { CalendarEvent, User, CalendarSettings, Task, FinancialTransaction, Quote, CreditCard as ICreditCard, Project, Team } from '../types';
+import { CalendarEvent, User, CalendarSettings, Task, FinancialTransaction, Quote, FinancialAccount, FinancialCategory, CreditCard, Contact, CatalogItem, Project, Team } from '../types';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, parseISO, isValid, getHours, getMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 type ViewMode = 'month' | 'week' | 'day';
@@ -50,7 +50,21 @@ export const AgendaPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<UnifiedEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
 
+  // Task Modal State
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
+
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const eventId = searchParams.get('openModal');
+    if (eventId && events.length > 0) {
+      const targetEvent = events.find(e => e.id === eventId);
+      if (targetEvent) setSelectedEvent(targetEvent);
+    }
+  }, [events, searchParams]);
 
   useEffect(() => {
     loadData();
@@ -59,7 +73,6 @@ export const AgendaPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      console.log('[Agenda] loadData started');
       // 1. Fetch Settings & Users (Always needed)
       // Also fetch Delegators strictly
       const [settings, u, p, t, taskDelegators, agendaDelegators] = await Promise.all([
@@ -198,7 +211,7 @@ export const AgendaPage: React.FC = () => {
                   amount: t.amount
                 },
                 color: 'bg-rose-500/20 text-rose-300 border-l-4 border-rose-500',
-                icon: <CreditCard size={14} />
+                icon: <CreditCardIcon size={14} />
               });
             }
             // 2. Real Transactions (Receivables / Payables)
@@ -264,12 +277,22 @@ export const AgendaPage: React.FC = () => {
     setIsCreateModalOpen(true);
   };
 
-  const handleEdit = () => {
-    if (selectedEvent && selectedEvent.origin === 'agenda') {
-      setEditingEvent(selectedEvent);
+  const handleEdit = (eventToEdit?: CalendarEvent) => {
+    const target = (eventToEdit || selectedEvent) as UnifiedEvent;
+    if (!target) return;
+
+    console.log('[Agenda] handleEdit target:', target);
+
+    if ((target.origin === 'task' || target.type === 'task') && target.metadata) {
+      setSelectedTask(target.metadata as Task);
+      setIsTaskModalOpen(true);
+      setSelectedEvent(null);
+    } else if (target.origin === 'agenda') {
+      setEditingEvent(target);
       setSelectedEvent(null);
       setIsCreateModalOpen(true);
     } else {
+      console.warn('[Agenda] Edit rejected. Origin:', target.origin, 'Type:', target.type);
       alert("Este evento é gerenciado em outro módulo.");
     }
   };
@@ -564,7 +587,10 @@ export const AgendaPage: React.FC = () => {
                 return (
                   <Card
                     key={event.id}
-                    onClick={() => setSelectedEvent(event)}
+                    onClick={() => {
+                      // Reverted to simple selection for summary modal (User Request)
+                      setSelectedEvent(event);
+                    }}
                     className={`relative p-3 border-0 cursor-pointer hover:translate-x-1 transition-transform group
                                           ${event.color || 'bg-secondary/40 hover:bg-secondary border-l-[3px] border-muted-foreground'}
                                       `}
@@ -664,7 +690,9 @@ export const AgendaPage: React.FC = () => {
           onSuccess={loadData}
           event={selectedEvent}
           users={users}
-          onEdit={handleEdit}
+          projects={projects}
+          teams={teams}
+          onEdit={() => handleEdit(selectedEvent)}
           onDuplicate={(eventToDuplicate) => {
             // Logic for duplication
             const newEvent = {
@@ -684,6 +712,16 @@ export const AgendaPage: React.FC = () => {
           }}
         />
       )}
+      {/* Task Modal */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => { setIsTaskModalOpen(false); setSelectedTask(undefined); }}
+        onSuccess={loadData}
+        projects={projects}
+        teams={teams}
+        users={users}
+        initialData={selectedTask}
+      />
     </div>
   );
 };

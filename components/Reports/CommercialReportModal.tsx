@@ -1,9 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Quote } from '../../types';
 import { Button, Badge } from '../Shared';
-import { FilterSelect, FilterOption } from '../FilterSelect';
+import { FilterSelect } from '../FilterSelect';
 import { X, Printer, FileText } from 'lucide-react';
-import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format as formatDateFns } from 'date-fns'; // Renaming original to avoid conflict, though we mostly replace it
+import { formatDate } from '../../utils/formatters';
+import { translateQuoteStatus } from '../../utils/i18n';
+
 import { DateRange } from 'react-day-picker';
 import { DateRangePicker } from '../DateRangePicker';
 
@@ -94,7 +98,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
         if (!printWindow) return;
 
         const dateStr = dateRange?.from && dateRange?.to
-            ? `${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}`
+            ? `${formatDateFns(dateRange.from, 'dd/MM/yyyy')} a ${formatDateFns(dateRange.to, 'dd/MM/yyyy')}`
             : 'Período inválido';
 
         const html = `
@@ -131,7 +135,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                     </div>
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateStr}</div>
-                        <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+                        <div><strong>Gerado em:</strong> ${formatDateFns(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Status:</strong> ${statusFilter === 'all' ? 'Todos' : statusFilter.toUpperCase()}</div>
                     </div>
                 </div>
@@ -163,24 +167,26 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                             <th>Data</th>
                             <th>Cliente</th>
                             <th>Título</th>
-                            <th>Responsável</th>
+                            <th>Vencimento</th>
                             <th>Status</th>
                             <th class="text-right">Valor</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${filteredData.map(q => `
+                        ${filteredData.map(q => {
+            const isOverdue = q.validUntil && new Date(q.validUntil) < new Date() && q.status !== 'approved' && q.status !== 'rejected';
+            return `
                             <tr>
-                                <td>${format(parseISO(q.createdAt), 'dd/MM/yyyy')}</td>
-                                <td><strong>${q.clientName || 'N/A'}</strong></td>
-                                <td>${q.title}</td>
-                                <td>${getUserName(q.userId)}</td>
+                                <td style="border-left: ${isOverdue ? '4px solid #ef4444' : 'none'}; padding-left: ${isOverdue ? '4px' : '8px'};">${formatDate(q.createdAt || q.date)}</td>
+                                <td><strong>${q.customerName || (q.contact ? q.contact.name : 'N/A')}</strong></td>
+                                <td>#${q.id.substring(0, 4)}</td>
+                                <td>${formatDate(q.validUntil)}</td>
                                 <td>
-                                    <span style="font-weight: 600; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; bg: #fff;">${q.status.toUpperCase()}</span>
+                                    <span style="font-weight: 600; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isOverdue ? '#fee2e2' : '#e2e8f0'}; background: ${isOverdue ? '#fef2f2' : '#fff'}; color: ${isOverdue ? '#ef4444' : '#334155'};">${isOverdue ? 'VENCIDO' : translateQuoteStatus(q.status).toUpperCase()}</span>
                                 </td>
                                 <td class="text-right" style="font-weight: 700;">${fmt(q.totalValue)}</td>
                             </tr>
-                        `).join('')}
+                        `}).join('')}
                     </tbody>
                 </table>
                  <script>
@@ -282,7 +288,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                                         <th className="px-6 py-4 border-b border-slate-800">Data</th>
                                         <th className="px-6 py-4 border-b border-slate-800">Cliente</th>
                                         <th className="px-6 py-4 border-b border-slate-800">Título</th>
-                                        <th className="px-6 py-4 border-b border-slate-800">Responsável</th>
+                                        <th className="px-6 py-4 border-b border-slate-800">Vencimento</th>
                                         <th className="px-6 py-4 border-b border-slate-800">Status</th>
                                         <th className="px-6 py-4 border-b border-slate-800 text-right">Valor</th>
                                     </tr>
@@ -290,36 +296,36 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                                 <tbody className="divide-y divide-slate-800/50 text-slate-300">
                                     {filteredData.length === 0 ? (
                                         <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">Nenhum orçamento encontrado.</td></tr>
-                                    ) : filteredData.map(t => (
-                                        <tr key={t.id} className="group hover:bg-slate-800/60 transition-colors odd:bg-transparent even:bg-slate-900/40">
-                                            <td className="px-6 py-4 text-slate-400 font-medium">
-                                                {format(parseISO(t.createdAt), 'dd/MM/yyyy')}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-bold text-base text-white group-hover:text-emerald-400 transition-colors">
-                                                    {t.clientName || 'N/A'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-400">{t.title}</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-medium bg-slate-800 px-2 py-1 rounded text-slate-300 border border-slate-700">
-                                                        {getUserName(t.userId).split(' ')[0]}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <Badge variant={t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'error' : 'neutral'} className="px-3 py-1 text-[10px] uppercase tracking-wide">
-                                                    {t.status === 'approved' ? 'Aprovado' : t.status === 'rejected' ? 'Rejeitado' : t.status}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="text-lg font-bold text-emerald-400 tabular-nums">
-                                                    {fmt(t.totalValue)}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    ) : filteredData.map(t => {
+                                        const isOverdue = t.validUntil && new Date(t.validUntil) < new Date() && t.status !== 'approved' && t.status !== 'rejected';
+                                        return (
+                                            <tr key={t.id} className="group hover:bg-slate-800/60 transition-colors odd:bg-transparent even:bg-slate-900/40 relative">
+                                                <td className="px-6 py-4 text-slate-400 font-medium relative">
+                                                    {isOverdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />}
+                                                    {formatDate(t.createdAt || t.date)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-base text-white group-hover:text-emerald-400 transition-colors">
+                                                        {t.customerName || t.contact?.name || 'N/A'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-400">#{t.id.substring(0, 4)}</td>
+                                                <td className="px-6 py-4 text-slate-400">
+                                                    {formatDate(t.validUntil)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge variant={isOverdue ? 'error' : t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'error' : 'neutral'} className="px-3 py-1 text-[10px] uppercase tracking-wide">
+                                                        {isOverdue ? 'VENCIDO' : t.status === 'approved' ? 'APROVADO' : t.status === 'rejected' ? 'REJEITADO' : translateQuoteStatus(t.status).toUpperCase()}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="text-lg font-bold text-emerald-400 tabular-nums">
+                                                        {fmt(t.totalValue)}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

@@ -162,11 +162,16 @@ export const useNotifications = () => {
         }
     };
 
+    const removeNotification = useCallback((id: string) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    }, []);
+
     return {
         notifications,
         isLoading,
         error,
         refetch: fetchNotifications,
-        completeItem
+        completeItem,
+        removeNotification
     };
 };

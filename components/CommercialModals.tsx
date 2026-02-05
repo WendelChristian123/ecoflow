@@ -509,7 +509,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                                 {items.map((item, idx) => (
                                     <tr key={idx}>
                                         <td className="p-2">
-                                            <input className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground" placeholder="Item..." value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)} />
+                                            <input className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground" placeholder="Item / Descrição..." value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)} />
                                         </td>
                                         <td className="p-2">
                                             <input type="number" className="w-full bg-transparent outline-none text-foreground text-center" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseFloat(e.target.value))} />

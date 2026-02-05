@@ -240,13 +240,7 @@ export const TeamsPage: React.FC = () => {
     let teamTasks = tasks.filter(t => t.teamId === selectedTeam.id);
     const teamLead = users.find(u => u.id === selectedTeam.leadId);
 
-    // 1. Month Filter
-    if (showDetailMonthFilter) {
-      teamTasks = teamTasks.filter(t => {
-        if (!t.dueDate) return false;
-        return isSameMonth(parseISO(t.dueDate), detailDate);
-      });
-    }
+
 
     // 2. Status Filter
     if (detailFilterStatus !== 'all') {
@@ -326,12 +320,7 @@ export const TeamsPage: React.FC = () => {
               />
             </div>
 
-            {/* 2. Month Nav */}
-            <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
-              <button onClick={() => setDetailDate(subMonths(detailDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
-              <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(detailDate, 'MMM/yyyy', { locale: ptBR })}</span>
-              <button onClick={() => setDetailDate(addMonths(detailDate, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
-            </div>
+
 
             {/* 3. Status */}
             <FilterSelect

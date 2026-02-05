@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { RecurringService, Contact, CatalogItem, FinancialCategory, FinancialAccount } from '../../types';
 import { Loader, Card, Button, Badge } from '../../components/Shared';
@@ -27,6 +28,20 @@ export const RecurringPage: React.FC = () => {
     const [isReportOpen, setIsReportOpen] = useState(false);
 
     useEffect(() => { loadData(); }, []);
+
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        if (!loading && services.length > 0) {
+            const targetId = searchParams.get('openModal');
+            if (targetId) {
+                const target = services.find(s => s.id === targetId);
+                if (target) {
+                    setDetailService(target);
+                }
+            }
+        }
+    }, [loading, services, searchParams]);
 
     const loadData = async () => {
         setLoading(true);

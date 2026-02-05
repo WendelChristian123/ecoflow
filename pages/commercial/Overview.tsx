@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { translateQuoteStatus } from '../../utils/i18n';
 import { api } from '../../services/api';
 import { Quote, User, Contact, CatalogItem } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -81,8 +82,8 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-            <div className="bg-card border border-border rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+            <div className="bg-card border border-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
                 <div className="p-5 border-b border-border flex justify-between items-center bg-muted/20 rounded-t-xl">
                     <h3 className="text-lg font-bold text-foreground">{title}</h3>
                     <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"><X size={20} /></button>
@@ -105,7 +106,7 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                                             #{q.id.substring(0, 4)}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-foreground">{q.clientName || 'Cliente sem nome'} ({q.title})</div>
+                                            <div className="font-bold text-foreground">{q.customerName || q.contact?.name || 'Cliente sem nome'}</div>
                                             <div className="text-xs text-muted-foreground flex items-center gap-2">
                                                 {format(parseISO(q.createdAt || q.date), 'dd/MM/yyyy')} • {getUserName(q.userId)}
                                             </div>
@@ -113,8 +114,8 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                                     </div>
                                     <div className="text-right">
                                         <div className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">{fmt(q.totalValue)}</div>
-                                        <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : 'warning'}>
-                                            {q.status.toUpperCase()}
+                                        <Badge variant={q.status === 'approved' ? 'success' : (q.status === 'rejected' || (q.validUntil && new Date(q.validUntil) < new Date())) ? 'error' : 'warning'}>
+                                            {(q.status === 'approved' ? 'APROVADO' : (q.status === 'rejected' || (q.validUntil && new Date(q.validUntil) < new Date())) ? 'VENCIDO' : translateQuoteStatus(q.status)).toUpperCase()}
                                         </Badge>
                                     </div>
                                 </div>
@@ -148,7 +149,7 @@ export const CommercialOverview: React.FC = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // Drilldown State
-    const [drilldownType, setDrilldownType] = useState<'total' | 'negotiation' | 'approved' | 'rejected' | null>(null);
+    const [drilldownType, setDrilldownType] = useState<'total' | 'negotiation' | 'approved' | 'overdue' | null>(null);
     const [editingQuote, setEditingQuote] = useState<Quote | undefined>(undefined);
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
@@ -179,22 +180,34 @@ export const CommercialOverview: React.FC = () => {
     // --- KPI CALCULATIONS ---
     const kpiData = useMemo(() => {
         const totalQuotes = quotes.length;
+        const now = new Date();
         const approved = quotes.filter(q => q.status === 'approved');
-        const rejected = quotes.filter(q => q.status === 'rejected');
-        const open = quotes.filter(q => ['draft', 'sent', 'negotiation', 'viewed'].includes(q.status));
+
+        // Vencidos: Rejected status OR ValidUntil passed (and not approved)
+        const overdue = quotes.filter(q =>
+            q.status === 'rejected' ||
+            (q.validUntil && new Date(q.validUntil) < now && q.status !== 'approved')
+        );
+
+        // Open: Status is in list AND NOT overdue
+        const open = quotes.filter(q =>
+            ['draft', 'sent', 'negotiation', 'viewed'].includes(q.status) &&
+            !(q.validUntil && new Date(q.validUntil) < now)
+        );
+
         const pipelineValue = open.reduce((acc, q) => acc + q.totalValue, 0);
         const conversionRate = totalQuotes > 0 ? (approved.length / totalQuotes) * 100 : 0;
 
         return {
             totalQuotes,
             approvedCount: approved.length,
-            rejectedCount: rejected.length,
+            overdueCount: overdue.length,
             openCount: open.length, // Negotiation
             pipelineValue,
             conversionRate,
             // Lists for drilldown
             listApproved: approved,
-            listRejected: rejected,
+            listOverdue: overdue,
             listOpen: open,
             listTotal: quotes
         };
@@ -207,7 +220,7 @@ export const CommercialOverview: React.FC = () => {
         'Visualizado': '#3b82f6', // blue-500
         'Negociação': '#6366f1', // indigo-500
         'Aprovado': '#10b981',   // emerald-500
-        'Rejeitado': '#f43f5e',  // rose-500
+        'Vencido': '#f43f5e',  // rose-500
     };
     const DEFAULT_COLOR = '#94a3b8';
 
@@ -219,7 +232,7 @@ export const CommercialOverview: React.FC = () => {
                     q.status === 'viewed' ? 'Visualizado' :
                         q.status === 'negotiation' ? 'Negociação' :
                             q.status === 'approved' ? 'Aprovado' :
-                                q.status === 'rejected' ? 'Rejeitado' : q.status;
+                                (q.status === 'rejected' || (q.validUntil && new Date(q.validUntil) < new Date())) ? 'Vencido' : q.status;
             counts[s] = (counts[s] || 0) + 1;
         });
         return Object.entries(counts)
@@ -253,9 +266,9 @@ export const CommercialOverview: React.FC = () => {
     const getDrilldownData = () => {
         switch (drilldownType) {
             case 'total': return { title: 'Todos os Orçamentos', list: kpiData.listTotal };
-            case 'negotiation': return { title: 'Em Negociação', list: kpiData.listOpen };
+            case 'negotiation': return { title: 'Em Negociação (Vigentes)', list: kpiData.listOpen };
             case 'approved': return { title: 'Orçamentos Aprovados', list: kpiData.listApproved };
-            case 'rejected': return { title: 'Orçamentos Rejeitados', list: kpiData.listRejected };
+            case 'overdue': return { title: 'Orçamentos Vencidos', list: kpiData.listOverdue };
             default: return { title: '', list: [] };
         }
     };
@@ -308,12 +321,12 @@ export const CommercialOverview: React.FC = () => {
                     onClick={() => setDrilldownType('approved')}
                 />
                 <KpiCard
-                    title="Rejeitados"
-                    value={kpiData.rejectedCount}
+                    title="Vencidos"
+                    value={kpiData.overdueCount}
                     icon={<XCircle size={18} />}
                     color="rose"
-                    subtitle="Perdidos"
-                    onClick={() => setDrilldownType('rejected')}
+                    subtitle="Expirados"
+                    onClick={() => setDrilldownType('overdue')}
                 />
                 <KpiCard
                     title="Taxa de Conversão"

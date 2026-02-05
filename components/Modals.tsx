@@ -11,7 +11,7 @@ import {
     MoreHorizontal, Trash2, Edit2, Play, Pause, ChevronRight, ChevronDown,
     MessageSquare, CheckCircle2, User as UserIcon, Calendar, ArrowRight,
     Flag, Plus, Copy, History,
-    Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, FileText, RotateCcw, PlayCircle, CheckSquare, Link as LinkIcon
+    Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, FileText, RotateCcw, PlayCircle, CheckSquare, Link as LinkIcon, XCircle, Tag
 } from 'lucide-react';
 import { TransferModal, HistoryTimeline } from './DetailComponents';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,9 @@ import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ContactModal } from './CommercialModals';
 import { translateStatus, translatePriority, translateTaskStatus, translateContactScope } from '../utils/i18n';
+import { usePaymentConfirmation } from './PaymentConfirmation';
+import { kanbanService } from '../services/kanbanService';
+import { KanbanStage } from '../types';
 
 // --- Generic Confirmation Modal ---
 
@@ -138,13 +141,14 @@ interface DrilldownItem {
 
 export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary }) => {
     const [localData, setLocalData] = useState<any[]>(data);
+    const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
     const navigate = useNavigate();
 
     useEffect(() => {
         if (!data) return;
         const sorted = [...data].sort((a: any, b: any) => {
-            const dateA = new Date(a.date || a.dueDate || a.startDate || 0).getTime();
-            const dateB = new Date(b.date || b.dueDate || b.startDate || 0).getTime();
+            const dateA = new Date(a.date || a.dueDate || a.startDate || a.validUntil || 0).getTime();
+            const dateB = new Date(b.date || b.dueDate || b.startDate || b.validUntil || 0).getTime();
             return dateA - dateB;
         });
         setLocalData(sorted);
@@ -168,27 +172,55 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
         }
     };
 
-    const handleToggleStatus = async (e: React.MouseEvent, item: FinancialTransaction) => {
+    const handleToggleStatus = (e: React.MouseEvent, item: FinancialTransaction) => {
         e.stopPropagation();
         const newStatus = !item.isPaid;
-        setLocalData(prev => prev.map(i => i.id === item.id ? { ...i, isPaid: newStatus } : i));
-        try {
-            await api.toggleTransactionStatus(item.id, newStatus);
-        } catch (error) {
-            setLocalData(prev => prev.map(i => i.id === item.id ? { ...i, isPaid: !newStatus } : i));
-            alert(`Erro ao atualizar: ${getErrorMessage(error)}`);
+
+        if (newStatus) {
+            // "Marking as Paid" - Use Confirmation Logic
+            confirmPayment(item, async (id, finalStatus) => {
+                // Optimistic Local Update
+                setLocalData(prev => prev.map(i => i.id === id ? { ...i, isPaid: true } : i));
+
+                // Actual API call is handled by confirmPayment?
+                // Wait, confirmPayment implementation in hook CALLS the API.
+                // So we just update local state here.
+                // But confirmPayment logic handles the "isPaid=true" case.
+
+                // If the user cancelled the date selection, confirmPayment callback won't fire.
+            });
+        } else {
+            // "Marking as Unpaid" - Direct Call (or maybe we want to confirm too? Usually safe to untoggle transparently)
+            // But wait, confirmPayment logic inside the hook might expect to handle BOTH?
+            // "openModal" logic inside usePaymentConfirmation seems designed for "Marking as Paid" (status=true).
+            // Let's check usePaymentConfirmation implementation. 
+            // Step 12: `toggleTransactionStatus(transaction.id, true, dates.dueDate)`
+            // It seems to be for CONFIRMATION (paid).
+            // So for Unpaid, we can keep direct call or use the hook if it supports it.
+            // But the hook is named `usePaymentConfirmation`.
+            // So for unpaying, we do it manually here.
+
+            (async () => {
+                setLocalData(prev => prev.map(i => i.id === item.id ? { ...i, isPaid: false } : i));
+                try {
+                    await api.toggleTransactionStatus(item.id, false);
+                } catch (error) {
+                    setLocalData(prev => prev.map(i => i.id === item.id ? { ...i, isPaid: true } : i)); // Revert
+                    alert(`Erro ao atualizar: ${getErrorMessage(error)}`);
+                }
+            })();
         }
     }
 
     const handleItemClick = (item: any) => {
         onClose();
-        if (type === 'tasks') navigate('/tasks', { state: { taskId: item.id } });
-        else if (type === 'events') navigate('/agenda', { state: { eventId: item.id } });
+        if (type === 'tasks') navigate(`/tasks?openModal=${item.id}`);
+        else if (type === 'events') navigate(`/agenda?openModal=${item.id}`);
         else if (type === 'finance') {
-            if (item.isVirtualBill) { navigate('/finance/cards'); return; }
-            navigate('/finance/transactions', { state: { transactionId: item.id } });
+            if (item.isVirtualBill) { navigate(`/finance/cards?openModal=${item.id}`); return; } // Might need handling in Cards page too, or just open generic
+            navigate(`/finance/transactions?openModal=${item.id}`);
         }
-        else if (type === 'quotes') navigate('/commercial/quotes');
+        else if (type === 'quotes') navigate(`/commercial/quotes?openModal=${item.id}`);
     };
 
     const fmtMoney = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -365,7 +397,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50" />
                                         </div>
                                         <div className="text-xs text-muted-foreground">
-                                            {formatDate(q.date, 'dd/MM/yyyy')} • #{q.id?.substring(0, 6) || '???'}
+                                            {q.validUntil ? format(parseISO(q.validUntil.split('T')[0]), 'dd/MM/yyyy') : '-'} • #{q.id?.substring(0, 6) || '???'}
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -381,6 +413,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                     })
                 )}
             </div>
+            {ConfirmationModalComponent}
         </Modal >
     )
 }
@@ -521,10 +554,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
         }
     }, [isOpen, initialData, accounts]);
 
-    // Credit Card Logic: Ensure isPaid is FALSE for credit card expenses
+    // Credit Card Logic: Ensure isPaid is TRUE for credit card expenses (Managed by Invoice)
     useEffect(() => {
         if (formData.creditCardId) {
-            setFormData(prev => ({ ...prev, isPaid: false }));
+            setFormData(prev => ({ ...prev, isPaid: true }));
         }
     }, [formData.creditCardId]);
 
@@ -660,26 +693,30 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-[170px_1fr] gap-4">
                                 <Input label="Data" type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
                                 {formData.type !== 'transfer' && (
                                     <div className="pt-6">
                                         <div
                                             className={cn(
-                                                "flex items-center gap-3 h-[42px] px-3 border border-border rounded-lg bg-secondary/30 transition-colors",
-                                                formData.creditCardId ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-secondary/50"
+                                                "flex items-center justify-center gap-2 h-[42px] px-3 border rounded-lg transition-all duration-200 select-none",
+                                                formData.creditCardId
+                                                    ? "bg-emerald-500/80 border-emerald-600/80 text-white cursor-help"
+                                                    : formData.isPaid
+                                                        ? "bg-emerald-500 border-emerald-600 text-white shadow-md cursor-pointer hover:bg-emerald-600"
+                                                        : "bg-secondary/30 border-border cursor-pointer hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
                                             )}
                                             onClick={() => !formData.creditCardId && setFormData({ ...formData, isPaid: !formData.isPaid })}
+                                            title={formData.creditCardId ? "Lançamentos no cartão são considerados pagos automaticamente." : ""}
                                         >
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.isPaid}
-                                                onChange={e => !formData.creditCardId && setFormData({ ...formData, isPaid: e.target.checked })}
-                                                disabled={!!formData.creditCardId}
-                                                className="w-4 h-4 rounded bg-background border-input accent-emerald-500 disabled:cursor-not-allowed"
-                                            />
-                                            <span className="text-sm text-foreground select-none">
-                                                {formData.creditCardId ? 'Pendente (Fatura)' : (formData.isPaid ? 'Pago / Recebido' : 'Pendente')}
+                                            <div className={cn(
+                                                "w-4 h-4 rounded flex items-center justify-center transition-all",
+                                                formData.isPaid ? "bg-white/20 text-white" : "bg-background border border-input"
+                                            )}>
+                                                {formData.isPaid && <Check size={12} strokeWidth={4} />}
+                                            </div>
+                                            <span className="text-sm font-medium whitespace-nowrap truncate">
+                                                {formData.creditCardId ? 'Pago no Crédito' : (formData.isPaid ? 'Pagamento Confirmado' : 'Marcar como Pago')}
                                             </span>
                                         </div>
                                     </div>
@@ -2275,6 +2312,8 @@ interface EventDetailModalProps {
     onSuccess: () => void;
     event: any; // Using any for compatibility or import UnifiedEvent
     users: User[];
+    projects?: Project[];
+    teams?: Team[];
     onEdit: () => void;
     onDuplicate?: (event: any) => void;
 }
@@ -2293,10 +2332,81 @@ const translateEventType = (type: string | undefined): string => {
     return map[type.toLowerCase()] || type;
 };
 
-export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onClose, onSuccess, event, users, onEdit, onDuplicate }) => {
+export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onClose, onSuccess, event, users, projects, teams, onEdit, onDuplicate }) => {
     const [loading, setLoading] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const { user: currentUser } = useAuth();
+    const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
+    const isTask = event?.origin === 'task';
+
+    // Task Stage Logic
+    const [stages, setStages] = useState<KanbanStage[]>([]);
+    const [currentStageId, setCurrentStageId] = useState<string>('');
+    const [loadingStages, setLoadingStages] = useState(false);
+
+
+
+    useEffect(() => {
+        if (isOpen && isTask) {
+            fetchStages();
+        }
+    }, [isOpen, isTask, event?.id]);
+
+    const fetchStages = async () => {
+        setLoadingStages(true);
+        try {
+            // Determine module context. For now, we assume 'tasks'.
+            const allBoards = await kanbanService.listKanbans('tasks');
+
+            let targetBoard = allBoards.find(b => b.isDefault);
+            if (event.metadata?.kanbanId) {
+                const found = allBoards.find(b => b.id === event.metadata.kanbanId);
+                if (found) targetBoard = found;
+            }
+
+            if (targetBoard && targetBoard.stages) {
+                setStages(targetBoard.stages);
+
+                // Determine current stage
+                if (event.metadata?.kanbanStageId) {
+                    setCurrentStageId(event.metadata.kanbanStageId);
+                } else if (event.metadata?.status) {
+                    // Start with explicit status mapping
+                    const status = event.metadata.status;
+                    const mapped = targetBoard.stages.find(s => {
+                        if (status === 'done' || status === 'completed') return s.systemStatus === 'done';
+                        if (status === 'in_progress') return s.systemStatus === 'in_progress';
+                        return s.systemStatus === 'todo'; // Default fallback logic?
+                    });
+
+                    if (mapped) setCurrentStageId(mapped.id);
+                    else if (targetBoard.stages.length > 0) setCurrentStageId(targetBoard.stages[0].id);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch stages", error);
+        } finally {
+            setLoadingStages(false);
+        }
+    };
+
+    const handleStageChange = async (newStageId: string) => {
+        if (!newStageId) return;
+        setLoading(true);
+        try {
+            const stage = stages.find(s => s.id === newStageId);
+            if (!stage) return;
+
+            await kanbanService.moveEntity('tasks', event.metadata.id, stage.kanbanId, newStageId);
+            setCurrentStageId(newStageId);
+            onSuccess();
+        } catch (error) {
+            console.error("Failed to move stage", error);
+            alert("Erro ao mover etapa.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleTransfer = async (userId: string, comment?: string, link?: string) => {
         if (isTask && event.metadata) {
@@ -2333,8 +2443,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
 
     if (!event) return null;
 
-    const isFinance = event.origin?.startsWith('finance');
-    const isTask = event.origin === 'task';
+    const isFinance = event.origin?.startsWith('finance') && event.origin !== 'finance_budget';
+    const isQuote = event.origin === 'finance_budget';
     const isAgenda = event.origin === 'agenda' || !event.origin;
 
     const handleStatusUpdate = async (newStatus?: string) => {
@@ -2343,19 +2453,59 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
             if (isTask && event.metadata?.id && newStatus) {
                 const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', event.metadata.id);
                 if (error) throw error;
+                onSuccess();
+                onClose();
             } else if (isAgenda) {
                 const updatedStatus = event.status === 'completed' ? 'scheduled' : 'completed';
                 await api.updateEvent({ ...event, status: updatedStatus });
+                onSuccess();
+                onClose();
+            } else if (isQuote && event.metadata?.id && newStatus) {
+                // Quote Logic
+                await api.updateQuote({ id: event.metadata.id, status: newStatus as any } as any, [] as any);
+                onSuccess();
+                onClose();
             } else if (isFinance && event.metadata?.id) {
-                const newPaidStatus = !event.metadata.isPaid;
-                await api.toggleTransactionStatus(event.metadata.id, newPaidStatus);
+                // Finance Logic with Confirmation
+                const currentIsPaid = event.metadata.isPaid;
+                const newPaidStatus = !currentIsPaid;
+
+                if (newPaidStatus) {
+                    // Confirm Payment
+                    const fakeTx = { id: event.metadata.id, date: event.startDate, isPaid: false } as any;
+                    // event.startDate is the date we have. metadata might have original date?
+                    // event.metadata has the full transaction usually?
+                    // In api.ts getEvents: origin_id link. metadata is probably the transaction data?
+                    // Let's assume metadata contains fields.
+                    // But safer to pass constructed object.
+
+                    confirmPayment(fakeTx, () => {
+                        onSuccess();
+                        onClose();
+                    });
+                    // Note: loading state might need to be handled if confirmPayment is async?
+                    // The hook handles the modal opening. 
+                    // We should unset loading so the UI doesn't freeze while modal is open.
+                    setLoading(false);
+                    return; // Exit here, let modal handle it.
+                } else {
+                    // Mark as Unpaid
+                    await api.toggleTransactionStatus(event.metadata.id, false);
+                    onSuccess();
+                    onClose();
+                }
             }
-            onSuccess();
-            onClose(); // Close modal immediately
         } catch (error: any) {
             console.error('Update Failed:', error);
             alert(`Erro ao atualizar status: ${error.message || JSON.stringify(error)}`);
-        } finally { setLoading(false); }
+        } finally {
+            // Only unset loading if we didn't return early (for payment confirmation case which keeps it 'loading' visually or we handle it inside?)
+            // Actually I called setLoading(false) before return in Finance case.
+            // So strict finally is fine if I ensure I don't set it to false if I want it to stay true? 
+            // Nah, the component might unmount if I onClose(). 
+            // It's fine.
+            if (!((isFinance && !event.metadata.isPaid))) setLoading(false);
+        }
     };
 
     // Task Specific UI Components
@@ -2378,40 +2528,40 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
     );
 
     const renderTaskStageMover = () => {
-        const currentStatus = event.metadata?.status || 'todo';
+        if (!stages || stages.length === 0) return null;
+
         return (
             <div className="mt-4 border border-border bg-muted/50 rounded-lg p-4">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-3">
                     Mover para Etapa
                 </span>
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex bg-secondary rounded-lg p-1 gap-1">
-                        {['todo', 'in_progress', 'review'].map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => handleStatusUpdate(status)}
-                                disabled={loading}
-                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all
-                                    ${currentStatus === status
-                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'}
-                                `}
-                            >
-                                {translateStatus(status)}
-                            </button>
-                        ))}
-                    </div>
-
-                    <Button
-                        variant="success"
-                        size="sm"
-                        className="h-8 text-xs px-4 bg-emerald-600 hover:bg-emerald-500 border-none"
-                        onClick={() => handleStatusUpdate('done')}
-                        disabled={loading}
+                <div className="flex items-center gap-2">
+                    <Select
+                        value={currentStageId}
+                        onChange={(e) => handleStageChange(e.target.value)}
+                        className="w-full bg-background"
+                        disabled={loading || loadingStages}
                     >
-                        <CheckCircle2 size={14} className="mr-1.5" />
-                        Concluir Tarefa
-                    </Button>
+                        {stages.map(stage => (
+                            <option key={stage.id} value={stage.id}>
+                                {stage.name}
+                            </option>
+                        ))}
+                    </Select>
+
+                    {/* Optional: 'Done' quick action if needed, but Select covers it */}
+                    {!['done', 'completed'].includes(event.metadata?.status) && (
+                        <Button
+                            variant="success"
+                            size="sm"
+                            className="h-9 px-3 shrink-0 bg-emerald-600 hover:bg-emerald-500 border-none"
+                            onClick={() => handleStatusUpdate('done')}
+                            disabled={loading}
+                            title="Concluir rapidamente"
+                        >
+                            <CheckCircle2 size={16} />
+                        </Button>
+                    )}
                 </div>
             </div>
         );
@@ -2422,143 +2572,233 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
             <Modal
                 isOpen={isOpen}
                 onClose={onClose}
-                title={isFinance ? "Detalhes Financeiros" : (isTask ? "Detalhes da Tarefa" : "Detalhes do Evento")}
+                title={isFinance ? "Detalhes Financeiros" : (isQuote ? "Detalhes do Orçamento" : (isTask ? "Detalhes da Tarefa" : "Detalhes do Evento"))}
                 className="max-w-5xl"
             >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Left Sidebar - History */}
-                    <div className="md:col-span-1 border-gray-100 dark:border-gray-800 md:border-r md:pr-4 overflow-y-auto max-h-[calc(80vh-100px)] custom-scrollbar order-2 md:order-1">
-                        <div className="sticky top-0 bg-background z-10 pb-4 pt-1 mb-2 border-b border-border/50">
-                            <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
-                                <History size={14} /> Histórico
-                            </h3>
+                    {/* Left Sidebar - History (Hide for Finance/Quote) */}
+                    {!isFinance && !isQuote && (
+                        <div className="md:col-span-1 border-gray-100 dark:border-gray-800 md:border-r md:pr-4 overflow-y-auto max-h-[calc(80vh-100px)] custom-scrollbar order-2 md:order-1">
+                            <div className="sticky top-0 bg-background z-10 pb-4 pt-1 mb-2 border-b border-border/50">
+                                <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
+                                    <History size={14} /> Histórico
+                                </h3>
+                            </div>
+                            <HistoryTimeline logs={event.logs || []} users={users} />
                         </div>
-                        <HistoryTimeline logs={event.logs || []} users={users} />
-                    </div>
+                    )}
 
                     {/* Right Content - Details */}
-                    <div className="md:col-span-2 space-y-5 order-1 md:order-2">
-                        {/* Header */}
-                        {/* Standardized Action Buttons */}
-                        <div className="flex items-center gap-2 pb-2 mt-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsTransferModalOpen(true)}
-                                className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
-                                title="Transferir Responsabilidade"
-                            >
-                                <UserIcon size={14} />
-                                Transferir
-                            </Button>
-                            {onDuplicate && (
+                    <div className={`${!isFinance && !isQuote ? 'md:col-span-2' : 'col-span-3'} space-y-5 order-1 md:order-2`}>
+                        {/* Header Buttons (Hide for Finance/Quote) */}
+                        {!isFinance && !isQuote && (
+                            <div className="flex items-center gap-2 pb-2 mt-2">
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => onDuplicate(event)}
+                                    onClick={() => setIsTransferModalOpen(true)}
                                     className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
-                                    title="Duplicar"
+                                    title="Transferir Responsabilidade"
                                 >
-                                    <Copy size={14} />
-                                    Duplicar
+                                    <UserIcon size={14} />
+                                    Transferir
                                 </Button>
-                            )}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onEdit}
-                                className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
-                                title="Editar"
-                            >
-                                <Edit2 size={14} />
-                                Editar
-                            </Button>
-                        </div>
+                                {onDuplicate && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onDuplicate(event)}
+                                        className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                        title="Duplicar"
+                                    >
+                                        <Copy size={14} />
+                                        Duplicar
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={onEdit}
+                                    className="text-muted-foreground hover:text-foreground gap-2 h-8 px-3"
+                                    title="Editar"
+                                >
+                                    <Edit2 size={14} />
+                                    Editar
+                                </Button>
+                            </div>
+                        )}
 
-                        {/* Badges */}
+                        {/* Badges (Hide generic for Finance/Quote) */}
                         {isTask ? renderTaskBadges() : (
-                            <div className="flex flex-wrap gap-2">
-                                {!isAgenda && !isTask && (
-                                    <Badge variant="neutral" className="uppercase tracking-wider text-[10px]">Financeiro</Badge>
-                                )}
-                                {isAgenda && <Badge variant={event.status === 'completed' ? 'success' : 'neutral'}>{translateStatus(event.status)}</Badge>}
-                                {isFinance && (
-                                    <Badge variant={event.metadata?.isPaid ? 'success' : 'warning'}>
-                                        {event.metadata?.isPaid ? 'PAGO' : 'PENDENTE'}
-                                    </Badge>
-                                )}
-                                {isAgenda && <Badge variant="default">{translateEventType(event.type)}</Badge>}
+                            (!isFinance && !isQuote) && (
+                                <div className="flex flex-wrap gap-2">
+                                    {!isAgenda && !isTask && (
+                                        <Badge variant="neutral" className="uppercase tracking-wider text-[10px]">Financeiro</Badge>
+                                    )}
+                                    {isAgenda && <Badge variant={event.status === 'completed' ? 'success' : 'neutral'}>{translateStatus(event.status)}</Badge>}
+                                    {isFinance && (
+                                        <Badge variant={event.metadata?.isPaid ? 'success' : 'warning'}>
+                                            {event.metadata?.isPaid ? 'PAGO' : 'PENDENTE'}
+                                        </Badge>
+                                    )}
+                                    {isQuote && (
+                                        <Badge variant="neutral">ORÇAMENTO</Badge>
+                                    )}
+                                    {isAgenda && <Badge variant="default">{translateEventType(event.type)}</Badge>}
+                                </div>
+                            )
+                        )}
+
+                        {/* Special Summary Views */}
+                        {isFinance && (
+                            <div className="flex flex-col gap-4">
+                                {/* Finance Summary View */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2 bg-secondary/20 p-4 rounded-lg border border-border flex items-center justify-between">
+                                        <span className="text-muted-foreground text-sm font-medium uppercase">Valor</span>
+                                        <span className={`text-3xl font-bold ${event.origin === 'finance_receivable' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata?.amount || 0)}
+                                        </span>
+                                    </div>
+                                    <div className="bg-card p-3 rounded-lg border border-border">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Categoria</span>
+                                        <div className="font-medium text-sm flex items-center gap-2">
+                                            <Tag size={14} className="text-primary" />
+                                            {event.metadata?.category?.name || 'Geral'}
+                                        </div>
+                                    </div>
+                                    <div className="bg-card p-3 rounded-lg border border-border">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">
+                                            {event.origin === 'finance_receivable' ? 'Cliente' : 'Fornecedor'}
+                                        </span>
+                                        <div className="font-medium text-sm flex items-center gap-2">
+                                            <UserIcon size={14} className="text-primary" />
+                                            {event.metadata?.contact?.name || event.metadata?.contactName || 'Sem contato'}
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2 bg-card p-3 rounded-lg border border-border">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Descrição</span>
+                                        <div className="text-sm">{event.metadata?.description || event.description || '-'}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg">
+                                    <span className="text-xs text-muted-foreground uppercase font-bold flex items-center gap-2">
+                                        <Calendar size={14} /> Vencimento
+                                    </span>
+                                    <span className="font-medium">
+                                        {format(parseISO(event.startDate), 'dd/MM/yyyy')}
+                                    </span>
+                                </div>
                             </div>
                         )}
 
-                        {/* Finance Amount */}
-                        {isFinance && event.metadata?.amount && (
-                            <div className="bg-secondary/20 p-4 rounded-lg border border-border flex items-center justify-between">
-                                <span className="text-muted-foreground text-sm">Valor</span>
-                                <span className={`text-2xl font-bold ${event.origin === 'finance_receivable' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata.amount)}
-                                </span>
+                        {isQuote && (
+                            <div className="flex flex-col gap-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2 bg-secondary/20 p-4 rounded-lg border border-border flex items-center justify-between">
+                                        <span className="text-muted-foreground text-sm font-medium uppercase">Valor Total</span>
+                                        <span className="text-3xl font-bold text-amber-500">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.metadata?.totalValue || 0)}
+                                        </span>
+                                    </div>
+                                    <div className="bg-card p-3 rounded-lg border border-border col-span-2">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Cliente</span>
+                                        <div className="font-medium text-sm flex items-center gap-2">
+                                            <UserIcon size={14} className="text-primary" />
+                                            {event.metadata?.customerName || 'Cliente sem nome'}
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2 bg-card p-3 rounded-lg border border-border">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Descrição do Orçamento</span>
+                                        <div className="text-sm">{event.description || event.metadata?.notes || '-'}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg">
+                                    <span className="text-xs text-muted-foreground uppercase font-bold flex items-center gap-2">
+                                        <Clock size={14} /> Validade
+                                    </span>
+                                    <span className="font-medium">
+                                        {event.metadata?.validUntil ? format(parseISO(event.metadata.validUntil), 'dd/MM/yyyy') : 'N/A'}
+                                    </span>
+                                </div>
+
+                                {/* Quote Items */}
+                                {event.metadata?.items && event.metadata.items.length > 0 && (
+                                    <div className="bg-card p-3 rounded-lg border border-border">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-2">Itens e Serviços</span>
+                                        <div className="space-y-2">
+                                            {event.metadata.items.map((item: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between items-center text-sm border-b border-border/50 last:border-0 pb-1 last:pb-0">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-foreground">{item.description || "Item"}</span>
+                                                        <span className="text-xs text-muted-foreground">Qty: {item.quantity} x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.unitPrice)}</span>
+                                                    </div>
+                                                    <span className="font-medium">
+                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
-
-                        {/* Description */}
-                        <div className="bg-card p-3 rounded-lg text-muted-foreground text-sm whitespace-pre-wrap border border-border min-h-[80px]">
-                            {event.description || "Sem descrição."}
-                        </div>
 
                         {/* Task Stage Mover */}
                         {isTask && renderTaskStageMover()}
 
-                        {/* Grid Details */}
-                        <div className={`grid ${isTask ? 'grid-cols-2 mt-4' : 'grid-cols-2 gap-4'} text-sm`}>
-                            {/* Task Specific Footer */}
-                            {isTask ? (
-                                <>
-                                    <div>
-                                        <span className="text-muted-foreground block mb-1">Responsável</span>
-                                        <div className="flex items-center gap-2 text-foreground">
-                                            {(() => {
-                                                const assigneeId = event.metadata?.assigneeId;
-                                                const assigneeUser = users.find(u => u.id === assigneeId);
-                                                return assigneeUser ? (
-                                                    <>
-                                                        <Avatar name={assigneeUser.name} src={assigneeUser.avatarUrl} size="sm" />
-                                                        <span className="font-medium text-foreground">{assigneeUser.name}</span>
-                                                    </>
-                                                ) : <span className="text-muted-foreground">-</span>;
-                                            })()}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <span className="text-muted-foreground block mb-1">Prazo</span>
-                                        <div className="flex items-center gap-2 text-foreground">
-                                            <Calendar size={16} />
-                                            <span>{new Date(event.startDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}</span>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                // Standard Agenda/Finance Footer
-                                <>
-                                    <div>
-                                        <span className="text-muted-foreground block mb-1">Início / Vencimento</span>
-                                        <div className="flex items-center gap-2 text-foreground">
-                                            <Calendar size={16} />
-                                            <span>{new Date(event.startDate).toLocaleDateString()} {new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                        </div>
-                                    </div>
-                                    {isAgenda && (
+                        {/* Grid Details - Hide for Finance/Quote as they use custom summary above */}
+                        {!isFinance && !isQuote && (
+                            <div className={`grid ${isTask ? 'grid-cols-2 mt-4' : 'grid-cols-2 gap-4'} text-sm`}>
+                                {/* Task Specific Footer */}
+                                {isTask ? (
+                                    <>
                                         <div>
-                                            <span className="text-muted-foreground block mb-1">Fim</span>
+                                            <span className="text-muted-foreground block mb-1">Responsável</span>
                                             <div className="flex items-center gap-2 text-foreground">
-                                                <Clock size={16} />
-                                                <span>{new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                {(() => {
+                                                    const assigneeId = event.metadata?.assigneeId;
+                                                    const assigneeUser = users.find(u => u.id === assigneeId);
+                                                    return assigneeUser ? (
+                                                        <>
+                                                            <Avatar name={assigneeUser.name} src={assigneeUser.avatarUrl} size="sm" />
+                                                            <span className="font-medium text-foreground">{assigneeUser.name}</span>
+                                                        </>
+                                                    ) : <span className="text-muted-foreground">-</span>;
+                                                })()}
                                             </div>
                                         </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block mb-1">Prazo</span>
+                                            <div className="flex items-center gap-2 text-foreground">
+                                                <Calendar size={16} />
+                                                <span>{new Date(event.startDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    // Standard Agenda Footer (Not Finance/Quote)
+                                    <>
+                                        <div>
+                                            <span className="text-muted-foreground block mb-1">Início / Vencimento</span>
+                                            <div className="flex items-center gap-2 text-foreground">
+                                                <Calendar size={16} />
+                                                <span>{new Date(event.startDate).toLocaleDateString()} {new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                        </div>
+                                        {isAgenda && (
+                                            <div>
+                                                <span className="text-muted-foreground block mb-1">Fim</span>
+                                                <div className="flex items-center gap-2 text-foreground">
+                                                    <Clock size={16} />
+                                                    <span>{new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         {/* Task Links */}
                         {isTask && event.links && event.links.length > 0 && (
@@ -2658,6 +2898,27 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                                             )}
                                         </Button>
                                     )}
+
+                                    {isQuote && (
+                                        <>
+                                            <Button
+                                                variant="danger"
+                                                onClick={() => handleStatusUpdate('rejected')}
+                                                disabled={loading}
+                                                className="gap-2"
+                                            >
+                                                <XCircle size={16} /> Negócio Perdido
+                                            </Button>
+                                            <Button
+                                                variant="success"
+                                                onClick={() => handleStatusUpdate('approved')}
+                                                disabled={loading}
+                                                className="gap-2"
+                                            >
+                                                <CheckCircle2 size={16} /> Negócio Fechado
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -2674,6 +2935,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                 />
             )
             }
+            {ConfirmationModalComponent}
         </>
     );
 };

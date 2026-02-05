@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { Quote, Contact, CatalogItem } from '../../types';
 import { Loader, Button, Badge } from '../../components/Shared';
@@ -61,6 +62,20 @@ export const QuotesPage: React.FC = () => {
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
+
+    const [searchParams] = useSearchParams();
+    useEffect(() => {
+        if (!loading && quotes.length > 0) {
+            const targetId = searchParams.get('openModal');
+            if (targetId) {
+                const target = quotes.find(q => q.id === targetId);
+                if (target) {
+                    setEditingQuote(target);
+                    setIsModalOpen(true);
+                }
+            }
+        }
+    }, [loading, quotes, searchParams]);
 
     const handleDelete = async () => {
         if (confirmDeleteId) {
@@ -268,7 +283,7 @@ export const QuotesPage: React.FC = () => {
                                 <div className="flex items-center gap-6">
                                     {/* Quote ID */}
                                     <div className="flex flex-col items-center justify-center h-12 w-16 bg-emerald-100 dark:bg-slate-800 rounded text-muted-foreground dark:text-slate-400 font-mono text-xs border border-emerald-200 dark:border-slate-700">
-                                        <span className="text-[10px] uppercase text-muted-foreground dark:text-slate-500">COD</span>
+                                        <span className="text-[10px] uppercase text-muted-foreground dark:text-slate-500">CÓD</span>
                                         <span className="font-bold text-foreground dark:text-slate-300">#{q.id.substring(0, 4)}</span>
                                     </div>
 

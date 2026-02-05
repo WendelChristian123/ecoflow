@@ -791,7 +791,7 @@ export const api = {
 
     // --- FINANCE ---
     getFinancialTransactions: async (tenantId?: string) => {
-        let query = supabase.from('financial_transactions').select('*');
+        let query = supabase.from('financial_transactions').select('*, category:financial_categories(*), contact:contacts(*)');
         if (tenantId) query = query.eq('tenant_id', tenantId);
         const { data, error } = await query;
         if (error) throw error;
@@ -808,7 +808,9 @@ export const api = {
             totalInstallments: t.total_installments,
             originType: t.origin_type,
             originId: t.origin_id,
-            tenantId: t.tenant_id
+            tenantId: t.tenant_id,
+            category: t.category,
+            contact: t.contact ? { ...t.contact, fantasyName: t.contact.fantasy_name } : undefined
         })) as FinancialTransaction[];
     },
     addTransaction: async (t: Partial<FinancialTransaction>, recurrence?: any) => {
@@ -901,12 +903,16 @@ export const api = {
             if (batchError) throw batchError;
         }
     },
-    toggleTransactionStatus: async (id: string, isPaid: boolean) => {
-        const { error } = await supabase.from('financial_transactions').update({ is_paid: isPaid }).eq('id', id);
+    toggleTransactionStatus: async (id: string, isPaid: boolean, date?: string) => {
+        const updates: any = { is_paid: isPaid };
+        if (isPaid && date) {
+            updates.date = date;
+        }
+        const { error } = await supabase.from('financial_transactions').update(updates).eq('id', id);
         if (error) throw error;
         // Also toggle linked technical transactions (e.g. credit card limit release)
         await supabase.from('financial_transactions')
-            .update({ is_paid: isPaid })
+            .update({ is_paid: isPaid }) // simple toggle for technicals (usually they follow parent)
             .eq('origin_id', id)
             .eq('origin_type', 'technical');
     },

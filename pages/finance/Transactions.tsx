@@ -5,6 +5,7 @@ import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, 
 import { Loader, Badge, cn, Button, LinkInput } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
 import { TransactionModal, DrilldownModal, ConfirmationModal, RecurrenceActionModal } from '../../components/Modals';
+import { usePaymentConfirmation } from '../../components/PaymentConfirmation';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { TrendingUp, TrendingDown, Filter, Plus, Calendar, Search, ArrowRight, DollarSign, MoreVertical, Edit2, Trash2, CheckSquare, Square, ThumbsUp, ThumbsDown, Copy, CreditCard as CardIcon, ChevronLeft, ChevronRight, FileText, ShoppingBag, Briefcase, Zap, Home, Car, Utensils, PiggyBank } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay, addDays, addMonths, subMonths, isBefore } from 'date-fns';
@@ -71,6 +72,7 @@ export const FinancialTransactions: React.FC = () => {
     const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | undefined>(undefined);
     const [modalInitialType, setModalInitialType] = useState<'income' | 'expense' | 'transfer' | undefined>(undefined);
     const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
+    const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
 
     // Deletion
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export const FinancialTransactions: React.FC = () => {
             setContacts(cont);
             setSettings(s || {});
 
-            const transactionId = searchParams.get('transactionId');
+            const transactionId = searchParams.get('transactionId') || searchParams.get('openModal');
             if (transactionId) {
                 const target = t.find(tx => tx.id === transactionId);
                 if (target) {
@@ -151,13 +153,23 @@ export const FinancialTransactions: React.FC = () => {
         }
     };
 
-    const toggleStatus = async (id: string, currentStatus: boolean) => {
-        try {
-            await api.toggleTransactionStatus(id, !currentStatus);
-            setTransactions(prev => prev.map(t => t.id === id ? { ...t, isPaid: !currentStatus } : t));
-        } catch (error) {
-            console.error(error);
-            alert("Erro ao atualizar status.");
+    const toggleStatus = async (id: string, currentStatus: boolean, transaction?: FinancialTransaction | ProcessedTransaction) => {
+        const newStatus = !currentStatus;
+        if (newStatus && transaction) {
+            // Marking as PAID -> Confirm Date
+            confirmPayment(transaction as any, async (confirmedId, finalStatus) => {
+                setTransactions(prev => prev.map(t => t.id === confirmedId ? { ...t, isPaid: true } : t));
+                // Note: confirmPayment handles the API call internally
+            });
+        } else {
+            // Marking as UNPAID -> Direct update
+            try {
+                await api.toggleTransactionStatus(id, newStatus);
+                setTransactions(prev => prev.map(t => t.id === id ? { ...t, isPaid: newStatus } : t));
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao atualizar status.");
+            }
         }
     }
 
@@ -201,9 +213,9 @@ export const FinancialTransactions: React.FC = () => {
         if (filters.type !== 'all') filtered = filtered.filter(t => t.type === filters.type);
 
         if (filters.status !== 'all') {
-            if (filters.status === 'paid') filtered = filtered.filter(t => t.isPaid);
-            if (filters.status === 'pending') filtered = filtered.filter(t => !t.isPaid);
-            if (filters.status === 'overdue') filtered = filtered.filter(t => !t.isPaid && isBefore(parseDateLocal(t.date), startOfDay(now)));
+            if (filters.status === 'paid') filtered = filtered.filter(t => t.isPaid || t.creditCardId);
+            if (filters.status === 'pending') filtered = filtered.filter(t => !t.isPaid && !t.creditCardId);
+            if (filters.status === 'overdue') filtered = filtered.filter(t => !t.isPaid && !t.creditCardId && isBefore(parseDateLocal(t.date), startOfDay(now)));
         }
 
         if (filters.search) {
@@ -326,7 +338,7 @@ export const FinancialTransactions: React.FC = () => {
                                 </div>
                             ) : (
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); toggleStatus(t.id, t.isPaid); }}
+                                    onClick={(e) => { e.stopPropagation(); toggleStatus(t.id, t.isPaid, t); }}
                                     className={cn(
                                         "transition-all p-2 rounded-full hover:bg-secondary",
                                         t.isPaid
@@ -421,7 +433,7 @@ export const FinancialTransactions: React.FC = () => {
                         options={[
                             { value: 'all', label: 'Todos Status' },
                             { value: 'paid', label: 'Pagos' },
-                            { value: 'pending', label: 'Pendentes' },
+                            { value: 'pending', label: 'A Vencer' },
                             { value: 'overdue', label: 'Vencidos' }
                         ]}
                         className="w-full"
@@ -465,7 +477,14 @@ export const FinancialTransactions: React.FC = () => {
                             <div key={group.date}>
                                 {/* Date Header - As Separator */}
                                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-4 mb-2 opacity-80 flex items-center gap-2">
-                                    <span className="w-1 h-1 rounded-full bg-muted-foreground"></span>
+                                    <span className={cn("w-1 h-1 rounded-full", (() => {
+                                        // Visual Indicator for Day Status
+                                        const date = parseDateLocal(group.date);
+                                        const now = new Date();
+                                        if (isBefore(date, startOfDay(now)) && !group.items.every(i => i.isPaid || i.creditCardId)) return "bg-rose-500";
+                                        if (group.date === format(now, 'yyyy-MM-dd')) return "bg-emerald-500";
+                                        return "bg-muted-foreground";
+                                    })())}></span>
                                     {format(parseDateLocal(group.date), "dd/MM - EEEE", { locale: ptBR })}
                                 </div>
                                 {/* Clean Block of Transactions */}
@@ -506,13 +525,13 @@ export const FinancialTransactions: React.FC = () => {
                                         Despesas
                                     </div>
                                     <div className="text-rose-600 dark:text-rose-500 font-bold text-2xl tracking-tight">
-                                        {fmt(filteredData.filter(t => t.type === 'expense' && t.isPaid && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0))}
+                                        {fmt(filteredData.filter(t => t.type === 'expense' && (t.isPaid || t.creditCardId) && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
                                 <div className="text-left">
                                     <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1">A Pagar</div>
                                     <div className="text-muted-foreground dark:text-slate-400 font-medium text-xs">
-                                        {fmt(filteredData.filter(t => t.type === 'expense' && !t.isPaid && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0))}
+                                        {fmt(filteredData.filter(t => t.type === 'expense' && (!t.isPaid && !t.creditCardId) && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
                             </div>
@@ -591,6 +610,7 @@ export const FinancialTransactions: React.FC = () => {
                 onConfirm={executeRecurrenceDelete}
                 action="delete"
             />
+            {ConfirmationModalComponent}
         </div >
     );
 };

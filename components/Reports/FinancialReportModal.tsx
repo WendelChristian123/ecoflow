@@ -86,9 +86,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
             // Status
             let statusMatch = true;
             const today = startOfDay(new Date());
-            if (statusFilter === 'paid') statusMatch = t.isPaid;
-            else if (statusFilter === 'pending') statusMatch = !t.isPaid && !isBefore(tDate, today);
-            else if (statusFilter === 'overdue') statusMatch = !t.isPaid && isBefore(tDate, today);
+            if (statusFilter === 'paid') statusMatch = t.isPaid || !!t.creditCardId;
+            else if (statusFilter === 'pending') statusMatch = !t.isPaid && !t.creditCardId && !isBefore(tDate, today);
+            else if (statusFilter === 'overdue') statusMatch = !t.isPaid && !t.creditCardId && isBefore(tDate, today);
 
             return inRange && accountMatch && categoryMatch && typeMatch && statusMatch && contactMatch;
         }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -402,9 +402,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                     onChange={setStatusFilter}
                                     options={[
                                         { value: 'all', label: 'Todos' },
-                                        { value: 'paid', label: 'Realizado' },
+                                        { value: 'paid', label: 'Pagos' },
                                         { value: 'pending', label: 'A Vencer' },
-                                        { value: 'overdue', label: 'Atrasado' },
+                                        { value: 'overdue', label: 'Vencidos' },
                                     ]}
                                     darkMode={true}
                                 />
@@ -453,7 +453,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                             </td>
                                             <td className="px-6 py-4 text-center align-top pt-5">
                                                 <Badge variant={t.isPaid ? 'success' : t.creditCardId ? 'success' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'error' : 'warning'} className="px-3 py-1">
-                                                    {t.isPaid ? 'Realizado' : t.creditCardId ? 'Pago via Cartão' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'Atrasado' : 'Pendente'}
+                                                    {t.isPaid ? 'Pago' : t.creditCardId ? 'Pago via Cartão' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'Vencido' : 'A Vencer'}
                                                 </Badge>
                                             </td>
                                             <td className="px-6 py-4 text-right align-top pt-5">

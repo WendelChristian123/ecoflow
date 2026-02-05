@@ -291,6 +291,7 @@ export interface FinancialTransaction {
   contactId?: string;
   originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical' | 'credit_card';
   category?: FinancialCategory; // Joined content
+  contact?: Contact; // Joined content
   originId?: string;
   links: string[];
   recurrenceId?: string;
