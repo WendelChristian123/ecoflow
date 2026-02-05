@@ -11,6 +11,7 @@ import { format, parseISO } from 'date-fns';
 import { Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart as RechartsPieChart, Pie } from 'recharts';
 import { CommercialReportModal } from '../../components/Reports/CommercialReportModal';
 import { QuoteModal } from '../../components/CommercialModals'; // Imported from Modals
+import { commercialLogic } from '../../services/commercialLogic';
 
 // Components
 const KpiCard: React.FC<{
@@ -114,8 +115,8 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                                     </div>
                                     <div className="text-right">
                                         <div className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">{fmt(q.totalValue)}</div>
-                                        <Badge variant={q.status === 'approved' ? 'success' : (q.status === 'rejected' || (q.validUntil && new Date(q.validUntil) < new Date())) ? 'error' : 'warning'}>
-                                            {(q.status === 'approved' ? 'APROVADO' : (q.status === 'rejected' || (q.validUntil && new Date(q.validUntil) < new Date())) ? 'VENCIDO' : translateQuoteStatus(q.status)).toUpperCase()}
+                                        <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : (q.validUntil && new Date(q.validUntil) < new Date()) ? 'error' : 'warning'}>
+                                            {(q.status === 'approved' ? 'NEGÓCIO FECHADO' : q.status === 'rejected' ? 'NEGÓCIO PERDIDO' : (q.validUntil && new Date(q.validUntil) < new Date()) ? 'VENCIDO' : translateQuoteStatus(q.status)).toUpperCase()}
                                         </Badge>
                                     </div>
                                 </div>
@@ -149,7 +150,7 @@ export const CommercialOverview: React.FC = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // Drilldown State
-    const [drilldownType, setDrilldownType] = useState<'total' | 'negotiation' | 'approved' | 'overdue' | null>(null);
+    const [drilldownType, setDrilldownType] = useState<'total' | 'negotiation' | 'approved' | 'lost' | 'overdue' | null>(null);
     const [editingQuote, setEditingQuote] = useState<Quote | undefined>(undefined);
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
@@ -160,6 +161,9 @@ export const CommercialOverview: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
+            // Lazy check for expiration
+            await commercialLogic.checkAndEnforceQuoteExpiration();
+
             const [fetchedQuotes, fetchedUsers, fetchedContacts, fetchedCatalog] = await Promise.all([
                 api.getQuotes(),
                 api.getUsers(),
@@ -182,11 +186,13 @@ export const CommercialOverview: React.FC = () => {
         const totalQuotes = quotes.length;
         const now = new Date();
         const approved = quotes.filter(q => q.status === 'approved');
+        const rejected = quotes.filter(q => q.status === 'rejected');
 
-        // Vencidos: Rejected status OR ValidUntil passed (and not approved)
+        // Vencidos: Exclude rejected/approved, only strictly expired
         const overdue = quotes.filter(q =>
-            q.status === 'rejected' ||
-            (q.validUntil && new Date(q.validUntil) < now && q.status !== 'approved')
+            q.status !== 'rejected' &&
+            q.status !== 'approved' &&
+            (q.validUntil && new Date(q.validUntil) < now)
         );
 
         // Open: Status is in list AND NOT overdue
@@ -201,12 +207,14 @@ export const CommercialOverview: React.FC = () => {
         return {
             totalQuotes,
             approvedCount: approved.length,
+            lostCount: rejected.length,
             overdueCount: overdue.length,
             openCount: open.length, // Negotiation
             pipelineValue,
             conversionRate,
             // Lists for drilldown
             listApproved: approved,
+            listLost: rejected,
             listOverdue: overdue,
             listOpen: open,
             listTotal: quotes
@@ -219,20 +227,24 @@ export const CommercialOverview: React.FC = () => {
         'Enviado': '#f59e0b',    // amber-500
         'Visualizado': '#3b82f6', // blue-500
         'Negociação': '#6366f1', // indigo-500
-        'Aprovado': '#10b981',   // emerald-500
-        'Vencido': '#f43f5e',  // rose-500
+        'Negócio Fechado': '#10b981',   // emerald-500
+        'Negócio Perdido': '#f43f5e', // rose-500
+        'Vencido': '#ef4444',  // red-500
     };
     const DEFAULT_COLOR = '#94a3b8';
 
     const statusDistribution = useMemo(() => {
         const counts: Record<string, number> = {};
         quotes.forEach(q => {
-            const s = q.status === 'draft' ? 'Rascunho' :
-                q.status === 'sent' ? 'Enviado' :
-                    q.status === 'viewed' ? 'Visualizado' :
-                        q.status === 'negotiation' ? 'Negociação' :
-                            q.status === 'approved' ? 'Aprovado' :
-                                (q.status === 'rejected' || (q.validUntil && new Date(q.validUntil) < new Date())) ? 'Vencido' : q.status;
+            let s = q.status;
+            if (s === 'draft') s = 'Rascunho';
+            else if (s === 'sent') s = 'Enviado';
+            else if (s === 'viewed') s = 'Visualizado';
+            else if (s === 'negotiation') s = 'Negociação';
+            else if (s === 'approved') s = 'Negócio Fechado';
+            else if (s === 'rejected') s = 'Negócio Perdido';
+            else if (q.validUntil && new Date(q.validUntil) < new Date()) s = 'Vencido';
+
             counts[s] = (counts[s] || 0) + 1;
         });
         return Object.entries(counts)
@@ -267,7 +279,8 @@ export const CommercialOverview: React.FC = () => {
         switch (drilldownType) {
             case 'total': return { title: 'Todos os Orçamentos', list: kpiData.listTotal };
             case 'negotiation': return { title: 'Em Negociação (Vigentes)', list: kpiData.listOpen };
-            case 'approved': return { title: 'Orçamentos Aprovados', list: kpiData.listApproved };
+            case 'approved': return { title: 'Negócios Fechados', list: kpiData.listApproved };
+            case 'lost': return { title: 'Negócios Perdidos', list: kpiData.listLost };
             case 'overdue': return { title: 'Orçamentos Vencidos', list: kpiData.listOverdue };
             default: return { title: '', list: [] };
         }
@@ -295,15 +308,7 @@ export const CommercialOverview: React.FC = () => {
             </div>
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 shrink-0">
-                <KpiCard
-                    title="Total Orçamentos"
-                    value={kpiData.totalQuotes}
-                    icon={<FileText size={18} />}
-                    color="slate"
-                    subtitle="Base total"
-                    onClick={() => setDrilldownType('total')}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 shrink-0">
                 <KpiCard
                     title="Em Negociação"
                     value={kpiData.openCount}
@@ -313,18 +318,26 @@ export const CommercialOverview: React.FC = () => {
                     onClick={() => setDrilldownType('negotiation')}
                 />
                 <KpiCard
-                    title="Aprovados"
+                    title="Negócio Fechado"
                     value={kpiData.approvedCount}
                     icon={<CheckCircle size={18} />}
                     color="emerald"
-                    subtitle="Fechados"
+                    subtitle="Aprovados"
                     onClick={() => setDrilldownType('approved')}
+                />
+                <KpiCard
+                    title="Negócio Perdido"
+                    value={kpiData.lostCount}
+                    icon={<XCircle size={18} />}
+                    color="rose"
+                    subtitle="Rejeitados"
+                    onClick={() => setDrilldownType('lost')}
                 />
                 <KpiCard
                     title="Vencidos"
                     value={kpiData.overdueCount}
                     icon={<XCircle size={18} />}
-                    color="rose"
+                    color="slate"
                     subtitle="Expirados"
                     onClick={() => setDrilldownType('overdue')}
                 />

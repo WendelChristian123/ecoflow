@@ -21,7 +21,7 @@ interface StageManagerModalProps {
 }
 
 export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, onClose }) => {
-    const { currentKanban, addStage, updateStage, deleteStage, reorderStages } = useKanban();
+    const { currentKanban, addStage, updateStage, deleteStage, reorderStages, deleteKanban } = useKanban();
     const [newStageName, setNewStageName] = useState('');
     const [draggingId, setDraggingId] = useState<string | null>(null);
 
@@ -130,17 +130,19 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                                 value={editName}
                                                 onChange={e => setEditName(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
+                                                disabled={stage.isLocked}
                                             />
-                                            <button onClick={saveEdit} className="text-emerald-500"><Check size={16} /></button>
+                                            {!stage.isLocked && <button onClick={saveEdit} className="text-emerald-500"><Check size={16} /></button>}
                                             <button onClick={() => setEditingId(null)} className="text-rose-500"><X size={16} /></button>
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-between">
                                             <span
-                                                className="font-medium text-sm cursor-pointer hover:underline"
-                                                onClick={() => startEditing(stage)}
+                                                className={cn("font-medium text-sm cursor-pointer hover:underline", stage.isLocked && "cursor-default hover:no-underline text-muted-foreground")}
+                                                onClick={() => !stage.isLocked && startEditing(stage)}
                                             >
                                                 {stage.name}
+                                                {stage.isLocked && <span className="ml-2 text-[10px] border border-border px-1 rounded uppercase">Fixo</span>}
                                             </span>
                                         </div>
                                     )}
@@ -148,7 +150,7 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
 
                                 {/* Color Picker - Simplified */}
                                 <div className="flex gap-1">
-                                    {COLORS.map(c => (
+                                    {!stage.isLocked && COLORS.map(c => (
                                         <button
                                             key={c.value}
                                             className={cn(
@@ -160,20 +162,40 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                             title={c.name}
                                         />
                                     ))}
+                                    {stage.isLocked && (
+                                        <div className={cn("w-4 h-4 rounded-full opacity-50", stage.color)} />
+                                    )}
                                 </div>
 
-                                <button
-                                    onClick={() => deleteStage(stage.id)}
-                                    className="text-muted-foreground hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                {!stage.isLocked ? (
+                                    <button
+                                        onClick={() => deleteStage(stage.id)}
+                                        className="text-muted-foreground hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Excluir etapa"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                ) : (
+                                    <div className="w-4" /> // Spacer
+                                )}
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-border bg-secondary/30 rounded-b-xl">
+                <div className="p-4 border-t border-border bg-secondary/30 rounded-b-xl flex justify-between items-center">
+                    <button
+                        onClick={async () => {
+                            if (confirm(`ATENÇÃO: Isso excluirá todo o funil "${currentKanban.name}" e todas as etapas.\n\nSe estiver no modo único (Commercial), um novo funil padrão será criado.\n\nDeseja continuar?`)) {
+                                onClose();
+                                await deleteKanban(currentKanban.id);
+                            }
+                        }}
+                        className="text-xs text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-rose-500/10 transition-colors"
+                    >
+                        <Trash2 size={14} />
+                        Apagar Funil
+                    </button>
                     <p className="text-xs text-muted-foreground text-center">
                         Arraste para reordenar. Clique no nome para editar.
                     </p>

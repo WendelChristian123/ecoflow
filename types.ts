@@ -489,6 +489,9 @@ export interface KanbanStage {
   color: string;
   position: number;
   systemStatus?: string; // Mapped to internal status (e.g. 'approved', 'draft')
+  isLocked?: boolean; // If true, cannot be renamed/deleted
+  isDefault?: boolean; // If true, it was created by system
+  affectsDashboard?: boolean; // If true, it counts towards main KPIs
   createdAt: string;
 }
 

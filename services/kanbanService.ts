@@ -21,7 +21,9 @@ export const kanbanService = {
                 .sort((a: any, b: any) => a.position - b.position)
                 .map((s: any) => ({
                     ...s,
-                    systemStatus: s.system_status
+                    systemStatus: s.system_status,
+                    isLocked: s.is_locked,
+                    isDefault: s.is_default
                 }))
         })) as Kanban[];
     },
@@ -73,11 +75,14 @@ export const kanbanService = {
     // --- Stages ---
 
     async createStage(stage: Partial<KanbanStage>): Promise<KanbanStage> {
-        const { systemStatus, kanbanId, ...rest } = stage;
+        const { systemStatus, kanbanId, isLocked, isDefault, affectsDashboard, ...rest } = stage;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload: any = { ...rest };
         if (systemStatus !== undefined) payload.system_status = systemStatus;
         if (kanbanId !== undefined) payload.kanban_id = kanbanId;
+        if (isLocked !== undefined) payload.is_locked = isLocked;
+        if (isDefault !== undefined) payload.is_default = isDefault;
+        if (affectsDashboard !== undefined) payload.affects_dashboard = affectsDashboard;
 
         const { data, error } = await supabase
             .from('kanban_stages')
@@ -86,15 +91,25 @@ export const kanbanService = {
             .single();
 
         if (error) throw error;
-        return { ...data, systemStatus: data.system_status, kanbanId: data.kanban_id } as KanbanStage;
+        return {
+            ...data,
+            systemStatus: data.system_status,
+            kanbanId: data.kanban_id,
+            isLocked: data.is_locked,
+            isDefault: data.is_default,
+            affectsDashboard: data.affects_dashboard
+        } as KanbanStage;
     },
 
     async updateStage(id: string, updates: Partial<KanbanStage>): Promise<KanbanStage> {
-        const { systemStatus, kanbanId, ...rest } = updates;
+        const { systemStatus, kanbanId, isLocked, isDefault, affectsDashboard, ...rest } = updates;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload: any = { ...rest };
         if (systemStatus !== undefined) payload.system_status = systemStatus;
         if (kanbanId !== undefined) payload.kanban_id = kanbanId;
+        // NOTE: isLocked usually implies no update, but we allow updating other fields if needed, 
+        // OR we can block it here. For now, we map it just in case logic changes.
+        if (affectsDashboard !== undefined) payload.affects_dashboard = affectsDashboard;
 
         const { data, error } = await supabase
             .from('kanban_stages')
@@ -104,7 +119,13 @@ export const kanbanService = {
             .single();
 
         if (error) throw error;
-        return { ...data, systemStatus: data.system_status, kanbanId: data.kanban_id } as KanbanStage;
+        return {
+            ...data,
+            systemStatus: data.system_status,
+            kanbanId: data.kanban_id,
+            isLocked: data.is_locked,
+            isDefault: data.is_default
+        } as KanbanStage;
     },
 
     async deleteStage(id: string): Promise<void> {

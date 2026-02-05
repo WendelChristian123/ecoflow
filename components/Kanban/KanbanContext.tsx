@@ -33,6 +33,29 @@ export const KanbanProvider: React.FC<{
     const [currentKanban, setCurrentKanban] = useState<Kanban | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const initializeDefaultStages = async (boardId: string, moduleType: string) => {
+        let stages: any[] = [];
+        if (moduleType === 'crm') {
+            stages = [
+                { name: 'Em Negociação', color: 'bg-amber-500', isLocked: true, isDefault: true, affectsDashboard: true, position: 0 },
+                { name: 'Negócio Fechado', color: 'bg-emerald-500', systemStatus: 'approved', isLocked: true, isDefault: true, affectsDashboard: true, position: 1 },
+                { name: 'Negócio Perdido', color: 'bg-rose-500', systemStatus: 'rejected', isLocked: true, isDefault: true, affectsDashboard: true, position: 2 },
+                { name: 'Vencidos', color: 'bg-slate-500', systemStatus: 'expired', isLocked: true, isDefault: true, affectsDashboard: false, position: 3 }
+            ];
+        } else {
+            stages = [
+                { name: 'A Fazer', color: 'bg-slate-500', systemStatus: 'todo', position: 0 },
+                { name: 'Em Progresso', color: 'bg-blue-500', systemStatus: 'in_progress', position: 1 },
+                { name: 'Revisão', color: 'bg-amber-500', systemStatus: 'review', position: 2 },
+                { name: 'Concluído', color: 'bg-emerald-500', systemStatus: 'done', position: 3 }
+            ];
+        }
+
+        for (const s of stages) {
+            await kanbanService.createStage({ ...s, kanban_id: boardId } as any);
+        }
+    };
+
     const refreshKanbans = async () => {
         setIsLoading(true);
         try {
@@ -44,6 +67,15 @@ export const KanbanProvider: React.FC<{
                 const defaultK = data.find(k => k.isDefault) || data[0];
                 if (defaultK) {
                     setCurrentKanban(defaultK);
+                    // Self-healing: If CRM board exists but has NO stages, inject them
+                    if (module === 'crm' && defaultK.stages && defaultK.stages.length === 0) {
+                        console.log("Repairing empty CRM board...");
+                        await initializeDefaultStages(defaultK.id, 'crm');
+                        // Refresh again to show stages
+                        const repaireData = await kanbanService.listKanbans(module);
+                        setKanbans(repaireData);
+                        setCurrentKanban(repaireData.find(k => k.id === defaultK.id) || repaireData[0]);
+                    }
                 } else {
                     // Auto-initialize Default Board if missing in single mode
                     try {
@@ -56,19 +88,8 @@ export const KanbanProvider: React.FC<{
                             tenantId: tenantId
                         });
 
-                        // Wait for board creation before adding stages
                         if (newBoard && newBoard.id) {
-                            const stages = [
-                                { name: 'A Fazer', color: 'bg-slate-500', system_status: 'todo', position: 0 },
-                                { name: 'Em Progresso', color: 'bg-blue-500', system_status: 'in_progress', position: 1 },
-                                { name: 'Revisão', color: 'bg-amber-500', system_status: 'review', position: 2 },
-                                { name: 'Concluído', color: 'bg-emerald-500', system_status: 'done', position: 3 }
-                            ];
-
-                            // Create stages sequentially to ensure order (or parallel if safe)
-                            for (const s of stages) {
-                                await kanbanService.createStage({ ...s, kanban_id: newBoard.id } as any);
-                            }
+                            await initializeDefaultStages(newBoard.id, module);
 
                             // Refresh to get full object
                             const updatedData = await kanbanService.listKanbans(module);
@@ -107,12 +128,17 @@ export const KanbanProvider: React.FC<{
             return;
         }
         const tenantId = localStorage.getItem('ecoflow-tenant-id') || undefined;
-        await kanbanService.createKanban({
+        const newBoard = await kanbanService.createKanban({
             name,
             module,
             isDefault: kanbans.length === 0,
             tenantId
         });
+
+        if (newBoard && newBoard.id) {
+            await initializeDefaultStages(newBoard.id, module);
+        }
+
         await refreshKanbans();
     };
 
@@ -122,10 +148,8 @@ export const KanbanProvider: React.FC<{
     };
 
     const deleteKanban = async (id: string) => {
-        if (singleBoardMode) {
-            alert("Não é possível excluir o painel padrão.");
-            return;
-        }
+        // In single mode, deleting means "Reseting" effectively, as refresh will recreate it.
+        // We allow it but maybe the UI should warn "Isso irá resetar o quadro".
         await kanbanService.deleteKanban(id);
         if (currentKanban?.id === id) {
             setCurrentKanban(null);
