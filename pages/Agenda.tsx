@@ -54,7 +54,7 @@ export const AgendaPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [viewDate]); // Reload date range changes
+  }, []); // Load data only once on mount
 
   const loadData = async () => {
     setLoading(true);
@@ -398,7 +398,7 @@ export const AgendaPage: React.FC = () => {
       <div className="flex-1 flex gap-3 overflow-hidden min-h-0">
 
         {/* LEFT: CALENDAR GRID */}
-        <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-lg">
+        <div className="flex-1 flex flex-col bg-card border border-border rounded-xl shadow-lg overflow-y-auto">
           {/* Header Month/Nav - Compacted */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 bg-secondary/30">
             <h2 className="text-lg font-bold text-foreground capitalize flex items-center gap-2">
@@ -447,64 +447,78 @@ export const AgendaPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex-1 grid grid-cols-7 h-full min-h-0 divide-x divide-y divide-border border-l border-t border-border bg-card overflow-hidden" style={{ gridTemplateRows: 'repeat(6, minmax(100px, 1fr))' }}>
-            {eachDayOfInterval({
+          {(() => {
+            const allDays = eachDayOfInterval({
               start: startOfWeek(startOfMonth(viewDate)),
               end: endOfWeek(endOfMonth(viewDate))
-            }).map((day, idx) => {
-              const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.startDate), day));
-              const isSelected = isSameDay(day, selectedDate);
-              const isCurrentMonth = isSameMonth(day, viewDate);
-              const isTodayDate = isToday(day);
+            });
+            const numWeeks = Math.ceil(allDays.length / 7);
 
-              // Show more events, but visually smaller
-              const visibleEvents = dayEvents.slice(0, 2);
-              const hiddenCount = dayEvents.length - 2;
+            return (
+              <div
+                className="flex-1 grid grid-cols-7 h-full min-h-0 divide-x divide-y divide-border border-l border-t border-border bg-card"
+                style={{
+                  gridTemplateRows: numWeeks <= 5
+                    ? `repeat(${numWeeks}, minmax(0, 1fr))`
+                    : `repeat(${numWeeks}, minmax(80px, 1fr))`
+                }}
+              >
+                {allDays.map((day, idx) => {
+                  const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.startDate), day));
+                  const isSelected = isSameDay(day, selectedDate);
+                  const isCurrentMonth = isSameMonth(day, viewDate);
+                  const isTodayDate = isToday(day);
 
-              return (
-                <div
-                  key={day.toISOString()}
-                  onClick={() => setSelectedDate(day)}
-                  className={`relative isolate p-2.5 h-full transition-colors cursor-pointer group flex flex-col gap-1.5 overflow-hidden 
-                                        ${!isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-card'}
-                                        ${isSelected ? 'bg-secondary/80 outline outline-2 outline-emerald-500/50' : 'hover:bg-secondary/20'}
-                                    `}
-                >
-                  <div className="flex justify-start items-start mb-0.5">
-                    <span className={`text-[10px] h-5 w-5 flex items-center justify-center rounded-full shrink-0 transition-colors font-bold
-                                            ${isTodayDate ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : (isSelected ? 'text-emerald-500' : (isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'))}
-                                        `}>
-                      {format(day, 'd')}
-                    </span>
-                  </div>
+                  // Show more events, but visually smaller
+                  const visibleEvents = dayEvents.slice(0, 2);
+                  const hiddenCount = dayEvents.length - 2;
 
-                  <div className="flex-1 min-h-0 max-h-full flex flex-col gap-1.5 w-full overflow-hidden">
-                    {visibleEvents.map(event => {
-                      const isCompleted = event.status === 'completed' || event.status === 'done' || event.metadata?.isPaid === true;
-                      return (
-                        <div
-                          key={event.id}
-                          className={`block max-w-full px-2 py-1 rounded text-[10px] font-medium truncate leading-tight relative
-                                                      ${getEventPillClass(event)}
-                                                      ${isCompleted ? 'line-through opacity-60 decoration-muted-foreground' : ''}
-                                                  `}
-                          title={event.title}
-                          onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
-                        >
-                          {event.title}
-                        </div>
-                      );
-                    })}
-                    {hiddenCount > 0 && (
-                      <div className="flex justify-center mt-1">
-                        <span className="text-[10px] leading-none px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500/30 transition-colors cursor-pointer">+ {hiddenCount}</span>
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      onClick={() => setSelectedDate(day)}
+                      className={`relative isolate p-1.5 h-full transition-colors cursor-pointer group flex flex-col gap-1 overflow-hidden 
+                                            ${!isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-card'}
+                                            ${isSelected ? 'bg-secondary/80 outline outline-2 outline-emerald-500/50' : 'hover:bg-secondary/20'}
+                                        `}
+                    >
+                      <div className="flex justify-start items-start mb-0.5">
+                        <span className={`text-[10px] h-5 w-5 flex items-center justify-center rounded-full shrink-0 transition-colors font-bold
+                                                ${isTodayDate ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : (isSelected ? 'text-emerald-500' : (isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'))}
+                                            `}>
+                          {format(day, 'd')}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+
+                      <div className="flex-1 min-h-0 max-h-full flex flex-col gap-1 w-full overflow-hidden">
+                        {visibleEvents.map(event => {
+                          const isCompleted = event.status === 'completed' || event.status === 'done' || event.metadata?.isPaid === true;
+                          return (
+                            <div
+                              key={event.id}
+                              className={`block max-w-full px-1.5 py-0.5 rounded text-[8px] font-medium truncate leading-tight relative
+                                                          ${getEventPillClass(event)}
+                                                          ${isCompleted ? 'line-through opacity-60 decoration-muted-foreground' : ''}
+                                                      `}
+                              title={event.title}
+                              onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
+                            >
+                              {event.title}
+                            </div>
+                          );
+                        })}
+                        {hiddenCount > 0 && (
+                          <div className="flex justify-center mt-1">
+                            <span className="text-[10px] leading-none px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500/30 transition-colors cursor-pointer">+ {hiddenCount}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* RIGHT: SIDEBAR - Ultra Compacted */}
