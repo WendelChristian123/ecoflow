@@ -3,8 +3,71 @@ import { createPortal } from 'react-dom';
 import { Modal, Button } from './Shared';
 import { api, getErrorMessage } from '../services/api';
 import { format, parseISO, isSameDay, startOfDay } from 'date-fns';
-import { Calendar, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertTriangle, ArrowRight, CalendarClock } from 'lucide-react';
 import { FinancialTransaction } from '../types';
+
+const CustomDateOption: React.FC<{ onConfirm: (date: string) => Promise<void>; isLoading: boolean }> = ({ onConfirm, isLoading }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [customDate, setCustomDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+    if (isExpanded) {
+        return (
+            <div className="p-4 rounded-xl border border-border bg-secondary/20 flex flex-col gap-3 animation-all duration-300">
+                <div className="flex items-center gap-3 mb-1">
+                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-500 flex items-center justify-center">
+                        <CalendarClock size={20} />
+                    </div>
+                    <div>
+                        <span className="block text-sm font-semibold text-foreground">Data Personalizada</span>
+                        <span className="block text-xs text-muted-foreground">Selecione a data do pagamento</span>
+                    </div>
+                </div>
+
+                <div className="flex gap-2">
+                    <input
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => setCustomDate(e.target.value)}
+                        className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                        autoFocus
+                    />
+                    <button
+                        onClick={() => onConfirm(customDate)}
+                        disabled={isLoading || !customDate}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                        Confirmar
+                    </button>
+                    <button
+                        onClick={() => setIsExpanded(false)}
+                        className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg text-sm transition-colors"
+                    >
+                        Voltar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <button
+            onClick={() => setIsExpanded(true)}
+            className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all group group-hover:shadow-sm"
+            disabled={isLoading}
+        >
+            <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <CalendarClock size={20} />
+                </div>
+                <div className="text-left">
+                    <span className="block text-sm font-semibold text-foreground group-hover:text-purple-700 dark:group-hover:text-purple-400">Outra Data</span>
+                    <span className="block text-xs text-muted-foreground">Selecionar manualmente</span>
+                </div>
+            </div>
+            <ArrowRight size={16} className="text-muted-foreground group-hover:text-purple-600 dark:group-hover:text-purple-500 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+        </button>
+    );
+};
 
 interface PaymentConfirmationProps {
     transaction: FinancialTransaction | null;
@@ -84,6 +147,8 @@ export const PaymentDateConfirmModal: React.FC<PaymentConfirmationProps> = ({
                         </div>
                         <ArrowRight size={16} className="text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
                     </button>
+
+                    <CustomDateOption onConfirm={onConfirm} isLoading={isLoading} />
                 </div>
 
                 <div className="flex justify-center pt-2">

@@ -202,10 +202,20 @@ export const RoutinesOverview: React.FC = () => {
     const { scopedTasks, visibleTasks, visibleProjects } = getVisibleData();
 
     // --- Metrics Calculations ---
-    const totalPending = visibleTasks.filter(t => t.status !== 'done').length;
-    const totalDone = visibleTasks.filter(t => t.status === 'done').length;
-    const totalUrgent = visibleTasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length;
+    const now = new Date(); // Ensure 'now' is available here if not already
+    const startOfToday = startOfDay(now);
+
     const activeProjectsCount = visibleProjects.filter(p => p.status === 'active').length;
+
+    const totalDone = visibleTasks.filter(t => t.status === 'done').length;
+
+    const totalOverdue = visibleTasks.filter(t =>
+        t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday)
+    ).length;
+
+    const totalDueSoon = visibleTasks.filter(t =>
+        t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday)
+    ).length;
 
     // --- Modal Handler ---
     const openDrilldown = (title: string, filterFn: (t: Task) => boolean) => {
@@ -292,14 +302,6 @@ export const RoutinesOverview: React.FC = () => {
             {/* KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title="Tarefas Pendentes"
-                    value={totalPending}
-                    icon={<Clock size={20} />}
-                    color="amber"
-                    subtitle="Aguardando conclusão"
-                    onClick={() => openDrilldown('Tarefas Pendentes', t => t.status !== 'done')}
-                />
-                <StatCard
                     title="Projetos Ativos"
                     value={activeProjectsCount}
                     icon={<Briefcase size={20} />}
@@ -308,20 +310,28 @@ export const RoutinesOverview: React.FC = () => {
                     onClick={() => navigate('/projects')}
                 />
                 <StatCard
-                    title="Concluídas"
+                    title="A Vencer"
+                    value={totalDueSoon}
+                    icon={<Clock size={20} />}
+                    color="amber"
+                    subtitle="Dentro do prazo"
+                    onClick={() => openDrilldown('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))}
+                />
+                <StatCard
+                    title="Vencidos"
+                    value={totalOverdue}
+                    icon={<AlertCircle size={20} />}
+                    color="rose"
+                    subtitle="Prazo expirado"
+                    onClick={() => openDrilldown('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))}
+                />
+                <StatCard
+                    title="Concluídos"
                     value={totalDone}
                     icon={<CheckCircle2 size={20} />}
                     color="emerald"
                     subtitle={period === 'all' ? 'Total histórico' : 'Neste período'}
                     onClick={() => openDrilldown('Tarefas Concluídas', t => t.status === 'done')}
-                />
-                <StatCard
-                    title="Prioridade Urgente"
-                    value={totalUrgent}
-                    icon={<AlertCircle size={20} />}
-                    color="rose"
-                    subtitle="Requer atenção imediata"
-                    onClick={() => openDrilldown('Tarefas Urgentes', t => t.priority === 'urgent' && t.status !== 'done')}
                 />
             </div>
 
