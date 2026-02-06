@@ -224,18 +224,18 @@ export const FinancialOverview: React.FC = () => {
 
             const calc = (start: Date, end: Date, type: 'income' | 'expense') =>
                 transactions.filter(t => {
-                    const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+                    const matchesType = t.type === type && t.originType !== 'technical';
+                    const isPaidCheck = t.isPaid || (!!t.creditCardId && isBefore(parseDateLocal(t.date), endOfDay(new Date()))); // Treat Card Purchases as Paid (Realized)
 
                     // Mode Logic:
                     if (mode === 'competence') {
-                        // Competence: Include Purchases, Exclude Bill Payments (to avoid double count)
-                        if (t.description.toLowerCase().includes('pagamento fatura')) return false;
-                        return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                        // Competence: Include Purchases, Exclude Bill Payments
+                        if (t.description.toLowerCase().includes('fatura')) return false;
+                        return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start, end });
                     } else {
-                        // Cash: Exclude Purchases (they are paid via Bill), Include Bill Payments
-                        // If it has creditCardId, it's a purchase -> Hide
+                        // Cash: Exclude Purchases, Include Bill Payments
                         if (t.creditCardId) return false;
-                        return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                        return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start, end });
                     }
                 }).reduce((s, t) => s + t.amount, 0);
 
@@ -249,13 +249,15 @@ export const FinancialOverview: React.FC = () => {
                 const end = endOfMonth(date);
                 const calc = (type: 'income' | 'expense') =>
                     transactions.filter(t => {
-                        const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+                        const matchesType = t.type === type && t.originType !== 'technical';
+                        const isPaidCheck = t.isPaid || !!t.creditCardId;
+
                         if (mode === 'competence') {
-                            if (t.description.toLowerCase().includes('pagamento fatura')) return false;
-                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                            if (t.description.toLowerCase().includes('fatura')) return false;
+                            return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start, end });
                         } else {
                             if (t.creditCardId) return false;
-                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                            return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start, end });
                         }
                     }).reduce((s, t) => s + t.amount, 0);
 
@@ -269,13 +271,15 @@ export const FinancialOverview: React.FC = () => {
                 const end = endOfMonth(date);
                 const calc = (type: 'income' | 'expense') =>
                     transactions.filter(t => {
-                        const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+                        const matchesType = t.type === type && t.originType !== 'technical';
+                        const isPaidCheck = t.isPaid || !!t.creditCardId;
+
                         if (mode === 'competence') {
-                            if (t.description.toLowerCase().includes('pagamento fatura')) return false;
-                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                            if (t.description.toLowerCase().includes('fatura')) return false;
+                            return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start, end });
                         } else {
                             if (t.creditCardId) return false;
-                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start, end });
+                            return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start, end });
                         }
                     }).reduce((s, t) => s + t.amount, 0);
 
@@ -292,13 +296,15 @@ export const FinancialOverview: React.FC = () => {
                 const monthEnd = endOfMonth(current);
                 const calc = (type: 'income' | 'expense') =>
                     transactions.filter(t => {
-                        const matchesType = t.type === type && t.isPaid && t.originType !== 'technical';
+                        const matchesType = t.type === type && t.originType !== 'technical';
+                        const isPaidCheck = t.isPaid || !!t.creditCardId;
+
                         if (mode === 'competence') {
-                            if (t.description.toLowerCase().includes('pagamento fatura')) return false;
-                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd });
+                            if (t.description.toLowerCase().includes('fatura')) return false;
+                            return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd });
                         } else {
                             if (t.creditCardId) return false;
-                            return matchesType && isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd });
+                            return matchesType && isPaidCheck && isWithinInterval(parseDateLocal(t.date), { start: monthStart, end: monthEnd });
                         }
                     }).reduce((s, t) => s + t.amount, 0);
 
@@ -642,92 +648,83 @@ export const FinancialOverview: React.FC = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
                     <div className="lg:col-span-1 space-y-4">
-                        <div className="p-5 rounded-xl border border-dashed border-emerald-500/20 bg-emerald-500/5">
-                            <span className="text-xs text-emerald-500/70 font-bold uppercase tracking-widest">Receitas (Totais)</span>
-                            <div className="mt-2 text-3xl font-bold text-emerald-400 tracking-tighter">{fmt(currentComparisonData.reduce((acc, d) => acc + d.Receitas, 0))}</div>
-                            {(() => {
-                                const currentTotal = currentComparisonData.reduce((acc, d) => acc + d.Receitas, 0);
-                                let previousTotal = 0;
-                                const now = new Date();
-
-                                const calcPrevious = (start: Date, end: Date) =>
-                                    transactions.filter(t =>
-                                        t.type === 'income' &&
-                                        t.isPaid &&
-                                        t.originType !== 'technical' &&
-                                        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                                        isWithinInterval(parseISO(t.date), { start, end })
-                                    ).reduce((s, t) => s + t.amount, 0);
+                        {(() => {
+                            const getData = (type: 'Receitas' | 'Despesas') => {
+                                let current = 0;
+                                let previous = 0;
 
                                 if (comparisonMode === 'month') {
-                                    const rangeStart = startOfMonth(subMonths(now, 3));
-                                    const rangeEnd = endOfMonth(subMonths(now, 2));
-                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
-                                } else if (comparisonMode === 'semester') {
-                                    const rangeStart = startOfMonth(subMonths(now, 11));
-                                    const rangeEnd = endOfMonth(subMonths(now, 6));
-                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
-                                } else if (comparisonMode === 'year') {
-                                    const rangeStart = startOfMonth(subMonths(now, 23));
-                                    const rangeEnd = endOfMonth(subMonths(now, 12));
-                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
-                                }
+                                    // Main: Current Month, Previous: Last Month
+                                    current = currentComparisonData.find(d => d.name === 'Mês Atual')?.[type] || 0;
+                                    previous = currentComparisonData.find(d => d.name === 'Mês Anterior')?.[type] || 0;
+                                } else {
+                                    // Main: Sum of visible period
+                                    current = currentComparisonData.reduce((acc, d) => acc + d[type], 0);
 
-                                if (comparisonMode !== 'custom') {
-                                    return (
-                                        <div className="mt-1 flex items-center gap-1.5 opacity-60">
-                                            <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-300">
-                                                Anterior: {fmt(previousTotal)}
-                                            </span>
-                                        </div>
-                                    )
-                                }
-                                return null;
-                            })()}
-                        </div>
-                        <div className="p-5 rounded-xl border border-dashed border-rose-500/20 bg-rose-500/5">
-                            <span className="text-xs text-rose-500/70 font-bold uppercase tracking-widest">Despesas (Totais)</span>
-                            <div className="mt-2 text-3xl font-bold text-rose-400 tracking-tighter">{fmt(currentComparisonData.reduce((acc, d) => acc + d.Despesas, 0))}</div>
-                            {(() => {
-                                const currentTotal = currentComparisonData.reduce((acc, d) => acc + d.Despesas, 0);
-                                let previousTotal = 0;
-                                const now = new Date();
+                                    // Previous: Calculated based on period ranges
+                                    if (comparisonMode !== 'custom') {
+                                        const now = new Date();
+                                        const mode = financeSettings.credit_card_expense_mode || 'competence';
+                                        let rangeStart: Date, rangeEnd: Date;
 
-                                const calcPrevious = (start: Date, end: Date) =>
-                                    transactions.filter(t =>
-                                        t.type === 'expense' &&
-                                        t.isPaid &&
-                                        t.originType !== 'technical' &&
-                                        !t.description.includes('Pagamento Fatura (Crédito Local)') &&
-                                        isWithinInterval(parseISO(t.date), { start, end })
-                                    ).reduce((s, t) => s + t.amount, 0);
+                                        if (comparisonMode === 'semester') {
+                                            rangeStart = startOfMonth(subMonths(now, 11));
+                                            rangeEnd = endOfMonth(subMonths(now, 6));
+                                        } else { // year
+                                            rangeStart = startOfMonth(subMonths(now, 23));
+                                            rangeEnd = endOfMonth(subMonths(now, 12));
+                                        }
 
-                                if (comparisonMode === 'month') {
-                                    const rangeStart = startOfMonth(subMonths(now, 3));
-                                    const rangeEnd = endOfMonth(subMonths(now, 2));
-                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
-                                } else if (comparisonMode === 'semester') {
-                                    const rangeStart = startOfMonth(subMonths(now, 11));
-                                    const rangeEnd = endOfMonth(subMonths(now, 6));
-                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
-                                } else if (comparisonMode === 'year') {
-                                    const rangeStart = startOfMonth(subMonths(now, 23));
-                                    const rangeEnd = endOfMonth(subMonths(now, 12));
-                                    previousTotal = calcPrevious(rangeStart, rangeEnd);
-                                }
+                                        const tType = type === 'Receitas' ? 'income' : 'expense';
+                                        // Treat Card Purchases as Paid (or Realized) for comparison ONLY if they are in the past/today
+                                        const isPaidCheck = (t: FinancialTransaction) => t.isPaid || (!!t.creditCardId && isBefore(parseDateLocal(t.date), endOfDay(new Date())));
 
-                                if (comparisonMode !== 'custom') {
-                                    return (
-                                        <div className="mt-1 flex items-center gap-1.5 opacity-60">
-                                            <span className="text-[10px] font-medium uppercase tracking-wide text-rose-300">
-                                                Anterior: {fmt(previousTotal)}
-                                            </span>
-                                        </div>
-                                    )
+                                        previous = transactions.filter(t => {
+                                            const matchesType = t.type === tType && t.originType !== 'technical';
+
+                                            if (mode === 'competence') {
+                                                if (t.description.toLowerCase().includes('fatura')) return false;
+                                                return matchesType && isPaidCheck(t) && isWithinInterval(parseDateLocal(t.date), { start: rangeStart, end: rangeEnd });
+                                            } else {
+                                                if (t.creditCardId) return false;
+                                                return matchesType && isPaidCheck(t) && isWithinInterval(parseDateLocal(t.date), { start: rangeStart, end: rangeEnd });
+                                            }
+                                        }).reduce((s, t) => s + t.amount, 0);
+                                    }
                                 }
-                                return null;
-                            })()}
-                        </div>
+                                return { current, previous };
+                            };
+
+                            const revenue = getData('Receitas');
+                            const expense = getData('Despesas');
+
+                            return (
+                                <>
+                                    <div className="p-5 rounded-xl border border-dashed border-emerald-500/20 bg-emerald-500/5">
+                                        <span className="text-xs text-emerald-500/70 font-bold uppercase tracking-widest">Receitas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
+                                        <div className="mt-2 text-3xl font-bold text-emerald-400 tracking-tighter">{fmt(revenue.current)}</div>
+                                        {comparisonMode !== 'custom' && (
+                                            <div className="mt-1 flex items-center gap-1.5 opacity-60">
+                                                <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+                                                    Anterior: {fmt(revenue.previous)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-5 rounded-xl border border-dashed border-rose-500/20 bg-rose-500/5">
+                                        <span className="text-xs text-rose-500/70 font-bold uppercase tracking-widest">Despesas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
+                                        <div className="mt-2 text-3xl font-bold text-rose-400 tracking-tighter">{fmt(expense.current)}</div>
+                                        {comparisonMode !== 'custom' && (
+                                            <div className="mt-1 flex items-center gap-1.5 opacity-60">
+                                                <span className="text-[10px] font-medium uppercase tracking-wide text-rose-300">
+                                                    Anterior: {fmt(expense.previous)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
 
                     <div className="lg:col-span-2 h-[250px] w-full min-w-0">
@@ -774,6 +771,7 @@ export const FinancialOverview: React.FC = () => {
                 categories={categories}
                 cards={cards}
                 contacts={contacts}
+                financeSettings={financeSettings}
             />
         </div >
     );

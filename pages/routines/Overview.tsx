@@ -50,7 +50,7 @@ const StatCard: React.FC<{
     title: string;
     value: number | string;
     icon: React.ReactNode;
-    color: 'emerald' | 'rose' | 'amber' | 'indigo' | 'slate';
+    color: 'emerald' | 'rose' | 'amber' | 'indigo' | 'slate' | 'orange' | 'red';
     subtitle?: string;
     onClick?: () => void;
 }> = ({ title, value, icon, color, subtitle, onClick }) => {
@@ -60,6 +60,8 @@ const StatCard: React.FC<{
         amber: { header: 'bg-amber-500', text: 'text-amber-500', border: 'hover:border-amber-500/50' },
         indigo: { header: 'bg-indigo-500', text: 'text-indigo-500', border: 'hover:border-indigo-500/50' },
         slate: { header: 'bg-slate-500', text: 'text-slate-500', border: 'hover:border-slate-500/50' },
+        orange: { header: 'bg-orange-500', text: 'text-orange-500', border: 'hover:border-orange-500/50' },
+        red: { header: 'bg-red-500', text: 'text-red-500', border: 'hover:border-red-500/50' },
     };
     const theme = themes[color];
 
@@ -108,7 +110,7 @@ export const RoutinesOverview: React.FC = () => {
     const [usersList, setUsersList] = useState<User[]>([]);
 
     // Filter State
-    const [period, setPeriod] = useState<'all' | 'today' | 'week' | 'month'>('week');
+    const [period, setPeriod] = useState<'all' | 'today' | 'week' | 'month'>('month');
     const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
     // Modal State
@@ -202,7 +204,7 @@ export const RoutinesOverview: React.FC = () => {
     const { scopedTasks, visibleTasks, visibleProjects } = getVisibleData();
 
     // --- Metrics Calculations ---
-    const now = new Date(); // Ensure 'now' is available here if not already
+    const now = new Date();
     const startOfToday = startOfDay(now);
 
     const activeProjectsCount = visibleProjects.filter(p => p.status === 'active').length;
@@ -232,10 +234,9 @@ export const RoutinesOverview: React.FC = () => {
     ];
 
     const statusData = [
-        { name: 'A Fazer', value: visibleTasks.filter(t => t.status === 'todo').length, color: '#64748b' },
-        { name: 'Em Andamento', value: visibleTasks.filter(t => t.status === 'in_progress').length, color: '#6366f1' },
-        { name: 'Revisão', value: visibleTasks.filter(t => t.status === 'review').length, color: '#f59e0b' },
-        { name: 'Concluído', value: visibleTasks.filter(t => t.status === 'done').length, color: '#10b981' },
+        { name: 'A Vencer', value: totalDueSoon, color: '#f97316' }, // Orange
+        { name: 'Vencidos', value: totalOverdue, color: '#ef4444' }, // Red
+        { name: 'Concluídos', value: totalDone, color: '#10b981' }, // Emerald
     ].filter(d => d.value > 0);
 
     const upcomingTasks = visibleTasks
@@ -313,7 +314,7 @@ export const RoutinesOverview: React.FC = () => {
                     title="A Vencer"
                     value={totalDueSoon}
                     icon={<Clock size={20} />}
-                    color="amber"
+                    color="orange"
                     subtitle="Dentro do prazo"
                     onClick={() => openDrilldown('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))}
                 />
@@ -321,7 +322,7 @@ export const RoutinesOverview: React.FC = () => {
                     title="Vencidos"
                     value={totalOverdue}
                     icon={<AlertCircle size={20} />}
-                    color="rose"
+                    color="red"
                     subtitle="Prazo expirado"
                     onClick={() => openDrilldown('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))}
                 />

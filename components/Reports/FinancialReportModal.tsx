@@ -4,7 +4,7 @@ import { Button, Badge } from '../Shared';
 import { FilterSelect } from '../FilterSelect';
 import { DateRangePicker } from '../DateRangePicker';
 import { DateRange } from 'react-day-picker';
-import { X, Printer, FileText, Filter, DollarSign, TrendingUp, TrendingDown, AlertCircle, Clock } from 'lucide-react';
+import { X, Printer, FileText, Filter, DollarSign, TrendingUp, TrendingDown, AlertCircle, Clock, Check, ChevronDown, Wallet, Layers, Users } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay, isBefore, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateLocal } from '../../utils/formatters';
@@ -22,9 +22,10 @@ interface FinancialReportModalProps {
         endDate?: string;
         accountId?: string;
     }
+    financeSettings?: any;
 }
 
-export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOpen, onClose, transactions, accounts, categories, cards, contacts, initialFilters }) => {
+export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOpen, onClose, transactions, accounts, categories, cards, contacts, initialFilters, financeSettings }) => {
     if (!isOpen) return null;
 
     // Default Filters
@@ -33,62 +34,69 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
         from: initialFilters?.startDate ? parseDateLocal(initialFilters.startDate) : startOfDay(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
         to: initialFilters?.endDate ? parseDateLocal(initialFilters.endDate) : endOfDay(new Date())
     });
-    const [statusFilter, setStatusFilter] = useState('all'); // all, paid, pending, overdue
-    const [accountFilter, setAccountFilter] = useState(initialFilters?.accountId || 'all');
-    const [categoryFilter, setCategoryFilter] = useState('all');
-    const [typeFilter, setTypeFilter] = useState('all'); // all, income, expense
-    const [contactFilter, setContactFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState<string[]>('all');
+    const [isStatusOpen, setIsStatusOpen] = useState(false);
+    const [accountFilter, setAccountFilter] = useState<string[]>(initialFilters?.accountId ? [initialFilters.accountId] : ['all']);
+    const [isAccountsOpen, setIsAccountsOpen] = useState(false); // UI State
+    const [categoryFilter, setCategoryFilter] = useState<string[]>('all');
+    const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+    const [typeFilter, setTypeFilter] = useState<string[]>('all'); // all, income, expense
+    const [isTypesOpen, setIsTypesOpen] = useState(false);
+    const [contactFilter, setContactFilter] = useState<string[]>('all');
+    const [isContactsOpen, setIsContactsOpen] = useState(false);
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
     // Filter Logic
     const filteredData = useMemo(() => {
         return transactions.filter(t => {
-            // Technical filters
-            if (t.originType === 'technical' || t.description.includes('Pagamento Fatura (Crédito Local)')) return false;
-
-            if (!dateRange?.from || !dateRange?.to) return false;
-
             const tDate = parseDateLocal(t.date);
-            const start = startOfDay(dateRange.from);
-            const end = endOfDay(dateRange.to);
-            const inRange = isWithinInterval(tDate, { start, end });
+            const today = startOfDay(new Date());
+
+            // Date Range Filter
+            let inRange = true;
+            if (dateRange?.from && dateRange?.to) {
+                inRange = isWithinInterval(tDate, { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) });
+            }
 
             // Account / Card Filter
             let accountMatch = true;
-            if (accountFilter !== 'all') {
-                const isCard = cards.some(c => c.id === accountFilter);
-                if (isCard) {
-                    accountMatch = t.creditCardId === accountFilter;
+            if (!accountFilter.includes('all')) {
+                if (t.creditCardId) {
+                    accountMatch = accountFilter.includes(t.creditCardId);
                 } else {
-                    accountMatch = t.accountId === accountFilter && !t.creditCardId;
+                    accountMatch = accountFilter.includes(t.accountId);
                 }
             }
 
             // Category
             let categoryMatch = true;
-            if (categoryFilter !== 'all') {
-                categoryMatch = t.categoryId === categoryFilter;
+            if (!categoryFilter.includes('all')) {
+                categoryMatch = categoryFilter.includes(t.categoryId);
             }
 
             // Type
             let typeMatch = true;
-            if (typeFilter !== 'all') {
-                typeMatch = t.type === typeFilter;
+            if (!typeFilter.includes('all')) {
+                typeMatch = typeFilter.includes(t.type);
             }
 
             // Contact
             let contactMatch = true;
-            if (contactFilter !== 'all') {
-                contactMatch = t.contactId === contactFilter;
+            if (!contactFilter.includes('all')) {
+                contactMatch = contactFilter.includes(t.contactId || ''); // Handle null contactId
             }
 
             // Status
             let statusMatch = true;
-            const today = startOfDay(new Date());
-            if (statusFilter === 'paid') statusMatch = t.isPaid || !!t.creditCardId;
-            else if (statusFilter === 'pending') statusMatch = !t.isPaid && !t.creditCardId && !isBefore(tDate, today);
-            else if (statusFilter === 'overdue') statusMatch = !t.isPaid && !t.creditCardId && isBefore(tDate, today);
+            if (!statusFilter.includes('all')) {
+                statusMatch = false; // Reset to false and check if ANY selected status matches
+                // Logic: If ANY of the selected statuses match, it's a pass (OR logic)
+
+                if (statusFilter.includes('paid') && (t.isPaid || !!t.creditCardId)) statusMatch = true;
+                if (statusFilter.includes('pending') && (!t.isPaid && !t.creditCardId && !isBefore(parseDateLocal(t.date), startOfDay(new Date())))) statusMatch = true;
+                if (statusFilter.includes('overdue') && (!t.isPaid && !t.creditCardId && isBefore(parseDateLocal(t.date), startOfDay(new Date())))) statusMatch = true;
+            }
 
             return inRange && accountMatch && categoryMatch && typeMatch && statusMatch && contactMatch;
         }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -104,16 +112,41 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
         let transfersTotal = 0;
         let cardPaymentsTotal = 0;
 
+        const mode = financeSettings?.credit_card_expense_mode || 'competence';
+
         filteredData.forEach(t => {
             if (t.type === 'income') {
-                if (t.isPaid) incomeReceived += t.amount;
-                else incomeToReceive += t.amount;
-            } else if (t.type === 'expense') {
                 if (t.description.toLowerCase().includes('fatura')) {
-                    cardPaymentsTotal += t.amount;
+                    // Ignore Invoice Payments (Credits to Card Account) in P&L
+                    // They are technical transfers/settlements
                 } else {
-                    if (t.isPaid) expensePaid += t.amount;
-                    else expenseToPay += t.amount;
+                    if (t.isPaid) incomeReceived += t.amount;
+                    else incomeToReceive += t.amount;
+                }
+            } else if (t.type === 'expense') {
+                const isCardPayment = t.description.toLowerCase().includes('fatura');
+                const isCardPurchase = !!t.creditCardId;
+
+                if (isCardPayment) {
+                    cardPaymentsTotal += t.amount;
+
+                    // Cash Mode: Invoice Payment IS an expense
+                    if (mode === 'cash' && t.isPaid) {
+                        expensePaid += t.amount;
+                    }
+                } else {
+                    // Purchase Logic
+                    if (mode === 'competence') {
+                        // Competence: Include All Purchases (Realized) + Non-Card Expenses
+                        if (t.isPaid || isCardPurchase) expensePaid += t.amount;
+                        else expenseToPay += t.amount;
+                    } else {
+                        // Cash: Exclude Card Purchases (Only Cash Expenses)
+                        if (isCardPurchase) return; // Ignore purchase in Cash totals
+
+                        if (t.isPaid) expensePaid += t.amount;
+                        else expenseToPay += t.amount;
+                    }
                 }
             } else if (t.type === 'transfer') {
                 transfersTotal += t.amount;
@@ -134,6 +167,46 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
     };
 
     const totals = calculateTotals();
+
+    // Stats by Category
+    const categoryStats = useMemo(() => {
+        const stats: Record<string, { name: string, amount: number, type: 'income' | 'expense' }> = {};
+        const mode = financeSettings?.credit_card_expense_mode || 'competence';
+
+        filteredData.forEach(t => {
+            if (t.type === 'expense') {
+                const isCardPayment = t.description.toLowerCase().includes('fatura');
+                const isCardPurchase = !!t.creditCardId;
+
+                if (isCardPayment) {
+                    if (mode === 'competence') return;
+                    if (mode === 'cash' && !t.isPaid) return;
+                } else {
+                    if (mode === 'cash' && isCardPurchase) return;
+                    if (mode === 'competence' && !t.isPaid && !isCardPurchase) return;
+                    if (mode === 'cash' && !t.isPaid) return;
+                }
+            } else if (t.type === 'income') {
+                if (t.description.toLowerCase().includes('fatura')) return;
+                if (!t.isPaid) return;
+            } else return;
+
+            // Accumulate
+            if (!stats[t.categoryId]) {
+                const cat = categories.find(c => c.id === t.categoryId);
+                stats[t.categoryId] = {
+                    name: cat?.name || 'Sem Categoria',
+                    amount: 0,
+                    type: t.type as 'income' | 'expense'
+                };
+            }
+            stats[t.categoryId].amount += t.amount;
+        });
+
+        return Object.values(stats).sort((a, b) => b.amount - a.amount);
+    }, [filteredData, financeSettings, categories]);
+
+    // Global Balance
 
     // Global Balance
     const currentBalance = useMemo(() => {
@@ -216,7 +289,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
-                        <div><strong>Filtros:</strong> ${accountFilter !== 'all' ? 'Conta Específica' : 'Todas Contas'} • ${categoryFilter !== 'all' ? 'Categoria Específica' : 'Todas Categorias'} • ${contactFilter !== 'all' ? 'Contato Específico' : 'Todos Contatos'}</div>
+                        <div><strong>Filtros:</strong> ${accountFilter.includes('all') ? 'Todas Contas' : 'Contas Selecionadas'} • ${categoryFilter.includes('all') ? 'Todas Categorias' : 'Categorias Selecionadas'} • ${contactFilter.includes('all') ? 'Todos Contatos' : 'Contatos Selecionados'}</div>
                     </div>
                 </div>
 
@@ -301,6 +374,63 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                         </div>
                     </div>
                 </div>
+
+                <div class="section-title" style="margin-top: 30px;">Resumo por Categoria</div>
+                <div style="display: flex; gap: 30px; align-items: flex-start;">
+                    <!-- RECEITAS -->
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; font-weight: 700; color: #10b981; margin-bottom: 10px; text-transform: uppercase;">Receitas</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%">Categoria</th>
+                                    <th style="width: 20%; text-align: right;">%</th>
+                                    <th style="width: 30%; text-align: right;">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${categoryStats.filter(s => s.type === 'income').map(s => {
+                    const percent = totals.totalIncome ? (s.amount / totals.totalIncome) * 100 : 0;
+                    return `
+                                        <tr>
+                                            <td style="padding: 8px;">${s.name}</td>
+                                            <td style="padding: 8px; text-align: right;">${percent.toFixed(1)}%</td>
+                                            <td style="padding: 8px; text-align: right; font-weight: bold;">${fmt(s.amount)}</td>
+                                        </tr>
+                                    `;
+                }).join('')}
+                                ${categoryStats.filter(s => s.type === 'income').length === 0 ? '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 10px;">Nenhuma receita categorizada</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- DESPESAS -->
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; font-weight: 700; color: #f43f5e; margin-bottom: 10px; text-transform: uppercase;">Despesas</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%">Categoria</th>
+                                    <th style="width: 20%; text-align: right;">%</th>
+                                    <th style="width: 30%; text-align: right;">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${categoryStats.filter(s => s.type === 'expense').map(s => {
+                    const percent = totals.totalExpense ? (s.amount / totals.totalExpense) * 100 : 0;
+                    return `
+                                        <tr>
+                                            <td style="padding: 8px;">${s.name}</td>
+                                            <td style="padding: 8px; text-align: right;">${percent.toFixed(1)}%</td>
+                                            <td style="padding: 8px; text-align: right; font-weight: bold;">${fmt(s.amount)}</td>
+                                        </tr>
+                                    `;
+                }).join('')}
+                                ${categoryStats.filter(s => s.type === 'expense').length === 0 ? '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 10px;">Nenhuma despesa categorizada</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                  <script>
                     window.onload = () => { window.print(); }
                 </script>
@@ -315,7 +445,6 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
-                {/* Header */}
                 {/* Header */}
                 <div className="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-900 rounded-t-2xl">
                     <div>
@@ -339,75 +468,326 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                     setDate={setDateRange}
                                 />
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <FilterSelect
-                                    inlineLabel="Conta:"
-                                    label="CONTA/BANCO"
-                                    value={accountFilter}
-                                    onChange={setAccountFilter}
-                                    options={[
-                                        { value: 'all', label: 'Todas Contas' },
-                                        ...[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ value: a.id, label: a.name })),
-                                        ...[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: `💳 ${c.name}` }))
-                                    ]}
-                                    darkMode={true}
-                                />
+                            <div className="flex flex-col gap-2 relative">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Conta / Cartão</label>
+                                <button
+                                    onClick={() => setIsAccountsOpen(!isAccountsOpen)}
+                                    className="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-all h-9 shadow-sm w-full"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Wallet size={14} className="text-emerald-500" />
+                                        <span className="truncate">
+                                            {accountFilter.includes('all')
+                                                ? 'Todas Contas'
+                                                : `Selecionadas (${accountFilter.length})`}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform text-slate-500 ${isAccountsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isAccountsOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsAccountsOpen(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 p-3 max-h-80 overflow-y-auto">
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => setAccountFilter(['all'])}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${accountFilter.includes('all')
+                                                        ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                        }`}
+                                                >
+                                                    <span>Todas Contas</span>
+                                                    {accountFilter.includes('all') && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                                </button>
+
+                                                <div className="my-2 border-t border-slate-800" />
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase px-2 mb-1">Contas Bancárias</div>
+                                                {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => (
+                                                    <button
+                                                        key={a.id}
+                                                        onClick={() => {
+                                                            setAccountFilter(prev => {
+                                                                if (prev.includes('all')) return [a.id];
+                                                                const newFilter = prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id];
+                                                                return newFilter.length === 0 ? ['all'] : newFilter;
+                                                            });
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${accountFilter.includes(a.id)
+                                                            ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                            }`}
+                                                    >
+                                                        <span>{a.name}</span>
+                                                        {accountFilter.includes(a.id) && <Check size={14} />}
+                                                    </button>
+                                                ))}
+
+                                                <div className="my-2 border-t border-slate-800" />
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase px-2 mb-1">Cartões de Crédito</div>
+                                                {[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        onClick={() => {
+                                                            setAccountFilter(prev => {
+                                                                if (prev.includes('all')) return [c.id];
+                                                                const newFilter = prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id];
+                                                                return newFilter.length === 0 ? ['all'] : newFilter;
+                                                            });
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${accountFilter.includes(c.id)
+                                                            ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                            }`}
+                                                    >
+                                                        <span>💳 {c.name}</span>
+                                                        {accountFilter.includes(c.id) && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <FilterSelect
-                                    inlineLabel="Categoria:"
-                                    label="CATEGORIA"
-                                    value={categoryFilter}
-                                    onChange={setCategoryFilter}
-                                    options={[
-                                        { value: 'all', label: 'Todas' },
-                                        ...[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))
-                                    ]}
-                                    darkMode={true}
-                                />
+                            <div className="flex flex-col gap-2 relative">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Categoria</label>
+                                <button
+                                    onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                                    className="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-all h-9 shadow-sm w-full"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Layers size={14} className="text-emerald-500" />
+                                        <span className="truncate">
+                                            {categoryFilter.includes('all')
+                                                ? 'Todas'
+                                                : `Selecionadas (${categoryFilter.length})`}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform text-slate-500 ${isCategoriesOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isCategoriesOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsCategoriesOpen(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 p-3 max-h-80 overflow-y-auto">
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => setCategoryFilter(['all'])}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${categoryFilter.includes('all')
+                                                        ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                        }`}
+                                                >
+                                                    <span>Todas</span>
+                                                    {categoryFilter.includes('all') && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                                </button>
+
+                                                <div className="my-2 border-t border-slate-800" />
+                                                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        onClick={() => {
+                                                            setCategoryFilter(prev => {
+                                                                if (prev.includes('all')) return [c.id];
+                                                                const newFilter = prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id];
+                                                                return newFilter.length === 0 ? ['all'] : newFilter;
+                                                            });
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${categoryFilter.includes(c.id)
+                                                            ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                            }`}
+                                                    >
+                                                        <span>{c.name}</span>
+                                                        {categoryFilter.includes(c.id) && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <FilterSelect
-                                    inlineLabel="Contato:"
-                                    label="CLIENTE/FORNECEDOR"
-                                    value={contactFilter}
-                                    onChange={setContactFilter}
-                                    options={[
-                                        { value: 'all', label: 'Todos' },
-                                        ...[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))
-                                    ]}
-                                    darkMode={true}
-                                />
+                            <div className="flex flex-col gap-2 relative">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Contato</label>
+                                <button
+                                    onClick={() => setIsContactsOpen(!isContactsOpen)}
+                                    className="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-all h-9 shadow-sm w-full"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Users size={14} className="text-emerald-500" />
+                                        <span className="truncate">
+                                            {contactFilter.includes('all')
+                                                ? 'Todos'
+                                                : `Selecionados (${contactFilter.length})`}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform text-slate-500 ${isContactsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isContactsOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsContactsOpen(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 p-3 max-h-80 overflow-y-auto">
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => setContactFilter(['all'])}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${contactFilter.includes('all')
+                                                        ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                        }`}
+                                                >
+                                                    <span>Todos</span>
+                                                    {contactFilter.includes('all') && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                                </button>
+
+                                                <div className="my-2 border-t border-slate-800" />
+                                                {[...contacts].sort((a, b) => a.name.localeCompare(b.name)).map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        onClick={() => {
+                                                            setContactFilter(prev => {
+                                                                if (prev.includes('all')) return [c.id];
+                                                                const newFilter = prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id];
+                                                                return newFilter.length === 0 ? ['all'] : newFilter;
+                                                            });
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${contactFilter.includes(c.id)
+                                                            ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                            }`}
+                                                    >
+                                                        <span>{c.name}</span>
+                                                        {contactFilter.includes(c.id) && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <FilterSelect
-                                    inlineLabel="Tipo:"
-                                    label="TIPO"
-                                    value={typeFilter}
-                                    onChange={setTypeFilter}
-                                    options={[
-                                        { value: 'all', label: 'Todos' },
-                                        { value: 'income', label: 'Receitas' },
-                                        { value: 'expense', label: 'Despesas' },
-                                        { value: 'transfer', label: 'Transferências' },
-                                    ]}
-                                    darkMode={true}
-                                />
+                            <div className="flex flex-col gap-2 relative">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Tipo</label>
+                                <button
+                                    onClick={() => setIsTypesOpen(!isTypesOpen)}
+                                    className="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-all h-9 shadow-sm w-full"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Filter size={14} className="text-emerald-500" />
+                                        <span className="truncate">
+                                            {typeFilter.includes('all')
+                                                ? 'Todos'
+                                                : `Selecionados (${typeFilter.length})`}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform text-slate-500 ${isTypesOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isTypesOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsTypesOpen(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 p-3 max-h-80 overflow-y-auto">
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => setTypeFilter(['all'])}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${typeFilter.includes('all')
+                                                        ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                        }`}
+                                                >
+                                                    <span>Todos</span>
+                                                    {typeFilter.includes('all') && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                                </button>
+
+                                                <div className="my-2 border-t border-slate-800" />
+                                                {[
+                                                    { value: 'income', label: 'Receitas' },
+                                                    { value: 'expense', label: 'Despesas' },
+                                                    { value: 'transfer', label: 'Transferências' },
+                                                ].map(o => (
+                                                    <button
+                                                        key={o.value}
+                                                        onClick={() => {
+                                                            setTypeFilter(prev => {
+                                                                if (prev.includes('all')) return [o.value];
+                                                                const newFilter = prev.includes(o.value) ? prev.filter(x => x !== o.value) : [...prev, o.value];
+                                                                return newFilter.length === 0 ? ['all'] : newFilter;
+                                                            });
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${typeFilter.includes(o.value)
+                                                            ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                            }`}
+                                                    >
+                                                        <span>{o.label}</span>
+                                                        {typeFilter.includes(o.value) && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <FilterSelect
-                                    inlineLabel="Status:"
-                                    label="STATUS"
-                                    value={statusFilter}
-                                    onChange={setStatusFilter}
-                                    options={[
-                                        { value: 'all', label: 'Todos' },
-                                        { value: 'paid', label: 'Pagos' },
-                                        { value: 'pending', label: 'A Vencer' },
-                                        { value: 'overdue', label: 'Vencidos' },
-                                    ]}
-                                    darkMode={true}
-                                />
+                            <div className="flex flex-col gap-2 relative">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
+                                <button
+                                    onClick={() => setIsStatusOpen(!isStatusOpen)}
+                                    className="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-all h-9 shadow-sm w-full"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Clock size={14} className="text-emerald-500" />
+                                        <span className="truncate">
+                                            {statusFilter.includes('all')
+                                                ? 'Todos'
+                                                : `Selecionados (${statusFilter.length})`}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform text-slate-500 ${isStatusOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isStatusOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsStatusOpen(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 p-3 max-h-80 overflow-y-auto">
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => setStatusFilter(['all'])}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${statusFilter.includes('all')
+                                                        ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                        }`}
+                                                >
+                                                    <span>Todos</span>
+                                                    {statusFilter.includes('all') && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                                </button>
+
+                                                <div className="my-2 border-t border-slate-800" />
+                                                {[
+                                                    { value: 'paid', label: 'Pagos' },
+                                                    { value: 'pending', label: 'A Vencer' },
+                                                    { value: 'overdue', label: 'Vencidos' },
+                                                ].map(o => (
+                                                    <button
+                                                        key={o.value}
+                                                        onClick={() => {
+                                                            setStatusFilter(prev => {
+                                                                if (prev.includes('all')) return [o.value];
+                                                                const newFilter = prev.includes(o.value) ? prev.filter(x => x !== o.value) : [...prev, o.value];
+                                                                return newFilter.length === 0 ? ['all'] : newFilter;
+                                                            });
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${statusFilter.includes(o.value)
+                                                            ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                            }`}
+                                                    >
+                                                        <span>{o.label}</span>
+                                                        {statusFilter.includes(o.value) && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
