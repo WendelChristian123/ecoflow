@@ -172,12 +172,41 @@ export const LandingPricing: React.FC = () => {
 
                                 <div className="space-y-8 mb-8 flex-1 text-sm bg-slate-950/30 -mx-4 px-4 py-6 rounded-2xl border border-white/5">
                                     {/* Iterate Modules */}
-                                    {catalog.modules
-                                        .filter(mod => mod.id !== 'mod_reports' && mod.id !== 'mod_api') // Hide specific modules per user request
-                                        .map(mod => {
-                                            // Filter features for this module
+                                    {(() => {
+                                        // Deduplicate modules by name
+                                        // We use a Map to keep the "best" version of a module (one with most enabled features for this plan)
+                                        const bestModulesByName = new Map<string, any>();
+
+                                        catalog.modules
+                                            .filter(mod => mod.id !== 'mod_reports' && mod.id !== 'mod_api')
+                                            .forEach(mod => {
+                                                const moduleFeatures = catalog.features.filter(f => f.module_id === mod.id);
+                                                if (moduleFeatures.length === 0) return;
+
+                                                const rawModules = plan.allowedModules || [];
+                                                const availableCount = moduleFeatures.filter(f =>
+                                                    rawModules.includes(f.id) || rawModules.includes(`${mod.id}:${f.id}`)
+                                                ).length;
+
+                                                const nameKey = mod.name.trim().toUpperCase();
+                                                const existing = bestModulesByName.get(nameKey);
+
+                                                if (!existing || availableCount > existing.availableCount || (availableCount === existing.availableCount && moduleFeatures.length > existing.moduleFeatures.length)) {
+                                                    bestModulesByName.set(nameKey, {
+                                                        mod,
+                                                        moduleFeatures,
+                                                        availableCount
+                                                    });
+                                                }
+                                            });
+
+                                        // Convert back to array
+                                        const uniqueModules = Array.from(bestModulesByName.values()).map(item => item.mod);
+
+                                        return uniqueModules.map(mod => {
                                             const moduleFeatures = catalog.features.filter(f => f.module_id === mod.id);
-                                            // If no features, maybe skip? But user listed modules with features. Let's show module header.
+
+                                            if (moduleFeatures.length === 0) return null;
 
                                             return (
                                                 <div key={mod.id}>
@@ -190,10 +219,6 @@ export const LandingPricing: React.FC = () => {
                                                     <ul className="space-y-3">
                                                         {moduleFeatures.map(feat => {
                                                             const rawModules = plan.allowedModules || [];
-                                                            // STRICT CHECK:
-                                                            // 1. Exact Feature ID match (e.g. 'crm_contacts')
-                                                            // 2. Namespaced Feature ID match (e.g. 'mod_commercial:crm_contacts')
-                                                            // 3. REMOVED: rawModules.includes(mod.id) -> This was causing "All Available" issue
                                                             const isAvailable = rawModules.includes(feat.id) ||
                                                                 rawModules.includes(`${mod.id}:${feat.id}`);
 
@@ -213,13 +238,11 @@ export const LandingPricing: React.FC = () => {
                                                                 </li>
                                                             );
                                                         })}
-                                                        {moduleFeatures.length === 0 && (
-                                                            <li className="text-[10px] text-slate-600 italic">Sem recursos listados</li>
-                                                        )}
                                                     </ul>
                                                 </div>
                                             );
-                                        })}
+                                        });
+                                    })()}
 
                                 </div>
 
