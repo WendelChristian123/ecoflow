@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import React, { useState } from 'react';
 import { SaasPlan } from '../types';
 import { Button, cn, Loader, Badge } from './Shared';
 import { CheckCircle2, XCircle, Users } from 'lucide-react';
@@ -10,36 +9,21 @@ interface AppCatalog {
     features: any[];
 }
 
-export const LandingPricing: React.FC = () => {
-    const navigate = useNavigate();
-    const [plans, setPlans] = useState<SaasPlan[]>([]);
-    const [catalog, setCatalog] = useState<AppCatalog>({ modules: [], features: [] });
-    const [loading, setLoading] = useState(true);
-    const [cycle, setCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
+interface LandingPricingProps {
+    plans: SaasPlan[];
+    catalog: AppCatalog;
+    loading: boolean;
+}
 
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [plansData, catalogData] = await Promise.all([
-                    api.getPublicPlans(),
-                    api.getPublicSystemCatalog()
-                ]);
-                setPlans(plansData);
-                setCatalog(catalogData);
-            } catch (error) {
-                console.error("Failed to load pricing data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadData();
-    }, []);
+export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, catalog, loading }) => {
+    const navigate = useNavigate();
+    const [cycle, setCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
 
     const handlePlanSelect = (planType: string) => {
         navigate(`/checkout?plan=${planType}&cycle=${cycle}`);
     };
 
-    const sortedPlans = [...plans].sort((a, b) => {
+    const sortedPlans = [...(plans || [])].sort((a, b) => {
         const priceA = cycle === 'monthly' ? (a.priceMonthly || 0) :
             cycle === 'semiannual' ? (a.priceSemiannually || 0) :
                 (a.priceYearly || 0);
@@ -53,7 +37,7 @@ export const LandingPricing: React.FC = () => {
 
     if (loading) return <div className="py-20 flex justify-center"><Loader /></div>;
 
-    if (plans.length === 0) {
+    if (!plans || plans.length === 0) {
         return (
             <div className="py-12 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/50">
                 <p>Nenhum plano disponível no momento.</p>
@@ -177,10 +161,10 @@ export const LandingPricing: React.FC = () => {
                                         // We use a Map to keep the "best" version of a module (one with most enabled features for this plan)
                                         const bestModulesByName = new Map<string, any>();
 
-                                        catalog.modules
+                                        (catalog?.modules || [])
                                             .filter(mod => mod.id !== 'mod_reports' && mod.id !== 'mod_api')
                                             .forEach(mod => {
-                                                const moduleFeatures = catalog.features.filter(f => f.module_id === mod.id);
+                                                const moduleFeatures = (catalog?.features || []).filter(f => f.module_id === mod.id);
                                                 if (moduleFeatures.length === 0) return;
 
                                                 const rawModules = plan.allowedModules || [];
@@ -204,7 +188,7 @@ export const LandingPricing: React.FC = () => {
                                         const uniqueModules = Array.from(bestModulesByName.values()).map(item => item.mod);
 
                                         return uniqueModules.map(mod => {
-                                            const moduleFeatures = catalog.features.filter(f => f.module_id === mod.id);
+                                            const moduleFeatures = (catalog?.features || []).filter(f => f.module_id === mod.id);
 
                                             if (moduleFeatures.length === 0) return null;
 

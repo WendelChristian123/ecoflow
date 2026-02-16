@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { api } from '../../services/api';
+import { SaasPlan } from '../../types';
 import { PublicLayout } from '../../components/PublicLayout';
 import { LandingNavbar } from '../../components/LandingNavbar';
 import { Button, Card, cn } from '../../components/Shared';
@@ -9,6 +11,32 @@ import {
     LayoutDashboard, Clock, Users, ArrowRight, TrendingUp, DollarSign,
     Briefcase, Lock, HelpCircle, ChevronDown, Check
 } from 'lucide-react';
+
+// Helper to check if a feature is enabled for a plan
+const isFeatureEnabled = (plan: SaasPlan, featureId: string, moduleId?: string): boolean => {
+    if (!plan.allowedModules) return false;
+    // Check for direct feature ID or module:feature format
+    const directMatch = plan.allowedModules.includes(featureId);
+    const moduleFeatureMatch = moduleId ? plan.allowedModules.includes(`${moduleId}:${featureId}`) : false;
+    const moduleMatch = moduleId ? plan.allowedModules.includes(moduleId) : false;
+
+    // Special case for "Rotinas (visão geral)" -> checks tasks_overview OR mod_tasks
+    if (featureId === 'tasks_overview' && moduleMatch) return true;
+
+    return directMatch || moduleFeatureMatch;
+};
+
+// Helper for text-based features (like Support)
+const getFeatureValue = (plan: SaasPlan, type: 'support' | 'users' | 'storage'): string | boolean => {
+    if (type === 'users') return plan.maxUsers ? `${plan.maxUsers}` : 'Ilimitado';
+    if (type === 'support') {
+        // Simple heuristic based on plan name or price, can be refined if DB has specific field
+        const lowerName = plan.name.toLowerCase();
+        if (lowerName.includes('pro') || lowerName.includes('business') || plan.price > 100) return 'Prioritário';
+        return 'Padrão';
+    }
+    return false;
+};
 
 const FeatureTabs: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'commercial' | 'routines' | 'finance'>('commercial');
@@ -147,6 +175,30 @@ export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
     // FAQ State
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [plans, setPlans] = useState<SaasPlan[]>([]);
+    const [catalog, setCatalog] = useState<{ modules: any[], features: any[] }>({ modules: [], features: [] });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [plansData, catalogData] = await Promise.all([
+                    api.getPublicPlans(),
+                    api.getPublicSystemCatalog()
+                ]);
+                setPlans(plansData);
+                setCatalog(catalogData);
+            } catch (error) {
+                console.error("Failed to load landing data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, []);
+
+    // Sort plans by price for comparison table (cheapest first)
+    const comparisonPlans = [...plans].sort((a, b) => (a.priceMonthly || 0) - (b.priceMonthly || 0)).slice(0, 2);
 
     const toggleFaq = (index: number) => {
         setOpenFaq(openFaq === index ? null : index);
@@ -434,7 +486,8 @@ export const LandingPage: React.FC = () => {
             </section>
 
             {/* 7. PLANOS */}
-            <LandingPricing />
+            {/* 7. PLANOS */}
+            <LandingPricing plans={plans} catalog={catalog} loading={loading} />
 
             {/* 8. COMPARATIVO DETALHADO */}
             <section className="py-20 px-4 border-b border-white/5 bg-slate-950/30">
@@ -445,92 +498,118 @@ export const LandingPage: React.FC = () => {
                     </div>
 
                     <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-                        <table className="w-full text-sm text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-950/80 border-b border-slate-800">
-                                    <th className="p-6 pl-8 w-1/2 text-slate-400 font-bold uppercase text-xs tracking-wider">Recursos</th>
-                                    <th className="p-6 text-center w-1/4 text-white font-bold text-base">Start</th>
-                                    <th className="p-6 text-center w-1/4 text-primary font-bold text-base bg-primary/5 border-l border-slate-800">Pro</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-800/50">
-                                {[
-                                    {
-                                        category: "FINANCEIRO",
-                                        items: [
-                                            { name: "Financeiro (visão geral)", start: "Controle essencial", pro: "Completo e estratégico" },
-                                            { name: "Caixa e lançamentos", start: "Básico", pro: "Completo" },
-                                            { name: "Contas, bancos e cartões", start: true, pro: true },
-                                            { name: "Categorias financeiras", start: true, pro: true },
-                                            { name: "Relatórios financeiros", start: "Essenciais", pro: "Avançados" },
-                                            { name: "Projeções e visão estratégica", start: false, pro: true },
-                                        ]
-                                    },
-                                    {
-                                        category: "ROTINAS & EXECUÇÃO",
-                                        items: [
-                                            { name: "Rotinas (visão geral)", start: "Organização básica", pro: "Execução estruturada" },
-                                            { name: "Tarefas", start: true, pro: true },
-                                            { name: "Tarefas recorrentes", start: false, pro: true },
-                                            { name: "Projetos", start: false, pro: true },
-                                            { name: "Equipes", start: false, pro: true },
-                                            { name: "Agenda integrada", start: "Básica", pro: "Completa" },
-                                        ]
-                                    },
-                                    {
-                                        category: "VENDAS / CRM",
-                                        items: [
-                                            { name: "CRM de vendas", start: false, pro: true },
-                                            { name: "Contatos e histórico", start: true, pro: true },
-                                            { name: "Orçamentos", start: false, pro: true },
-                                            { name: "Contratos", start: false, pro: true },
-                                            { name: "Catálogo de produtos", start: false, pro: true },
-                                        ]
-                                    },
-                                    {
-                                        category: "GESTÃO & ESCALA",
-                                        items: [
-                                            { name: "Relatórios avançados", start: false, pro: true },
-                                            { name: "Usuários inclusos", start: "1 usuário", pro: "Até 5 usuários" },
-                                            { name: "Permissões por usuário", start: false, pro: true },
-                                            { name: "Suporte", start: "Padrão", pro: "Prioritário" },
-                                        ]
-                                    }
-                                ].map((section, sIdx) => (
-                                    <React.Fragment key={sIdx}>
-                                        <tr className="bg-slate-950/50">
-                                            <td colSpan={3} className="p-4 pl-8 text-xs font-bold uppercase text-slate-500 tracking-widest border-y border-slate-800">
-                                                {section.category}
-                                            </td>
-                                        </tr>
-                                        {section.items.map((row, rIdx) => (
-                                            <tr key={rIdx} className="hover:bg-white/[0.02] transition-colors group">
-                                                <td className="p-4 pl-8 text-slate-300 font-medium border-r border-slate-800/30">
-                                                    {row.name}
-                                                </td>
-                                                <td className="p-4 text-center text-slate-400">
-                                                    {typeof row.start === 'boolean' ? (
-                                                        row.start ? <CheckCircle2 size={18} className="mx-auto text-emerald-500/80" /> : <div className="w-1.5 h-0.5 bg-slate-700 mx-auto rounded-full" />
-                                                    ) : (
-                                                        <span className="text-xs font-medium bg-slate-800/50 px-2 py-1 rounded text-slate-400">{row.start}</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-4 text-center text-white bg-primary/[0.02] border-l border-slate-800 relative">
-                                                    {/* Pro Highlight Effect */}
-                                                    <div className="absolute inset-x-0 top-0 bottom-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                                                    {typeof row.pro === 'boolean' ? (
-                                                        row.pro ? <CheckCircle2 size={18} className="mx-auto text-primary" /> : <div className="w-1.5 h-0.5 bg-slate-700 mx-auto rounded-full" />
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-primary">{row.pro}</span>
-                                                    )}
+                        {loading ? (
+                            <div className="p-8 text-center text-slate-500">Carregando comparativo...</div>
+                        ) : comparisonPlans.length < 1 ? (
+                            <div className="p-8 text-center text-slate-500">Nenhum plano para comparar.</div>
+                        ) : (
+                            <table className="w-full text-sm text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-950/80 border-b border-slate-800">
+                                        <th className="p-6 pl-8 w-1/2 text-slate-400 font-bold uppercase text-xs tracking-wider">Recursos</th>
+                                        {comparisonPlans.map((plan, i) => (
+                                            <th key={plan.id} className={cn(
+                                                "p-6 text-center w-1/4 font-bold text-base",
+                                                i === 1 ? "text-primary bg-primary/5 border-l border-slate-800" : "text-white"
+                                            )}>
+                                                {plan.name}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/50">
+                                    {[
+                                        {
+                                            category: "FINANCEIRO",
+                                            items: [
+                                                { name: "Financeiro (visão geral)", key: "finance_overview", mod: "mod_finance" },
+                                                { name: "Caixa e lançamentos", key: "finance_transactions", mod: "mod_finance" },
+                                                { name: "Contas, bancos e cartões", key: "finance_banking", mod: "mod_finance" },
+                                                { name: "Categorias financeiras", key: "finance_categories", mod: "mod_finance" },
+                                                { name: "Relatórios financeiros", key: "mod_finance", type: "text", falseVal: "-", trueVal: "Essenciais", customCheck: "reports_dre" },
+                                                // logic: if has 'reports_dre' -> 'Avançados', else if 'mod_finance' -> 'Essenciais'
+                                            ]
+                                        },
+                                        {
+                                            category: "ROTINAS & EXECUÇÃO",
+                                            items: [
+                                                { name: "Rotinas (visão geral)", key: "tasks_overview", mod: "mod_tasks" },
+                                                { name: "Tarefas", key: "tasks_list", mod: "mod_tasks" },
+                                                { name: "Projetos", key: "tasks_projects", mod: "mod_tasks" },
+                                                { name: "Equipes", key: "tasks_teams", mod: "mod_tasks" },
+                                                { name: "Agenda integrada", key: "tasks_calendar", mod: "mod_tasks" },
+                                            ]
+                                        },
+                                        {
+                                            category: "VENDAS / CRM",
+                                            items: [
+                                                { name: "CRM de vendas", key: "crm_overview", mod: "mod_commercial" },
+                                                { name: "Contatos e histórico", key: "crm_contacts", mod: "mod_commercial" },
+                                                { name: "Orçamentos", key: "crm_budgets", mod: "mod_commercial" },
+                                                { name: "Contratos", key: "crm_contracts", mod: "mod_commercial" },
+                                                { name: "Catálogo de produtos", key: "crm_catalogs", mod: "mod_commercial" },
+                                            ]
+                                        },
+                                        {
+                                            category: "GESTÃO & ESCALA",
+                                            items: [
+                                                { name: "Relatórios avançados", key: "mod_reports" },
+                                                { name: "Usuários inclusos", type: "users" },
+                                                { name: "Permissões por usuário", key: "tasks_teams", mod: "mod_tasks" },
+                                                { name: "Suporte", type: "support" },
+                                            ]
+                                        }
+                                    ].map((section, sIdx) => (
+                                        <React.Fragment key={sIdx}>
+                                            <tr className="bg-slate-950/50">
+                                                <td colSpan={comparisonPlans.length + 1} className="p-4 pl-8 text-xs font-bold uppercase text-slate-500 tracking-widest border-y border-slate-800">
+                                                    {section.category}
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
+                                            {section.items.map((row: any, rIdx) => (
+                                                <tr key={rIdx} className="hover:bg-white/[0.02] transition-colors group">
+                                                    <td className="p-4 pl-8 text-slate-300 font-medium border-r border-slate-800/30">
+                                                        {row.name}
+                                                    </td>
+                                                    {comparisonPlans.map((plan, pIdx) => {
+                                                        let content: any = null;
+
+                                                        if (row.type === 'users') {
+                                                            content = <span className="text-xs font-medium bg-slate-800/50 px-2 py-1 rounded text-slate-400">{getFeatureValue(plan, 'users')}</span>;
+                                                        } else if (row.type === 'support') {
+                                                            content = <span className="text-xs font-medium bg-slate-800/50 px-2 py-1 rounded text-slate-400">{getFeatureValue(plan, 'support')}</span>;
+                                                        } else if (row.name === "Relatórios financeiros") {
+                                                            // Custom logic
+                                                            const hasAdvanced = isFeatureEnabled(plan, 'mod_reports');
+                                                            const hasBasic = isFeatureEnabled(plan, 'mod_finance');
+                                                            const text = hasAdvanced ? "Avançados" : (hasBasic ? "Essenciais" : "-");
+                                                            content = <span className="text-xs font-medium bg-slate-800/50 px-2 py-1 rounded text-slate-400">{text}</span>;
+                                                        } else {
+                                                            const enabled = isFeatureEnabled(plan, row.key, row.mod);
+                                                            content = enabled ? (
+                                                                <CheckCircle2 size={18} className={cn("mx-auto", pIdx === 1 ? "text-primary" : "text-emerald-500/80")} />
+                                                            ) : (
+                                                                <div className="w-1.5 h-0.5 bg-slate-700 mx-auto rounded-full" />
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <td key={plan.id} className={cn(
+                                                                "p-4 text-center text-slate-400",
+                                                                pIdx === 1 && "bg-primary/[0.02] border-l border-slate-800 relative"
+                                                            )}>
+                                                                {pIdx === 1 && <div className="absolute inset-x-0 top-0 bottom-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />}
+                                                                {content}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             </section>
