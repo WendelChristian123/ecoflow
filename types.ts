@@ -464,6 +464,7 @@ export interface FinanceFilters {
   accountId: string;
   categoryId: string;
   type: 'all' | TransactionType;
+  paymentMethods?: string[];
 }
 
 export interface AuditLog {

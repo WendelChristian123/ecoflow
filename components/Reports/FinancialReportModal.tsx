@@ -44,6 +44,8 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
     const [isTypesOpen, setIsTypesOpen] = useState(false);
     const [contactFilter, setContactFilter] = useState<string[]>('all');
     const [isContactsOpen, setIsContactsOpen] = useState(false);
+    const [paymentMethodFilter, setPaymentMethodFilter] = useState<string[]>('all');
+    const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false);
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
@@ -87,6 +89,19 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 contactMatch = contactFilter.includes(t.contactId || ''); // Handle null contactId
             }
 
+            // Payment Method
+            let paymentMethodMatch = true;
+            if (!paymentMethodFilter.includes('all')) {
+                // Handle legacy/null payment methods if necessary, though we just set default 'cash' for new ones.
+                // If t.paymentMethod is undefined, we might want to treat it as 'cash' or 'unknown' depending on business rule,
+                // but strictly it filters by what IS there.
+                // However, credit card transactions might not have 'credit_card' set in paymentMethod if they are old,
+                // BUT we set isPaid=true and creditCardId is present.
+                // Let's assume the migration/logic ensures consistency, or fallback:
+                const method = t.paymentMethod || (t.creditCardId ? 'credit_card' : 'cash'); // Fallback inference if missing
+                paymentMethodMatch = paymentMethodFilter.includes(method);
+            }
+
             // Status
             let statusMatch = true;
             if (!statusFilter.includes('all')) {
@@ -98,9 +113,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 if (statusFilter.includes('overdue') && (!t.isPaid && !t.creditCardId && isBefore(parseDateLocal(t.date), startOfDay(new Date())))) statusMatch = true;
             }
 
-            return inRange && accountMatch && categoryMatch && typeMatch && statusMatch && contactMatch;
+            return inRange && accountMatch && categoryMatch && typeMatch && statusMatch && contactMatch && paymentMethodMatch;
         }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [transactions, dateRange, statusFilter, accountFilter, categoryFilter, typeFilter, contactFilter]);
+    }, [transactions, dateRange, statusFilter, accountFilter, categoryFilter, typeFilter, contactFilter, paymentMethodFilter]);
 
     // Summary Calculations
     const calculateTotals = () => {
@@ -289,7 +304,10 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
-                        <div><strong>Filtros:</strong> ${accountFilter.includes('all') ? 'Todas Contas' : 'Contas Selecionadas'} • ${categoryFilter.includes('all') ? 'Todas Categorias' : 'Categorias Selecionadas'} • ${contactFilter.includes('all') ? 'Todos Contatos' : 'Contatos Selecionados'}</div>
+                        <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>
+                        <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+                        <div><strong>Filtros:</strong> ${accountFilter.includes('all') ? 'Todas Contas' : 'Contas Selecionadas'} • ${categoryFilter.includes('all') ? 'Todas Categorias' : 'Categorias Selecionadas'} • ${paymentMethodFilter.includes('all') ? 'Todas Formas Pgto' : 'Formas Pgto Selecionadas'}</div>
+                    </div>
                     </div>
                 </div>
 
@@ -301,6 +319,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                             <th>Descrição</th>
                             <th>Categoria</th>
                             <th>Conta</th>
+                            <th>Forma Pgto</th>
                             <th>Status</th>
                             <th class="text-right">Valor</th>
                         </tr>
@@ -330,6 +349,14 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                 </td>
                                 <td>${getCategoryName(t.categoryId)}</td>
                                 <td>${accountDisplay}</td>
+                                <td>${t.paymentMethod ? {
+                    'cash': 'Dinheiro',
+                    'credit_card': 'Cartão de Crédito',
+                    'debit_card': 'Cartão de Débito',
+                    'pix': 'Pix',
+                    'boleto': 'Boleto',
+                    'check': 'Cheque'
+                }[t.paymentMethod] || t.paymentMethod : (t.creditCardId ? 'Cartão de Crédito' : 'Dinheiro')}</td>
                                 <td>
                                     ${t.isPaid
                     ? '<span style="color: #10b981; font-weight: bold;">Realizado</span>'
@@ -461,7 +488,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 {/* Filters */}
                 <div className="flex flex-col border-b border-slate-800 bg-slate-950 shadow-inner">
                     <div className="p-5">
-                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
                             <div className="flex flex-col gap-2">
                                 <DateRangePicker
                                     date={dateRange}
@@ -665,6 +692,73 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                     </>
                                 )}
                             </div>
+
+                            {/* Payment Method Filter */}
+                            <div className="flex flex-col gap-2 relative">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Forma Pgto</label>
+                                <button
+                                    onClick={() => setIsPaymentMethodsOpen(!isPaymentMethodsOpen)}
+                                    className="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-all h-9 shadow-sm w-full"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <DollarSign size={14} className="text-emerald-500" />
+                                        <span className="truncate">
+                                            {paymentMethodFilter.includes('all')
+                                                ? 'Todas'
+                                                : `Selecionadas (${paymentMethodFilter.length})`}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform text-slate-500 ${isPaymentMethodsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isPaymentMethodsOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsPaymentMethodsOpen(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 p-3 max-h-80 overflow-y-auto">
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => setPaymentMethodFilter(['all'])}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${paymentMethodFilter.includes('all')
+                                                        ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                        : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                        }`}
+                                                >
+                                                    <span>Todas</span>
+                                                    {paymentMethodFilter.includes('all') && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                                </button>
+
+                                                <div className="my-2 border-t border-slate-800" />
+                                                {[
+                                                    { value: 'cash', label: 'Dinheiro' },
+                                                    { value: 'credit_card', label: 'Cartão de Crédito' },
+                                                    { value: 'debit_card', label: 'Cartão de Débito' },
+                                                    { value: 'pix', label: 'Pix' },
+                                                    { value: 'boleto', label: 'Boleto' },
+                                                    { value: 'check', label: 'Cheque' }
+                                                ].map(o => (
+                                                    <button
+                                                        key={o.value}
+                                                        onClick={() => {
+                                                            setPaymentMethodFilter(prev => {
+                                                                if (prev.includes('all')) return [o.value];
+                                                                const newFilter = prev.includes(o.value) ? prev.filter(x => x !== o.value) : [...prev, o.value];
+                                                                return newFilter.length === 0 ? ['all'] : newFilter;
+                                                            });
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all ${paymentMethodFilter.includes(o.value)
+                                                            ? "bg-emerald-900/30 text-emerald-300 font-bold"
+                                                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                                            }`}
+                                                    >
+                                                        <span>{o.label}</span>
+                                                        {paymentMethodFilter.includes(o.value) && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                             <div className="flex flex-col gap-2 relative">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Tipo</label>
                                 <button
@@ -806,6 +900,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                         <th className="px-6 py-4 border-b border-slate-800 w-32">Data</th>
                                         <th className="px-6 py-4 border-b border-slate-800">Descrição / Categoria</th>
                                         <th className="px-6 py-4 border-b border-slate-800">Conta / Origem</th>
+                                        <th className="px-6 py-4 border-b border-slate-800">Forma Pgto</th>
                                         <th className="px-6 py-4 border-b border-slate-800 text-center w-32">Status</th>
                                         <th className="px-6 py-4 border-b border-slate-800 text-right w-40">Valor</th>
                                     </tr>
@@ -829,8 +924,32 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-slate-400 text-sm align-top pt-5">
-                                                {renderAccountInfo(t)}
+                                                {t.type === 'transfer' && t.toAccountId ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{accounts.find(a => a.id === t.accountId)?.name}</span>
+                                                        <TrendingUp size={14} className="rotate-90 text-slate-500" />
+                                                        <span>{accounts.find(a => a.id === t.toAccountId)?.name}</span>
+                                                    </div>
+                                                ) : t.creditCardId ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Wallet size={14} className="text-slate-500" />
+                                                        <span>{cards.find(c => c.id === t.creditCardId)?.name}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span>{accounts.find(a => a.id === t.accountId)?.name || '-'}</span>
+                                                )}
                                             </td>
+                                            <td className="px-6 py-4 text-slate-400 text-sm align-top pt-5">
+                                                {t.paymentMethod ? {
+                                                    'cash': 'Dinheiro',
+                                                    'credit_card': 'Cartão de Crédito',
+                                                    'debit_card': 'Cartão de Débito',
+                                                    'pix': 'Pix',
+                                                    'boleto': 'Boleto',
+                                                    'check': 'Cheque'
+                                                }[t.paymentMethod] || t.paymentMethod : (t.creditCardId ? 'Cartão de Crédito' : 'Dinheiro')}
+                                            </td>
+
                                             <td className="px-6 py-4 text-center align-top pt-5">
                                                 <Badge variant={t.isPaid ? 'success' : t.creditCardId ? 'success' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'error' : 'warning'} className="px-3 py-1">
                                                     {t.isPaid ? 'Pago' : t.creditCardId ? 'Pago via Cartão' : isBefore(parseDateLocal(t.date), startOfDay(new Date())) ? 'Vencido' : 'A Vencer'}
@@ -894,6 +1013,6 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     </Button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
