@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput, CurrencyInput } from './Shared';
 import { FilterSelect } from './FilterSelect';
 import { DateTimePicker } from './DateTimePicker';
-import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem } from '../types';
+import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem, PaymentMethod } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
 import {
@@ -537,6 +537,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                 type: initialData?.type || initialType || 'expense',
                 date: initialData?.date ? initialData.date.split('T')[0] : format(new Date(), 'yyyy-MM-dd'),
                 isPaid: initialData?.isPaid || false,
+                paymentMethod: initialData?.paymentMethod || 'cash', // Default to cash or force selection
                 accountId: initialData?.accountId || accounts[0]?.id || '',
                 categoryId: initialData?.categoryId || '',
                 creditCardId: initialData?.creditCardId || '',
@@ -560,6 +561,25 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
             setFormData(prev => ({ ...prev, isPaid: true }));
         }
     }, [formData.creditCardId]);
+
+    // Payment Method Business Rules
+    useEffect(() => {
+        if (!formData.paymentMethod) return;
+
+        if (formData.paymentMethod === 'cash') {
+            // Rule: Auto-select "Caixa" and disable
+            const caixa = accounts.find(a => a.name === 'Caixa' || a.type === 'cash');
+            if (caixa) {
+                setFormData(prev => ({ ...prev, accountId: caixa.id, creditCardId: undefined, isPaid: true }));
+            }
+        } else if (formData.paymentMethod === 'credit_card') {
+            // Rule: Only show cards, no bank accounts
+            setFormData(prev => ({ ...prev, accountId: undefined, isPaid: true }));
+        } else {
+            // Rule: Only bank accounts, no cards
+            setFormData(prev => ({ ...prev, creditCardId: undefined }));
+        }
+    }, [formData.paymentMethod, accounts]);
 
     const handlePreSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -783,22 +803,60 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                             <Plus size={18} />
                                         </Button>
                                     </div>
+                                    {/* Payment Method Selection */}
                                     <div>
                                         <FilterSelect
-                                            inlineLabel={formData.type === 'expense' ? 'Pagamento:' : 'Recebimento:'}
-                                            value={formData.creditCardId ? `card:${formData.creditCardId}` : `acc:${formData.accountId}`}
-                                            onChange={(val) => {
-                                                if (val.startsWith('card:')) setFormData({ ...formData, creditCardId: val.split(':')[1], accountId: undefined });
-                                                else setFormData({ ...formData, accountId: val.split(':')[1], creditCardId: undefined });
-                                            }}
+                                            inlineLabel="Forma de Pagto:"
+                                            value={formData.paymentMethod || ''}
+                                            onChange={(val) => setFormData({ ...formData, paymentMethod: val as PaymentMethod })}
                                             options={[
-                                                ...[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ value: `acc:${a.id}`, label: a.name, group: 'Contas' })),
-                                                ...(formData.type === 'expense' ? [...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: `card:${c.id}`, label: c.name, group: 'Cartões de Crédito' })) : [])
+                                                { value: 'cash', label: 'Dinheiro' },
+                                                { value: 'credit_card', label: 'Cartão de Crédito' },
+                                                { value: 'debit_card', label: 'Cartão de Débito' },
+                                                { value: 'pix', label: 'Pix' },
+                                                { value: 'boleto', label: 'Boleto' },
+                                                { value: 'check', label: 'Cheque' }
                                             ]}
                                             className="w-full"
                                             searchable
                                         />
                                     </div>
+
+                                    {/* Dynamic Account/Card Selection */}
+                                    {formData.paymentMethod === 'credit_card' ? (
+                                        <div>
+                                            {cards.length > 0 ? (
+                                                <FilterSelect
+                                                    inlineLabel="Cartão:"
+                                                    value={formData.creditCardId || ''}
+                                                    onChange={(val) => setFormData({ ...formData, creditCardId: val })}
+                                                    options={[...cards].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))}
+                                                    className="w-full"
+                                                    searchable
+                                                />
+                                            ) : (
+                                                <div className="p-3 bg-rose-500/10 text-rose-500 rounded-lg text-sm border border-rose-500/20 flex items-center gap-2">
+                                                    <AlertCircle size={16} />
+                                                    <span>Nenhum cartão cadastrado. Cadastre um cartão antes de continuar.</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <FilterSelect
+                                                inlineLabel="Conta/Banco:"
+                                                value={formData.accountId || ''}
+                                                onChange={(val) => setFormData({ ...formData, accountId: val })}
+                                                options={[...accounts]
+                                                    .filter(a => formData.paymentMethod === 'cash' ? (a.name === 'Caixa' || a.type === 'cash') : (a.name !== 'Caixa' && a.type !== 'cash'))
+                                                    .sort((a, b) => a.name.localeCompare(b.name))
+                                                    .map(a => ({ value: a.id, label: a.name }))}
+                                                className="w-full"
+                                                searchable
+                                                disabled={formData.paymentMethod === 'cash'} // Rule: Disabled for Cash
+                                            />
+                                        </div>
+                                    )}
                                 </>
                             )}
 

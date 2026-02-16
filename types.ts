@@ -268,6 +268,7 @@ export interface UnifiedEvent extends CalendarEvent {
 
 export type TransactionType = 'income' | 'expense' | 'transfer';
 export type AccountType = 'checking' | 'savings' | 'cash' | 'investment';
+export type PaymentMethod = 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'boleto' | 'check';
 
 export interface FinancialAccount {
   id: string;
@@ -284,6 +285,7 @@ export interface FinancialTransaction {
   type: TransactionType;
   date: string;
   isPaid: boolean;
+  paymentMethod?: PaymentMethod;
   accountId?: string;
   toAccountId?: string;
   categoryId?: string;
