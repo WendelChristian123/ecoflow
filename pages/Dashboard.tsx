@@ -28,7 +28,7 @@ import { processTransactions, ProcessedTransaction } from '../services/financeLo
 import { parseDateLocal } from '../utils/formatters';
 import { isBefore, isSameDay, addDays, isWithinInterval, startOfDay, format, setDate, addMonths, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useTenant } from '../context/TenantContext';
+import { useCompany } from '../context/CompanyContext';
 import { useRBAC } from '../context/RBACContext';
 import { supabase } from '../services/supabase';
 
@@ -43,7 +43,7 @@ const getUniqueAssignees = (tasks: Task[], users: User[]) => {
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
-    const { currentTenant, loading: tenantLoading } = useTenant();
+    const { currentCompany, loading: companyLoading } = useCompany();
     const { isSuperAdmin } = useRBAC();
 
     const [loading, setLoading] = useState(true);
@@ -72,16 +72,16 @@ export const Dashboard: React.FC = () => {
     });
 
     useEffect(() => {
-        if (tenantLoading) return;
-        if (currentTenant) {
+        if (companyLoading) return;
+        if (currentCompany) {
             loadDashboard();
         } else {
             setLoading(false);
         }
-    }, [currentTenant, tenantLoading]);
+    }, [currentCompany, companyLoading]);
 
     const loadDashboard = async () => {
-        if (!currentTenant) return;
+        if (!currentCompany) return;
         setLoading(true);
         setError(null);
         try {
@@ -90,15 +90,15 @@ export const Dashboard: React.FC = () => {
             if (profiles) setUsers(profiles as any);
 
             // Parallel fetch
-            const m = await api.getDashboardMetrics(currentTenant.id);
+            const m = await api.getDashboardMetrics(currentCompany.id);
             setMetrics(m);
 
             const [t, e, tr, q, c] = await Promise.all([
-                api.getTasks(currentTenant.id).catch(() => []),
-                api.getEvents(currentTenant.id).catch(() => []),
-                api.getFinancialTransactions(currentTenant.id).catch(() => []),
-                api.getQuotes(currentTenant.id).catch(() => []),
-                api.getCreditCards(currentTenant.id).catch(() => [])
+                api.getTasks(currentCompany.id).catch(() => []),
+                api.getEvents(currentCompany.id).catch(() => []),
+                api.getFinancialTransactions(currentCompany.id).catch(() => []),
+                api.getQuotes(currentCompany.id).catch(() => []),
+                api.getCreditCards(currentCompany.id).catch(() => [])
             ]);
             setTasks(t);
             setEvents(e);
@@ -335,10 +335,10 @@ export const Dashboard: React.FC = () => {
     };
 
     // --- Loading/Error States ---
-    if (loading || tenantLoading) return <Loader />;
+    if (loading || companyLoading) return <Loader />;
 
-    // --- No Tenant State (Super Admin) ---
-    if (!currentTenant && isSuperAdmin) {
+    // --- No Company State (Super Admin) ---
+    if (!currentCompany && isSuperAdmin) {
         return (
             <div className="flex flex-col items-center justify-center h-full space-y-6 text-center animate-in fade-in zoom-in-95 duration-300">
                 <div className="p-6 bg-card rounded-full border-4 border-border shadow-2xl">
@@ -359,8 +359,8 @@ export const Dashboard: React.FC = () => {
         );
     }
 
-    // --- No Tenant State (Regular User - Error Case) ---
-    if (!currentTenant) {
+    // --- No Company State (Regular User - Error Case) ---
+    if (!currentCompany) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center">
                 <AlertCircle size={48} className="text-muted-foreground mb-4" />

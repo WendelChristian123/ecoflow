@@ -11,10 +11,12 @@ import { FinancialReportModal } from '../../components/Reports/FinancialReportMo
 import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { useCompany } from '../../context/CompanyContext';
 
 
 
 export const FinancialOverview: React.FC = () => {
+    const { currentCompany } = useCompany();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
@@ -41,17 +43,22 @@ export const FinancialOverview: React.FC = () => {
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        if (currentCompany) {
+            loadData();
+        }
+    }, [currentCompany]);
 
     const loadData = async () => {
+        if (!currentCompany) return;
         try {
             const [t, a, c, cc, cont, set] = await Promise.all([
-                api.getFinancialTransactions(),
-                api.getFinancialAccounts(),
-                api.getFinancialCategories(),
-                api.getCreditCards(),
-                api.getContacts(),
-                api.getTenantSettings()
+                api.getFinancialTransactions(currentCompany.id),
+                api.getFinancialAccounts(currentCompany.id),
+                api.getFinancialCategories(currentCompany.id),
+                api.getCreditCards(currentCompany.id),
+                api.getContacts(currentCompany.id),
+                api.getCompanySettings()
             ]);
             setTransactions(t);
             setAccounts(a);
@@ -146,7 +153,7 @@ export const FinancialOverview: React.FC = () => {
         const newStatus = !t.isPaid;
         setTransactions(prev => prev.map(item => item.id === t.id ? { ...item, isPaid: newStatus } : item));
         try {
-            await api.toggleTransactionStatus(t.id, newStatus);
+            await api.toggleTransactionStatus(t.id, newStatus); // API should handle security check, but we could pass companyId if needed, usually ID is enough
         } catch (error) {
             setTransactions(prev => prev.map(item => item.id === t.id ? { ...item, isPaid: !newStatus } : item));
         }

@@ -5,8 +5,10 @@ import { FinancialCategory, FinancialTransaction } from '../../types';
 import { Loader, Badge, Button, Card } from '../../components/Shared';
 import { DrilldownModal, CategoryModal, ConfirmationModal } from '../../components/Modals';
 import { Tags, ArrowUpCircle, ArrowDownCircle, Plus, Trash2, Edit2, ChevronRight } from 'lucide-react';
+import { useCompany } from '../../context/CompanyContext';
 
 export const FinancialCategories: React.FC = () => {
+    const { currentCompany } = useCompany();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -17,12 +19,20 @@ export const FinancialCategories: React.FC = () => {
     const [editingCategory, setEditingCategory] = useState<FinancialCategory | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        if (currentCompany) {
+            loadData();
+        }
+    }, [currentCompany]);
 
     const loadData = async () => {
+        if (!currentCompany) return;
         setLoading(true);
         try {
-            const [cats, trans] = await Promise.all([api.getFinancialCategories(), api.getFinancialTransactions()]);
+            const [cats, trans] = await Promise.all([
+                api.getFinancialCategories(currentCompany.id),
+                api.getFinancialTransactions(currentCompany.id)
+            ]);
             setCategories(cats);
             setTransactions(trans);
         } catch (error) {
@@ -86,26 +96,6 @@ export const FinancialCategories: React.FC = () => {
                         <ArrowUpCircle size={18} className="text-emerald-500" /> Receitas
                     </h2>
                     <div className="space-y-3">
-                        {incomeCats.map(cat => (
-                            <div
-                                key={cat.id}
-                                onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id) })}
-                                className="flex items-center justify-between p-3 rounded-lg bg-card border border-border cursor-pointer hover:border-emerald-500/50 hover:bg-secondary/50 transition-all group shadow-sm"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color || '#10b981' }}></div>
-                                    <span className="font-medium text-foreground">{cat.name}</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="font-bold text-muted-foreground text-sm">{fmt(getCategoryTotal(cat.id))}</span>
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={(e) => handleEdit(e, cat)} className="text-muted-foreground hover:text-primary p-1"><Edit2 size={14} /></button>
-                                        <button onClick={(e) => requestDelete(e, cat.id)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 size={14} /></button>
-                                    </div>
-                                    <ChevronRight size={16} className="text-muted-foreground" />
-                                </div>
-                            </div>
-                        ))}
                         {incomeCats.length === 0 && <p className="text-muted-foreground text-sm italic text-center py-4">Nenhuma categoria cadastrada.</p>}
                     </div>
                 </Card>

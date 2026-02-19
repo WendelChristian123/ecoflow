@@ -11,7 +11,7 @@ import { Project, User, Team, Task, Status } from '../types';
 import { useLocation } from 'react-router-dom';
 
 
-import { useTenant } from '../context/TenantContext';
+import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
 import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
 import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
@@ -109,7 +109,7 @@ const ProjectTasksKanban: React.FC<{
 
 
 export const ProjectsPage: React.FC = () => {
-  const { currentTenant } = useTenant();
+  const { currentCompany } = useCompany();
   const { user } = useAuth();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
@@ -146,10 +146,10 @@ export const ProjectsPage: React.FC = () => {
   // No priority for projects
 
   useEffect(() => {
-    if (currentTenant) {
+    if (currentCompany) {
       loadData();
     }
-  }, [currentTenant]);
+  }, [currentCompany]);
 
   useEffect(() => {
     if (projects.length > 0 && location.state?.projectId) {
@@ -161,14 +161,14 @@ export const ProjectsPage: React.FC = () => {
   }, [projects, location.state]);
 
   const loadData = async (showLoading = true) => {
-    if (!currentTenant) return;
+    if (!currentCompany) return;
     if (showLoading) setLoading(true);
     try {
       const [p, u, t, tk] = await Promise.all([
-        api.getProjects(currentTenant.id),
-        api.getUsers(currentTenant.id),
-        api.getTeams(currentTenant.id),
-        api.getTasks(currentTenant.id)
+        api.getProjects(currentCompany.id),
+        api.getUsers(currentCompany.id),
+        api.getTeams(currentCompany.id),
+        api.getTasks(currentCompany.id)
       ]);
       setProjects(p);
       setUsers(u);

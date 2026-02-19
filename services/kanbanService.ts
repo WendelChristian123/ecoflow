@@ -29,11 +29,11 @@ export const kanbanService = {
     },
 
     async createKanban(kanban: Partial<Kanban>): Promise<Kanban> {
-        const { isDefault, tenantId, ...rest } = kanban;
+        const { isDefault, companyId, ...rest } = kanban;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload: any = { ...rest };
         if (isDefault !== undefined) payload.is_default = isDefault;
-        if (tenantId !== undefined) payload.tenant_id = tenantId;
+        if (companyId !== undefined) payload.company_id = companyId;
 
         const { data, error } = await supabase
             .from('kanbans')
@@ -42,15 +42,15 @@ export const kanbanService = {
             .single();
 
         if (error) throw error;
-        return { ...data, isDefault: data.is_default, tenantId: data.tenant_id } as Kanban;
+        return { ...data, isDefault: data.is_default, companyId: data.company_id } as Kanban;
     },
 
     async updateKanban(id: string, updates: Partial<Kanban>): Promise<Kanban> {
-        const { isDefault, tenantId, ...rest } = updates;
+        const { isDefault, companyId, ...rest } = updates;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload: any = { ...rest };
         if (isDefault !== undefined) payload.is_default = isDefault;
-        if (tenantId !== undefined) payload.tenant_id = tenantId;
+        if (companyId !== undefined) payload.company_id = companyId;
 
         const { data, error } = await supabase
             .from('kanbans')
@@ -60,7 +60,7 @@ export const kanbanService = {
             .single();
 
         if (error) throw error;
-        return { ...data, isDefault: data.is_default, tenantId: data.tenant_id } as Kanban;
+        return { ...data, isDefault: data.is_default, companyId: data.company_id } as Kanban;
     },
 
     async deleteKanban(id: string): Promise<void> {

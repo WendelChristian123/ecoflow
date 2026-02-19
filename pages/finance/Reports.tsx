@@ -9,8 +9,10 @@ import { FilterSelect } from '../../components/FilterSelect';
 import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths, parseISO, endOfDay } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
+import { useCompany } from '../../context/CompanyContext';
 
 export const FinancialReports: React.FC = () => {
+    const { currentCompany } = useCompany();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
@@ -18,14 +20,19 @@ export const FinancialReports: React.FC = () => {
     const [customDate, setCustomDate] = useState({ start: '', end: '' });
 
     useEffect(() => {
-        Promise.all([api.getFinancialTransactions(), api.getFinancialCategories()])
-            .then(([t, c]) => {
-                setTransactions(t);
-                setCategories(c);
-            })
-            .catch(e => console.error(e))
-            .finally(() => setLoading(false));
-    }, []);
+        if (currentCompany) {
+            Promise.all([
+                api.getFinancialTransactions(currentCompany.id),
+                api.getFinancialCategories(currentCompany.id)
+            ])
+                .then(([t, c]) => {
+                    setTransactions(t);
+                    setCategories(c);
+                })
+                .catch(e => console.error(e))
+                .finally(() => setLoading(false));
+        }
+    }, [currentCompany]);
 
     if (loading) return <Loader />;
 

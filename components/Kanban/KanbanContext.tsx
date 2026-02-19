@@ -79,13 +79,13 @@ export const KanbanProvider: React.FC<{
                 } else {
                     // Auto-initialize Default Board if missing in single mode
                     try {
-                        const tenantId = localStorage.getItem('ecoflow-tenant-id') || undefined;
-                        console.log(`Auto-initializing default Kanban for module: ${module}, Tenant: ${tenantId}`);
+                        const companyId = localStorage.getItem('ecoflow-company-id') || undefined;
+                        console.log(`Auto-initializing default Kanban for module: ${module}, Company: ${companyId}`);
                         const newBoard = await kanbanService.createKanban({
                             name: 'Quadro Principal',
                             module,
                             isDefault: true,
-                            tenantId: tenantId
+                            companyId: companyId
                         });
 
                         if (newBoard && newBoard.id) {
@@ -127,12 +127,12 @@ export const KanbanProvider: React.FC<{
             alert("Modo de painel único: não é possível criar múltiplos painéis.");
             return;
         }
-        const tenantId = localStorage.getItem('ecoflow-tenant-id') || undefined;
+        const companyId = localStorage.getItem('ecoflow-company-id') || undefined;
         const newBoard = await kanbanService.createKanban({
             name,
             module,
             isDefault: kanbans.length === 0,
-            tenantId
+            companyId
         });
 
         if (newBoard && newBoard.id) {

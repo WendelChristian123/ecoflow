@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useAuth } from './AuthContext';
-import { useTenant } from './TenantContext';
+import { useCompany } from './CompanyContext';
 import { UserRole, LegacyUserPermissions as UserPermissions } from '../types';
 
 interface RBACContextType {
@@ -30,10 +30,10 @@ export const DEFAULT_USER_PERMISSIONS: UserPermissions = {
 
 // Map Permission Modules to System Module IDs and Feature Prefixes
 export const MODULE_MAP: Record<string, { sysId: string, featPrefix: string }> = {
-  'routines': { sysId: 'mod_tasks', featPrefix: 'tasks_' },
-  'finance': { sysId: 'mod_finance', featPrefix: 'finance_' },
-  'commercial': { sysId: 'mod_commercial', featPrefix: 'crm_' },
-  'reports': { sysId: 'mod_reports', featPrefix: 'rep_' }
+  'routines': { sysId: 'routines', featPrefix: 'tasks_' },
+  'finance': { sysId: 'finance', featPrefix: 'finance_' },
+  'commercial': { sysId: 'commercial', featPrefix: 'crm_' },
+  'reports': { sysId: 'reports', featPrefix: 'rep_' }
 };
 
 // Map Exception strings from Layout to Constants
@@ -57,7 +57,7 @@ export const FEATURE_EXCEPTION_MAP: Record<string, string> = {
 
 export const RBACProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { currentTenant, isMultiTenant } = useTenant();
+  const { currentCompany, isMultiCompany } = useCompany();
 
   // Role comes directly from the User object (merged from profile in AuthContext)
   // Fallback to 'user' if undefined
@@ -74,9 +74,9 @@ export const RBACProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkPlanAccess = (moduleKey: string): boolean => {
     // 1. Super Admin bypass
     if (isSuperAdmin) return true;
-    if (!currentTenant?.contractedModules) return true; // Safety fallback (or false?)
+    if (!currentCompany?.contractedModules) return true; // Safety fallback (or false?)
 
-    const modules = currentTenant.contractedModules;
+    const modules = currentCompany.contractedModules;
 
     const [baseKey, subFeature] = moduleKey.split('.');
     const map = MODULE_MAP[baseKey];

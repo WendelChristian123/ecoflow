@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact, TenantSettings } from '../../types';
+import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact, CompanySettings } from '../../types';
 import { Loader, Badge, cn, Button, LinkInput } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
 import { TransactionModal, DrilldownModal, ConfirmationModal, RecurrenceActionModal } from '../../components/Modals';
@@ -11,6 +11,7 @@ import { TrendingUp, TrendingDown, Filter, Plus, Calendar, Search, ArrowRight, D
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay, addDays, addMonths, subMonths, isBefore } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
+import { useCompany } from '../../context/CompanyContext';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -47,6 +48,7 @@ export const FinancialTransactions: React.FC = () => {
         }
     `;
 
+    const { currentCompany } = useCompany();
     const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -54,7 +56,7 @@ export const FinancialTransactions: React.FC = () => {
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
     const [cards, setCards] = useState<CreditCard[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
-    const [settings, setSettings] = useState<TenantSettings>({});
+    const [settings, setSettings] = useState<CompanySettings>({});
 
     const [filters, setFilters] = useState<FinanceFilters & { search: string }>({
         period: 'month',
@@ -78,18 +80,23 @@ export const FinancialTransactions: React.FC = () => {
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [recurrenceDeleteTarget, setRecurrenceDeleteTarget] = useState<FinancialTransaction | null>(null);
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        if (currentCompany) {
+            loadData();
+        }
+    }, [currentCompany]);
 
     const loadData = async () => {
+        if (!currentCompany) return;
         setLoading(true);
         try {
             const [t, a, c, cc, cont, s] = await Promise.all([
-                api.getFinancialTransactions(),
-                api.getFinancialAccounts(),
-                api.getFinancialCategories(),
-                api.getCreditCards(),
-                api.getContacts(),
-                api.getTenantSettings()
+                api.getFinancialTransactions(currentCompany.id),
+                api.getFinancialAccounts(currentCompany.id),
+                api.getFinancialCategories(currentCompany.id),
+                api.getCreditCards(currentCompany.id),
+                api.getContacts(currentCompany.id),
+                api.getCompanySettings()
             ]);
             setTransactions(t);
             setAccounts(a);

@@ -9,6 +9,7 @@ import { TaskModal, TeamModal, TaskDetailModal } from '../components/Modals';
 import { api } from '../services/api';
 import { Team, User, Task, Project, Status } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
 
 import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
 import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
@@ -113,6 +114,7 @@ const TeamTasksKanban: React.FC<{
 
 export const TeamsPage: React.FC = () => {
   const { user } = useAuth();
+  const { currentCompany } = useCompany();
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -146,13 +148,14 @@ export const TeamsPage: React.FC = () => {
 
 
   useEffect(() => {
+    if (!currentCompany) return;
     const init = async () => {
       try {
         const [t, u, tk, p] = await Promise.all([
-          api.getTeams(),
-          api.getUsers(),
-          api.getTasks(),
-          api.getProjects()
+          api.getTeams(currentCompany.id),
+          api.getUsers(currentCompany.id),
+          api.getTasks(currentCompany.id),
+          api.getProjects(currentCompany.id)
         ]);
         setTeams(t);
         setUsers(u);
@@ -165,12 +168,13 @@ export const TeamsPage: React.FC = () => {
       }
     };
     init();
-  }, []);
+  }, [currentCompany]);
 
   const loadData = async (showLoading = true) => {
+    if (!currentCompany) return;
     if (showLoading) setLoading(true);
     try {
-      const [tk, t] = await Promise.all([api.getTasks(), api.getTeams()]);
+      const [tk, t] = await Promise.all([api.getTasks(currentCompany.id), api.getTeams(currentCompany.id)]);
       setTasks(tk);
       setTeams(t);
     } catch (e) {

@@ -3,6 +3,7 @@ import { SaasPlan } from '../types';
 import { Button, cn, Loader, Badge } from './Shared';
 import { CheckCircle2, XCircle, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SignupModal } from './SignupModal';
 
 interface AppCatalog {
     modules: any[];
@@ -18,9 +19,16 @@ interface LandingPricingProps {
 export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, catalog, loading }) => {
     const navigate = useNavigate();
     const [cycle, setCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
+    const [isSignupOpen, setIsSignupOpen] = useState(false);
+    const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
     const handlePlanSelect = (planType: string) => {
-        navigate(`/checkout?plan=${planType}&cycle=${cycle}`);
+        if (planType === 'contact') {
+            navigate('/checkout?plan=custom');
+            return;
+        }
+        setSelectedPlanId(planType);
+        setIsSignupOpen(true);
     };
 
     const sortedPlans = [...(plans || [])].sort((a, b) => {
@@ -47,6 +55,13 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, catalog, 
 
     return (
         <section id="plans" className="py-24 px-4 bg-slate-950 relative overflow-hidden">
+            <SignupModal
+                isOpen={isSignupOpen}
+                onClose={() => setIsSignupOpen(false)}
+                planId={selectedPlanId}
+                plans={plans}
+            />
+
             <div className="container mx-auto max-w-7xl relative z-10">
                 <div className="text-center mb-12">
                     <h2 className="text-4xl font-bold text-white mb-6">Escolha como começar</h2>

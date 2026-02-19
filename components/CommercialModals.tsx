@@ -11,7 +11,7 @@ import { format, parseISO, addMonths, differenceInDays, addDays } from 'date-fns
 import { formatDate } from '../utils/formatters';
 import { supabase } from '../services/supabase';
 import { QuotePrintTemplate } from './Commercial/QuotePrintTemplate';
-import { Tenant } from '../types';
+import { Company } from '../types';
 
 const getLocalDateISO = () => {
     const date = new Date();
@@ -275,20 +275,20 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
     const [loading, setLoading] = useState(false);
     const [isGuest, setIsGuest] = useState(false);
 
-    // Print / Tenant Logic
+    // Print / Company Logic
     const [showPreview, setShowPreview] = useState(false);
-    const [tenant, setTenant] = useState<Tenant>({ name: 'Minha Empresa' } as Tenant);
+    const [company, setCompany] = useState<Company>({ name: 'Minha Empresa' } as Company);
 
     useEffect(() => {
         if (isOpen) {
-            const fetchTenant = async () => {
-                const id = localStorage.getItem('ecoflow-tenant-id');
+            const fetchCompany = async () => {
+                const id = localStorage.getItem('ecoflow-company-id');
                 if (id) {
-                    const { data } = await supabase.from('tenants').select('*').eq('id', id).single();
-                    if (data) setTenant(data as Tenant);
+                    const { data } = await supabase.from('companies').select('*').eq('id', id).single();
+                    if (data) setCompany(data as Company);
                 }
             };
-            fetchTenant();
+            fetchCompany();
         }
     }, [isOpen]);
 
@@ -569,7 +569,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                             </div>
                             <div className="flex-1 overflow-auto p-8 bg-black/50 flex justify-center">
                                 <div className="shadow-2xl shadow-black scale-90 origin-top">
-                                    <QuotePrintTemplate quote={{ ...initialData, ...formData, items } as Quote} tenant={tenant} contact={contacts.find(c => c.id === formData.contactId)} />
+                                    <QuotePrintTemplate quote={{ ...initialData, ...formData, items } as Quote} company={company} contact={contacts.find(c => c.id === formData.contactId)} />
                                 </div>
                             </div>
                             <div className="p-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-2">
@@ -581,7 +581,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                     {/* Portal for Actual Printing - Isolated from Modal Styles */}
                     {createPortal(
                         <div id="print-portal" className="hidden print:block">
-                            <QuotePrintTemplate quote={{ ...initialData, ...formData, items } as Quote} tenant={tenant} contact={contacts.find(c => c.id === formData.contactId)} />
+                            <QuotePrintTemplate quote={{ ...initialData, ...formData, items } as Quote} company={company} contact={contacts.find(c => c.id === formData.contactId)} />
                         </div>,
                         document.body
                     )}

@@ -13,8 +13,8 @@ interface AuthContextType {
   refreshSession: () => Promise<void>;
 }
 
-// System-wide default tenant ID for global/super-admin views and new user defaults
-const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+// System-wide default company ID for global/super-admin views and new user defaults
+const DEFAULT_COMPANY_ID = '00000000-0000-0000-0000-000000000001';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -29,8 +29,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: sbUser.user_metadata?.name || sbUser.email || '',
       email: sbUser.email || '',
       avatarUrl: sbUser.user_metadata?.avatar_url || '',
-      role: 'user', // Default, will be updated by profile
-      tenantId: undefined,
+      role: sbUser.user_metadata?.role || 'user', // Attempt to read role too
+      companyId: sbUser.user_metadata?.companyId || sbUser.app_metadata?.companyId, // Check both, prefer companyId
       permissions: undefined
     };
   };
@@ -58,7 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Persist Source of Truth logic
-        if (profile.tenant_id) localStorage.setItem('ecoflow-tenant-id', profile.tenant_id);
+        // Use company_id from profile
+        const cId = profile.company_id;
+        if (cId) localStorage.setItem('ecoflow-company-id', cId); // Updated key
         if (profile.role) localStorage.setItem('ecoflow-user-role', profile.role);
 
         // Update User State with full profile
@@ -67,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const newName = profile.name || prev.name;
           const newRole = profile.role || prev.role;
-          const newTenant = profile.tenant_id || prev.tenantId;
+          const newCompanyId = cId || prev.companyId;
           const newAvatar = profile.avatar_url || prev.avatarUrl;
           const newStatus = profile.status;
           const newPermissions = profile.permissions;
@@ -77,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (
             prev.name === newName &&
             prev.role === newRole &&
-            prev.tenantId === newTenant &&
+            prev.companyId === newCompanyId &&
             prev.avatarUrl === newAvatar &&
             prev.status === newStatus &&
             JSON.stringify(prev.permissions) === JSON.stringify(newPermissions) &&
@@ -90,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...prev,
             name: newName,
             role: newRole,
-            tenantId: newTenant,
+            companyId: newCompanyId,
             avatarUrl: newAvatar,
             status: newStatus,
             permissions: newPermissions,
@@ -154,7 +156,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) {
           setUser(null);
           setLoading(false);
-          localStorage.removeItem('ecoflow-tenant-id');
+          setUser(null);
+          setLoading(false);
+          localStorage.removeItem('ecoflow-company-id');
           localStorage.removeItem('ecoflow-user-role');
         }
         return;
@@ -218,7 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('ecoflow-tenant-id');
+    localStorage.removeItem('ecoflow-company-id');
     localStorage.removeItem('ecoflow-user-role');
   };
 

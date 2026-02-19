@@ -10,7 +10,7 @@ import { TaskModal, TaskDetailModal, ConfirmationModal } from '../components/Mod
 import { api } from '../services/api';
 import { Task, User, Status, Project, Team } from '../types';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { useTenant } from '../context/TenantContext';
+import { useCompany } from '../context/CompanyContext';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
 import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
@@ -65,7 +65,7 @@ const TaskKanbanWithContext: React.FC<{
 
 export const TasksPage: React.FC = () => {
   const { user } = useAuth();
-  const { currentTenant } = useTenant();
+  const { currentCompany } = useCompany();
   const { can, canDelete } = useRBAC();
   const [view, setView] = useState<'list' | 'board'>('board');
   const [loading, setLoading] = useState(true);
@@ -95,10 +95,10 @@ export const TasksPage: React.FC = () => {
   const canEdit = can('routines', 'edit');
 
   useEffect(() => {
-    if (currentTenant) {
+    if (currentCompany) {
       loadData();
     }
-  }, [currentTenant]);
+  }, [currentCompany]);
 
   const [searchParams] = useSearchParams();
 
@@ -115,14 +115,14 @@ export const TasksPage: React.FC = () => {
   }, [loading, tasks, location.state, searchParams]);
 
   const loadData = async (showLoading = true) => {
-    if (!currentTenant) return;
+    if (!currentCompany) return;
     if (showLoading) setLoading(true);
     try {
       const [t, u, p, tm, delegatorIds] = await Promise.all([
-        api.getTasks(currentTenant.id),
-        api.getUsers(currentTenant.id),
-        api.getProjects(currentTenant.id),
-        api.getTeams(currentTenant.id),
+        api.getTasks(currentCompany.id),
+        api.getUsers(currentCompany.id),
+        api.getProjects(currentCompany.id),
+        api.getTeams(currentCompany.id),
         api.getDelegators('tasks')
       ]);
       setTasks(t);

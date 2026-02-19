@@ -38,15 +38,18 @@ export const SettingsPage: React.FC = () => {
         if (authUser) loadData();
     }, [authUser]);
 
+    // ... (imports remain mostly the same, ensuring api has correct methods)
+
     const loadData = async () => {
         setLoading(true);
         try {
             const [usersData, delegationsData, settingsData, limitsData] = await Promise.all([
-                api.getUsers(authUser?.tenantId),
+                api.getUsers(authUser?.companyId),
                 api.getMyDelegations(),
-                api.getTenantSettings(),
-                authUser?.tenantId ? checkUserLimit(authUser.tenantId) : Promise.resolve(null)
+                api.getCompanySettings(),
+                authUser?.companyId ? checkUserLimit(authUser.companyId) : Promise.resolve(null)
             ]);
+            // ... (rest of the function)
             setUsers(usersData);
             setDelegations(delegationsData);
             setFinanceSettings(settingsData || {});
@@ -62,7 +65,7 @@ export const SettingsPage: React.FC = () => {
     const handleSaveFinanceSettings = async () => {
         try {
             const newSettings = { ...financeSettings, credit_card_expense_mode: pendingMode };
-            await api.updateTenantSettings(newSettings);
+            await api.updateCompanySettings(newSettings);
             setFinanceSettings(newSettings);
             alert('Configuração salva com sucesso! O impacto nos relatórios será imediato.');
         } catch (error) {

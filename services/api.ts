@@ -3,7 +3,7 @@ import {
     Task, Project, Team, User, CalendarEvent,
     FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard,
     Contact, Quote, CatalogItem, RecurringService, RecurrenceConfig,
-    Tenant, SaasPlan, Delegation, SharedAccess,
+    Company, SaasPlan, Delegation, SharedAccess,
     DashboardMetrics, GlobalStats, UserPermission, LegacyUserPermissions, AuditLog
 } from '../types';
 import { supabase } from './supabase';
@@ -13,9 +13,9 @@ export const getErrorMessage = (error: any): string => {
     return error?.message || error?.error_description || String(error);
 };
 
-// Helper: Ensure we always have a tenant ID (fallback to auth user's tenant if not explicitly set)
-const getCurrentTenantId = () => {
-    return localStorage.getItem('ecoflow-tenant-id');
+// Helper: Ensure we always have a company ID (fallback to auth user's company if not explicitly set)
+const getCurrentCompanyId = () => {
+    return localStorage.getItem('ecoflow-company-id');
 };
 
 // Helper: Convert empty strings to null for UUID fields to prevent Postgres errors
@@ -35,11 +35,22 @@ export const api = {
         return null;
     },
 
+    registerCompany: async (data: any) => {
+        const { data: response, error } = await supabase.functions.invoke('auth-signup', {
+            body: data
+        });
+
+        if (error) throw error;
+        if (response.error) throw new Error(response.error);
+
+        return response;
+    },
+
     // --- TASKS ---
     // --- TASKS ---
-    getTasks: async (tenantId?: string) => {
+    getTasks: async (companyId?: string) => {
         let query = supabase.from('tasks').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((t: any) => ({
@@ -47,7 +58,7 @@ export const api = {
             assigneeId: t.assignee_id,
             projectId: t.project_id,
             teamId: t.team_id,
-            tenantId: t.tenant_id,
+            companyId: t.company_id,
             dueDate: t.due_date,
         })) as Task[];
     },
@@ -101,7 +112,7 @@ export const api = {
     },
 
     addTask: async (task: Partial<Task>, recurrence?: RecurrenceConfig) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const createdTasks: any[] = [];
         const baseRecurrenceId = recurrence ? crypto.randomUUID() : null;
 
@@ -120,7 +131,7 @@ export const api = {
                 due_date: date, // Expecting valid ISO string (UTC) from frontend
                 tags: t.tags || [],
                 links: t.links || [],
-                tenant_id: tenantId,
+                company_id: companyId,
                 recurrence_id: recId,
                 // logs: REMOVED
             };
@@ -162,7 +173,7 @@ export const api = {
             assigneeId: firstData.assignee_id,
             projectId: firstData.project_id,
             teamId: firstData.team_id,
-            tenantId: firstData.tenant_id,
+            companyId: firstData.company_id,
             dueDate: firstData.due_date,
             links: firstData.links,
             // Logs are not returned inline anymore, specifically requested to fetch separate or just rely on IDs
@@ -216,26 +227,26 @@ export const api = {
     },
 
     // --- PROJECTS ---
-    getProjects: async (tenantId?: string) => {
+    getProjects: async (companyId?: string) => {
         let query = supabase.from('projects').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((p: any) => ({
             ...p,
             dueDate: p.due_date,
-            tenantId: p.tenant_id,
+            companyId: p.company_id,
             teamIds: p.team_ids,
             members: p.member_ids,
         })) as Project[];
     },
     addProject: async (project: Partial<Project>) => {
-        const tenantId = getCurrentTenantId();
-        console.log("[API] addProject called. TenantID:", tenantId);
+        const companyId = getCurrentCompanyId();
+        console.log("[API] addProject called. CompanyID:", companyId);
 
-        if (!tenantId) {
-            console.error("[API] Missing Tenant ID");
-            throw new Error("Tenant ID is required but missing from local storage.");
+        if (!companyId) {
+            console.error("[API] Missing Company ID");
+            throw new Error("Company ID is required but missing from local storage.");
         }
 
         const { data: userData } = await supabase.auth.getUser();
@@ -252,7 +263,7 @@ export const api = {
             status: project.status,
             progress: project.progress,
             due_date: project.dueDate,
-            tenant_id: tenantId,
+            company_id: companyId,
             team_ids: project.teamIds,
             member_ids: members,
             links: project.links
@@ -295,9 +306,9 @@ export const api = {
     },
 
     // --- USERS ---
-    getUsers: async (tenantId?: string) => {
+    getUsers: async (companyId?: string) => {
         let query = supabase.from('profiles').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
 
         const { data: profiles, error: errProfiles } = await query;
         if (errProfiles) {
@@ -313,7 +324,7 @@ export const api = {
         if (userIds.length === 0) return [];
 
         let permsQuery = supabase.from('user_permissions').select('*').in('user_id', userIds);
-        if (tenantId) permsQuery = permsQuery.eq('tenant_id', tenantId);
+        if (companyId) permsQuery = permsQuery.eq('company_id', companyId);
 
         const { data: allPerms, error: errPerms } = await permsQuery;
         if (errPerms) console.warn("Could not fetch permissions:", errPerms);
@@ -322,7 +333,7 @@ export const api = {
             const userPerms = allPerms?.filter(p => p.user_id === u.id) || [];
             return {
                 ...u,
-                tenantId: u.tenant_id,
+                companyId: u.company_id,
                 avatarUrl: u.avatar_url,
                 granular_permissions: userPerms
             };
@@ -330,16 +341,16 @@ export const api = {
     },
 
     // --- TEAMS ---
-    getTeams: async (tenantId?: string) => {
+    getTeams: async (companyId?: string) => {
         let query = supabase.from('teams').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
 
         return data.map((t: any) => ({
             ...t,
             leaderId: t.lead_id,
-            tenantId: t.tenant_id,
+            companyId: t.company_id,
             memberIds: t.member_ids,
             logs: t.logs
         })) as Team[];
@@ -353,7 +364,7 @@ export const api = {
             member_ids: team.memberIds,
             links: team.links || [],
             logs: team.logs || [],
-            tenant_id: team.tenantId
+            company_id: team.companyId
         });
         if (error) throw error;
     },
@@ -378,13 +389,13 @@ export const api = {
 
     getGlobalUsers: async () => {
         // Only super admin triggers this
-        const { data, error } = await supabase.from('profiles').select('*, tenants(name)');
+        const { data, error } = await supabase.from('profiles').select('*, companies(name)');
         if (error) throw error;
         return data.map((u: any) => ({
             ...u,
-            tenantId: u.tenant_id,
+            companyId: u.company_id,
             avatarUrl: u.avatar_url,
-            companyName: u.tenants?.name
+            companyName: u.companies?.name
         })) as User[];
     },
     getUserProfile: async (id: string) => {
@@ -392,18 +403,18 @@ export const api = {
         if (error) return null;
         return {
             ...data,
-            tenantId: data.tenant_id,
+            companyId: data.company_id,
             avatarUrl: data.avatar_url
         } as User;
     },
-    createUser: async (userData: any, tenantId?: string) => {
+    createUser: async (userData: any, companyId?: string) => {
         // Force get latest session to ensure token is fresh
         const { data: { session } } = await supabase.auth.getSession();
 
         // Check limits first (Frontend Check)
-        if (tenantId) {
+        if (companyId) {
             const { checkUserLimit } = await import('./limits');
-            const limitStatus = await checkUserLimit(tenantId);
+            const limitStatus = await checkUserLimit(companyId);
             if (!limitStatus.allowed) {
                 throw new Error(`Limite de usuários atingido (${limitStatus.used}/${limitStatus.max}). Atualize seu plano.`);
             }
@@ -418,7 +429,7 @@ export const api = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session?.access_token}`
             },
-            body: JSON.stringify({ ...userData, tenantId })
+            body: JSON.stringify({ ...userData, companyId })
         });
 
         const data = await response.json();
@@ -468,15 +479,15 @@ export const api = {
         // Since 'granular_permissions' is a new relation, we can't update it via 'profiles' update.
         // We must use strict table upsert.
         if (data.granular_permissions !== undefined) {
-            const tenantId = getCurrentTenantId(); // Helper context
+            const companyId = getCurrentCompanyId(); // Helper context
             // Delete old? No, upsert is better. But we need to handle removed ones?
             // Simplest: Delete all for user and insert new.
-            if (tenantId) {
-                // 1. Delete all for this user/tenant
+            if (companyId) {
+                // 1. Delete all for this user/company
                 await supabase.from('user_permissions')
                     .delete()
                     .eq('user_id', id)
-                    .eq('tenant_id', tenantId);
+                    .eq('company_id', companyId);
 
                 // 2. Insert new
                 if (data.granular_permissions.length > 0) {
@@ -489,7 +500,7 @@ export const api = {
                             ...rest,
                             id: self.crypto.randomUUID(),  // Generate new Permission UUID
                             user_id: id,                   // Use the outer function argument 'id' (Target User UUID)
-                            tenant_id: tenantId
+                            company_id: companyId
                         };
                     });
 
@@ -551,7 +562,7 @@ export const api = {
 
 
     // --- SHARED ACCESS ---
-    getSharedAccess: async (tenantId?: string) => {
+    getSharedAccess: async (companyId?: string) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return [];
 
@@ -569,7 +580,7 @@ export const api = {
 
         return data.map((item: any) => ({
             id: item.id,
-            tenant_id: item.tenant_id,
+            company_id: item.company_id,
             owner_id: item.owner_id,
             target_id: item.target_id,
             feature_id: item.feature_id,
@@ -621,9 +632,9 @@ export const api = {
         const finalPermissions = permissions || { view: true, create: false, edit: false, delete: false };
 
         // 3. Insert
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const { error } = await supabase.from('shared_access').insert({
-            tenant_id: tenantId,
+            company_id: companyId,
             owner_id: currentUserId, // RLS will likely enforce this matches auth.uid()
             target_id: targetId,
             feature_id: featureId,
@@ -640,7 +651,7 @@ export const api = {
     },
 
     // --- AUDIT LOGS ---
-    getAuditLogs: async (tenantId?: string) => {
+    getAuditLogs: async (companyId?: string) => {
         let query = supabase
             .from('audit_logs')
             .select(`
@@ -650,7 +661,7 @@ export const api = {
             .order('created_at', { ascending: false })
             .limit(500); // Increased limit for better client-side search
 
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -663,7 +674,7 @@ export const api = {
             oldData: log.old_data,
             newData: log.new_data,
             userId: log.user_id,
-            tenantId: log.tenant_id,
+            companyId: log.company_id,
             description: log.description,
             ipAddress: log.ip_address,
             userAgent: log.user_agent,
@@ -700,9 +711,9 @@ export const api = {
         if (error) console.error("Failed to log auth event", error);
     },
 
-    getEvents: async (tenantId?: string) => {
+    getEvents: async (companyId?: string) => {
         let query = supabase.from('calendar_events').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((e: any) => ({
@@ -710,13 +721,13 @@ export const api = {
             startDate: e.start_date,
             endDate: e.end_date,
             isTeamEvent: e.is_team_event,
-            tenantId: e.tenant_id,
+            companyId: e.company_id,
             projectId: e.project_id,
             teamId: e.team_id
         })) as CalendarEvent[];
     },
     addEvent: async (evt: Partial<CalendarEvent>, recurrence?: RecurrenceConfig) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const createdEvents: any[] = [];
         const baseRecurrenceId = recurrence ? crypto.randomUUID() : null;
 
@@ -730,7 +741,7 @@ export const api = {
             is_team_event: e.isTeamEvent,
             participants: e.participants,
             links: e.links,
-            tenant_id: tenantId,
+            company_id: companyId,
             project_id: uuidOrNull(e.projectId),
             team_id: uuidOrNull(e.teamId),
             recurrence_id: recId
@@ -790,9 +801,9 @@ export const api = {
     },
 
     // --- FINANCE ---
-    getFinancialTransactions: async (tenantId?: string) => {
+    getFinancialTransactions: async (companyId?: string) => {
         let query = supabase.from('financial_transactions').select('*, category:financial_categories(*), contact:contacts(*)');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((t: any) => ({
@@ -808,13 +819,13 @@ export const api = {
             totalInstallments: t.total_installments,
             originType: t.origin_type,
             originId: t.origin_id,
-            tenantId: t.tenant_id,
+            companyId: t.company_id,
             category: t.category,
             contact: t.contact ? { ...t.contact, fantasyName: t.contact.fantasy_name } : undefined
         })) as FinancialTransaction[];
     },
     addTransaction: async (t: Partial<FinancialTransaction>, recurrence?: any) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const transactionsToInsert: any[] = [];
         const baseRecurrenceId = recurrence?.isRecurring ? crypto.randomUUID() : null;
 
@@ -836,7 +847,7 @@ export const api = {
             installment_index: index,
             total_installments: total,
             links: trans.links,
-            tenant_id: tenantId
+            company_id: companyId
         });
 
         if (recurrence && recurrence.isRecurring) {
@@ -967,20 +978,20 @@ export const api = {
         if (error) throw error;
     },
 
-    getFinancialAccounts: async (tenantId?: string) => {
+    getFinancialAccounts: async (companyId?: string) => {
         let query = supabase.from('financial_accounts').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
-        return data.map((a: any) => ({ ...a, initialBalance: a.initial_balance, tenantId: a.tenant_id })) as FinancialAccount[];
+        return data.map((a: any) => ({ ...a, initialBalance: a.initial_balance, companyId: a.company_id })) as FinancialAccount[];
     },
     addFinancialAccount: async (data: Partial<FinancialAccount>) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const { error } = await supabase.from('financial_accounts').insert([{
             name: data.name,
             type: data.type,
             initial_balance: data.initialBalance,
-            tenant_id: tenantId
+            company_id: companyId
         }]);
         if (error) throw error;
     },
@@ -997,19 +1008,19 @@ export const api = {
         if (error) throw error;
     },
 
-    getFinancialCategories: async (tenantId?: string) => {
+    getFinancialCategories: async (companyId?: string) => {
         let query = supabase.from('financial_categories').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
-        return data.map((c: any) => ({ ...c, tenantId: c.tenant_id })) as FinancialCategory[];
+        return data.map((c: any) => ({ ...c, companyId: c.company_id })) as FinancialCategory[];
     },
     addFinancialCategory: async (data: Partial<FinancialCategory>) => {
-        const tenantId = getCurrentTenantId();
-        const { data: retData, error } = await supabase.from('financial_categories').insert([{ ...data, tenant_id: tenantId }]).select();
+        const companyId = getCurrentCompanyId();
+        const { data: retData, error } = await supabase.from('financial_categories').insert([{ ...data, company_id: companyId }]).select();
         if (error) throw error;
         const ret = retData[0];
-        return { ...ret, tenantId: ret.tenant_id } as FinancialCategory;
+        return { ...ret, companyId: ret.company_id } as FinancialCategory;
     },
     updateFinancialCategory: async (data: FinancialCategory) => {
         const { error } = await supabase.from('financial_categories').update(data).eq('id', data.id);
@@ -1020,9 +1031,9 @@ export const api = {
         if (error) throw error;
     },
 
-    getCreditCards: async (tenantId?: string) => {
+    getCreditCards: async (companyId?: string) => {
         let query = supabase.from('credit_cards').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({
@@ -1030,17 +1041,17 @@ export const api = {
             limitAmount: c.limit_amount,
             closingDay: c.closing_day,
             dueDay: c.due_day,
-            tenantId: c.tenant_id
+            companyId: c.company_id
         })) as CreditCard[];
     },
     addCreditCard: async (data: Partial<CreditCard>) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const { error } = await supabase.from('credit_cards').insert([{
             name: data.name,
             limit_amount: data.limitAmount,
             closing_day: data.closingDay,
             due_day: data.dueDay,
-            tenant_id: tenantId
+            company_id: companyId
         }]);
         if (error) throw error;
     },
@@ -1059,20 +1070,20 @@ export const api = {
     },
 
     // --- COMMERCIAL ---
-    getContacts: async (tenantId?: string) => {
+    getContacts: async (companyId?: string) => {
         let query = supabase.from('contacts').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({
             ...c,
             fantasyName: c.fantasy_name,
             adminName: c.admin_name,
-            tenantId: c.tenant_id
+            companyId: c.company_id
         })) as Contact[];
     },
     addContact: async (c: Partial<Contact>) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const dbContact = {
             name: c.name,
             type: c.type,
@@ -1084,7 +1095,7 @@ export const api = {
             fantasy_name: c.fantasyName,
             admin_name: c.adminName,
             notes: c.notes,
-            tenant_id: tenantId
+            company_id: companyId
         };
         const { data, error } = await supabase.from('contacts').insert([dbContact]).select();
         if (error) throw error;
@@ -1093,7 +1104,7 @@ export const api = {
             ...ret,
             fantasyName: ret.fantasy_name,
             adminName: ret.admin_name,
-            tenantId: ret.tenant_id
+            companyId: ret.company_id
         } as Contact;
     },
     updateContact: async (c: Contact) => {
@@ -1117,19 +1128,19 @@ export const api = {
         if (error) throw error;
     },
 
-    getCatalogItems: async (tenantId?: string) => {
+    getCatalogItems: async (companyId?: string) => {
         let query = supabase.from('catalog_items').select('*');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((i: any) => ({
             ...i,
             financialCategoryId: i.financial_category_id,
-            tenantId: i.tenant_id
+            companyId: i.company_id
         })) as CatalogItem[];
     },
     addCatalogItem: async (i: Partial<CatalogItem>) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const { error } = await supabase.from('catalog_items').insert([{
             name: i.name,
             type: i.type,
@@ -1137,33 +1148,33 @@ export const api = {
             description: i.description,
             active: i.active,
             financial_category_id: uuidOrNull(i.financialCategoryId),
-            tenant_id: tenantId
+            company_id: companyId
         }]);
         if (error) throw error;
     },
 
-    switchActiveTenant: async (tenantId: string) => {
+    switchActiveCompany: async (companyId: string) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("No user logged in");
 
-        const { error } = await supabase.from('profiles').update({ tenant_id: tenantId }).eq('id', user.id);
+        const { error } = await supabase.from('profiles').update({ company_id: companyId }).eq('id', user.id);
         if (error) throw error;
     },
 
-    // Update Tenant Settings (Finance)
-    updateTenantSettings: async (settings: any) => {
-        const tenantId = getCurrentTenantId();
+    // Update Company Settings (Finance)
+    updateCompanySettings: async (settings: any) => {
+        const companyId = getCurrentCompanyId();
         // Prevent saving calendar settings inside general settings JSONB to avoid duplication
         const settingsToSave = { ...settings };
         delete settingsToSave.calendar;
 
-        const { error } = await supabase.from('tenants').update({ settings: settingsToSave }).eq('id', tenantId);
+        const { error } = await supabase.from('companies').update({ settings: settingsToSave }).eq('id', companyId);
         if (error) throw error;
     },
 
-    getTenantSettings: async () => {
-        const tenantId = getCurrentTenantId();
-        const { data, error } = await supabase.from('tenants').select('settings, calendar_settings').eq('id', tenantId).single();
+    getCompanySettings: async () => {
+        const companyId = getCurrentCompanyId();
+        const { data, error } = await supabase.from('companies').select('settings, calendar_settings').eq('id', companyId).single();
         if (error) throw error;
 
         // Merge general settings with dedicated calendar_settings column
@@ -1189,9 +1200,9 @@ export const api = {
         if (error) throw error;
     },
 
-    getQuotes: async (tenantId?: string) => {
+    getQuotes: async (companyId?: string) => {
         let query = supabase.from('quotes').select('*, contacts(*), quote_items(*)');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((q: any) => ({
@@ -1202,7 +1213,7 @@ export const api = {
             customerPhone: q.customer_phone,
             validUntil: q.valid_until,
             totalValue: q.total_value,
-            tenantId: q.tenant_id,
+            companyId: q.company_id,
             kanbanId: q.kanban_id,
             kanbanStageId: q.kanban_stage_id,
             // Deep map relations if necessary
@@ -1215,7 +1226,7 @@ export const api = {
         })) as Quote[];
     },
     addQuote: async (q: Partial<Quote>, items: any[]) => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         // 1. Insert Quote
         const { data: quote, error: qError } = await supabase.from('quotes').insert([{
             contact_id: uuidOrNull(q.contactId),
@@ -1226,7 +1237,7 @@ export const api = {
             valid_until: sanitizeDate(q.validUntil),
             total_value: q.totalValue,
             notes: q.notes,
-            tenant_id: tenantId,
+            company_id: companyId,
             kanban_id: uuidOrNull(q.kanbanId),
             kanban_stage_id: uuidOrNull(q.kanbanStageId)
         }]).select().single();
@@ -1281,9 +1292,9 @@ export const api = {
         if (error) throw error;
     },
 
-    getRecurringServices: async (tenantId?: string) => {
+    getRecurringServices: async (companyId?: string) => {
         let query = supabase.from('recurring_services').select('*, contacts(*)');
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((r: any) => ({
@@ -1293,7 +1304,7 @@ export const api = {
             recurringAmount: r.recurring_amount,
             startDate: r.start_date,
             contractMonths: r.contract_months,
-            tenantId: r.tenant_id,
+            companyId: r.company_id,
             financialCategoryId: r.financial_category_id,
             setupCategoryId: r.setup_category_id,
             setupEntryAmount: r.setup_entry_amount,
@@ -1306,7 +1317,7 @@ export const api = {
     },
     addRecurringService: async (data: Partial<RecurringService>) => {
         console.log("Adding Recurring Service:", data);
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
 
         // 1. Prepare DB Insert Data
         // Map UI 'spot' date to DB 'setup_entry_date' if applicable explanation: "Entry" logic reused for "Spot"
@@ -1320,7 +1331,7 @@ export const api = {
             frequency: data.frequency || 'monthly',
             contract_months: data.contractMonths ? parseInt(data.contractMonths.toString()) : 12,
             active: true,
-            tenant_id: tenantId,
+            company_id: companyId,
             financial_category_id: uuidOrNull(data.financialCategoryId),
             setup_category_id: uuidOrNull(data.setupCategoryId),
             setup_entry_amount: data.setupEntryAmount ? parseFloat(data.setupEntryAmount.toString()) : 0,
@@ -1455,19 +1466,19 @@ export const api = {
         console.log("Future: Implement server-side generation of invoices");
     },
     ensureSetupCategory: async () => {
-        const tenantId = getCurrentTenantId();
+        const companyId = getCurrentCompanyId();
         const { data: existing } = await supabase
             .from('financial_categories')
             .select('id')
             .eq('name', 'Setup')
-            .eq('tenant_id', tenantId)
+            .eq('company_id', companyId)
             .single();
 
         if (existing) return existing.id;
 
         const { data: created, error } = await supabase
             .from('financial_categories')
-            .insert([{ name: 'Setup', type: 'income', color: '#4f46e5', tenant_id: tenantId }])
+            .insert([{ name: 'Setup', type: 'income', color: '#4f46e5', company_id: companyId }])
             .select()
             .single();
 
@@ -1548,41 +1559,106 @@ export const api = {
     // --- SHARED ACCESS ---
     // (See lines 490+ for implementation)
 
-    // --- TENANTS & SUPER ADMIN ---
-    getTenantById: async (id: string) => {
-        const { data, error } = await supabase.from('tenants').select('*').eq('id', id).single();
+    // --- COMPANIES & SUPER ADMIN ---
+    getCompanyById: async (id: string) => {
+        // Query companies + subscriptions + company_modules
+        const { data, error } = await supabase
+            .from('companies')
+            .select(`
+                *,
+                subscriptions(
+                    status,
+                    trial_ends_at,
+                    current_period_end,
+                    plan_id,
+                    cycle,
+                    created_at
+                ),
+                company_modules(module_id, status)
+            `)
+            .eq('id', id)
+            .single();
+
         if (error) return null;
+
+        // Sort subscriptions to get the latest one
+        const subs = data.subscriptions || [];
+        subs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const sub = subs[0] || {};
+
+        // Get active modules from company_modules
+        const contractedModules = data.company_modules
+            ?.filter((tm: any) => tm.status === 'active')
+            .map((tm: any) => tm.module_id) || [];
+
         return {
-            ...data,
-            ownerEmail: data.owner_email,
-            adminName: data.admin_name,
-            contractedModules: data.contracted_modules,
+            id: data.id,
+            name: data.name,
+            ownerEmail: data.email || data.owner_email,
+            cnpj: data.cnpj,
+            phone: data.phone,
+            adminName: data.name,
+            status: data.status || 'active',
             createdAt: data.created_at,
-            financialStatus: data.financial_status,
-            lastActiveAt: data.last_active_at,
+            type: sub.status === 'trialing' ? 'trial' : 'client',
+            subscriptionEnd: sub.status === 'trialing' ? sub.trial_ends_at : sub.current_period_end,
+            planId: sub.plan_id,
+            billingCycle: sub.cycle,
+            contractedModules: contractedModules,
             settings: {
-                ...data.settings,
-                calendar: data.calendar_settings
+                calendar: {
+                    commitments: true,
+                    tasks: true,
+                    financial: { enabled: true, budgets: true, receivable: true, payable: true, credit_card: true }
+                }
             }
-        } as Tenant;
+        } as Company;
     },
-    adminListTenants: async () => {
-        const { data, error } = await supabase.from('tenants').select('*, saas_plans(name)');
+
+    adminListCompanies: async () => {
+        // Query companies with their latest subscription and plan
+        const { data, error } = await supabase
+            .from('companies')
+            .select(`
+                *,
+                subscriptions(
+                    plan_id,
+                    status,
+                    current_period_end,
+                    saas_plans(name)
+                ),
+                company_modules(module_id)
+            `);
+
         if (error) throw error;
-        return data.map((t: any) => ({
-            ...t,
-            planName: t.saas_plans?.name,
-            ownerEmail: t.owner_email,
-            adminName: t.admin_name,
-            contractedModules: t.contracted_modules,
-            createdAt: t.created_at,
-            financialStatus: t.financial_status,
-            lastActiveAt: t.last_active_at,
-            settings: {
-                ...t.settings,
-                calendar: t.calendar_settings
-            }
-        })) as Tenant[];
+
+        return data.map((t: any) => {
+            // Get latest sub (if multiple, distinct by created_at?) 
+            // Usually 1 active sub per company.
+            const sub = t.subscriptions?.[0];
+            const planName = sub?.saas_plans?.name;
+            const modules = t.company_modules?.map((tm: any) => tm.module_id) || [];
+
+            return {
+                id: t.id,
+                name: t.name, // Map name -> name
+                ownerEmail: t.owner_email || t.email, // Fallback to email
+                adminName: t.name, // Use name as adminName fallback
+                cnpj: t.cnpj,
+                phone: t.phone,
+                planName: planName,
+                status: t.status,
+                type: t.type,
+                financialStatus: t.financial_status,
+                contractedModules: modules,
+                createdAt: t.created_at,
+                lastActiveAt: t.updated_at, // Approximate
+                settings: {
+                    ...t.settings,
+                    calendar: t.calendar_settings
+                }
+            };
+        }) as Company[];
     },
     // --- SYSTEM CATALOG ---
     getSystemCatalog: async () => {
@@ -1648,8 +1724,8 @@ export const api = {
         })) as SaasPlan[] || [];
     },
 
-    getTenantModules: async (tenantId: string) => {
-        const { data, error } = await supabase.from('tenant_modules').select('*').eq('tenant_id', tenantId);
+    getCompanyModules: async (companyId: string) => {
+        const { data, error } = await supabase.from('company_modules').select('*').eq('company_id', companyId);
         if (error) throw error;
         // Transform to status map
         const statusMap: Record<string, 'included' | 'extra' | 'disabled'> = {};
@@ -1666,7 +1742,7 @@ export const api = {
         return statusMap;
     },
 
-    createTenant: async (data: any) => {
+    createCompany: async (data: any) => {
         console.log('[API] Calling create-tenant-admin Edge Function with:', data);
 
         const { data: response, error } = await supabase.functions.invoke('create-tenant-admin', {
@@ -1685,54 +1761,97 @@ export const api = {
             }
         });
 
-        if (error || response?.error) {
-            const errorMsg = error?.message || response?.error || 'Unknown error';
-            console.error('[API] Edge Function failed:', errorMsg);
+        // Helper to extract JSON body from error if available
+        if (error) {
+            let errorMsg = error.message || 'Unknown error';
+            // Try to parse detailed error message from response body if it exists
+            // @ts-ignore - Supabase error might contain context/response
+            if (error.context && typeof error.context.json === 'function') {
+                try {
+                    // @ts-ignore
+                    const body = await error.context.json();
+                    if (body && body.message) {
+                        errorMsg = body.message; // "Campos obrigatórios faltando..."
+                    }
+                } catch (e) {
+                    console.warn('[API] Could not parse error body:', e);
+                }
+            }
+            console.error('[API] Edge Function failed (Detailed):', errorMsg);
             throw new Error(errorMsg);
         }
 
-        // Post-creation update for new real fields
-        if (data.type || data.financialStatus) {
-            await supabase.from('tenants').update({
-                type: data.type || 'client',
-                financial_status: data.financialStatus || 'ok'
-            }).eq('id', response.tenantId);
+        if (!response || !response.success) {
+            const errorMsg = response?.message || 'Unknown server error';
+            console.error('[API] Edge Function reported failure:', errorMsg);
+            throw new Error(errorMsg);
         }
 
-        return response.tenantId;
+        const companyId = response.data.tenantId; // Edge fn might still return tenantId
+
+        // Post-creation update for new real fields
+        if (data.type || data.financialStatus) {
+            await supabase.from('companies').update({
+                type: data.type || 'client',
+                financial_status: data.financialStatus || 'ok'
+            }).eq('id', companyId);
+        }
+
+        return companyId;
     },
-    updateTenant: async (id: string, data: any) => {
-        const dbData: any = {
+    updateCompany: async (id: string, data: any) => {
+        // 1. Update Company Details
+        const companyData: any = {
             name: data.name,
             owner_email: data.ownerEmail,
             admin_name: data.adminName,
             cnpj: data.cnpj,
             phone: data.phone,
-            contracted_modules: data.modules,
-            plan_id: data.planId,
             status: data.status,
             type: data.type,
             financial_status: data.financialStatus,
-            calendar_settings: data.settings?.calendar,
-            billing_cycle: data.billingCycle,
-            subscription_start: data.subscriptionStart,
-            subscription_end: data.subscriptionEnd
+            calendar_settings: data.settings?.calendar
         };
-        // Remove undefined keys
-        Object.keys(dbData).forEach(key => dbData[key] === undefined && delete dbData[key]);
+        // Remove undefined
+        Object.keys(companyData).forEach(key => companyData[key] === undefined && delete companyData[key]);
 
-        const { error } = await supabase.from('tenants').update(dbData).eq('id', id);
-        if (error) throw error;
+        if (Object.keys(companyData).length > 0) {
+            const { error: coError } = await supabase.from('companies').update(companyData).eq('id', id);
+            if (coError) throw coError;
+        }
+
+        // 2. Update Subscription Details (Plan, Cycle, Dates)
+        // Check if any sub fields are present
+        if (data.planId || data.billingCycle || data.subscriptionStart || data.subscriptionEnd) {
+            const subData: any = {
+                plan_id: data.planId,
+                cycle: data.billingCycle === 'yearly' ? 'annual' : data.billingCycle, // Map cycle if needed
+                current_period_start: data.subscriptionStart,
+                current_period_end: data.subscriptionEnd,
+                access_until: data.subscriptionEnd
+            };
+            Object.keys(subData).forEach(key => subData[key] === undefined && delete subData[key]);
+
+            // Update active subscription for this company
+            // Constraint: We update ALL active subs? Or the latest? 
+            // Best effort: Update where company_id = id
+            const { error: subError } = await supabase
+                .from('subscriptions')
+                .update(subData)
+                .eq('company_id', id);
+
+            if (subError) throw subError;
+        }
 
         if (data.modules && Array.isArray(data.modules)) {
             // 1. Deduplicate input modules (Fix for duplicate key error)
             const uniqueModules = Array.from(new Set(data.modules as string[]));
 
-            // 2. Delete existing for this tenant
-            await supabase.from('tenant_modules').delete().eq('tenant_id', id);
+            // 2. Delete existing for this company
+            await supabase.from('company_modules').delete().eq('company_id', id);
 
             if (uniqueModules.length > 0) {
-                const tenantModules = uniqueModules.map((m: string) => {
+                const companyModules = uniqueModules.map((m: string) => {
                     const parts = m.split(':');
                     const modIdRaw = parts[0];
                     const type = parts[1] === 'extra' ? 'extra' : 'included';
@@ -1745,7 +1864,7 @@ export const api = {
                     if (modIdRaw === 'mod_reports') dbModuleId = 'reports';
 
                     return {
-                        tenant_id: id,
+                        company_id: id,
                         module_id: dbModuleId,
                         status: 'active',
                         config: { type }
@@ -1756,7 +1875,7 @@ export const api = {
                 // We prioritize 'included' over 'extra' if both exist? Or just take the first one?
                 // Let's use a Map to ensure unique module_id
                 const uniqueInserts = new Map();
-                tenantModules.forEach((tm: any) => {
+                companyModules.forEach((tm: any) => {
                     if (!uniqueInserts.has(tm.module_id)) {
                         uniqueInserts.set(tm.module_id, tm);
                     } else {
@@ -1767,15 +1886,19 @@ export const api = {
 
                 const finalInserts = Array.from(uniqueInserts.values());
 
-                const { error: modError } = await supabase.from('tenant_modules').insert(finalInserts);
+                const { error: modError } = await supabase.from('company_modules').insert(finalInserts);
                 if (modError) throw modError;
             }
         }
     },
+    deleteCompany: async (id: string) => {
+        const { error } = await supabase.from('companies').delete().eq('id', id);
+        if (error) throw error;
+    },
     updateCalendarSettings: async (settings: any) => {
-        const tenantId = getCurrentTenantId();
-        if (!tenantId) throw new Error("No tenant ID");
-        const { error } = await supabase.from('tenants').update({ calendar_settings: settings }).eq('id', tenantId);
+        const companyId = getCurrentCompanyId();
+        if (!companyId) throw new Error("No company ID");
+        const { error } = await supabase.from('companies').update({ calendar_settings: settings }).eq('id', companyId);
         if (error) throw error;
     },
 
@@ -1823,26 +1946,97 @@ export const api = {
         if (error) throw error;
     },
     getGlobalStats: async (): Promise<GlobalStats> => {
-        const { count: tenantCount } = await supabase.from('tenants').select('*', { count: 'exact', head: true });
-        const { count: activeTenants } = await supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active');
+        const { count: companyCount } = await supabase.from('companies').select('*', { count: 'exact', head: true });
+        const { count: activeCompanies } = await supabase.from('companies').select('*', { count: 'exact', head: true }).eq('status', 'active');
         const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
         const { count: planCount } = await supabase.from('saas_plans').select('*', { count: 'exact', head: true }).eq('active', true);
 
         return {
-            totalTenants: tenantCount || 0,
-            activeTenants: activeTenants || 0,
+            totalCompanies: companyCount || 0,
+            activeCompanies: activeCompanies || 0,
             totalUsers: userCount || 0,
             activePlans: planCount || 0
         };
     },
 
     // --- DASHBOARD METRICS ---
-    getDashboardMetrics: async (tenantId?: string): Promise<DashboardMetrics> => {
-        const { data, error } = await supabase.rpc('get_dashboard_stats', { p_tenant_id: tenantId });
+    getDashboardMetrics: async (companyId?: string): Promise<DashboardMetrics> => {
+        const { data, error } = await supabase.rpc('get_dashboard_stats', { p_company_id: companyId });
         if (error) {
             console.error('Error fetching dashboard stats via RPC:', error);
             throw error;
         }
         return data as DashboardMetrics;
+    },
+
+    // --- ASAAS BILLING (Edge Functions) ---
+    subscribe: async (data: {
+        company: { name: string, cnpj: string, phone: string, email: string },
+        address: { postal_code: string, address: string, address_number: string, complement?: string, province: string, city: string, state: string },
+        plan_id: string,
+        cycle: string,
+        billing_type: 'credit_card' | 'pix',
+        credit_card?: { holderName: string, number: string, expiryMonth: string, expiryYear: string, ccv: string }
+    }) => {
+        const { data: result, error } = await supabase.functions.invoke('billing-checkout', {
+            body: data
+        });
+
+        if (error) throw new Error(error.message || "Erro na assinatura");
+        if (result.error) throw new Error(result.error);
+
+        return result;
+    },
+
+    cancelSubscription: async (subscriptionId: string) => {
+        const { data: result, error } = await supabase.functions.invoke('billing-cancel', {
+            body: { subscription_id: subscriptionId }
+        });
+
+        if (error) throw new Error(error.message || "Erro no cancelamento");
+        if (result.error) throw new Error(result.error);
+
+        return result;
+    },
+
+    upgradeSubscription: async (data: {
+        subscription_id: string,
+        to_plan_id: string,
+        to_cycle: string,
+        billing_type: 'credit_card' | 'pix',
+        credit_card?: any
+    }) => {
+        const { data: result, error } = await supabase.functions.invoke('billing-upgrade', {
+            body: data
+        });
+
+        if (error) throw new Error(error.message || "Erro no upgrade");
+        if (result.error) throw new Error(result.error);
+
+        return result;
+    },
+
+    scheduleDowngrade: async (data: {
+        subscription_id: string,
+        to_plan_id: string,
+        to_cycle: string
+    }) => {
+        const { data: result, error } = await supabase.functions.invoke('billing-schedule-downgrade', {
+            body: data
+        });
+
+        if (error) throw new Error(error.message || "Erro no agendamento");
+        if (result.error) throw new Error(result.error);
+
+        return result;
+    },
+
+    syncSubscriptionStatus: async () => {
+        const { data: result, error } = await supabase.functions.invoke('billing-sync-status', {});
+
+        if (error) throw new Error(error.message || "Erro na sincronização");
+        if (result.error) throw new Error(result.error);
+
+        return result;
     }
 };

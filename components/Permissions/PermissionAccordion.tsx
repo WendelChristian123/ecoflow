@@ -10,8 +10,8 @@ interface PermissionAccordionProps {
     permissions: Record<string, UserPermission>; // Key: feature_id
     // Callback when a toggle changes
     onChange: (featureId: string, action: keyof Actions, value: boolean) => void;
-    // Tenant modules status (to show if valid)
-    tenantModuleStatus?: Record<string, 'included' | 'extra' | 'disabled'>;
+    // Company modules status (to show if valid)
+    companyModuleStatus?: Record<string, 'included' | 'extra' | 'disabled'>;
 }
 
 export const PermissionAccordion: React.FC<PermissionAccordionProps> = ({
@@ -19,7 +19,7 @@ export const PermissionAccordion: React.FC<PermissionAccordionProps> = ({
     features,
     permissions,
     onChange,
-    tenantModuleStatus
+    companyModuleStatus
 }) => {
     const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
 
@@ -42,17 +42,17 @@ export const PermissionAccordion: React.FC<PermissionAccordionProps> = ({
             {modules.map(module => {
                 const isExpanded = expandedModules[module.id];
                 const moduleFeatures = getModuleFeatures(module.id);
-                // Check if module is disabled at tenant level (Layer 1 Check)
+                // Check if module is disabled at company level (Layer 1 Check)
                 // If status is undefined, assume included (or wait for data?). Strict: disable if unknown?
                 // For now, if no status map passed, show all (dev mode). If map passed, respect it.
                 // User Request: strict adherence.
-                const modConfig = tenantModuleStatus?.[module.id];
-                const isTenantDisabled = modConfig === 'disabled';
+                const modConfig = companyModuleStatus?.[module.id];
+                const isCompanyDisabled = modConfig === 'disabled';
 
                 // Don't render if system-disabled/missing from map (if map implies existence)
                 // But for now, just 'disabled' styling or omission?
                 // Request says: "status = 'disabled' (não exibir)".
-                if (isTenantDisabled) return null; // Hiding completely as per request
+                if (isCompanyDisabled) return null; // Hiding completely as per request
 
                 return (
                     <div key={module.id} className="border border-slate-700 bg-slate-900 rounded-xl overflow-hidden transition-all">

@@ -18,6 +18,9 @@ export interface AppModule {
   id: string; // e.g., 'finance'
   name: string;
   description?: string;
+  category?: string;
+  mandatory?: boolean;
+  features?: AppFeature[];
 }
 
 export interface AppFeature {
@@ -26,14 +29,14 @@ export interface AppFeature {
   name: string;
 }
 
-export interface TenantModule {
-  tenant_id: string;
+export interface CompanyModule {
+  company_id: string;
   module_id: string;
   status: 'included' | 'extra' | 'disabled';
 }
 
 export interface UserPermission {
-  tenant_id: string;
+  company_id: string;
   user_id: string;
   feature_id: string;
   actions: Actions;
@@ -41,7 +44,7 @@ export interface UserPermission {
 
 export interface SharedAccess {
   id: string;
-  tenant_id: string;
+  company_id: string;
   owner_id: string;
   target_id: string;
   feature_id: string;
@@ -58,7 +61,7 @@ export interface LegacyUserPermissions {
   reports: { view: boolean };
 }
 
-export interface Tenant {
+export interface Company {
   id: string;
   name: string;
   status: 'active' | 'inactive' | 'suspended';
@@ -76,14 +79,14 @@ export interface Tenant {
   type?: 'trial' | 'client' | 'internal';
   financialStatus?: 'ok' | 'overdue';
   lastActiveAt?: string;
-  settings?: TenantSettings;
-  addons?: TenantAddon[]; // Joined data
+  settings?: CompanySettings;
+  addons?: CompanyAddon[]; // Joined data
   billingCycle?: 'monthly' | 'semiannually' | 'yearly';
   subscriptionStart?: string;
   subscriptionEnd?: string;
 }
 
-export interface TenantSettings {
+export interface CompanySettings {
   credit_card_expense_mode?: 'competence' | 'cash';
   calendar?: CalendarSettings;
 }
@@ -99,6 +102,13 @@ export interface CalendarSettings {
     credit_card: boolean;
   };
 }
+
+
+// --- Legacy Type Aliases (Temporary for Migration) ---
+export type Tenant = Company;
+export type TenantModule = CompanyModule;
+export type TenantSettings = CompanySettings;
+export type TenantAddon = CompanyAddon;
 
 // --- Super Admin Types ---
 export interface SaasPlan {
@@ -147,7 +157,7 @@ export interface User {
   phone?: string;
   permissions?: LegacyUserPermissions; // @deprecated
   granular_permissions?: UserPermission[]; // New strict structure
-  tenantId?: string; // Multi-tenant link
+  companyId?: string; // Company link
   companyName?: string; // Optional for global views
   // New Real Fields
   status?: 'active' | 'suspended' | 'blocked';
@@ -217,7 +227,7 @@ export interface Project {
   teamIds: string[];
   members: string[]; // User IDs
   links: string[];
-  tenantId?: string;
+  companyId?: string;
   ownerId?: string; // Add ownerId as it was used in ProjectModal
   logs?: LogEntry[];
   kanbanId?: string;
@@ -231,7 +241,7 @@ export interface Team {
   memberIds: string[];
   leaderId?: string; // Add leaderId as it was used in TeamModal
   links: string[];
-  tenantId?: string;
+  companyId?: string;
   logs?: LogEntry[];
   kanbanId?: string;
   kanbanStageId?: string;
@@ -251,7 +261,7 @@ export interface CalendarEvent {
   participants: string[]; // JSONB of user IDs
   links?: { title: string; url: string }[];
   isTeamEvent?: boolean;
-  tenantId?: string;
+  companyId?: string;
   // Context Fields
   projectId?: string; // Links to a specific project
   teamId?: string;    // Links to a specific team
@@ -275,7 +285,7 @@ export interface FinancialAccount {
   name: string;
   type: AccountType;
   initialBalance: number;
-  tenantId?: string;
+  companyId?: string;
 }
 
 export interface FinancialTransaction {
@@ -299,7 +309,7 @@ export interface FinancialTransaction {
   recurrenceId?: string;
   installmentIndex?: number;
   totalInstallments?: number;
-  tenantId?: string;
+  companyId?: string;
 }
 
 export interface FinancialCategory {
@@ -307,7 +317,7 @@ export interface FinancialCategory {
   name: string;
   type: 'income' | 'expense';
   color: string;
-  tenantId?: string;
+  companyId?: string;
 }
 
 export interface CreditCard {
@@ -316,12 +326,12 @@ export interface CreditCard {
   limitAmount: number;
   closingDay: number;
   dueDay: number;
-  tenantId?: string;
+  companyId?: string;
 }
 
-export interface TenantAddon {
+export interface CompanyAddon {
   id: string;
-  tenantId: string;
+  companyId: string;
   addonType: 'user_slot' | 'storage_gb';
   quantity: number;
   active: boolean;
@@ -347,7 +357,7 @@ export interface Contact {
   document?: string;
   adminName?: string;
   notes?: string;
-  tenantId?: string;
+  companyId?: string;
 }
 
 export interface CatalogItem {
@@ -358,7 +368,7 @@ export interface CatalogItem {
   price: number;
   active: boolean;
   financialCategoryId?: string;
-  tenantId?: string;
+  companyId?: string;
 }
 
 export interface QuoteItem {
@@ -385,7 +395,7 @@ export interface Quote {
   notes?: string;
   contact?: Contact;
   items?: QuoteItem[];
-  tenantId?: string;
+  companyId?: string;
   kanbanId?: string;
   kanbanStageId?: string;
 }
@@ -401,7 +411,7 @@ export interface RecurringService {
   contractMonths?: number;
   active: boolean;
   contact?: Contact;
-  tenantId?: string;
+  companyId?: string;
   contactName?: string; // Optional for UI/Transaction generation
 
   // New Fields
@@ -444,8 +454,8 @@ export interface DashboardMetrics {
 }
 
 export interface GlobalStats {
-  totalTenants: number;
-  activeTenants: number;
+  totalCompanies: number;
+  activeCompanies: number;
   totalUsers: number;
   activePlans: number;
 }
@@ -475,7 +485,7 @@ export interface AuditLog {
   oldData?: any;
   newData?: any;
   userId?: string;
-  tenantId?: string;
+  companyId?: string;
   description?: string;
   ipAddress?: string;
   userAgent?: string;
@@ -500,7 +510,7 @@ export interface KanbanStage {
 
 export interface Kanban {
   id: string;
-  tenantId: string;
+  companyId: string;
   name: string;
   module: 'crm' | 'tasks' | 'projects' | 'teams';
   isDefault: boolean;

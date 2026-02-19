@@ -1,25 +1,25 @@
 
 import React from 'react';
-import { Quote, Tenant } from '../../types';
+import { Quote, Company } from '../../types';
 import { format } from 'date-fns';
 
 interface QuotePrintTemplateProps {
     quote: Quote;
-    tenant: Tenant; // Used for Company Info
+    company: Company; // Used for Company Info
     contact?: { name: string; document?: string; address?: string; email?: string; phone?: string }; // Enriched contact info
 }
 
-export const QuotePrintTemplate: React.FC<QuotePrintTemplateProps> = ({ quote, tenant, contact }) => {
+export const QuotePrintTemplate: React.FC<QuotePrintTemplateProps> = ({ quote, company, contact }) => {
     return (
         <div className="print:block bg-white text-slate-900 p-8 font-sans max-w-[210mm] mx-auto min-h-[297mm] relative shadow-2xl print:shadow-none" id="quote-print-template">
             {/* Header - Changed to Grid for Print Safety */}
             <div className="grid grid-cols-2 gap-8 border-b-2 border-slate-800 pb-6 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 uppercase tracking-tighter mb-2">{tenant.name}</h1>
+                    <h1 className="text-3xl font-bold text-slate-900 uppercase tracking-tighter mb-2">{company.name}</h1>
                     <div className="text-sm text-slate-600 space-y-0.5">
-                        {tenant.cnpj && <p>CNPJ: {tenant.cnpj}</p>}
-                        {tenant.phone && <p>Tel: {tenant.phone}</p>}
-                        {tenant.ownerEmail && <p>Email: {tenant.ownerEmail}</p>}
+                        {company.cnpj && <p>CNPJ: {company.cnpj}</p>}
+                        {company.phone && <p>Tel: {company.phone}</p>}
+                        {company.ownerEmail && <p>Email: {company.ownerEmail}</p>}
                     </div>
                 </div>
                 <div className="text-right">
@@ -95,7 +95,7 @@ export const QuotePrintTemplate: React.FC<QuotePrintTemplateProps> = ({ quote, t
             {/* Footer */}
             <footer className="absolute bottom-8 left-8 right-8 text-center border-t border-slate-200 pt-6">
                 <p className="text-xs text-slate-400">
-                    Documento gerado eletronicamente em {format(new Date(), 'dd/MM/yyyy HH:mm')} por {tenant.name}.
+                    Documento gerado eletronicamente em {format(new Date(), 'dd/MM/yyyy HH:mm')} por {company.name}.
                 </p>
             </footer>
         </div>

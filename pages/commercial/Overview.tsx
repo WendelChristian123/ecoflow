@@ -360,7 +360,7 @@ export const CommercialOverview: React.FC = () => {
                     </h3>
                     <div className="flex-1 w-full min-h-0 relative flex items-center gap-4">
                         {/* Chart Area */}
-                        <div className="h-full aspect-square relative shrink-0">
+                        <div className="h-full w-1/2 relative shrink-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <RechartsPieChart>
                                     <Pie

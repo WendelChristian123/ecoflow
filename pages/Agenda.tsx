@@ -10,6 +10,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSam
 import { ptBR } from 'date-fns/locale';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCompany } from '../context/CompanyContext';
 
 type ViewMode = 'month' | 'week' | 'day';
 type FilterType = 'all' | 'agenda' | 'task' | 'finance';
@@ -24,6 +25,7 @@ interface UnifiedEvent extends CalendarEvent {
 
 export const AgendaPage: React.FC = () => {
   const { user } = useAuth();
+  const { currentCompany } = useCompany();
   const [loading, setLoading] = useState(true);
 
   console.log('[Agenda] Component Rendering');
@@ -67,19 +69,22 @@ export const AgendaPage: React.FC = () => {
   }, [events, searchParams]);
 
   useEffect(() => {
-    loadData();
-  }, []); // Load data only once on mount
+    if (currentCompany) {
+      loadData();
+    }
+  }, [currentCompany]); // Load data when company changes
 
   const loadData = async () => {
+    if (!currentCompany) return;
     setLoading(true);
     try {
       // 1. Fetch Settings & Users (Always needed)
       // Also fetch Delegators strictly
       const [settings, u, p, t, taskDelegators, agendaDelegators] = await Promise.all([
-        api.getTenantSettings(),
-        api.getUsers(),
-        api.getProjects(),
-        api.getTeams(),
+        api.getCompanySettings(),
+        api.getUsers(currentCompany.id),
+        api.getProjects(currentCompany.id),
+        api.getTeams(currentCompany.id),
         api.getDelegators('tasks'),
         api.getDelegators('agenda')
       ]);
@@ -116,11 +121,11 @@ export const AgendaPage: React.FC = () => {
 
       // 2. Commitments (Level 1)
       if (calSettings.commitments !== false) {
-        promises.push(api.getEvents().then(data => {
+        promises.push(api.getEvents(currentCompany.id).then(data => {
           data.forEach(e => newEvents.push({
             ...e,
             origin: 'agenda',
-            color: e.isTeamEvent ? 'bg-indigo-500/20 text-indigo-300 border-l-4 border-indigo-500' : 'bg-emerald-500/20 text-emerald-300 border-l-4 border-emerald-500',
+            color: e.isTeamEvent ? 'bg-indigo-500/20 text-indigo-300 border-l-4 border-indigo-500' : 'bg-emerald-500/20 text-emerald-500/20 text-emerald-300 border-l-4 border-emerald-500',
             icon: <UsersIcon size={14} />
           }));
         }));
@@ -128,7 +133,7 @@ export const AgendaPage: React.FC = () => {
 
       // 3. Tasks (Level 2)
       if (calSettings.tasks !== false) {
-        promises.push(api.getTasks().then(data => {
+        promises.push(api.getTasks(currentCompany.id).then(data => {
           data.forEach(t => {
             if (!t.dueDate) return;
             newEvents.push({
@@ -157,7 +162,7 @@ export const AgendaPage: React.FC = () => {
 
         // Budgets/Quotes
         if (fin?.budgets !== false) {
-          promises.push(api.getQuotes().then(data => {
+          promises.push(api.getQuotes(currentCompany.id).then(data => {
             data.forEach(q => {
               if (!q.validUntil || q.status === 'approved' || q.status === 'rejected') return;
               newEvents.push({
@@ -184,8 +189,8 @@ export const AgendaPage: React.FC = () => {
         // We fetch everything if ANY finance module is active to ensure correct calculations (linked transactions etc)
         if (fin?.receivable !== false || fin?.payable !== false || fin?.credit_card !== false) {
           const [transactions, cards] = await Promise.all([
-            api.getFinancialTransactions(),
-            api.getCreditCards()
+            api.getFinancialTransactions(currentCompany.id),
+            api.getCreditCards(currentCompany.id)
           ]);
 
           // Process using Cash Mode logic to get Virtual Invoices and filtered views

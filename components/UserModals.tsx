@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, cn } from './Shared';
 import { FilterSelect } from './FilterSelect';
@@ -13,7 +12,7 @@ import { Shield, Check, X, AlertTriangle, UserCheck, Lock, CheckSquare, Square }
 import { PermissionAccordion } from './Permissions/PermissionAccordion';
 import { UserPermission, Actions, AppModule, AppFeature } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { useTenant } from '../context/TenantContext';
+import { useCompany } from '../context/CompanyContext';
 
 interface CreateUserModalProps {
     isOpen: boolean;
@@ -38,24 +37,24 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
     const [systemFeatures, setSystemFeatures] = useState<AppFeature[]>([]);
     const [tenantModuleStatus, setTenantModuleStatus] = useState<Record<string, any>>({});
 
-    // We need currentTenant to know the PLAN limits
-    const { currentTenant } = useTenant();
+    // We need currentCompany to know the PLAN limits
+    const { currentCompany } = useCompany();
 
     useEffect(() => {
         if (isOpen) {
             setFormData({ name: '', email: '', phone: '', password: '', role: 'user' as UserRole });
             setGranularPermissions({});
-            // Only load if tenant is ready, otherwise the effect will re-run when it is
-            if (currentTenant) loadCatalog();
+            // Only load if company is ready, otherwise the effect will re-run when it is
+            if (currentCompany) loadCatalog();
         }
-    }, [isOpen, currentTenant]);
+    }, [isOpen, currentCompany]);
 
     const loadCatalog = async () => {
-        if (!currentTenant?.contractedModules) return;
+        if (!currentCompany?.contractedModules) return;
 
         try {
             const { modules, features } = await api.getSystemCatalog();
-            const planModules = currentTenant.contractedModules;
+            const planModules = currentCompany.contractedModules;
 
             // 1. Filter Modules: Only allow modules present in the Plan
             const allowedModules = modules.filter(m => {
@@ -111,8 +110,8 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
             setSystemModules(allowedModules);
             setSystemFeatures(allowedFeatures);
 
-            if (currentUser?.tenantId) {
-                const tm = await api.getTenantModules(currentUser.tenantId);
+            if (currentUser?.companyId) {
+                const tm = await api.getCompanyModules(currentUser.companyId);
                 setTenantModuleStatus(tm);
             }
         } catch (error) {
@@ -123,7 +122,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
     const handlePermissionChange = (featureId: string, action: keyof Actions, value: boolean) => {
         setGranularPermissions(prev => {
             const current = prev[featureId] || {
-                tenant_id: currentUser?.tenantId || '',
+                company_id: currentUser?.companyId || '',
                 user_id: '',
                 feature_id: featureId,
                 actions: { view: false, create: false, edit: false, delete: false }
@@ -297,8 +296,8 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
             setSystemModules(modules);
             setSystemFeatures(features);
 
-            if (currentUser?.tenantId) {
-                const tm = await api.getTenantModules(currentUser.tenantId);
+            if (currentUser?.companyId) {
+                const tm = await api.getCompanyModules(currentUser.companyId);
                 setTenantModuleStatus(tm);
             }
         } catch (error) {
@@ -309,7 +308,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
     const handlePermissionChange = (featureId: string, action: keyof Actions, value: boolean) => {
         setGranularPermissions(prev => {
             const current = prev[featureId] || {
-                tenant_id: user?.tenantId || '',
+                company_id: user?.companyId || '',
                 user_id: user?.id || '',
                 feature_id: featureId,
                 actions: { view: false, create: false, edit: false, delete: false }

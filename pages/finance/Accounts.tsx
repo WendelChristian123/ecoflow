@@ -5,8 +5,10 @@ import { FinancialAccount, FinancialTransaction } from '../../types';
 import { Loader, Card, Badge, cn, Button } from '../../components/Shared';
 import { DrilldownModal, AccountModal, ConfirmationModal } from '../../components/Modals';
 import { Wallet, Building2, Landmark, DollarSign, Plus, Trash2, Edit2 } from 'lucide-react';
+import { useCompany } from '../../context/CompanyContext';
 
 export const FinancialAccounts: React.FC = () => {
+    const { currentCompany } = useCompany();
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -22,12 +24,20 @@ export const FinancialAccounts: React.FC = () => {
     const [editingAccount, setEditingAccount] = useState<FinancialAccount | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        if (currentCompany) {
+            loadData();
+        }
+    }, [currentCompany]);
 
     const loadData = async () => {
+        if (!currentCompany) return;
         setLoading(true);
         try {
-            const [acc, trans] = await Promise.all([api.getFinancialAccounts(), api.getFinancialTransactions()]);
+            const [acc, trans] = await Promise.all([
+                api.getFinancialAccounts(currentCompany.id),
+                api.getFinancialTransactions(currentCompany.id)
+            ]);
             setAccounts(acc);
             setTransactions(trans);
         } catch (error) {

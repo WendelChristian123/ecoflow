@@ -17,17 +17,17 @@ Deno.serve(async (req) => {
     });
 
     try {
-        const { tenantId } = await req.json();
+        const { companyId } = await req.json();
 
-        if (!tenantId) throw new Error('Tenant ID is required');
+        if (!companyId) throw new Error('Company ID is required');
 
-        console.log(`[DELETE] Starting deletion for tenant: ${tenantId}`);
+        console.log(`[DELETE] Starting deletion for company: ${companyId}`);
 
-        // 1. Get all users associated with this tenant
+        // 1. Get all users associated with this company
         const { data: profiles, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('id, email')
-            .eq('tenant_id', tenantId);
+            .eq('company_id', companyId);
 
         if (profileError) throw new Error(`Error fetching profiles: ${profileError.message}`);
 
@@ -44,16 +44,16 @@ Deno.serve(async (req) => {
             }
         }
 
-        // 3. Delete the Tenant (Cascades to profiles, delegations, etc.)
-        console.log(`[DELETE] Deleting tenant record...`);
-        const { error: deleteTenantError } = await supabaseAdmin
-            .from('tenants')
+        // 3. Delete the Company (Cascades to profiles, delegations, etc.)
+        console.log(`[DELETE] Deleting company record...`);
+        const { error: deleteCompanyError } = await supabaseAdmin
+            .from('companies') // Changed from tenants
             .delete()
-            .eq('id', tenantId);
+            .eq('id', companyId);
 
-        if (deleteTenantError) throw new Error(`Error deleting tenant: ${deleteTenantError.message}`);
+        if (deleteCompanyError) throw new Error(`Error deleting company: ${deleteCompanyError.message}`);
 
-        return new Response(JSON.stringify({ success: true, message: 'Tenant and users deleted.' }), {
+        return new Response(JSON.stringify({ success: true, message: 'Company and users deleted.' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
         });

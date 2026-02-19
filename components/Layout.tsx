@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { TrialExpired } from './TrialExpired';
 import {
     LayoutDashboard, CheckSquare, Briefcase, Users, Calendar, Settings, LogOut, Menu, X, Bell, ChevronDown, ChevronRight, PieChart, Wallet, CreditCard, Tags, FileText, DollarSign, PanelLeftClose, PanelLeftOpen, User as UserIcon, Briefcase as CommercialIcon, ShoppingBag, RefreshCw, BarChart2, Building2, Globe, ShieldCheck, Lock, ArrowLeftCircle
 } from 'lucide-react';
@@ -8,12 +8,13 @@ import { Avatar, cn } from './Shared';
 import { useAuth } from '../context/AuthContext';
 // import { useTheme } from '../context/ThemeContext'; // Unused now in Layout UI but context still exists if needed for logic
 import { useRBAC } from '../context/RBACContext';
-import { useTenant } from '../context/TenantContext';
+import { useCompany } from '../context/CompanyContext';
 import { UserProfileModal } from './UserModals';
 import { CompactThemeToggle } from './CompactThemeToggle';
 import { NotificationPopover } from './NotificationPopover';
 import { User } from '../types';
 import { api } from '../services/api';
+import { TrialBanner } from './TrialBanner';
 
 // ... SidebarItem and SidebarGroup remain the same ...
 interface SidebarItemProps {
@@ -213,9 +214,9 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
     );
 }
 
-// ... TenantSelector and Layout Main Component ...
-const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => {
-    const { availableTenants, currentTenant, switchTenant, isMultiTenant } = useTenant();
+// ... CompanySelector and Layout Main Component ...
+const CompanySelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => {
+    const { availableCompanies, currentCompany, switchCompany, isMultiCompany } = useCompany();
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -229,7 +230,7 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    if (!isMultiTenant) return null;
+    if (!isMultiCompany) return null;
 
     return (
         <div className={cn("mb-4 px-3", isCollapsed && "px-2")} ref={wrapperRef}>
@@ -246,7 +247,7 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
                 >
                     <div className="flex items-center gap-2 overflow-hidden">
                         <Building2 size={18} className="shrink-0 text-primary" />
-                        {!isCollapsed && <span className="text-sm font-medium truncate">{currentTenant?.name || 'Selecione...'}</span>}
+                        {!isCollapsed && <span className="text-sm font-medium truncate">{currentCompany?.name || 'Selecione...'}</span>}
                     </div>
                     {!isCollapsed && <ChevronDown size={14} className="opacity-70" />}
                 </button>
@@ -257,20 +258,20 @@ const TenantSelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => 
                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Alternar Empresa</p>
                         </div>
                         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {availableTenants.map(t => (
+                            {availableCompanies.map(t => (
                                 <button
                                     key={t.id}
-                                    onClick={() => { switchTenant(t.id); setIsOpen(false); }}
+                                    onClick={() => { switchCompany(t.id); setIsOpen(false); }}
                                     className={cn(
                                         "w-full text-left px-3 py-2 text-sm rounded-lg mb-1 flex items-center gap-2",
-                                        currentTenant?.id === t.id
+                                        currentCompany?.id === t.id
                                             ? "bg-primary/10 text-primary"
                                             : "text-foreground hover:bg-secondary/50"
                                     )}
                                 >
                                     <Building2 size={14} />
                                     <span className="truncate">{t.name}</span>
-                                    {currentTenant?.id === t.id && <div className="ml-auto w-2 h-2 rounded-full bg-primary"></div>}
+                                    {currentCompany?.id === t.id && <div className="ml-auto w-2 h-2 rounded-full bg-primary"></div>}
                                 </button>
                             ))}
                         </div>
@@ -291,7 +292,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const [openGroups, setOpenGroups] = useState<string[]>([]);
     const { can, isSuperAdmin } = useRBAC();
     const { user, refreshSession } = useAuth();
-    const { currentTenant } = useTenant();
+    const { currentCompany } = useCompany();
+
+    // Trial Expiration Check
+    const isTrialExpired = !isSuperAdmin && currentCompany?.type === 'trial' && currentCompany?.subscriptionEnd && new Date(currentCompany.subscriptionEnd) < new Date();
+
+    if (isTrialExpired) {
+        return <TrialExpired />;
+    }
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const saved = localStorage.getItem('ecoflow-sidebar-collapsed');
@@ -348,12 +356,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     };
 
 
-    // Helper to check if the current tenant has contracted a specific module
+    // Helper to check if the current company has contracted a specific module
     const hasModule = (moduleKey: string) => {
-        if (isSuperAdmin && !currentTenant) return true; // Safety
+        if (isSuperAdmin && !currentCompany) return true; // Safety
 
-        if (currentTenant?.contractedModules) {
-            const mods = currentTenant.contractedModules;
+        if (currentCompany?.contractedModules) {
+            const mods = currentCompany.contractedModules;
             return mods.includes(moduleKey);
         }
 
@@ -400,8 +408,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
                     <div className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar overflow-x-hidden">
 
-                        {/* SUPER ADMIN TENANT SELECTOR */}
-                        <TenantSelector isCollapsed={isCollapsed} />
+                        {/* SUPER ADMIN COMPANY SELECTOR */}
+                        <CompanySelector isCollapsed={isCollapsed} />
 
                         {/* SUPER ADMIN MENU */}
                         {isSuperAdminArea ? (
@@ -424,7 +432,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 <div className="my-4 border-t border-white/10"></div>
 
                                 {/* Commercial Module */}
-                                {can('commercial', 'view') && hasModule('mod_commercial') && (
+                                {can('commercial', 'view') && hasModule('commercial') && (
                                     <SidebarGroup
                                         label="Comercial"
                                         icon={<CommercialIcon size={18} />}
@@ -441,7 +449,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 )}
 
                                 {/* Rotinas */}
-                                {can('routines', 'view') && hasModule('mod_tasks') && (
+                                {can('routines', 'view') && hasModule('routines') && (
                                     <SidebarGroup
                                         label="Rotinas & Execução"
                                         icon={<CheckSquare size={18} />}
@@ -458,7 +466,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                 )}
 
                                 {/* Financeiro */}
-                                {can('finance', 'view') && hasModule('mod_finance') && (
+                                {can('finance', 'view') && hasModule('finance') && (
                                     <SidebarGroup
                                         label="Financeiro"
                                         icon={<DollarSign size={18} />}
@@ -489,13 +497,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </aside>
 
             <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-secondary/5">
-                <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-[60] sticky top-0 shadow-sm">
+                <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-[60] sticky top-0 shadow-sm relative">
+                    <TrialBanner />
+
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>
                         <div className="flex flex-col">
                             <h1 className="text-xl font-semibold text-foreground leading-tight">{getPageTitle()}</h1>
-                            {currentTenant && !isSuperAdminArea && (
-                                <span className="text-xs text-primary font-medium">{currentTenant.name}</span>
+                            {currentCompany && !isSuperAdminArea && (
+                                <span className="text-xs text-primary font-medium">{currentCompany.name}</span>
                             )}
                         </div>
                     </div>

@@ -9,7 +9,7 @@ import { TeamsPage } from './pages/Teams';
 import { AgendaPage } from './pages/Agenda';
 import { AuthProvider } from './context/AuthContext';
 import { RBACProvider } from './context/RBACContext';
-import { TenantProvider } from './context/TenantContext'; // Added
+import { CompanyProvider } from './context/CompanyContext'; // Added
 import { ThemeProvider } from './context/ThemeContext';
 import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';
@@ -23,6 +23,7 @@ import { SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
 import { SuperAdminUsers } from './pages/SuperAdmin/Users';
 import { SuperAdminAdmins } from './pages/SuperAdmin/Admins';
 import { SuperAdminPlans } from './pages/SuperAdmin/Plans';
+import { SuperAdminCompanies } from './pages/SuperAdmin/Companies';
 
 // Financial Pages
 import { FinancialOverview } from './pages/finance/Overview';
@@ -46,7 +47,7 @@ import { RoutinesOverview } from './pages/routines/Overview';
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <TenantProvider>
+      <CompanyProvider>
         <RBACProvider>
           <ThemeProvider>
             <Router>
@@ -89,6 +90,7 @@ const App: React.FC = () => {
                 <Route path="/super-admin/users" element={<ProtectedRoute><Layout><SuperAdminUsers /></Layout></ProtectedRoute>} />
                 <Route path="/super-admin/admins" element={<ProtectedRoute><Layout><SuperAdminAdmins /></Layout></ProtectedRoute>} />
                 <Route path="/super-admin/plans" element={<ProtectedRoute><Layout><SuperAdminPlans /></Layout></ProtectedRoute>} />
+                <Route path="/super-admin/companies" element={<ProtectedRoute><Layout><SuperAdminCompanies /></Layout></ProtectedRoute>} />
 
                 {/* Legacy redirect */}
                 <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
@@ -98,7 +100,7 @@ const App: React.FC = () => {
             </Router>
           </ThemeProvider>
         </RBACProvider>
-      </TenantProvider>
+      </CompanyProvider>
     </AuthProvider>
   );
 };

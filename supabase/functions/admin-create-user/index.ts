@@ -46,7 +46,7 @@ serve(async (req) => {
         // 4. Verify Admin Role & Permissions
         const { data: adminProfile } = await supabaseAdmin
             .from('profiles')
-            .select('tenant_id, role')
+            .select('company_id, role') // Changed from tenant_id
             .eq('id', adminUser.id)
             .single();
 
@@ -62,14 +62,14 @@ serve(async (req) => {
             });
         }
 
-        let tenantId = adminProfile.tenant_id;
+        let companyId = adminProfile.company_id; // Changed from tenantId
 
         // 5. Parse Request Body
-        const { email, password, name, phone, role, permissions, tenantId: reqTenantId } = await req.json();
+        const { email, password, name, phone, role, permissions, companyId: reqCompanyId } = await req.json();
 
-        // Super Admin override tenant
-        if (adminProfile.role === 'super_admin' && reqTenantId) {
-            tenantId = reqTenantId;
+        // Super Admin override company
+        if (adminProfile.role === 'super_admin' && reqCompanyId) {
+            companyId = reqCompanyId;
         }
 
         if (!email || !password || !name) {
@@ -77,20 +77,20 @@ serve(async (req) => {
         }
 
         // 5.5 Validate User Limits
-        const { data: tenantData, error: tenantError } = await supabaseAdmin
-            .from('tenants')
+        const { data: companyData, error: companyError } = await supabaseAdmin
+            .from('companies') // Changed from tenants
             .select(`
                 id,
                 saas_plans (id, max_users, config),
-                tenant_addons (addon_type, quantity, active)
+                company_addons (addon_type, quantity, active)
             `)
-            .eq('id', tenantId)
+            .eq('id', companyId)
             .single();
 
-        if (tenantData) {
+        if (companyData) {
             // Calculate Limit
-            const plan = tenantData.saas_plans as any;
-            const addons = (tenantData.tenant_addons || []) as any[];
+            const plan = companyData.saas_plans as any;
+            const addons = (companyData.company_addons || []) as any[];
 
             const baseLimit = plan?.config?.max_users ?? plan?.max_users ?? 1;
             const addonLimit = addons
@@ -103,7 +103,7 @@ serve(async (req) => {
             const { count: currentCount } = await supabaseAdmin
                 .from('profiles')
                 .select('*', { count: 'exact', head: true })
-                .eq('tenant_id', tenantId);
+                .eq('company_id', companyId);
 
             if ((currentCount || 0) >= maxUsers) {
                 return new Response(JSON.stringify({
@@ -120,7 +120,7 @@ serve(async (req) => {
             email,
             password,
             email_confirm: true,
-            user_metadata: { name, tenant_id: tenantId }
+            user_metadata: { name, companyId } // Changed tenant_id -> companyId
         });
 
         if (createError) {
@@ -141,7 +141,7 @@ serve(async (req) => {
                 name,
                 phone,
                 role: role || 'user',
-                tenant_id: tenantId,
+                company_id: companyId, // Changed from tenant_id
                 permissions: permissions, // JSONB
                 status: 'active'
             });

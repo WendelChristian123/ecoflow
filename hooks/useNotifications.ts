@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useTenant } from '../context/TenantContext';
+import { useCompany } from '../context/CompanyContext';
 import { isToday, isPast, parseISO, isValid, startOfDay, addDays, isBefore, isSameDay, addMinutes } from 'date-fns';
 
 export type NotificationType = 'task' | 'finance' | 'agenda';
@@ -19,7 +19,7 @@ export interface NotificationItem {
 
 export const useNotifications = () => {
     const { user } = useAuth();
-    const { currentTenant } = useTenant();
+    const { currentCompany } = useCompany();
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,9 +33,9 @@ export const useNotifications = () => {
         try {
             // Fetch in parallel
             const [tasks, events, transactions] = await Promise.all([
-                api.getTasks(currentTenant?.id),
-                api.getEvents(currentTenant?.id),
-                api.getFinancialTransactions(currentTenant?.id)
+                api.getTasks(currentCompany?.id),
+                api.getEvents(currentCompany?.id),
+                api.getFinancialTransactions(currentCompany?.id)
             ]);
 
             const now = new Date();
@@ -133,7 +133,7 @@ export const useNotifications = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [user, currentTenant]);
+    }, [user, currentCompany]);
 
     useEffect(() => {
         fetchNotifications();
@@ -149,7 +149,7 @@ export const useNotifications = () => {
             if (type === 'task') {
                 await api.updateTaskStatus(id, 'done');
             } else if (type === 'agenda') {
-                const event = await api.getEvents(currentTenant?.id).then(evts => evts.find(e => e.id === id));
+                const event = await api.getEvents(currentCompany?.id).then(evts => evts.find(e => e.id === id));
                 if (event) {
                     await api.updateEvent({ ...event, status: 'completed' });
                 }

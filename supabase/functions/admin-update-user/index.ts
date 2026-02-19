@@ -34,7 +34,7 @@ serve(async (req) => {
         // 2. Check Admin Permissions
         const { data: adminProfile } = await supabaseAdmin
             .from('profiles')
-            .select('role, tenant_id')
+            .select('role, company_id') // Changed tenant_id
             .eq('id', adminUser.id)
             .single();
 
@@ -47,16 +47,16 @@ serve(async (req) => {
 
         if (!userId || !updates) throw new Error('Missing userId or updates');
 
-        // 4. Verify Target User belongs to same Tenant (unless Super Admin)
+        // 4. Verify Target User belongs to same Company (unless Super Admin)
         if (adminProfile.role !== 'super_admin') {
             const { data: targetProfile } = await supabaseAdmin
                 .from('profiles')
-                .select('tenant_id')
+                .select('company_id') // Changed tenant_id
                 .eq('id', userId)
                 .single();
 
-            if (!targetProfile || targetProfile.tenant_id !== adminProfile.tenant_id) {
-                throw new Error('Forbidden: Cannot update user from another tenant');
+            if (!targetProfile || targetProfile.company_id !== adminProfile.company_id) {
+                throw new Error('Forbidden: Cannot update user from another company');
             }
         }
 

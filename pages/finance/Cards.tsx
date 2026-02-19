@@ -10,6 +10,7 @@ import { processTransactions, ProcessedTransaction } from '../../services/financ
 import { format, parseISO, isBefore, isAfter, addMonths, startOfDay, addDays, endOfDay } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
+import { useCompany } from '../../context/CompanyContext';
 
 // --- Local Components ---
 
@@ -88,6 +89,7 @@ const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({ isOpen, onClo
 // --- Main Page ---
 
 export const FinancialCards: React.FC = () => {
+    const { currentCompany } = useCompany();
     const [loading, setLoading] = useState(true);
     const [cards, setCards] = useState<CreditCard[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -110,18 +112,23 @@ export const FinancialCards: React.FC = () => {
     const [editingCard, setEditingCard] = useState<CreditCard | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        if (currentCompany) {
+            loadData();
+        }
+    }, [currentCompany]);
 
     const loadData = async () => {
+        if (!currentCompany) return;
         setLoading(true);
         try {
             // Fetch everything
             const [c, t, a, cat, cont] = await Promise.all([
-                api.getCreditCards(),
-                api.getFinancialTransactions(),
-                api.getFinancialAccounts(),
-                api.getFinancialCategories(),
-                api.getContacts()
+                api.getCreditCards(currentCompany.id),
+                api.getFinancialTransactions(currentCompany.id),
+                api.getFinancialAccounts(currentCompany.id),
+                api.getFinancialCategories(currentCompany.id),
+                api.getContacts(currentCompany.id)
             ]);
             setCards(c);
             setTransactions(t);

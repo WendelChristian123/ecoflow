@@ -51,8 +51,8 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
                 const others = preloadedUsers.filter(u => u.id !== user?.id);
                 setUsersList(others);
             } else if (user) {
-                console.log('Current tenant:', user.tenantId);
-                const users = await api.getUsers(user.tenantId);
+                console.log('Current company:', user.companyId);
+                const users = await api.getUsers(user.companyId);
                 console.log('Fetched users:', users);
                 // Filter out self
                 const others = users.filter(u => u.id !== user.id);
@@ -80,12 +80,12 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
             const rpcProfile = await supabase.rpc('get_my_profile');
             console.log('RPC get_my_profile:', rpcProfile);
 
-            if (user?.tenantId) {
-                const usersValues = await api.getUsers(user.tenantId);
+            if (user?.companyId) {
+                const usersValues = await api.getUsers(user.companyId);
                 console.log('API getUsers:', usersValues);
-                alert(`Debug concluído. RPC Tenant: ${rpcProfile.data?.tenant_id}. Users found: ${usersValues.length}`);
+                alert(`Debug concluído. RPC Company: ${rpcProfile.data?.company_id}. Users found: ${usersValues.length}`);
             } else {
-                alert(`Debug concluído. RPC Tenant: ${rpcProfile.data?.tenant_id}. Context Tenant: UNDEFINED`);
+                alert(`Debug concluído. RPC Company: ${rpcProfile.data?.company_id}. Context Company: UNDEFINED`);
             }
         } catch (e: any) {
             alert('Debug error: ' + e.message);
@@ -205,7 +205,7 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
                             <div className="flex items-end gap-2">
                                 <div className="flex flex-col gap-1.5 flex-1">
                                     <label className="text-xs font-bold text-muted-foreground uppercase">
-                                        Usuário ({usersList.length}) - T: {user?.tenantId ? user.tenantId.substring(0, 4) : 'N/A'}
+                                        Usuário ({usersList.length}) - C: {user?.companyId ? user.companyId.substring(0, 4) : 'N/A'}
                                     </label>
                                     <FilterSelect
                                         value={selectedUserId}
