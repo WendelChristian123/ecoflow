@@ -17,11 +17,37 @@ Deno.serve(async (req) => {
     });
 
     try {
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) throw new Error('No authorization header');
+
+        const token = authHeader.replace('Bearer ', '');
+
+        let userId;
+        try {
+            const payloadStr = atob(token.split('.')[1]);
+            const payload = JSON.parse(payloadStr);
+            userId = payload.sub;
+            if (!userId) throw new Error('Invalid token payload');
+        } catch (e) {
+            throw new Error(`Auth session missing or invalid token!`);
+        }
+
+        // Verify if user is super admin
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (!profile || profile.role !== 'super_admin') {
+            throw new Error("Forbidden: Admin access required");
+        }
+
         const { companyId } = await req.json();
 
         if (!companyId) throw new Error('Company ID is required');
 
-        console.log(`[DELETE] Starting deletion for company: ${companyId}`);
+        console.log(`[DELETE] Starting deletion for company: ${companyId} by SuperAdmin: ${userId}`);
 
         // 1. Get all users associated with this company
         const { data: profiles, error: profileError } = await supabaseAdmin

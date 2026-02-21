@@ -102,9 +102,9 @@ Deno.serve(async (req) => {
                 .from('companies')
                 .insert({
                     owner_user_id: createdUserId,
-                    legal_name: name,
-                    cpf_cnpj: cnpj,
-                    whatsapp: phone,
+                    name: name,
+                    cnpj: cnpj,
+                    phone: phone,
                     email: ownerEmail,
                     owner_email: ownerEmail,
                     admin_name: adminName,

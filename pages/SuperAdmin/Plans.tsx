@@ -228,9 +228,9 @@ export const SuperAdminPlans: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background p-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                     <CreditCard className="text-indigo-500" /> Planos & Preços
                 </h1>
                 <Button className="gap-2" onClick={handleOpenCreate}>
@@ -240,29 +240,29 @@ export const SuperAdminPlans: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {plans.length === 0 && (
-                    <div className="col-span-3 text-center py-12 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+                    <div className="col-span-3 text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
                         Nenhum plano cadastrado.
                     </div>
                 )}
                 {plans.map(plan => (
-                    <Card key={plan.id} className={`flex flex-col border-t-4 relative group transition-colors ${plan.status === 'archived' ? 'border-t-slate-600 opacity-75 grayscale-[0.5]' : 'border-t-indigo-500 hover:border-indigo-400'}`}>
+                    <Card key={plan.id} className={`flex flex-col border-t-4 relative group transition-colors bg-card shadow-sm ${plan.status === 'archived' ? 'border-t-muted opacity-75 grayscale-[0.5]' : 'border-t-primary hover:border-primary/80'}`}>
                         <div className="absolute top-4 right-4 z-10">
                             <div className="relative inline-block">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === plan.id ? null : plan.id); }}
-                                    className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                     <MoreVertical size={18} />
                                 </button>
                                 {activeMenuId === plan.id && (
-                                    <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
-                                        <button onClick={() => handleOpenEdit(plan)} className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                    <div className="absolute right-0 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+                                        <button onClick={() => handleOpenEdit(plan)} className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground text-left w-full transition-colors">
                                             <Edit2 size={14} /> Editar Plano
                                         </button>
-                                        <button onClick={() => alert("Duplicar simulado")} className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white text-left w-full transition-colors">
+                                        <button onClick={() => alert("Duplicar simulado")} className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground text-left w-full transition-colors">
                                             <Copy size={14} /> Duplicar
                                         </button>
-                                        <div className="h-px bg-slate-800 my-1" />
+                                        <div className="h-px bg-border my-1" />
                                         {plan.status !== 'hidden' && (
                                             <button onClick={() => alert("Ocultar simulado")} className="flex items-center gap-2 px-4 py-2 text-sm text-amber-500 hover:bg-amber-500/10 text-left w-full transition-colors">
                                                 <EyeOff size={14} /> Ocultar (Soft Limit)
@@ -278,7 +278,7 @@ export const SuperAdminPlans: React.FC = () => {
                                                         alert("Erro ao excluir: " + getErrorMessage(err));
                                                     });
                                                 }
-                                            }} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 text-left w-full transition-colors">
+                                            }} className="flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 text-left w-full transition-colors">
                                                 <Archive size={14} /> Excluir (Permanente)
                                             </button>
                                         )}
@@ -287,37 +287,37 @@ export const SuperAdminPlans: React.FC = () => {
                             </div>
                         </div>
                         <div className="mb-4 pr-10">
-                            <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                            <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
                             <div className="flex flex-col gap-1 mt-2 mb-3">
-                                <div className="text-sm text-slate-400">Mensal: <span className="text-emerald-400 font-bold">R$ {plan.priceMonthly?.toFixed(2)}</span></div>
-                                <div className="text-sm text-slate-400">Semestral: <span className="text-emerald-400 font-bold">R$ {plan.priceSemiannually?.toFixed(2)}</span></div>
-                                <div className="text-sm text-slate-400">Anual: <span className="text-emerald-400 font-bold">R$ {plan.priceYearly?.toFixed(2)}</span></div>
+                                <div className="text-sm text-muted-foreground">Mensal: <span className="text-primary font-bold">R$ {plan.priceMonthly?.toFixed(2)}</span></div>
+                                <div className="text-sm text-muted-foreground">Semestral: <span className="text-primary font-bold">R$ {plan.priceSemiannually?.toFixed(2)}</span></div>
+                                <div className="text-sm text-muted-foreground">Anual: <span className="text-primary font-bold">R$ {plan.priceYearly?.toFixed(2)}</span></div>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {getPlanTypeBadge(plan.type)}
                             </div>
                         </div>
 
-                        <div className="space-y-3 flex-1 mb-6 border-t border-slate-700/50 pt-4">
+                        <div className="space-y-3 flex-1 mb-6 border-t border-border pt-4">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="flex items-center gap-2 text-slate-300">
-                                    <Users size={16} className="text-indigo-400" /> Usuários
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                    <Users size={16} className="text-primary" /> Usuários
                                 </span>
-                                <span className="text-white font-medium">Até {plan.maxUsers}</span>
+                                <span className="text-foreground font-medium">Até {plan.maxUsers}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="flex items-center gap-2 text-slate-300">
-                                    <Building2 size={16} className="text-indigo-400" /> Empresas Ativas
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                    <Building2 size={16} className="text-primary" /> Empresas Ativas
                                 </span>
-                                <span className="text-white font-medium">0</span>
+                                <span className="text-foreground font-medium">0</span>
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+                        <div className="pt-4 border-t border-border flex justify-between items-center">
                             <Badge variant={getStatusColor(plan.status)}>
                                 {plan.status === 'active' ? 'Ativo' : plan.status === 'hidden' ? 'Oculto' : 'Arquivado'}
                             </Badge>
-                            <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">ID: {plan.id.slice(0, 6)}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">ID: {plan.id.slice(0, 6)}</span>
                         </div>
                     </Card >
                 ))}
@@ -330,7 +330,7 @@ export const SuperAdminPlans: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Nome do Plano" placeholder="Ex: Starter" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Tipo do Plano</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Tipo do Plano</label>
                             <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}>
                                 <option value="public">Público (Venda pelo Site)</option>
                                 <option value="trial">Trial (Período Gratuito)</option>
@@ -349,11 +349,11 @@ export const SuperAdminPlans: React.FC = () => {
                     <Input label="Limite de Usuários (Seats)" type="number" value={formData.maxUsers} onChange={e => setFormData({ ...formData, maxUsers: parseInt(e.target.value) })} required />
 
                     {/* Module Selection */}
-                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                        <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                            <Package size={16} className="text-indigo-400" /> Módulos Permitidos
+                    <div className="bg-card p-4 rounded-lg border border-border">
+                        <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                            <Package size={16} className="text-primary" /> Módulos Permitidos
                         </h4>
-                        <p className="text-xs text-slate-400 mb-3">Clique para alternar: <span className="text-emerald-400">Incluso</span> → <span className="text-amber-400">Extra ($)</span> → <span className="text-slate-500">Bloqueado</span></p>
+                        <p className="text-xs text-muted-foreground mb-3">Clique para alternar: <span className="text-green-500">Incluso</span> → <span className="text-amber-500">Extra ($)</span> → <span className="text-muted-foreground">Bloqueado</span></p>
 
                         <div className="space-y-2">
                             {SYSTEM_MODULES.map(mod => {
@@ -362,9 +362,9 @@ export const SuperAdminPlans: React.FC = () => {
                                 return (
                                     <div
                                         key={mod.id}
-                                        className={`flex flex-col p-3 rounded border select-none transition-all ${status === 'included' ? 'bg-emerald-500/10 border-emerald-500/30' :
+                                        className={`flex flex-col p-3 rounded border select-none transition-all ${status === 'included' ? 'bg-green-500/10 border-green-500/30' :
                                             status === 'extra' ? 'bg-amber-500/10 border-amber-500/30' :
-                                                'bg-slate-900 border-slate-700 opacity-80'
+                                                'bg-muted border-border opacity-80'
                                             }`}
                                     >
                                         <div
@@ -374,26 +374,26 @@ export const SuperAdminPlans: React.FC = () => {
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${status === 'included' ? 'bg-emerald-500 border-emerald-500' :
                                                     status === 'extra' ? 'bg-amber-500 border-amber-500' :
-                                                        'border-slate-500 bg-slate-800'
+                                                        'border-muted-foreground bg-muted'
                                                     }`}>
                                                     {status === 'included' && <CheckCircle2 size={14} className="text-white" />}
                                                     {status === 'extra' && <DollarSign size={14} className="text-white" />}
-                                                    {status === 'locked' && <Lock size={12} className="text-slate-400" />}
+                                                    {status === 'locked' && <Lock size={12} className="text-muted-foreground" />}
                                                 </div>
-                                                <div className={`text-sm font-medium ${status !== 'locked' ? 'text-white' : 'text-slate-400'}`}>
+                                                <div className={`text-sm font-medium ${status !== 'locked' ? 'text-foreground' : 'text-muted-foreground'}`}>
                                                     {mod.name}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 {status === 'included' && <Badge variant="success" className='text-[10px] uppercase'>Incluso</Badge>}
                                                 {status === 'extra' && <Badge variant="warning" className='text-[10px] uppercase'>Upsell</Badge>}
-                                                {status === 'locked' && <span className="text-[10px] text-slate-500 uppercase font-bold">Bloqueado</span>}
+                                                {status === 'locked' && <span className="text-[10px] text-muted-foreground uppercase font-bold">Bloqueado</span>}
                                             </div>
                                         </div>
 
                                         {/* Granular Features */}
                                         {status !== 'locked' && mod.features && mod.features.length > 0 && (
-                                            <div className="grid grid-cols-2 gap-2 pl-9 pt-1 border-t border-slate-700/50 mt-1">
+                                            <div className="grid grid-cols-2 gap-2 pl-9 pt-1 border-t border-border mt-1">
                                                 {mod.features.map(feat => {
                                                     const isSelected = selectedFeatures.has(feat.id);
                                                     return (
@@ -408,11 +408,11 @@ export const SuperAdminPlans: React.FC = () => {
                                                             }}
                                                             className="flex items-center gap-2 cursor-pointer group"
                                                         >
-                                                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-transparent group-hover:border-slate-500'
+                                                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary' : 'border-muted-foreground bg-transparent group-hover:border-primary'
                                                                 }`}>
                                                                 {isSelected && <Check size={10} className="text-white" />}
                                                             </div>
-                                                            <span className={`text-xs ${isSelected ? 'text-slate-200' : 'text-slate-500 group-hover:text-slate-400'}`}>
+                                                            <span className={`text-xs ${isSelected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>
                                                                 {feat.name}
                                                             </span>
                                                         </div>
@@ -427,20 +427,20 @@ export const SuperAdminPlans: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Status do Plano</label>
+                        <label className="text-xs text-muted-foreground mb-1 block">Status do Plano</label>
                         <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
                             <option value="active">Ativo (Disponível para venda)</option>
                             <option value="hidden">Oculto (Atribuição manual apenas)</option>
                             <option value="archived">Arquivado (Legado/Descontinuado)</option>
                         </Select>
                         {formData.status === 'archived' && (
-                            <p className="text-xs text-rose-400 mt-2 flex items-center gap-1">
+                            <p className="text-xs text-destructive mt-2 flex items-center gap-1">
                                 <Archive size={12} /> Atenção: Planos arquivados não podem receber novas assinaturas.
                             </p>
                         )}
                     </div>
 
-                    <div className="flex justify-end pt-4 gap-2 border-t border-slate-800">
+                    <div className="flex justify-end pt-4 gap-2 border-t border-border">
                         <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
                         <Button type="submit">Salvar Plano</Button>
                     </div>

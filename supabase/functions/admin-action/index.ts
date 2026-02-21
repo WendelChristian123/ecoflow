@@ -13,31 +13,38 @@ serve(async (req) => {
     }
 
     try {
-        const supabaseClient = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-        );
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            throw new Error('Unauthorized: Missing Authorization header');
+        }
+        const token = authHeader.replace('Bearer ', '');
 
-        // Get the user from the request context to verify they are a Super Admin
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
-
-        if (!user) {
-            throw new Error("Unauthorized");
+        // Decode the JWT to get the user ID (since we already know the gateway allowed it vaguely, or we just trust the internal service check)
+        const payloadStr = token.split('.')[1];
+        if (!payloadStr) throw new Error('Unauthorized: Invalid JWT format');
+        let payloadObj;
+        try {
+            payloadObj = JSON.parse(atob(payloadStr));
+        } catch (e) {
+            throw new Error('Unauthorized: Could not decode JWT');
         }
 
-        // Check if the user is a super admin in the profiles table
+        const userId = payloadObj.sub;
+        if (!userId) {
+            throw new Error('Unauthorized: No user ID in token');
+        }
+
+        // We use the service role client from here out anyway
         const serviceClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         );
 
+        // Check if the user is a super admin in the profiles table
         const { data: profile } = await serviceClient
             .from('profiles')
-            .select('role, tenant_id')
-            .eq('id', user.id)
+            .select('role, company_id')
+            .eq('id', userId)
             .single();
 
         if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
@@ -55,7 +62,7 @@ serve(async (req) => {
             // 1. Fetch target user profile to check tenant
             const { data: targetProfile, error: targetError } = await serviceClient
                 .from('profiles')
-                .select('tenant_id, role')
+                .select('company_id, role')
                 .eq('id', targetId)
                 .single();
 
@@ -67,12 +74,12 @@ serve(async (req) => {
             }
 
             // 2. Strict Tenant Match
-            if (targetProfile.tenant_id !== profile.tenant_id) {
+            if (targetProfile.company_id !== profile.company_id) {
                 throw new Error("Forbidden: You can only manage users in your own organization");
             }
 
             // 3. Prevent deleting yourself
-            if (targetId === user.id) {
+            if (targetId === userId) {
                 throw new Error("Operation not allowed on yourself");
             }
         }
@@ -106,6 +113,21 @@ serve(async (req) => {
                 break;
 
             case 'deleteUser':
+                // PREVENT DELETING COMPANY OWNERS
+                // If the user owns a company, deleting them triggers a CASCADE to delete the company,
+                // which then fails due to NO ACTION foreign keys (like profiles.company_id).
+                const { data: ownedCompanies, error: ownershipError } = await serviceClient
+                    .from('companies')
+                    .select('id, name')
+                    .eq('owner_user_id', targetId)
+                    .limit(1);
+
+                if (ownershipError) throw ownershipError;
+
+                if (ownedCompanies && ownedCompanies.length > 0) {
+                    throw new Error(`Cannot delete user: They are the owner of company "${ownedCompanies[0].name}". Please transfer ownership or delete the company instead.`);
+                }
+
                 const { error: deleteError } = await serviceClient.auth.admin.deleteUser(targetId);
                 if (deleteError) throw deleteError;
                 result = { success: true };

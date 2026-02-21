@@ -497,9 +497,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </aside>
 
             <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-secondary/5">
+                <TrialBanner />
                 <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-[60] sticky top-0 shadow-sm relative">
-                    <TrialBanner />
-
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>
                         <div className="flex flex-col">
@@ -518,7 +517,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </header>
 
                 {/* Main Content Area - Optimized for 100% Height */}
-                <div className="flex-1 overflow-hidden p-4 flex flex-col relative">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col relative">
                     {children}
                 </div>
             </main>

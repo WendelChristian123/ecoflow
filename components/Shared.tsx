@@ -144,19 +144,26 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   noArrow?: boolean;
+  label?: string;
+  options?: { value: string; label: string }[];
 }
 
-export const Select: React.FC<SelectProps> = ({ className, noArrow, ...props }) => (
+export const Select: React.FC<SelectProps> = ({ className, noArrow, label, options, children, ...props }) => (
   <div className="relative w-full">
+    {label && <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
     <select
       className={cn(
         "w-full appearance-none bg-card border border-input text-foreground rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-ring focus:border-primary outline-none disabled:opacity-50 transition-all cursor-pointer shadow-sm",
         className
       )}
       {...props}
-    />
+    >
+      {options ? options.map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      )) : children}
+    </select>
     {!noArrow && (
-      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground" style={{ top: label ? '1.75rem' : 0 }}>
         <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
       </div>
     )}

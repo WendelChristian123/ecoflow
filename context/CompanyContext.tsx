@@ -15,6 +15,7 @@ interface CompanyContextType {
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // Force HMR Update
     const { user, loading: authLoading } = useAuth();
     const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
     const [availableCompanies, setAvailableCompanies] = useState<Company[]>([]);

@@ -540,6 +540,29 @@ export const api = {
         if (data?.error) throw new Error(data.error);
     },
 
+    adminDeleteUser: async (userId: string) => {
+        const { data, error } = await supabase.functions.invoke('admin-action', {
+            body: { action: 'deleteUser', targetId: userId }
+        });
+
+        if (error) {
+            let errorMsg = error.message || 'Falha ao excluir usuário';
+            // Try to parse detailed error message from response body
+            // @ts-ignore
+            if (error.context && typeof error.context.json === 'function') {
+                try {
+                    // @ts-ignore
+                    const body = await error.context.json();
+                    if (body && body.error) errorMsg = body.error;
+                } catch (e) {
+                    console.warn('[API] Could not parse error body:', e);
+                }
+            }
+            throw new Error(errorMsg);
+        }
+        if (data?.error) throw new Error(data.error);
+    },
+
     adminForceLogout: async (userId: string) => {
         const { data, error } = await supabase.functions.invoke('admin-action', {
             body: { action: 'forceLogout', targetId: userId }
@@ -1572,9 +1595,10 @@ export const api = {
                     current_period_end,
                     plan_id,
                     cycle,
-                    created_at
+                    created_at,
+                    saas_plans ( name )
                 ),
-                company_modules(module_id, status)
+                company_modules(module_id, status, config)
             `)
             .eq('id', id)
             .single();
@@ -1589,7 +1613,22 @@ export const api = {
         // Get active modules from company_modules
         const contractedModules = data.company_modules
             ?.filter((tm: any) => tm.status === 'active')
-            .map((tm: any) => tm.module_id) || [];
+            .reduce((acc: string[], tm: any) => {
+                acc.push(tm.module_id);
+
+                let config = tm.config;
+                // Safety check for JSON string
+                if (typeof config === 'string') {
+                    try { config = JSON.parse(config); } catch (e) { console.error('Error parsing config', e); }
+                }
+
+                if (config?.features && Array.isArray(config.features)) {
+                    config.features.forEach((feat: string) => {
+                        acc.push(`${tm.module_id}:${feat}`);
+                    });
+                }
+                return acc;
+            }, []) || [];
 
         return {
             id: data.id,
@@ -1603,6 +1642,7 @@ export const api = {
             type: sub.status === 'trialing' ? 'trial' : 'client',
             subscriptionEnd: sub.status === 'trialing' ? sub.trial_ends_at : sub.current_period_end,
             planId: sub.plan_id,
+            planName: sub.saas_plans?.name || 'Plano Personalizado',
             billingCycle: sub.cycle,
             contractedModules: contractedModules,
             settings: {
@@ -1627,7 +1667,7 @@ export const api = {
                     current_period_end,
                     saas_plans(name)
                 ),
-                company_modules(module_id)
+                company_modules(*)
             `);
 
         if (error) throw error;
@@ -1637,7 +1677,38 @@ export const api = {
             // Usually 1 active sub per company.
             const sub = t.subscriptions?.[0];
             const planName = sub?.saas_plans?.name;
-            const modules = t.company_modules?.map((tm: any) => tm.module_id) || [];
+
+            // Debug Log
+            if (t.name.includes('teste4') || t.company_modules?.length > 0) {
+                console.log(`[API] Company: ${t.name}`, t.company_modules);
+            }
+
+            const modules = t.company_modules?.reduce((acc: string[], tm: any) => {
+                acc.push(tm.module_id);
+
+                let config = tm.config;
+
+                if (t.name.includes('teste4') || t.name.includes('Teste 4')) {
+                    console.log(`[API][DEBUG] Module: ${tm.module_id}`, {
+                        configType: typeof config,
+                        configValue: config,
+                        hasFeatures: !!config?.features,
+                        featuresIsArray: Array.isArray(config?.features)
+                    });
+                }
+
+                // Safety check for JSON string (though Supabase usually handles it)
+                if (typeof config === 'string') {
+                    try { config = JSON.parse(config); } catch (e) { console.error('Error parsing config', e); }
+                }
+
+                if (config?.features && Array.isArray(config.features)) {
+                    config.features.forEach((feat: string) => {
+                        acc.push(`${tm.module_id}:${feat}`);
+                    });
+                }
+                return acc;
+            }, []) || [];
 
             return {
                 id: t.id,
@@ -1892,8 +1963,11 @@ export const api = {
         }
     },
     deleteCompany: async (id: string) => {
-        const { error } = await supabase.from('companies').delete().eq('id', id);
-        if (error) throw error;
+        const { data, error } = await supabase.functions.invoke('admin-delete-tenant', {
+            body: { companyId: id }
+        });
+        if (error) throw new Error(error.message || 'Falha ao excluir empresa (Edge Function)');
+        if (data?.error) throw new Error(data.error);
     },
     updateCalendarSettings: async (settings: any) => {
         const companyId = getCurrentCompanyId();

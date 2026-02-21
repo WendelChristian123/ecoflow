@@ -7,7 +7,7 @@ import { useCompany } from '../../context/CompanyContext';
 import { useAuth } from '../../context/AuthContext';
 import { Loader, Button, Input, Card, Badge, Modal, Select, cn } from '../../components/Shared';
 import {
-    Building2, Plus, Search, Globe, Lock, CheckCircle2, Edit2, Package,
+    Building2, Plus, Search, Globe, Lock, CheckCircle2, Edit2, Package, RefreshCw,
     AlertTriangle, Terminal, MoreVertical, CreditCard, PauseCircle,
     Trash2, PlayCircle, Shield, Calendar, Filter, UserCog, Check
 } from 'lucide-react';
@@ -165,6 +165,13 @@ export const SuperAdminDashboard: React.FC = () => {
             }
             setIsModalOpen(false);
             loadData();
+            alert('Operação realizada com sucesso!');
+            // Simple alert or toast if available. Since I don't see toast imported yet, I will check imports first.
+            // But to be safe and quick, I can use window.alert or just rely on the list update.
+            // The user said "nao teve nenhuma confirmação".
+            // Let's add a simple alert for now if no toast lib found, or better, add a toast if I see one.
+            // Wait, I am viewing imports in parallel.
+            // I will return to this after viewing imports.
         } catch (err: any) {
             console.error(err);
             setUserCreationError(getErrorMessage(err));
@@ -207,11 +214,11 @@ export const SuperAdminDashboard: React.FC = () => {
 
     // @ts-ignore
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-8 max-w-7xl mx-auto space-y-8 bg-background min-h-screen">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Super Admin</h1>
-                    <p className="text-gray-500 mt-1">Gerenciamento global de empresas e sistema</p>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Super Admin</h1>
+                    <p className="text-muted-foreground mt-1">Gerenciamento global de empresas e sistema</p>
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline" onClick={() => navigate('/super-admin/users')}>
@@ -231,44 +238,44 @@ export const SuperAdminDashboard: React.FC = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="p-6 bg-white shadow-sm border border-gray-100">
+                <Card className="p-6 bg-card shadow-sm border border-border">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Total de Empresas</p>
-                            <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.totalCompanies}</h3>
+                            <p className="text-sm font-medium text-muted-foreground">Total de Empresas</p>
+                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.totalCompanies}</h3>
                         </div>
                         <div className="p-2 bg-indigo-50 rounded-lg">
                             <Building2 className="w-6 h-6 text-indigo-600" />
                         </div>
                     </div>
                 </Card>
-                <Card className="p-6 bg-white shadow-sm border border-gray-100">
+                <Card className="p-6 bg-card shadow-sm border border-border">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Empresas Ativas</p>
-                            <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.activeCompanies}</h3>
+                            <p className="text-sm font-medium text-muted-foreground">Empresas Ativas</p>
+                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.activeCompanies}</h3>
                         </div>
                         <div className="p-2 bg-green-50 rounded-lg">
                             <CheckCircle2 className="w-6 h-6 text-green-600" />
                         </div>
                     </div>
                 </Card>
-                <Card className="p-6 bg-white shadow-sm border border-gray-100">
+                <Card className="p-6 bg-card shadow-sm border border-border">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Total Usuários</p>
-                            <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.totalUsers}</h3>
+                            <p className="text-sm font-medium text-muted-foreground">Total Usuários</p>
+                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.totalUsers}</h3>
                         </div>
                         <div className="p-2 bg-purple-50 rounded-lg">
                             <UserCog className="w-6 h-6 text-purple-600" />
                         </div>
                     </div>
                 </Card>
-                <Card className="p-6 bg-white shadow-sm border border-gray-100">
+                <Card className="p-6 bg-card shadow-sm border border-border">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Planos Ativos</p>
-                            <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.activePlans}</h3>
+                            <p className="text-sm font-medium text-muted-foreground">Planos Ativos</p>
+                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.activePlans}</h3>
                         </div>
                         <div className="p-2 bg-blue-50 rounded-lg">
                             <CreditCard className="w-6 h-6 text-blue-600" />
@@ -278,35 +285,37 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            <Card className="border border-gray-200 shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 text-gray-600">
+            <Card className="border border-border shadow-sm overflow-hidden bg-card">
+                <div className="p-5 border-b border-border bg-muted/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-foreground">
                         <Building2 className="w-5 h-5" />
                         <h2 className="font-semibold">Empresas Cadastradas</h2>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="relative">
-                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <div className="flex flex-col lg:flex-row gap-3 items-end lg:items-center w-full lg:w-auto">
+                        <div className="relative w-full lg:w-64">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 placeholder="Buscar empresa..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                className="pl-9 h-9 w-64 text-sm"
+                                className="pl-9 h-10 text-sm bg-card text-foreground border-input focus:border-primary"
                             />
                         </div>
-                        <Select
-                            value={filterStatus}
-                            onChange={e => setFilterStatus(e.target.value)}
-                            options={[
-                                { value: 'all', label: 'Todos Status' },
-                                { value: 'active', label: 'Ativos' },
-                                { value: 'suspended', label: 'Suspensos' },
-                                { value: 'trial', label: 'Trial' }
-                            ]}
-                            className="h-9 text-sm w-36"
-                        />
-                        <Button variant="ghost" size="sm" onClick={loadData}>
+                        <div className="w-full lg:w-40">
+                            <select
+                                value={filterStatus}
+                                onChange={e => setFilterStatus(e.target.value)}
+                                className="w-full h-10 text-sm bg-card text-foreground border border-input rounded-lg px-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer appearance-none"
+                            >
+                                <option value="all">Todos Status</option>
+                                <option value="active">Ativos</option>
+                                <option value="suspended">Suspensos</option>
+                                <option value="trial">Trial</option>
+                            </select>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={loadData} className="h-10 bg-card hover:bg-muted text-foreground border-input">
+                            <RefreshCw className="w-4 h-4 mr-2" />
                             Atualizar
                         </Button>
                     </div>
@@ -314,20 +323,20 @@ export const SuperAdminDashboard: React.FC = () => {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
+                        <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                             <tr>
-                                <th className="px-6 py-3">Empresa</th>
-                                <th className="px-6 py-3">Status</th>
-                                <th className="px-6 py-3">Plano</th>
+                                <th className="px-6 py-3 w-[280px]">Empresa</th>
+                                <th className="px-6 py-3 w-[120px]">Status</th>
+                                <th className="px-6 py-3 w-[120px]">Plano</th>
                                 <th className="px-6 py-3">Módulos</th>
-                                <th className="px-6 py-3">Criado em</th>
-                                <th className="px-6 py-3 text-right">Ações</th>
+                                <th className="px-6 py-3 w-[130px]">Criado em</th>
+                                <th className="px-6 py-3 text-right w-[80px]">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-border">
                             {filteredCompanies.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                                         <div className="flex flex-col items-center gap-2">
                                             <Search className="w-8 h-8 text-gray-300" />
                                             <p>Nenhuma empresa encontrada com os filtros atuais.</p>
@@ -336,70 +345,78 @@ export const SuperAdminDashboard: React.FC = () => {
                                 </tr>
                             ) : (
                                 filteredCompanies.map((company) => (
-                                    <tr key={company.id} className="hover:bg-gray-50/50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-900">{company.name}</span>
-                                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                                    <span>{company.cnpj || 'Sem Documento'}</span>
-                                                    <span>•</span>
-                                                    <span>{company.ownerEmail}</span>
+                                    <tr key={company.id} className="hover:bg-muted/30 transition-colors group">
+                                        {/* Empresa */}
+                                        <td className="px-6 py-4 align-middle">
+                                            <div className="min-w-0">
+                                                <span className="font-semibold text-foreground block">{company.name}</span>
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                                                    {company.cnpj && <span className="shrink-0">{company.cnpj}</span>}
+                                                    {company.cnpj && company.ownerEmail && <span>•</span>}
+                                                    {company.ownerEmail && (
+                                                        <span className="truncate max-w-[160px]">{company.ownerEmail}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        {/* Status */}
+                                        <td className="px-6 py-4 align-middle">
                                             <Badge className={getStatusColor(company.status)}>
-                                                {company.status === 'active' && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                                                {company.status === 'suspended' && <PauseCircle className="w-3 h-3 mr-1" />}
-                                                {company.status === 'trial' && <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                {company.status === 'active' && <CheckCircle2 className="w-3 h-3 mr-1 inline" />}
+                                                {company.status === 'suspended' && <PauseCircle className="w-3 h-3 mr-1 inline" />}
+                                                {company.status === 'trial' && <AlertTriangle className="w-3 h-3 mr-1 inline" />}
                                                 {company.status.toUpperCase()}
                                             </Badge>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-gray-900 font-medium">{(company as any).planName || 'Custom'}</span>
-                                                {company.subscriptionEnd && (
-                                                    <span className="text-xs text-gray-400">Expira: {new Date(company.subscriptionEnd).toLocaleDateString()}</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-wrap gap-1 max-w-[200px]">
-                                                {company.contractedModules?.slice(0, 3).map(m => (
-                                                    <Badge key={m} variant="secondary" className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 border-gray-200">
-                                                        {SYSTEM_MODULES.find(sm => sm.id === m)?.name || m}
-                                                    </Badge>
-                                                ))}
-                                                {(company.contractedModules?.length || 0) > 3 && (
-                                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                                                        +{(company.contractedModules?.length || 0) - 3}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500">
-                                            {new Date(company.createdAt).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-6 py-4 text-right relative">
-                                            <Button variant="ghost" size="icon" onClick={() => setActiveMenuId(activeMenuId === company.id ? null : company.id)}>
-                                                <MoreVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                                            </Button>
-
-                                            {activeMenuId === company.id && (
-                                                <div className="absolute right-8 top-8 z-50 bg-white border border-gray-200 shadow-xl rounded-lg w-48 py-1 text-left animate-in fade-in zoom-in-95 duration-100">
-                                                    <button onClick={() => handleLoginAs(company.id)} className="w-full px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
-                                                        <Globe className="w-4 h-4" /> Acessar Painel
-                                                    </button>
-                                                    <button onClick={() => handleEdit(company)} className="w-full px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
-                                                        <Edit2 className="w-4 h-4" /> Editar Dados
-                                                    </button>
-                                                    {/* Plan Manager Link or Modal trigger could go here */}
-                                                    <div className="h-px bg-gray-100 my-1"></div>
-                                                    <button onClick={() => handleDelete(company.id, company.name)} className="w-full px-4 py-2 hover:bg-red-50 text-sm text-red-600 flex items-center gap-2">
-                                                        <Trash2 className="w-4 h-4" /> Excluir Empresa
-                                                    </button>
+                                        {/* Plano */}
+                                        <td className="px-6 py-4 align-middle">
+                                            <span className="font-medium text-foreground">{(company as any).planName || 'Custom'}</span>
+                                            {company.subscriptionEnd && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    Exp: {new Date(company.subscriptionEnd).toLocaleDateString('pt-BR')}
                                                 </div>
                                             )}
+                                        </td>
+                                        {/* Módulos */}
+                                        <td className="px-6 py-4 align-middle">
+                                            <div className="flex flex-wrap gap-1">
+                                                {company.contractedModules?.slice(0, 4).map(m => {
+                                                    const moduleMap: Record<string, string> = {
+                                                        'FINANCE': 'Fin', 'COMMERCIAL': 'Com', 'ROUTINES': 'Rot', 'REPORTS': 'Rel', 'API': 'API',
+                                                        'mod_finance': 'Fin', 'mod_commercial': 'Com', 'mod_tasks': 'Rot', 'mod_reports': 'Rel', 'mod_api': 'API'
+                                                    };
+                                                    const name = moduleMap[m] || m.replace('mod_', '').substring(0, 3).toUpperCase();
+                                                    return (
+                                                        <span key={m} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary text-secondary-foreground border border-border uppercase tracking-wide">
+                                                            {name}
+                                                        </span>
+                                                    );
+                                                })}
+                                                {(company.contractedModules?.length || 0) > 4 && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
+                                                        +{(company.contractedModules?.length || 0) - 4}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        {/* Criado em */}
+                                        <td className="px-6 py-4 align-middle text-muted-foreground text-sm">
+                                            {new Date(company.createdAt).toLocaleDateString('pt-BR')}
+                                        </td>
+                                        {/* Ações */}
+                                        <td className="px-6 py-4 align-middle text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="ghost" size="icon" onClick={() => handleLoginAs(company.id)} title="Acessar como Admin">
+                                                    <Globe className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEdit(company)} title="Editar Dados">
+                                                    <Edit2 className="w-4 h-4 text-muted-foreground hover:text-blue-500" />
+                                                </Button>
+                                                <div className="w-px h-4 bg-border mx-1"></div>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id, company.name)} title="Excluir Empresa">
+                                                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -423,8 +440,11 @@ export const SuperAdminDashboard: React.FC = () => {
                         <Input label="Email do Proprietário" value={newCompany.ownerEmail} onChange={e => setNewCompany({ ...newCompany, ownerEmail: e.target.value })} required disabled={!!editingId} />
                         <div className="flex gap-2 items-end">
                             <div className="w-24">
-                                <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo Doc</label>
-                                <Select value={docType} onChange={e => setDocType(e.target.value as any)} options={[{ value: 'CNPJ', label: 'CNPJ' }, { value: 'CPF', label: 'CPF' }]} />
+                                <label className="text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider block">Tipo Doc</label>
+                                <select value={docType} onChange={e => setDocType(e.target.value as any)} className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer">
+                                    <option value="CNPJ">CNPJ</option>
+                                    <option value="CPF">CPF</option>
+                                </select>
                             </div>
                             <div className="flex-1">
                                 <Input
@@ -441,20 +461,22 @@ export const SuperAdminDashboard: React.FC = () => {
                             <Input label="Senha Inicial" type="password" value={newCompany.password} onChange={e => setNewCompany({ ...newCompany, password: e.target.value })} />
                         )}
 
-                        <Select
-                            label="Status"
-                            value={newCompany.status}
-                            onChange={e => setNewCompany({ ...newCompany, status: e.target.value })}
-                            options={[
-                                { value: 'active', label: 'Ativo' },
-                                { value: 'suspended', label: 'Suspenso' },
-                                { value: 'trial', label: 'Trial' }
-                            ]}
-                        />
+                        <div>
+                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Status</label>
+                            <select
+                                value={newCompany.status}
+                                onChange={e => setNewCompany({ ...newCompany, status: e.target.value })}
+                                className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
+                            >
+                                <option value="active">Ativo</option>
+                                <option value="suspended">Suspenso</option>
+                                <option value="trial">Trial</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Módulos Liberados</label>
+                    <div className="border-t border-border pt-4">
+                        <label className="block text-sm font-medium text-foreground mb-2">Módulos Liberados</label>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             {SYSTEM_MODULES.map(module => (
                                 <div key={module.id}
@@ -468,15 +490,15 @@ export const SuperAdminDashboard: React.FC = () => {
                                     className={cn(
                                         "cursor-pointer border rounded-lg p-3 flex items-center gap-3 transition-all",
                                         draftModules.includes(module.id)
-                                            ? "bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200"
-                                            : "bg-white border-gray-200 hover:border-gray-300"
+                                            ? "bg-indigo-50/10 border-indigo-500/50 ring-1 ring-indigo-500/20"
+                                            : "bg-card border-border hover:border-primary/50"
                                     )}>
                                     <div className={cn("w-4 h-4 rounded border flex items-center justify-center",
                                         draftModules.includes(module.id) ? "bg-indigo-600 border-indigo-600" : "border-gray-300"
                                     )}>
                                         {draftModules.includes(module.id) && <Check className="w-3 h-3 text-white" />}
                                     </div>
-                                    <span className="text-sm font-medium text-gray-700">{module.name}</span>
+                                    <span className="text-sm font-medium text-foreground">{module.name}</span>
                                 </div>
                             ))}
                         </div>

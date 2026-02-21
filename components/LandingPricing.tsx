@@ -60,6 +60,7 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ plans, catalog, 
                 onClose={() => setIsSignupOpen(false)}
                 planId={selectedPlanId}
                 plans={plans}
+                cycle={cycle}
             />
 
             <div className="container mx-auto max-w-7xl relative z-10">

@@ -12,9 +12,10 @@ interface SignupModalProps {
     onClose: () => void;
     planId: string | null;
     plans: SaasPlan[];
+    cycle: 'monthly' | 'semiannual' | 'annual';
 }
 
-export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, planId, plans }) => {
+export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, planId, plans, cycle }) => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +23,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, planI
 
     const [formData, setFormData] = useState({
         legal_name: '',
+        admin_name: '',
         email: '',
         whatsapp: '',
         password: '',
@@ -50,7 +52,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, planI
             // 1. Register Company (calls auth-signup)
             const newCompany = await api.registerCompany({
                 ...formData,
-                plan_id: planId
+                plan_id: planId,
+                cycle: cycle
             });
 
             // 2. Sign In
@@ -97,11 +100,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, planI
                 )}
 
                 <Input
-                    label="Nome da Empresa / Responsável"
+                    label="Nome da Empresa"
                     name="legal_name"
                     value={formData.legal_name}
                     onChange={handleChange}
                     placeholder="Ex: Minha Empresa Ltda"
+                    required
+                />
+
+                <Input
+                    label="Seu Nome Completo"
+                    name="admin_name"
+                    value={formData.admin_name}
+                    onChange={handleChange}
+                    placeholder="Ex: João da Silva"
                     required
                 />
 
