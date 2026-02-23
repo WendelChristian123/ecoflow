@@ -77,16 +77,21 @@ serve(async (req) => {
 
         // 4. Create/Get Customer in Asaas
         const asaas = new AsaasClient();
-        const asaasCustomer = await asaas.createCustomer({
-            name: company.legal_name,
-            cpfCnpj: sanitizeNumbers(company.cpf_cnpj),
-            email: company.email,
-            mobilePhone: sanitizeNumbers(company.whatsapp),
-            externalReference: companyData.id,
-            notificationDisabled: false,
-        });
-
-        if (!asaasCustomer.id) throw new Error("Failed to create customer in Asaas");
+        let asaasCustomer;
+        try {
+            asaasCustomer = await asaas.createCustomer({
+                name: company.legal_name,
+                cpfCnpj: sanitizeNumbers(company.cpf_cnpj),
+                email: company.email,
+                mobilePhone: sanitizeNumbers(company.whatsapp),
+                externalReference: companyData.id,
+                notificationDisabled: false,
+            });
+            if (!asaasCustomer.id) throw new Error("Failed to create customer in Asaas (no ID returned)");
+        } catch (e: any) {
+            console.error("ASAAS Customer Create Error:", e);
+            throw new Error(`Asaas API Error (Customer): ${e.message}`);
+        }
 
         // 5. Create Subscription in Asaas
         // Trial logic: nextDueDate = now + 7 days
@@ -98,14 +103,14 @@ serve(async (req) => {
             customer: asaasCustomer.id,
             billingType: billing_type === 'pix' ? 'PIX' : 'CREDIT_CARD',
             value: priceData.amount,
-            nextDueDate: nextDueDateStr, // Trial ends here
-            cycle: cycle.toUpperCase(), // MONTHLY, SEMIANNUALLY, ANNUAL -> YEARLY
+            nextDueDate: nextDueDateStr,
             description: `Plano ${plan_id} - Ciclo ${cycle}`,
             externalReference: companyData.id,
         };
 
         if (cycle === 'semiannual') subscriptionPayload.cycle = 'SEMIANNUALLY';
-        if (cycle === 'annual') subscriptionPayload.cycle = 'YEARLY';
+        else if (cycle === 'annual') subscriptionPayload.cycle = 'YEARLY';
+        else subscriptionPayload.cycle = 'MONTHLY';
 
         if (billing_type === 'credit_card') {
             if (!credit_card) throw new Error("Missing credit card info");
