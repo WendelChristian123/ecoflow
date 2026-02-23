@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PublicLayout } from '../../components/PublicLayout';
 import { Button, cn } from '../../components/Shared';
-import { ArrowLeft, Lock } from 'lucide-react';
+import { ArrowLeft, Lock, CheckCircle, Copy, AlertCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { SaasPlan } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -25,6 +25,8 @@ export const CheckoutPage: React.FC = () => {
     const [selectedPlanId, setSelectedPlanId] = useState<string | null>(searchParams.get('plan'));
     const [cycle, setCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
     const [loading, setLoading] = useState(false);
+    const [pixData, setPixData] = useState<{ encodedImage: string, payload: string, expirationDate: string } | null>(null);
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
     // Fetch Plans & Sync with URL
     React.useEffect(() => {
@@ -146,6 +148,7 @@ export const CheckoutPage: React.FC = () => {
     };
 
     const handleSubscribe = async () => {
+        setCheckoutError(null);
         if (!validateForm()) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
@@ -186,35 +189,75 @@ export const CheckoutPage: React.FC = () => {
             const response = await api.subscribe(payload);
 
             if (response.pix) {
-                // Handling PIX
-                // For now, redirect to a "Success/Pending" page with the QR Code, or just show it.
-                // Since we don't have a dedicated page yet, let's serialize the PIX data and pass it to a success page?
-                // Or easier: navigate to dashboard but with a flag?
-                // Best approach for MVP: State update to show PIX modal (but I need to add that UI).
-                // Let's assume we navigate to /dashboard?start=true&pix_code=... for now, or just alert.
-                // Ideally: navigate('/checkout/success', { state: { pix: response.pix } })
-                // But I'll stick to a simple alert for now as requested "resumido". 
-                // Wait, "Checkout PIX" is a required test. I should probably copy the payload to clipboard or show it.
-
-                // Let's use a simple state to show PIX here if possible, or redirect.
-                // Redirecting to a "thank you" page is standard.
-                // I will navigate to dashboard for now as per original code, but finding a way to show the QR is better.
-                console.log("PIX Data:", response.pix);
-                alert(`Assinatura PIX criada! Copie o código no console ou verifique seu e-mail.`);
-                navigate('/dashboard');
+                setPixData(response.pix);
             } else {
                 // Credit Card Success
-                alert('Assinatura realizada com sucesso!');
                 navigate('/dashboard');
             }
 
         } catch (error: any) {
             console.error("Subscription Error:", error);
-            alert(error.message || "Erro ao processar assinatura.");
+            setCheckoutError(error.message || "Ocorreu um erro ao processar sua assinatura. Verifique os dados fornecidos.");
         } finally {
             setLoading(false);
         }
     };
+
+    if (pixData) {
+        return (
+            <PublicLayout className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+                <div className="max-w-md w-full bg-card border border-border rounded-xl shadow-lg p-8 text-center space-y-6">
+                    <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                        <CheckCircle className="w-8 h-8 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold">Pague com PIX</h2>
+                    <p className="text-muted-foreground text-sm">
+                        Sua assinatura no plano <strong>{selectedPlan?.name}</strong> foi reservada. 
+                        Escaneie o QR Code abaixo ou utilize o recurso Copia e Cola.
+                    </p>
+                    
+                    <div className="bg-white p-4 rounded-xl inline-block border-2 border-dashed border-border mx-auto">
+                        <img 
+                            src={pixData.encodedImage.startsWith('data:') ? pixData.encodedImage : `data:image/png;base64,${pixData.encodedImage}`} 
+                            alt="QR Code PIX" 
+                            className="w-48 h-48"
+                        />
+                    </div>
+
+                    <div className="space-y-2 text-left">
+                        <p className="text-sm font-medium">Código PIX Copia e Cola:</p>
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="text" 
+                                readOnly 
+                                value={pixData.payload} 
+                                className="w-full text-xs p-2 bg-muted rounded border border-border outline-none focus:ring-1 focus:ring-primary"
+                            />
+                            <Button 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(pixData.payload);
+                                    alert('Código copiado!');
+                                }}
+                                variant="outline"
+                                className="shrink-0 flex items-center gap-2"
+                            >
+                                <Copy size={14} /> Copiar
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-border">
+                        <Button className="w-full" onClick={() => navigate('/dashboard')}>
+                            Já realizei o pagamento
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-4">
+                            Seu painel será liberado automaticamente assim que o pagamento for compensado pelo banco.
+                        </p>
+                    </div>
+                </div>
+            </PublicLayout>
+        );
+    }
 
     return (
         <PublicLayout className="min-h-screen bg-background">
@@ -236,6 +279,15 @@ export const CheckoutPage: React.FC = () => {
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-8 items-start">
+                    {checkoutError && (
+                        <div className="lg:col-span-3 bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                            <div className="text-sm">
+                                <p className="font-semibold">Erro no pagamento</p>
+                                <p>{checkoutError}</p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* LEFT COLUMN: FORM */}
                     <div className="lg:col-span-2 space-y-8 pb-12">
