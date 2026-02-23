@@ -2062,7 +2062,6 @@ export const api = {
 
         if (error) throw new Error(error.message || "Erro na assinatura");
         if (result.error) throw new Error(result.error);
-
         return result;
     },
 

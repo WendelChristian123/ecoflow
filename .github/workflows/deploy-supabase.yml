@@ -24,8 +24,8 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy checkout function
-        run: supabase functions deploy billing-checkout --project-ref $PROJECT_ID
+      - name: Deploy billing-checkout
+        run: npx supabase functions deploy billing-checkout --project-ref fetbelqmlgjvmcondxzk --no-verify-jwt
 
       - name: Deploy cancel function
         run: supabase functions deploy billing-cancel --project-ref $PROJECT_ID
