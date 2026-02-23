@@ -1,0 +1,51 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ecoflow/supabase/functions/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_ID: fetbelqmlgjvmcondxzk
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy checkout function
+        run: supabase functions deploy billing-checkout --project-ref $PROJECT_ID
+        working-directory: ecoflow
+
+      - name: Deploy cancel function
+        run: supabase functions deploy billing-cancel --project-ref $PROJECT_ID
+        working-directory: ecoflow
+
+      - name: Deploy upgrade function
+        run: supabase functions deploy billing-upgrade --project-ref $PROJECT_ID
+        working-directory: ecoflow
+
+      - name: Deploy schedule-downgrade function
+        run: supabase functions deploy billing-schedule-downgrade --project-ref $PROJECT_ID
+        working-directory: ecoflow
+
+      - name: Deploy process-changes function
+        run: supabase functions deploy billing-process-scheduled-changes --project-ref $PROJECT_ID
+        working-directory: ecoflow
+
+      - name: Deploy sync status function
+        run: supabase functions deploy billing-sync-status --project-ref $PROJECT_ID
+        working-directory: ecoflow
+
+      - name: Deploy ASAAS webhooks function
+        run: supabase functions deploy webhooks-asaas --no-verify-jwt --project-ref $PROJECT_ID
+        working-directory: ecoflow
