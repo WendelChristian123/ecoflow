@@ -6,12 +6,14 @@ export const corsHeaders = {
 };
 
 export const createSupabaseClient = (req: Request) => {
+    const authHeader = req.headers.get("Authorization");
+
     return createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
         Deno.env.get("SUPABASE_ANON_KEY") ?? "",
         {
             global: {
-                headers: { Authorization: req.headers.get("Authorization")! },
+                headers: authHeader ? { Authorization: authHeader } : {},
             },
         }
     );
