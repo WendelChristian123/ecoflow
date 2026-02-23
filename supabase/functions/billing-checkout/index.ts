@@ -10,13 +10,18 @@ serve(async (req) => {
     }
 
     try {
+        const authHeader = req.headers.get("Authorization");
+        console.log("Auth Header present:", !!authHeader);
+
         const supabase = createSupabaseClient(req);
         const {
             data: { user },
+            error: authError
         } = await supabase.auth.getUser();
 
-        if (!user) {
-            return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        if (authError || !user) {
+            console.error("Auth Error:", authError?.message || "User is null");
+            return new Response(JSON.stringify({ error: authError?.message || "Unauthorized" }), {
                 status: 401,
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
             });
@@ -160,7 +165,7 @@ serve(async (req) => {
         let pixData = null;
         if (billing_type === 'pix') {
             // List payments for this subscription to find the pending one
-            const payments = await asaas.request(`/subscriptions/${asaasSubscription.id}/payments`, "GET");
+            const payments = await asaas.request(`/subscriptions/${asaasSubscription.id}/payments`, "GET") as any;
             const pendingPayment = payments.data?.find((p: any) => p.status === 'PENDING');
 
             if (pendingPayment) {
