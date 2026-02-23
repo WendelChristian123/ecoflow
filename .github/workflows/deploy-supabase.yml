@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'ecoflow/supabase/functions/**'
+      - 'supabase/functions/**'
       - '.github/workflows/deploy-supabase.yml'
   workflow_dispatch:
 
@@ -26,28 +26,21 @@ jobs:
 
       - name: Deploy checkout function
         run: supabase functions deploy billing-checkout --project-ref $PROJECT_ID
-        working-directory: ecoflow
 
       - name: Deploy cancel function
         run: supabase functions deploy billing-cancel --project-ref $PROJECT_ID
-        working-directory: ecoflow
 
       - name: Deploy upgrade function
         run: supabase functions deploy billing-upgrade --project-ref $PROJECT_ID
-        working-directory: ecoflow
 
       - name: Deploy schedule-downgrade function
         run: supabase functions deploy billing-schedule-downgrade --project-ref $PROJECT_ID
-        working-directory: ecoflow
 
       - name: Deploy process-changes function
         run: supabase functions deploy billing-process-scheduled-changes --project-ref $PROJECT_ID
-        working-directory: ecoflow
 
       - name: Deploy sync status function
         run: supabase functions deploy billing-sync-status --project-ref $PROJECT_ID
-        working-directory: ecoflow
 
       - name: Deploy ASAAS webhooks function
         run: supabase functions deploy webhooks-asaas --no-verify-jwt --project-ref $PROJECT_ID
-        working-directory: ecoflow
