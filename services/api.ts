@@ -2052,8 +2052,12 @@ export const api = {
         billing_type: 'credit_card' | 'pix',
         credit_card?: { holderName: string, number: string, expiryMonth: string, expiryYear: string, ccv: string }
     }) => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
         const { data: result, error } = await supabase.functions.invoke('billing-checkout', {
-            body: data
+            body: data,
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined
         });
 
         if (error) throw new Error(error.message || "Erro na assinatura");
@@ -2063,8 +2067,12 @@ export const api = {
     },
 
     cancelSubscription: async (subscriptionId: string) => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
         const { data: result, error } = await supabase.functions.invoke('billing-cancel', {
-            body: { subscription_id: subscriptionId }
+            body: { subscription_id: subscriptionId },
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined
         });
 
         if (error) throw new Error(error.message || "Erro no cancelamento");
@@ -2080,8 +2088,12 @@ export const api = {
         billing_type: 'credit_card' | 'pix',
         credit_card?: any
     }) => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
         const { data: result, error } = await supabase.functions.invoke('billing-upgrade', {
-            body: data
+            body: data,
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined
         });
 
         if (error) throw new Error(error.message || "Erro no upgrade");
@@ -2095,8 +2107,12 @@ export const api = {
         to_plan_id: string,
         to_cycle: string
     }) => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
         const { data: result, error } = await supabase.functions.invoke('billing-schedule-downgrade', {
-            body: data
+            body: data,
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined
         });
 
         if (error) throw new Error(error.message || "Erro no agendamento");
