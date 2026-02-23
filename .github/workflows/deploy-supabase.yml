@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'ecoflow/supabase/functions/**'
+      - '.github/workflows/deploy-supabase.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
