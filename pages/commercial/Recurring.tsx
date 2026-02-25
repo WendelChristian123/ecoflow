@@ -75,11 +75,11 @@ export const RecurringPage: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h1 className="text-2xl font-bold text-foreground dark:text-white flex items-center gap-3"><RefreshCw className="text-emerald-500" /> Contratos Recorrentes</h1>
-                <div className="flex gap-2">
-                    <Button variant="ghost" className="gap-2" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
-                    <Button className="gap-2" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <Button variant="ghost" className="gap-2 flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
+                    <Button className="gap-2 flex-1 md:flex-none" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
                 </div>
             </div>
 
@@ -99,23 +99,23 @@ export const RecurringPage: React.FC = () => {
                         <div
                             key={s.id}
                             onClick={() => setDetailService(s)}
-                            className="bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group"
+                            className="bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 cursor-pointer transition-all group"
                         >
-                            <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
                                 {/* Contract ID */}
-                                <div className="flex flex-col items-center justify-center h-12 w-16 bg-emerald-100 dark:bg-slate-800 rounded text-muted-foreground dark:text-slate-400 font-mono text-xs border border-emerald-200 dark:border-slate-700">
+                                <div className="flex flex-col items-center justify-center h-12 w-14 md:w-16 shrink-0 bg-emerald-100 dark:bg-slate-800 rounded text-muted-foreground dark:text-slate-400 font-mono text-xs border border-emerald-200 dark:border-slate-700">
                                     <span className="text-[10px] uppercase text-muted-foreground dark:text-slate-500">Contrato</span>
                                     <span className="font-bold text-foreground dark:text-slate-300">#{s.id.substring(0, 4)}</span>
                                 </div>
 
                                 {/* Client Name */}
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-muted-foreground dark:text-slate-500 font-medium uppercase mb-0.5">Cliente</span>
-                                    <h3 className="font-bold text-foreground dark:text-white text-lg leading-none">{s.contactName || s.contact?.name || '---'}</h3>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-xs text-muted-foreground dark:text-slate-500 font-medium uppercase mb-0.5 shrink-0">Cliente</span>
+                                    <h3 className="font-bold text-foreground dark:text-white text-base md:text-lg leading-tight truncate max-w-[200px] md:max-w-xs">{s.contactName || s.contact?.name || '---'}</h3>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-8">
+                            <div className="flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0">
                                 {/* Dates */}
                                 <div className="hidden md:flex items-center gap-6 text-sm">
                                     <div className="flex flex-col items-start">

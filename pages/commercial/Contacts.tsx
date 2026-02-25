@@ -116,20 +116,24 @@ export const ContactsPage: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden p-4 pt-1 bg-background select-none">
             {/* COMPACT HEADER */}
-            <div className="flex justify-between items-center mb-3 shrink-0 h-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3 shrink-0 h-auto md:h-10">
                 <h1 className="text-lg font-bold text-foreground flex items-center gap-2"><Users size={18} className="text-emerald-500" /> Contatos</h1>
-                <div className="flex gap-2">
-                    <div className="relative w-64 group">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 min-w-[140px] md:w-64 md:flex-none group">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" size={14} />
                         <Input
                             placeholder="Buscar..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="pl-8 h-8 text-xs bg-muted/40 border-transparent hover:bg-muted/60 focus:bg-background focus:border-emerald-500/50 transition-all rounded-lg"
+                            className="pl-8 h-8 text-xs bg-muted/40 border-transparent hover:bg-muted/60 focus:bg-background focus:border-emerald-500/50 transition-all rounded-lg w-full"
                         />
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs" onClick={() => setIsReportOpen(true)}><FileText size={14} /> Relatórios</Button>
-                    <Button size="sm" className="h-8 gap-2 text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm" onClick={() => { setEditingContact(undefined); setIsModalOpen(true); }}><Plus size={14} /> Novo</Button>
+                    <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs shrink-0" onClick={() => setIsReportOpen(true)}>
+                        <FileText size={14} /> <span className="hidden sm:inline">Relatórios</span>
+                    </Button>
+                    <Button size="sm" className="h-8 gap-2 text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shrink-0" onClick={() => { setEditingContact(undefined); setIsModalOpen(true); }}>
+                        <Plus size={14} /> <span className="hidden sm:inline">Novo</span>
+                    </Button>
                 </div>
             </div>
 

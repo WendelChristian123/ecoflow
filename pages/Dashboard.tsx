@@ -263,9 +263,9 @@ export const Dashboard: React.FC = () => {
                 <div className={cn("absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none", theme.bg.replace('/10', ''))} />
 
                 {/* Content Area */}
-                <div className="p-6 pt-4 flex flex-col justify-between flex-1 relative z-10">
+                <div className="p-4 md:p-6 pt-3 md:pt-4 flex flex-col justify-between flex-1 relative z-10">
                     <div className="mt-auto">
-                        <div className={cn("text-5xl font-black tracking-tighter leading-none mb-2 transition-transform duration-300 group-hover:translate-x-1",
+                        <div className={cn("text-4xl md:text-5xl font-black tracking-tighter leading-none mb-1 md:mb-2 transition-transform duration-300 group-hover:translate-x-1",
                             variant === 'info' ? "text-emerald-500" : theme.text  // 🎨 VERDE para "Próximos Dias"
                         )}>
                             {count}
@@ -298,11 +298,11 @@ export const Dashboard: React.FC = () => {
         };
 
         const EmptyState = () => (
-            <div className="flex items-center gap-4 text-muted-foreground py-6 px-6 border border-dashed border-border rounded-2xl bg-card shadow-sm opacity-80 hover:opacity-100 transition-opacity">
-                <div className={cn("p-2 rounded-full bg-secondary")}>
-                    <CheckCircle2 size={20} className="text-primary" />
+            <div className="flex items-center gap-3 md:gap-4 text-muted-foreground p-4 md:p-6 border border-dashed border-border rounded-2xl bg-card shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+                <div className={cn("p-1.5 md:p-2 rounded-full bg-secondary shrink-0")}>
+                    <CheckCircle2 size={18} className="text-primary md:w-5 md:h-5" />
                 </div>
-                <span className="text-xs font-medium uppercase tracking-wide">
+                <span className="text-[11px] md:text-xs font-medium uppercase tracking-wide">
                     {variant === 'danger' ? "Excelente! Nenhum item vencido sob sua responsabilidade." :
                         variant === 'warning' ? "Sem pendências críticas para hoje." :
                             "Tudo tranquilo para os próximos dias."}
@@ -311,17 +311,17 @@ export const Dashboard: React.FC = () => {
         );
 
         return (
-            <section className="mb-8">
-                <div className="flex items-center gap-3 mb-4 pl-1">
-                    <div className={cn("w-1 h-4 rounded-full", variant === 'danger' ? 'bg-red-500' : variant === 'warning' ? 'bg-amber-500' : 'bg-emerald-500')}></div>
-                    <div className={cn("text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-red-500' : variant === 'warning' ? 'text-amber-500' : 'text-emerald-500')}>
+            <section className="mb-6 md:mb-8">
+                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4 pl-1">
+                    <div className={cn("w-1 h-3 md:h-4 rounded-full", variant === 'danger' ? 'bg-red-500' : variant === 'warning' ? 'bg-amber-500' : 'bg-emerald-500')}></div>
+                    <div className={cn("text-xs md:text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-red-500' : variant === 'warning' ? 'text-amber-500' : 'text-emerald-500')}>
                         {title}
                     </div>
-                    <div className="h-px bg-border flex-1 ml-2"></div>
+                    <div className="h-px bg-border flex-1 ml-1 md:ml-2"></div>
                 </div>
 
                 {hasItems ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-3 md:gap-5">
                         <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={20} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />
                         <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={20} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />
                         <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={20} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />
@@ -394,17 +394,20 @@ export const Dashboard: React.FC = () => {
         const moduleNames: Record<string, string> = { tasks: 'Tarefas', events: 'Agenda', finance: 'Financeiro', quotes: 'Orçamentos' };
 
         return (
-            <div className="sticky top-0 z-30 bg-background/98 backdrop-blur-lg py-4 -mx-6 px-6 flex items-center justify-between shadow-sm border-b border-border/50">
+            <div className="sticky top-0 z-30 bg-background/98 backdrop-blur-lg py-3 md:py-4 -mx-4 px-4 md:-mx-6 md:px-6 shadow-sm border-b border-border/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                 {/* Grupo 1: Filtros de Conteúdo */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
                     {/* Modules Dropdown - Premium */}
-                    <div className="relative">
+                    <div className="relative flex-1 md:flex-none">
                         <button
                             onClick={() => setIsModulesOpen(!isModulesOpen)}
-                            className="flex items-center gap-2 bg-card border border-border hover:border-emerald-500/50 text-foreground px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm"
+                            className="flex items-center justify-between md:justify-start gap-2 bg-card border border-border hover:border-emerald-500/50 text-foreground px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm w-full"
                         >
-                            <Layers size={16} className="text-emerald-600 dark:text-emerald-500" />
-                            <span>Módulos ({selectedModules.length})</span>
+                            <div className="flex items-center gap-2">
+                                <Layers size={16} className="text-emerald-600 dark:text-emerald-500" />
+                                <span className="hidden sm:inline">Módulos ({selectedModules.length})</span>
+                                <span className="sm:hidden">({selectedModules.length})</span>
+                            </div>
                             <ChevronDown size={14} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
                         </button>
 
@@ -435,18 +438,18 @@ export const Dashboard: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="h-6 w-px bg-border" />
+                    <div className="hidden md:block h-6 w-px bg-border" />
 
                     {/* Horizon Toggle - Premium */}
-                    <div className="flex bg-secondary/50 rounded-lg p-1 border border-border gap-1">
+                    <div className="flex bg-secondary/50 rounded-lg p-1 border border-border gap-0.5 md:gap-1 overflow-x-auto custom-scrollbar flex-1 md:flex-none">
                         {[3, 7, 15, 30].map(d => (
                             <button
                                 key={d}
                                 onClick={() => setHorizon(d as any)}
                                 className={cn(
-                                    "px-4 py-1.5 text-sm rounded-md transition-all font-semibold min-w-[50px]",
+                                    "px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-md transition-all font-semibold min-w-[40px] md:min-w-[50px] flex-1 md:flex-none",
                                     horizon === d
-                                        ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                                        ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm"
                                         : "text-muted-foreground hover:text-foreground hover:bg-background/80"
                                 )}
                             >
@@ -457,28 +460,30 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Grupo 2: Usuário e Ações */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between w-full md:w-auto gap-2 md:gap-4">
                     {/* Assignee Dropdown - Premium Custom */}
-                    <div className="relative">
+                    <div className="relative flex-1 md:flex-none">
                         <button
                             onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
-                            className="flex items-center gap-2 bg-card border border-border hover:border-emerald-500/30 rounded-lg px-3 py-2 h-9 shadow-sm transition-all min-w-[140px]"
+                            className="flex items-center justify-between md:justify-start gap-2 bg-card border border-border hover:border-emerald-500/30 rounded-lg px-3 py-2 h-9 shadow-sm transition-all md:min-w-[140px] w-full"
                         >
-                            <UserCircle size={16} className="text-muted-foreground" />
-                            <span className="text-sm font-medium text-foreground flex-1 text-left">
-                                {assigneeFilter === 'all'
-                                    ? 'Resp: Todos'
-                                    : assignees.find(u => u.id === assigneeFilter)?.name.split(' ')[0] || 'Todos'}
-                            </span>
-                            <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isAssigneeOpen ? 'rotate-180' : ''}`} />
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <UserCircle size={16} className="text-muted-foreground shrink-0" />
+                                <span className="text-xs md:text-sm font-medium text-foreground truncate">
+                                    {assigneeFilter === 'all'
+                                        ? 'Todos'
+                                        : assignees.find(u => u.id === assigneeFilter)?.name.split(' ')[0] || 'Todos'}
+                                </span>
+                            </div>
+                            <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${isAssigneeOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isAssigneeOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsAssigneeOpen(false)} />
-                                <div className="absolute top-full right-0 mt-2 w-48 bg-popover border border-border rounded-xl shadow-xl z-50 p-2 transform origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                                <div className="absolute top-full left-0 md:left-auto md:right-0 mt-2 w-48 bg-popover border border-border rounded-xl shadow-xl z-50 p-2 transform origin-top md:origin-top-right animate-in fade-in zoom-in-95 duration-200">
                                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Responsável</div>
-                                    <div className="space-y-0.5">
+                                    <div className="space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
                                         <button
                                             onClick={() => { setAssigneeFilter('all'); setIsAssigneeOpen(false); }}
                                             className={cn(
@@ -502,8 +507,8 @@ export const Dashboard: React.FC = () => {
                                                         : "text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium"
                                                 )}
                                             >
-                                                <span>{u.name.split(' ')[0]}</span>
-                                                {assigneeFilter === u.id && <CheckCircle2 size={16} />}
+                                                <span className="truncate">{u.name.split(' ')[0]}</span>
+                                                {assigneeFilter === u.id && <CheckCircle2 size={16} className="shrink-0 ml-2" />}
                                             </button>
                                         ))}
                                     </div>
@@ -512,28 +517,30 @@ export const Dashboard: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="h-6 w-px bg-border" />
+                    <div className="hidden md:block h-6 w-px bg-border" />
 
-                    {/* Date Display - Premium */}
-                    <div className="flex flex-col items-end leading-none">
-                        <span className="text-base font-bold text-foreground tracking-tight">
-                            {format(new Date(), 'dd/MM', { locale: ptBR })}
-                        </span>
-                        <span className="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-500 tracking-wider">
-                            {format(new Date(), 'EEE', { locale: ptBR }).replace('.', '')}
-                        </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                        {/* Date Display - Premium */}
+                        <div className="flex flex-col items-end leading-none">
+                            <span className="text-sm md:text-base font-bold text-foreground tracking-tight">
+                                {format(new Date(), 'dd/MM', { locale: ptBR })}
+                            </span>
+                            <span className="text-[10px] md:text-xs font-bold uppercase text-emerald-600 dark:text-emerald-500 tracking-wider">
+                                {format(new Date(), 'EEE', { locale: ptBR }).replace('.', '')}
+                            </span>
+                        </div>
+
+                        {/* Refresh Button - Premium */}
+                        <button
+                            onClick={loadDashboard}
+                            className="h-8 w-8 md:h-9 md:w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors group border border-border md:border-transparent"
+                        >
+                            <RefreshCw size={14} className={cn(
+                                "text-muted-foreground group-hover:text-foreground transition-colors",
+                                loading && "animate-spin"
+                            )} />
+                        </button>
                     </div>
-
-                    {/* Refresh Button - Premium */}
-                    <button
-                        onClick={loadDashboard}
-                        className="h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors group"
-                    >
-                        <RefreshCw size={16} className={cn(
-                            "text-muted-foreground group-hover:text-foreground transition-colors",
-                            loading && "animate-spin"
-                        )} />
-                    </button>
                 </div>
             </div>
         );
@@ -542,7 +549,7 @@ export const Dashboard: React.FC = () => {
     return (
         <div className="h-full w-full bg-background flex flex-col overflow-y-auto custom-scrollbar">
             {/* Main Area */}
-            <div className="p-6 pt-0 w-full animate-in fade-in duration-500">
+            <div className="p-4 md:p-6 pt-0 w-full animate-in fade-in duration-500">
 
                 {/* Filters Row (Top) */}
                 {FilterBar()}

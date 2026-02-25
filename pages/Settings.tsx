@@ -138,17 +138,17 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             {/* TABS HEADER ... (keeping same) */}
-            <div className="flex items-center gap-6 border-b border-border pb-1">
+            <div className="flex items-center gap-6 border-b border-border pb-1 overflow-x-auto custom-scrollbar">
                 <button
                     onClick={() => setActiveTab('delegation')}
-                    className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'delegation' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                    className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'delegation' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                 >
                     Acessos Compartilhados
                 </button>
                 {isAdmin && (
                     <button
                         onClick={() => setActiveTab('users')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'users' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'users' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                     >
                         Usuários do Sistema
                     </button>
@@ -156,14 +156,14 @@ export const SettingsPage: React.FC = () => {
                 {isAdmin && (
                     <button
                         onClick={() => setActiveTab('finance')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'finance' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'finance' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                     >
                         Financeiro
                     </button>
                 )}
                 <button
                     onClick={() => setActiveTab('calendar')}
-                    className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'calendar' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                    className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'calendar' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                 >
                     Calendário
                 </button>
@@ -171,14 +171,14 @@ export const SettingsPage: React.FC = () => {
                 {isAdmin && (
                     <button
                         onClick={() => setActiveTab('audit')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'audit' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'audit' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                     >
                         Auditoria
                     </button>
                 )}
                 <button
                     onClick={() => setActiveTab('plan')}
-                    className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'plan' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                    className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'plan' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                 >
                     Meu Plano
                 </button>

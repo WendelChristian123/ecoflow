@@ -423,17 +423,17 @@ export const AgendaPage: React.FC = () => {
       </div>
 
       {/* MAIN CONTENT SPLIT */}
-      <div className="flex-1 flex gap-3 overflow-hidden min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row gap-3 overflow-y-auto md:overflow-hidden min-h-0 custom-scrollbar pb-4 md:pb-0">
 
         {/* LEFT: CALENDAR GRID */}
-        <div className="flex-1 flex flex-col bg-card border border-border rounded-xl shadow-lg overflow-y-auto">
+        <div className="flex-1 flex flex-col bg-card border border-border rounded-xl shadow-lg min-h-[500px] md:min-h-0 overflow-hidden">
           {/* Header Month/Nav - Compacted */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 bg-secondary/30">
-            <h2 className="text-lg font-bold text-foreground capitalize flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between px-2 md:px-4 py-2 border-b border-border shrink-0 bg-secondary/30 gap-2">
+            <h2 className="text-base md:text-lg font-bold text-foreground capitalize flex items-center gap-1.5 md:gap-2">
               <CalendarIcon size={16} className="text-emerald-500" />
-              {format(viewDate, 'MMMM yyyy', { locale: ptBR })}
+              {format(viewDate, 'MMM yyyy', { locale: ptBR })}
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <FilterSelect
                 inlineLabel="Status:"
                 value={statusFilter}
@@ -457,100 +457,104 @@ export const AgendaPage: React.FC = () => {
                   ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
                 ]}
                 darkMode={false}
-                className="min-w-[160px]"
+                className="w-full md:w-auto md:min-w-[160px]"
               />
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 ml-auto md:ml-0">
               <Button variant="outline" size="sm" onClick={handlePrevMonth} className="rounded-full w-6 h-6 p-0 text-muted-foreground"><ChevronLeft size={14} /></Button>
               <Button variant="outline" size="sm" onClick={handleToday} className="rounded-full px-2 h-6 text-muted-foreground hover:text-foreground text-[9px] uppercase tracking-wider font-bold">Hoje</Button>
               <Button variant="outline" size="sm" onClick={handleNextMonth} className="rounded-full w-6 h-6 p-0 text-muted-foreground"><ChevronRight size={14} /></Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 border-b border-border bg-secondary/30 shrink-0">
-            {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(day => (
-              <div key={day} className="py-2 text-center text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                {day}
+          <div className="flex-1 overflow-x-auto custom-scrollbar flex flex-col">
+            <div className="min-w-[700px] flex-1 flex flex-col">
+              <div className="grid grid-cols-7 border-b border-border bg-secondary/30 shrink-0">
+                {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(day => (
+                  <div key={day} className="py-2 text-center text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                    {day}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {(() => {
-            const allDays = eachDayOfInterval({
-              start: startOfWeek(startOfMonth(viewDate)),
-              end: endOfWeek(endOfMonth(viewDate))
-            });
-            const numWeeks = Math.ceil(allDays.length / 7);
+              {(() => {
+                const allDays = eachDayOfInterval({
+                  start: startOfWeek(startOfMonth(viewDate)),
+                  end: endOfWeek(endOfMonth(viewDate))
+                });
+                const numWeeks = Math.ceil(allDays.length / 7);
 
-            return (
-              <div
-                className="flex-1 grid grid-cols-7 h-full min-h-0 divide-x divide-y divide-border border-l border-t border-border bg-card"
-                style={{
-                  gridTemplateRows: numWeeks <= 5
-                    ? `repeat(${numWeeks}, minmax(0, 1fr))`
-                    : `repeat(${numWeeks}, minmax(80px, 1fr))`
-                }}
-              >
-                {allDays.map((day, idx) => {
-                  const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.startDate), day));
-                  const isSelected = isSameDay(day, selectedDate);
-                  const isCurrentMonth = isSameMonth(day, viewDate);
-                  const isTodayDate = isToday(day);
+                return (
+                  <div
+                    className="flex-1 grid grid-cols-7 h-full min-h-0 divide-x divide-y divide-border border-l border-t border-border bg-card"
+                    style={{
+                      gridTemplateRows: numWeeks <= 5
+                        ? `repeat(${numWeeks}, minmax(0, 1fr))`
+                        : `repeat(${numWeeks}, minmax(80px, 1fr))`
+                    }}
+                  >
+                    {allDays.map((day, idx) => {
+                      const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.startDate), day));
+                      const isSelected = isSameDay(day, selectedDate);
+                      const isCurrentMonth = isSameMonth(day, viewDate);
+                      const isTodayDate = isToday(day);
 
-                  // Show more events, but visually smaller
-                  const visibleEvents = dayEvents.slice(0, 2);
-                  const hiddenCount = dayEvents.length - 2;
+                      // Show more events, but visually smaller
+                      const visibleEvents = dayEvents.slice(0, 2);
+                      const hiddenCount = dayEvents.length - 2;
 
-                  return (
-                    <div
-                      key={day.toISOString()}
-                      onClick={() => setSelectedDate(day)}
-                      className={`relative isolate p-1.5 h-full transition-colors cursor-pointer group flex flex-col gap-1 overflow-hidden 
+                      return (
+                        <div
+                          key={day.toISOString()}
+                          onClick={() => setSelectedDate(day)}
+                          className={`relative isolate p-1.5 h-full transition-colors cursor-pointer group flex flex-col gap-1 overflow-hidden 
                                             ${!isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-card'}
                                             ${isSelected ? 'bg-secondary/80 outline outline-2 outline-emerald-500/50' : 'hover:bg-secondary/20'}
                                         `}
-                    >
-                      <div className="flex justify-start items-start mb-0.5">
-                        <span className={`text-[10px] h-5 w-5 flex items-center justify-center rounded-full shrink-0 transition-colors font-bold
+                        >
+                          <div className="flex justify-start items-start mb-0.5">
+                            <span className={`text-[10px] h-5 w-5 flex items-center justify-center rounded-full shrink-0 transition-colors font-bold
                                                 ${isTodayDate ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : (isSelected ? 'text-emerald-500' : (isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'))}
                                             `}>
-                          {format(day, 'd')}
-                        </span>
-                      </div>
+                              {format(day, 'd')}
+                            </span>
+                          </div>
 
-                      <div className="flex-1 min-h-0 max-h-full flex flex-col gap-1 w-full overflow-hidden">
-                        {visibleEvents.map(event => {
-                          const isCompleted = event.status === 'completed' || event.status === 'done' || event.metadata?.isPaid === true;
-                          return (
-                            <div
-                              key={event.id}
-                              className={`block max-w-full px-1.5 py-0.5 rounded text-[8px] font-medium truncate leading-tight relative
+                          <div className="flex-1 min-h-0 max-h-full flex flex-col gap-1 w-full overflow-hidden">
+                            {visibleEvents.map(event => {
+                              const isCompleted = event.status === 'completed' || event.status === 'done' || event.metadata?.isPaid === true;
+                              return (
+                                <div
+                                  key={event.id}
+                                  className={`block max-w-full px-1.5 py-0.5 rounded text-[8px] font-medium truncate leading-tight relative
                                                           ${getEventPillClass(event)}
                                                           ${isCompleted ? 'line-through opacity-60 decoration-muted-foreground' : ''}
                                                       `}
-                              title={event.title}
-                              onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
-                            >
-                              {event.title}
-                            </div>
-                          );
-                        })}
-                        {hiddenCount > 0 && (
-                          <div className="flex justify-center mt-1">
-                            <span className="text-[10px] leading-none px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500/30 transition-colors cursor-pointer">+ {hiddenCount}</span>
+                                  title={event.title}
+                                  onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
+                                >
+                                  {event.title}
+                                </div>
+                              );
+                            })}
+                            {hiddenCount > 0 && (
+                              <div className="flex justify-center mt-1">
+                                <span className="text-[10px] leading-none px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500/30 transition-colors cursor-pointer">+ {hiddenCount}</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
         </div>
 
         {/* RIGHT: SIDEBAR - Ultra Compacted */}
-        <div className="w-72 flex flex-col bg-card border border-border rounded-xl shadow-xl overflow-hidden shrink-0">
+        <div className="w-full md:w-72 flex flex-col bg-card border border-border rounded-xl shadow-xl overflow-hidden shrink-0 min-h-[400px] md:min-h-0 md:h-full">
           <div className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-secondary/30">
             <div>
               <h3 className="text-sm font-bold text-foreground capitalize leading-tight">

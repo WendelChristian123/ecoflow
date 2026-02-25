@@ -250,9 +250,9 @@ export const TasksPage: React.FC = () => {
     <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
       <div className="h-full flex flex-col gap-4">
         {/* Unified Controls Bar */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {/* 1. Search */}
-          <div className="relative">
+          <div className="relative flex-1 min-w-[120px] max-w-[200px]">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Filter size={14} />
             </div>
@@ -261,18 +261,16 @@ export const TasksPage: React.FC = () => {
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-28 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+              className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-full focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
             />
           </div>
 
           {/* 2. New Task Button */}
           {can('routines', 'create') && (
             <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
-              <Plus size={16} /> Nova
+              <Plus size={16} /> <span className="hidden sm:inline">Nova</span>
             </Button>
           )}
-
-
 
           {/* 4. Status */}
           <FilterSelect
@@ -287,7 +285,7 @@ export const TasksPage: React.FC = () => {
               { value: 'done', label: 'Concluído' }
             ]}
             darkMode={false}
-            className="min-w-[140px]"
+            className="min-w-[120px] md:min-w-[140px] flex-1 sm:flex-none"
           />
 
           {/* 5. Priority */}
@@ -303,7 +301,7 @@ export const TasksPage: React.FC = () => {
               { value: 'urgent', label: 'Urgente' }
             ]}
             darkMode={false}
-            className="min-w-[140px]"
+            className="min-w-[120px] md:min-w-[140px] flex-1 sm:flex-none"
           />
 
           {/* 6. Assignee */}
@@ -321,11 +319,11 @@ export const TasksPage: React.FC = () => {
               }))
             ]}
             darkMode={false}
-            className="min-w-[180px]"
+            className="min-w-[140px] md:min-w-[180px] flex-1 sm:flex-none"
           />
 
           {/* 7. View Toggle + Manage Stages */}
-          <div className="flex bg-card border border-border rounded-lg p-0.5">
+          <div className="flex bg-card border border-border rounded-lg p-0.5 ml-auto">
             <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
               <LayoutList size={16} />
             </button>

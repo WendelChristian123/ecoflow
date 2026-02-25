@@ -100,9 +100,9 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                             {quotes.map(q => (
                                 <div key={q.id}
                                     onClick={() => onQuoteClick(q)}
-                                    className="bg-card border border-border p-4 rounded-lg flex items-center justify-between hover:border-primary/30 hover:shadow-sm cursor-pointer transition-all group"
+                                    className="bg-card border border-border p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 hover:border-primary/30 hover:shadow-sm cursor-pointer transition-all group"
                                 >
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-4 w-full sm:w-auto">
                                         <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center border border-border font-mono text-xs text-muted-foreground group-hover:text-foreground group-hover:border-primary/20 transition-colors">
                                             #{q.id.substring(0, 4)}
                                         </div>
@@ -113,7 +113,7 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-left sm:text-right w-full sm:w-auto mt-2 sm:mt-0">
                                         <div className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">{fmt(q.totalValue)}</div>
                                         <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : (q.validUntil && new Date(q.validUntil) < new Date()) ? 'error' : 'warning'}>
                                             {(q.status === 'approved' ? 'NEGÓCIO FECHADO' : q.status === 'rejected' ? 'NEGÓCIO PERDIDO' : (q.validUntil && new Date(q.validUntil) < new Date()) ? 'VENCIDO' : translateQuoteStatus(q.status)).toUpperCase()}
@@ -292,12 +292,12 @@ export const CommercialOverview: React.FC = () => {
         <div className="h-[calc(100vh-64px)] bg-background text-foreground p-6 overflow-hidden flex flex-col gap-6 custom-scrollbar">
 
             {/* Header */}
-            <div className="flex justify-between items-center shrink-0">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard Comercial</h1>
                     <p className="text-muted-foreground text-sm">Visão geral de performance.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <Button variant="secondary" className="gap-2 h-9 text-sm" onClick={() => setIsReportModalOpen(true)}>
                         <FileText size={16} className="text-primary" /> Relatórios
                     </Button>
@@ -358,9 +358,9 @@ export const CommercialOverview: React.FC = () => {
                     <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2 shrink-0">
                         <PieChart size={18} className="text-primary" /> Distribuição por Status
                     </h3>
-                    <div className="flex-1 w-full min-h-0 relative flex items-center gap-4">
+                    <div className="flex-1 w-full min-h-0 relative flex flex-col md:flex-row items-center gap-4 overflow-y-auto md:overflow-hidden pb-4 md:pb-0">
                         {/* Chart Area */}
-                        <div className="h-full w-1/2 relative shrink-0">
+                        <div className="h-48 md:h-full w-full md:w-1/2 relative shrink-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <RechartsPieChart>
                                     <Pie
@@ -393,7 +393,7 @@ export const CommercialOverview: React.FC = () => {
                         </div>
 
                         {/* Legend Area with Progress Bars */}
-                        <div className="flex-1 h-full overflow-y-auto custom-scrollbar flex flex-col justify-center pr-2 gap-2.5">
+                        <div className="w-full md:w-1/2 md:flex-1 h-auto md:h-full overflow-y-visible md:overflow-y-auto custom-scrollbar flex flex-col justify-center pr-2 gap-2.5 shrink-0">
                             {statusDistribution.length > 0 ? statusDistribution.map((item, idx) => {
                                 const percentage = Math.round((item.value / kpiData.totalQuotes) * 100);
                                 return (

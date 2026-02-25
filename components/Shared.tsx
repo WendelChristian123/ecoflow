@@ -337,16 +337,16 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
       <div className={cn(
-        "relative z-10 w-full bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200",
+        "relative z-10 w-full bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col max-h-[95dvh] animate-in fade-in zoom-in-95 duration-200",
         className || "max-w-lg"
       )}>
-        <div className="flex items-center justify-between p-5 border-b border-border/40 shrink-0 bg-muted/20 rounded-t-2xl">
+        <div className="flex items-center justify-between p-4 md:p-5 border-b border-border/40 shrink-0 bg-muted/20 rounded-t-2xl">
           <h3 className="text-lg font-bold text-foreground tracking-tight">{title}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
             <X size={18} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 md:p-6">
           {children}
         </div>
       </div>
@@ -448,8 +448,8 @@ export const TaskTableView: React.FC<{
   };
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
-      <table className="w-full text-left text-sm text-muted-foreground">
+    <div className="bg-card rounded-xl border border-border overflow-x-auto shadow-sm custom-scrollbar">
+      <table className="w-full min-w-[800px] text-left text-sm text-muted-foreground">
         <thead className="bg-muted/50 text-foreground uppercase text-xs font-bold tracking-wider">
           <tr>
             <th className="px-6 py-4">Título</th>

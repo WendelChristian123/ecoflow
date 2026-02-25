@@ -369,7 +369,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     };
 
     return (
-        <div className="h-screen w-full bg-background flex text-foreground font-sans selection:bg-primary/30 overflow-hidden transition-colors duration-300">
+        <div className="h-[100dvh] w-[100dvw] bg-background flex text-foreground font-sans selection:bg-primary/30 overflow-hidden transition-colors duration-300 relative">
 
             {isMobileMenuOpen && (
                 <div

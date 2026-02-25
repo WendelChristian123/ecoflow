@@ -43,11 +43,11 @@ export const CatalogPage: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background text-foreground">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h1 className="text-2xl font-bold text-foreground flex items-center gap-3"><ShoppingBag className="text-emerald-500" /> Produtos & Serviços</h1>
-                <div className="flex gap-2">
-                    <Button variant="ghost" className="gap-2" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
-                    <Button className="gap-2" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Item</Button>
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <Button variant="ghost" className="gap-2 flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
+                    <Button className="gap-2 flex-1 md:flex-none" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Item</Button>
                 </div>
             </div>
 
@@ -61,9 +61,9 @@ export const CatalogPage: React.FC = () => {
                     <div
                         key={i.id}
                         onClick={() => { setEditingItem(i); setIsModalOpen(true); }}
-                        className="bg-[#ECFDF5] dark:bg-[#0F172A]/30 border border-[#0F172A]/10 dark:border-white/5 hover:border-primary/50 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-all group shadow-sm"
+                        className="bg-[#ECFDF5] dark:bg-[#0F172A]/30 border border-[#0F172A]/10 dark:border-white/5 hover:border-primary/50 rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 cursor-pointer transition-all group shadow-sm"
                     >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 w-full md:w-auto">
                             {/* Type Indicator */}
                             <div className={`h-12 w-12 rounded-lg flex items-center justify-center font-bold text-lg border ${i.type === 'service'
                                 ? 'bg-secondary border-border text-primary'
@@ -83,7 +83,7 @@ export const CatalogPage: React.FC = () => {
                         </div>
 
                         {/* Right Side */}
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end pl-16 md:pl-0">
                             <span className="text-sm font-bold text-emerald-500 whitespace-nowrap">
                                 R$ {i.price.toFixed(2)}
                             </span>

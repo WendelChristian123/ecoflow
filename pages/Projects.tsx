@@ -512,7 +512,7 @@ export const ProjectsPage: React.FC = () => {
             <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto padding-b-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
             {/* Search */}
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">

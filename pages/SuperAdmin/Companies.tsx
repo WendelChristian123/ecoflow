@@ -304,15 +304,15 @@ export const SuperAdminCompanies: React.FC = () => {
                 {
                     currentStep === 1 && (
                         <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input label="Nome da Empresa" value={newCompanyName} onChange={e => setNewCompanyName(e.target.value)} placeholder="Ex: Acme Corp" />
                                 <Input label="Admin Principal" value={newCompanyAdminName} onChange={e => setNewCompanyAdminName(e.target.value)} placeholder="Nome do responsável" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input label="Email de Acesso" type="email" value={newCompanyOwner} onChange={e => setNewCompanyOwner(e.target.value)} disabled={!!editingId} />
                                 <Input label="Senha de Acesso" type="password" value={newCompanyPassword} onChange={e => setNewCompanyPassword(e.target.value)} placeholder={editingId ? "Deixe em branco para manter" : "Mínimo 6 caracteres"} />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input label="Documento (CNPJ/CPF)" value={newCompanyCnpj} onChange={e => setNewCompanyCnpj(e.target.value)} />
                                 <Input label="Telefone" value={newCompanyPhone} onChange={e => setNewCompanyPhone(e.target.value)} />
                             </div>
@@ -342,7 +342,7 @@ export const SuperAdminCompanies: React.FC = () => {
                     currentStep === 2 && (
                         <div className="space-y-6 animate-in slide-in-from-right-4 duration-200">
                             {loadingPlans ? <Loader /> : (
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
                                     {/* Custom Option */}
                                     <div
                                         onClick={() => setSelectedPlanId('custom')}
@@ -365,7 +365,7 @@ export const SuperAdminCompanies: React.FC = () => {
                                             key={plan.id}
                                             onClick={() => setSelectedPlanId(plan.id)}
                                             className={cn(
-                                                "cursor-pointer border-2 rounded-xl p-4 transition-all relative",
+                                                "cursor-pointer border-2 rounded-xl p-4 transition-all relative flex flex-col",
                                                 selectedPlanId === plan.id ? "border-primary bg-primary/5" : "border-border hover:border-muted"
                                             )}
                                         >
@@ -374,12 +374,12 @@ export const SuperAdminCompanies: React.FC = () => {
                                                 <Package className="w-5 h-5 text-blue-500" />
                                             </div>
                                             <h3 className="font-bold text-foreground">{plan.name}</h3>
-                                            <p className="text-lg font-semibold text-foreground mt-1">R$ {plan.priceMonthly}<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
-                                            <div className="mt-3 flex flex-wrap gap-1">
-                                                {plan.allowedModules.slice(0, 3).map(m => (
-                                                    <Badge key={m} variant="secondary" className="text-[10px]">{m}</Badge>
+                                            <p className="text-lg font-semibold text-foreground mt-1 mb-3">R$ {plan.priceMonthly}<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+                                            <div className="mt-auto flex flex-wrap gap-1.5 border-t border-border pt-3">
+                                                {plan.allowedModules.slice(0, 5).map(m => (
+                                                    <Badge key={m} variant="default" className="text-[10px] whitespace-nowrap">{m.replace('mod_', '')}</Badge>
                                                 ))}
-                                                {plan.allowedModules.length > 3 && <Badge variant="secondary" className="text-[10px]">+{plan.allowedModules.length - 3}</Badge>}
+                                                {plan.allowedModules.length > 5 && <Badge variant="secondary" className="text-[10px]">+{plan.allowedModules.length - 5}</Badge>}
                                             </div>
                                         </div>
                                     ))}
@@ -411,18 +411,18 @@ export const SuperAdminCompanies: React.FC = () => {
                                 ))}
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-h-[50vh] min-h-[30vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
                                 {SYSTEM_MODULES.filter(m => activeCategoryTab === 'Todos' || m.category === activeCategoryTab).map(module => (
-                                    <div key={module.id} className={cn("border rounded-lg p-4 transition-all",
+                                    <div key={module.id} className={cn("border rounded-lg p-3 md:p-4 transition-all flex flex-col",
                                         moduleConfig[module.id] === 'included' ? "border-primary/50 bg-primary/5" :
                                             moduleConfig[module.id] === 'extra' ? "border-amber-500/50 bg-amber-500/10" : "border-border bg-card"
                                     )}>
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex justify-between items-start mb-2 md:mb-3">
+                                            <div className="flex items-center gap-2 pr-2">
                                                 {/* Icons would go here */}
-                                                <h4 className="font-semibold text-foreground">{module.name}</h4>
+                                                <h4 className="font-semibold text-foreground text-sm leading-tight md:text-base">{module.name}</h4>
                                             </div>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1 shrink-0">
                                                 {/* Module Toggle */}
                                                 <button
                                                     onClick={() => setModuleConfig(prev => ({
@@ -437,7 +437,7 @@ export const SuperAdminCompanies: React.FC = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        <p className="text-xs text-muted-foreground mb-3 min-h-[40px]">{module.description}</p>
+                                        <p className="text-[11px] md:text-xs text-muted-foreground mb-2 flex-grow">{module.description}</p>
 
                                         {/* Features List? (Optional Granularity) */}
                                         {/* For brevity, omitting granular feature checkboxes, but logic is ready in 'selectedFeatures' state */}

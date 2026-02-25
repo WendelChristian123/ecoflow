@@ -278,26 +278,26 @@ export const QuotesPage: React.FC = () => {
                             <div
                                 key={q.id}
                                 onClick={() => { setEditingQuote(q); setIsModalOpen(true); }}
-                                className="bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 pr-12 flex items-center justify-between cursor-pointer transition-all group relative shadow-sm"
+                                className="bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-lg p-4 pr-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 cursor-pointer transition-all group relative shadow-sm"
                             >
-                                <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
                                     {/* Quote ID */}
-                                    <div className="flex flex-col items-center justify-center h-12 w-16 bg-emerald-100 dark:bg-slate-800 rounded text-muted-foreground dark:text-slate-400 font-mono text-xs border border-emerald-200 dark:border-slate-700">
+                                    <div className="flex flex-col items-center justify-center h-12 w-14 md:w-16 shrink-0 bg-emerald-100 dark:bg-slate-800 rounded text-muted-foreground dark:text-slate-400 font-mono text-xs border border-emerald-200 dark:border-slate-700">
                                         <span className="text-[10px] uppercase text-muted-foreground dark:text-slate-500">CÓD</span>
                                         <span className="font-bold text-foreground dark:text-slate-300">#{q.id.substring(0, 4)}</span>
                                     </div>
 
                                     {/* Client Name */}
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-xs text-muted-foreground dark:text-slate-500 font-medium uppercase">Cliente</span>
-                                            {!q.contactId && <Badge variant="neutral" className="py-0 px-1 text-[10px]">Convidado</Badge>}
+                                    <div className="flex flex-col min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                                            <span className="text-xs text-muted-foreground dark:text-slate-500 font-medium uppercase shrink-0">Cliente</span>
+                                            {!q.contactId && <Badge variant="neutral" className="py-0 px-1 text-[10px] shrink-0">Convidado</Badge>}
                                         </div>
-                                        <h3 className="font-bold text-foreground dark:text-white text-lg leading-none truncate max-w-[200px] md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
+                                        <h3 className="font-bold text-foreground dark:text-white text-base md:text-lg leading-tight truncate md:max-w-xs">{q.contact?.name || q.customerName || 'Cliente Desconhecido'}</h3>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-8">
+                                <div className="flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-end">
                                     {/* Dates */}
                                     <div className="hidden md:flex items-center gap-6 text-sm">
                                         <div className="flex flex-col items-start">
@@ -318,19 +318,19 @@ export const QuotesPage: React.FC = () => {
                                     </div>
 
                                     {/* Value & Status */}
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right">
+                                    <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                                        <div className="text-left md:text-right">
                                             <div className="text-xs text-muted-foreground dark:text-slate-500 uppercase">{q.items?.length || 0} itens</div>
-                                            <div className="text-lg font-bold text-emerald-500">
+                                            <div className="text-base md:text-lg font-bold text-emerald-500">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(q.totalValue)}
                                             </div>
                                         </div>
-                                        <div onClick={(e) => e.stopPropagation()} className="w-32">
+                                        <div onClick={(e) => e.stopPropagation()} className="w-32 md:w-32">
                                             <select
                                                 value={q.status}
                                                 onChange={(e) => handleStatusChange(q.id, e.target.value)}
                                                 className={`
-                                                w-full appearance-none text-xs font-bold px-3 py-1.5 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
+                                                w-full appearance-none text-xs font-bold px-3 py-1.5 md:py-1.5 p-1 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
                                                 ${q.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' :
                                                         q.status === 'sent' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' :
                                                             q.status === 'rejected' || q.status === 'expired' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' :

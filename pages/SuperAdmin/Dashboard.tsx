@@ -242,73 +242,75 @@ export const SuperAdminDashboard: React.FC = () => {
         }
     };
 
-    // @ts-ignore
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 bg-background min-h-screen">
-            <div className="flex justify-between items-center">
+        <div className="p-4 md:p-8 w-full max-w-7xl mx-auto space-y-6 md:space-y-8 bg-background min-h-full">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Super Admin</h1>
-                    <p className="text-muted-foreground mt-1">Gerenciamento global de empresas e sistema</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Super Admin</h1>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1">Gerenciamento global de empresas e sistema</p>
                 </div>
-                <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => navigate('/super-admin/users')}>
-                        <UserCog className="w-4 h-4 mr-2" />
-                        Usuários Globais
+                <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
+                    <Button variant="outline" onClick={() => navigate('/super-admin/users')} className="flex-1 md:flex-none text-xs md:text-sm">
+                        <UserCog className="w-4 h-4 mr-1.5 md:mr-2" />
+                        <span className="hidden sm:inline">Usuários Globais</span>
+                        <span className="sm:hidden">Usuários</span>
                     </Button>
-                    <Button variant="outline" onClick={() => navigate('/super-admin/companies')}>
-                        <Building2 className="w-4 h-4 mr-2" />
-                        Gerenciar Detalhado
+                    <Button variant="outline" onClick={() => navigate('/super-admin/companies')} className="flex-1 md:flex-none text-xs md:text-sm">
+                        <Building2 className="w-4 h-4 mr-1.5 md:mr-2" />
+                        <span className="hidden sm:inline">Gerenciar Detalhado</span>
+                        <span className="sm:hidden">Detalhes</span>
                     </Button>
-                    <Button onClick={handleOpenCreate}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Nova Empresa
+                    <Button onClick={handleOpenCreate} className="flex-1 md:flex-none text-xs md:text-sm">
+                        <Plus className="w-4 h-4 mr-1.5 md:mr-2" />
+                        <span className="hidden sm:inline">Nova Empresa</span>
+                        <span className="sm:hidden">Nova</span>
                     </Button>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="p-6 bg-card shadow-sm border border-border">
-                    <div className="flex justify-between items-start">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
+                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
                         <div>
-                            <p className="text-sm font-medium text-muted-foreground">Total de Empresas</p>
-                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.totalCompanies}</h3>
+                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Total Empresas</p>
+                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.totalCompanies}</h3>
                         </div>
-                        <div className="p-2 bg-indigo-50 rounded-lg">
-                            <Building2 className="w-6 h-6 text-indigo-600" />
+                        <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg shrink-0">
+                            <Building2 className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
                         </div>
                     </div>
                 </Card>
-                <Card className="p-6 bg-card shadow-sm border border-border">
-                    <div className="flex justify-between items-start">
+                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
+                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
                         <div>
-                            <p className="text-sm font-medium text-muted-foreground">Empresas Ativas</p>
-                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.activeCompanies}</h3>
+                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Empresas Ativas</p>
+                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.activeCompanies}</h3>
                         </div>
-                        <div className="p-2 bg-green-50 rounded-lg">
-                            <CheckCircle2 className="w-6 h-6 text-green-600" />
+                        <div className="p-1.5 md:p-2 bg-green-50 rounded-lg shrink-0">
+                            <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
                         </div>
                     </div>
                 </Card>
-                <Card className="p-6 bg-card shadow-sm border border-border">
-                    <div className="flex justify-between items-start">
+                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
+                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
                         <div>
-                            <p className="text-sm font-medium text-muted-foreground">Total Usuários</p>
-                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.totalUsers}</h3>
+                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Total Usuários</p>
+                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.totalUsers}</h3>
                         </div>
-                        <div className="p-2 bg-purple-50 rounded-lg">
-                            <UserCog className="w-6 h-6 text-purple-600" />
+                        <div className="p-1.5 md:p-2 bg-purple-50 rounded-lg shrink-0">
+                            <UserCog className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
                         </div>
                     </div>
                 </Card>
-                <Card className="p-6 bg-card shadow-sm border border-border">
-                    <div className="flex justify-between items-start">
+                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
+                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
                         <div>
-                            <p className="text-sm font-medium text-muted-foreground">Planos Ativos</p>
-                            <h3 className="text-3xl font-bold text-foreground mt-2">{stats.activePlans}</h3>
+                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Planos Ativos</p>
+                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.activePlans}</h3>
                         </div>
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                            <CreditCard className="w-6 h-6 text-blue-600" />
+                        <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg shrink-0">
+                            <CreditCard className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                         </div>
                     </div>
                 </Card>
@@ -351,130 +353,132 @@ export const SuperAdminDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
-                            <tr>
-                                <th className="px-6 py-3 w-[280px]">Empresa</th>
-                                <th className="px-6 py-3 w-[120px]">Status</th>
-                                <th className="px-6 py-3 w-[150px]">Plano / Pgto</th>
-                                <th className="px-6 py-3">Módulos</th>
-                                <th className="px-6 py-3 w-[160px]">Período</th>
-                                <th className="px-6 py-3 text-right w-[80px]">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {filteredCompanies.length === 0 ? (
+                <div className="overflow-x-auto -mx-4 md:mx-0">
+                    <div className="min-w-[800px] w-full p-4 md:p-0">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Search className="w-8 h-8 text-gray-300" />
-                                            <p>Nenhuma empresa encontrada com os filtros atuais.</p>
-                                        </div>
-                                    </td>
+                                    <th className="px-6 py-3 w-[280px]">Empresa</th>
+                                    <th className="px-6 py-3 w-[120px]">Status</th>
+                                    <th className="px-6 py-3 w-[150px]">Plano / Pgto</th>
+                                    <th className="px-6 py-3">Módulos</th>
+                                    <th className="px-6 py-3 w-[160px]">Período</th>
+                                    <th className="px-6 py-3 text-right w-[80px]">Ações</th>
                                 </tr>
-                            ) : (
-                                filteredCompanies.map((company) => (
-                                    <tr key={company.id} className="hover:bg-muted/30 transition-colors group">
-                                        {/* Empresa */}
-                                        <td className="px-6 py-4 align-middle">
-                                            <div className="min-w-0">
-                                                <span className="font-semibold text-foreground block">{company.name}</span>
-                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                                                    {company.cnpj && <span className="shrink-0">{company.cnpj}</span>}
-                                                    {company.cnpj && company.ownerEmail && <span>•</span>}
-                                                    {company.ownerEmail && (
-                                                        <span className="truncate max-w-[160px]">{company.ownerEmail}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        {/* Status */}
-                                        <td className="px-6 py-4 align-middle">
-                                            <Badge className={getStatusColor(company.status)}>
-                                                {company.status === 'active' && <CheckCircle2 className="w-3 h-3 mr-1 inline" />}
-                                                {company.status === 'suspended' && <PauseCircle className="w-3 h-3 mr-1 inline" />}
-                                                {company.status === 'trial' && <AlertTriangle className="w-3 h-3 mr-1 inline" />}
-                                                {company.status.toUpperCase()}
-                                            </Badge>
-                                        </td>
-                                        {/* Plano / Pgto */}
-                                        <td className="px-6 py-4 align-middle">
-                                            <span className="font-medium text-foreground">{(company as any).planName || 'Custom'}</span>
-                                            {company.billingType && (
-                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                                                    <CreditCard className="w-3.5 h-3.5" />
-                                                    {company.billingType === 'credit_card' ? 'Cartão de Crédito' : company.billingType.toUpperCase()}
-                                                </div>
-                                            )}
-                                        </td>
-                                        {/* Módulos */}
-                                        <td className="px-6 py-4 align-middle">
-                                            <div className="flex flex-wrap gap-1">
-                                                {company.contractedModules?.slice(0, 4).map(m => {
-                                                    const moduleMap: Record<string, string> = {
-                                                        'FINANCE': 'Fin', 'COMMERCIAL': 'Com', 'ROUTINES': 'Rot', 'REPORTS': 'Rel', 'API': 'API',
-                                                        'mod_finance': 'Fin', 'mod_commercial': 'Com', 'mod_tasks': 'Rot', 'mod_reports': 'Rel', 'mod_api': 'API'
-                                                    };
-                                                    const name = moduleMap[m] || m.replace('mod_', '').substring(0, 3).toUpperCase();
-                                                    return (
-                                                        <span key={m} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary text-secondary-foreground border border-border uppercase tracking-wide">
-                                                            {name}
-                                                        </span>
-                                                    );
-                                                })}
-                                                {(company.contractedModules?.length || 0) > 4 && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
-                                                        +{(company.contractedModules?.length || 0) - 4}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        {/* Período */}
-                                        <td className="px-6 py-4 align-middle text-sm text-foreground">
-                                            {company.subscriptionStart ? (
-                                                <div className="flex flex-col gap-1 text-xs">
-                                                    <div>
-                                                        <span className="text-muted-foreground mr-1">Início:</span>
-                                                        {new Date(company.subscriptionStart).toLocaleDateString('pt-BR')}
-                                                    </div>
-                                                    {company.subscriptionEnd && (
-                                                        <div>
-                                                            <span className="text-muted-foreground mr-1">Venc:</span>
-                                                            <span className="font-medium">
-                                                                {new Date(company.subscriptionEnd).toLocaleDateString('pt-BR')}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col gap-1 text-xs">
-                                                    <div className="text-muted-foreground">
-                                                        Criado em: {new Date(company.createdAt).toLocaleDateString('pt-BR')}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </td>
-                                        {/* Ações */}
-                                        <td className="px-6 py-4 align-middle text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" onClick={() => handleLoginAs(company.id)} title="Acessar como Admin">
-                                                    <Globe className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleEdit(company)} title="Editar Dados">
-                                                    <Edit2 className="w-4 h-4 text-muted-foreground hover:text-blue-500" />
-                                                </Button>
-                                                <div className="w-px h-4 bg-border mx-1"></div>
-                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id, company.name)} title="Excluir Empresa">
-                                                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                                                </Button>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {filteredCompanies.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Search className="w-8 h-8 text-gray-300" />
+                                                <p>Nenhuma empresa encontrada com os filtros atuais.</p>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    filteredCompanies.map((company) => (
+                                        <tr key={company.id} className="hover:bg-muted/30 transition-colors group">
+                                            {/* Empresa */}
+                                            <td className="px-6 py-4 align-middle">
+                                                <div className="min-w-0">
+                                                    <span className="font-semibold text-foreground block">{company.name}</span>
+                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                                                        {company.cnpj && <span className="shrink-0">{company.cnpj}</span>}
+                                                        {company.cnpj && company.ownerEmail && <span>•</span>}
+                                                        {company.ownerEmail && (
+                                                            <span className="truncate max-w-[160px]">{company.ownerEmail}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {/* Status */}
+                                            <td className="px-6 py-4 align-middle">
+                                                <Badge className={getStatusColor(company.status)}>
+                                                    {company.status === 'active' && <CheckCircle2 className="w-3 h-3 mr-1 inline" />}
+                                                    {company.status === 'suspended' && <PauseCircle className="w-3 h-3 mr-1 inline" />}
+                                                    {company.status === 'trial' && <AlertTriangle className="w-3 h-3 mr-1 inline" />}
+                                                    {company.status.toUpperCase()}
+                                                </Badge>
+                                            </td>
+                                            {/* Plano / Pgto */}
+                                            <td className="px-6 py-4 align-middle">
+                                                <span className="font-medium text-foreground">{(company as any).planName || 'Custom'}</span>
+                                                {company.billingType && (
+                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                                                        <CreditCard className="w-3.5 h-3.5" />
+                                                        {company.billingType === 'credit_card' ? 'Cartão de Crédito' : company.billingType.toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            {/* Módulos */}
+                                            <td className="px-6 py-4 align-middle">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {company.contractedModules?.slice(0, 4).map(m => {
+                                                        const moduleMap: Record<string, string> = {
+                                                            'FINANCE': 'Fin', 'COMMERCIAL': 'Com', 'ROUTINES': 'Rot', 'REPORTS': 'Rel', 'API': 'API',
+                                                            'mod_finance': 'Fin', 'mod_commercial': 'Com', 'mod_tasks': 'Rot', 'mod_reports': 'Rel', 'mod_api': 'API'
+                                                        };
+                                                        const name = moduleMap[m] || m.replace('mod_', '').substring(0, 3).toUpperCase();
+                                                        return (
+                                                            <span key={m} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary text-secondary-foreground border border-border uppercase tracking-wide">
+                                                                {name}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                    {(company.contractedModules?.length || 0) > 4 && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
+                                                            +{(company.contractedModules?.length || 0) - 4}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            {/* Período */}
+                                            <td className="px-6 py-4 align-middle text-sm text-foreground">
+                                                {company.subscriptionStart ? (
+                                                    <div className="flex flex-col gap-1 text-xs">
+                                                        <div>
+                                                            <span className="text-muted-foreground mr-1">Início:</span>
+                                                            {new Date(company.subscriptionStart).toLocaleDateString('pt-BR')}
+                                                        </div>
+                                                        {company.subscriptionEnd && (
+                                                            <div>
+                                                                <span className="text-muted-foreground mr-1">Venc:</span>
+                                                                <span className="font-medium">
+                                                                    {new Date(company.subscriptionEnd).toLocaleDateString('pt-BR')}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col gap-1 text-xs">
+                                                        <div className="text-muted-foreground">
+                                                            Criado em: {new Date(company.createdAt).toLocaleDateString('pt-BR')}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            {/* Ações */}
+                                            <td className="px-6 py-4 align-middle text-right">
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleLoginAs(company.id)} title="Acessar como Admin">
+                                                        <Globe className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(company)} title="Editar Dados">
+                                                        <Edit2 className="w-4 h-4 text-muted-foreground hover:text-blue-500" />
+                                                    </Button>
+                                                    <div className="w-px h-4 bg-border mx-1"></div>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id, company.name)} title="Excluir Empresa">
+                                                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </Card>
 
