@@ -55,19 +55,52 @@ Deno.serve(async (req) => {
             auth: { autoRefreshToken: false, persistSession: false }
         });
 
-        // 2. CHECK DUPLICATES
-        const { data: existingCompany } = await supabaseAdmin
+        // 2. CHECK DUPLICATES (individual field checks)
+        const { data: emailDup } = await supabaseAdmin
             .from("companies")
             .select("id")
-            .or(`email.eq.${email},cpf_cnpj.eq.${cleanCpfCnpj}`)
+            .eq("email", email)
             .maybeSingle();
 
-        if (existingCompany) {
+        if (emailDup) {
             return new Response(JSON.stringify({
                 success: false,
                 type: "validation_error",
-                message: "Empresa ou e-mail já cadastrado"
+                field: "email",
+                message: "Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail."
             }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+        }
+
+        const { data: cpfDup } = await supabaseAdmin
+            .from("companies")
+            .select("id")
+            .eq("cnpj", cleanCpfCnpj)
+            .maybeSingle();
+
+        if (cpfDup) {
+            return new Response(JSON.stringify({
+                success: false,
+                type: "validation_error",
+                field: "cpf_cnpj",
+                message: "Este CPF/CNPJ já está cadastrado. Tente fazer login ou use outro documento."
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+        }
+
+        if (formattedWhatsapp) {
+            const { data: phoneDup } = await supabaseAdmin
+                .from("companies")
+                .select("id")
+                .eq("phone", formattedWhatsapp)
+                .maybeSingle();
+
+            if (phoneDup) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    type: "validation_error",
+                    field: "whatsapp",
+                    message: "Este número de WhatsApp já está cadastrado. Use outro número."
+                }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+            }
         }
 
         let createdUserId = null;

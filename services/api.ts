@@ -40,8 +40,28 @@ export const api = {
             body: data
         });
 
-        if (error) throw error;
-        if (response.error) throw new Error(response.error);
+        if (error) {
+            // For FunctionsHttpError, try to parse the body for a user-friendly message
+            try {
+                const errorBody = JSON.parse(error.message);
+                throw new Error(errorBody.message || error.message);
+            } catch (parseErr) {
+                // If the error context has a response body
+                if (error.context?.body) {
+                    const reader = error.context.body.getReader?.();
+                    if (reader) {
+                        const { value } = await reader.read();
+                        const text = new TextDecoder().decode(value);
+                        try {
+                            const parsed = JSON.parse(text);
+                            throw new Error(parsed.message || text);
+                        } catch { /* fall through */ }
+                    }
+                }
+                throw new Error(error.message || "Erro ao criar conta");
+            }
+        }
+        if (!response?.success) throw new Error(response?.message || "Erro ao criar conta");
 
         return response;
     },
