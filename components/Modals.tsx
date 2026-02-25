@@ -225,6 +225,7 @@ interface DrilldownModalProps {
         totalExpense: number;
         finalBalance: number;
     };
+    onPayAction?: (item: any) => void;
 }
 
 // --- Refactored & Robust Drilldown Modal ---
@@ -249,7 +250,7 @@ interface DrilldownItem {
     metadata?: any;
 }
 
-export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary }) => {
+export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary, onPayAction }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
     const navigate = useNavigate();
@@ -469,7 +470,22 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                         <div className={cn("font-bold", t.type === 'expense' ? 'text-rose-400' : 'text-emerald-400')}>
                                             {t.type === 'expense' ? '-' : '+'}{displayAmount}
                                         </div>
-                                        {!(t as any).isVirtualBill && !(t as any).isVirtual && !t.creditCardId && (
+                                        {((t as any).isVirtualBill || (t as any).isVirtual) ? (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (onPayAction) {
+                                                        onPayAction(t);
+                                                    } else {
+                                                        alert("Para pagar a fatura do cartão, acesse a tela de Cartões de Crédito e use o botão 'Pagar Fatura' para definir a conta de origem do pagamento.");
+                                                    }
+                                                }}
+                                                className="p-1 rounded transition-colors text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10"
+                                                title="Pagar Fatura"
+                                            >
+                                                <ThumbsDown size={16} />
+                                            </button>
+                                        ) : !t.creditCardId && (
                                             <button
                                                 onClick={(e) => handleToggleStatus(e, t)}
                                                 className={cn(

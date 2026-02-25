@@ -511,6 +511,18 @@ export const FinancialCards: React.FC = () => {
                 title={drilldownState.title}
                 type="finance"
                 data={drilldownState.data}
+                users={[]}
+                onPayAction={(item) => {
+                    // Extract cardId from virtual invoice ID (format: virtual-invoice-{cardId}-{date})
+                    const match = item.id.match(/virtual-invoice-(.+?)-\d{4}-\d{2}-\d{2}/);
+                    const cardId = match ? match[1] : null;
+                    const card = cards.find(c => c.id === cardId);
+                    if (card) {
+                        setPaymentModalData({ card, amount: item.amount });
+                        setIsPaymentModalOpen(true);
+                        setDrilldownState({ ...drilldownState, isOpen: false });
+                    }
+                }}
             />
 
             <CreditCardReportModal
