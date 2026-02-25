@@ -14,6 +14,13 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
   <title>Contazze SaaS</title>
+  <script>
+    // Catch the PWA install event early before React mounts
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.__deferredPwaPrompt = e;
+    });
+  </script>
 </head>
 
 <body>

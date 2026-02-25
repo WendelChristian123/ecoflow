@@ -25,6 +25,12 @@ export function PwaInstallPrompt() {
             return () => clearTimeout(timer);
         }
 
+        // Check if the event was caught early in index.html
+        if ((window as any).__deferredPwaPrompt) {
+            setDeferredPrompt((window as any).__deferredPwaPrompt);
+            setShowPrompt(true);
+        }
+
         // Android / Chrome custom install trigger
         const handleBeforeInstallPrompt = (e: Event) => {
             // Prevent the mini-infobar from appearing on mobile
@@ -50,6 +56,7 @@ export function PwaInstallPrompt() {
             const { outcome } = await deferredPrompt.userChoice;
             if (outcome === 'accepted') {
                 setDeferredPrompt(null);
+                (window as any).__deferredPwaPrompt = null;
                 setShowPrompt(false);
             }
         }
