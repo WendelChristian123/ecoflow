@@ -35,6 +35,13 @@ export default defineConfig(({ mode }) => {
               purpose: 'any maskable'
             }
           ]
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        },
+        devOptions: {
+          enabled: true,
+          type: 'module',
         }
       })
     ],
