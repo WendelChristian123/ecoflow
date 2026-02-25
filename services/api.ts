@@ -41,25 +41,37 @@ export const api = {
         });
 
         if (error) {
-            // For FunctionsHttpError, try to parse the body for a user-friendly message
+            console.error("[API][Signup] Edge Function Error:", error);
+            // In Supabase invoke, the error might contain the response body
+            // We need to extract the custom message we send from the function
+            let customMessage = "";
+
             try {
-                const errorBody = JSON.parse(error.message);
-                throw new Error(errorBody.message || error.message);
-            } catch (parseErr) {
-                // If the error context has a response body
+                // Try to parse error context body if available
                 if (error.context?.body) {
                     const reader = error.context.body.getReader?.();
                     if (reader) {
                         const { value } = await reader.read();
                         const text = new TextDecoder().decode(value);
-                        try {
-                            const parsed = JSON.parse(text);
-                            throw new Error(parsed.message || text);
-                        } catch { /* fall through */ }
+                        const parsed = JSON.parse(text);
+                        customMessage = parsed.message || parsed.error;
                     }
                 }
-                throw new Error(error.message || "Erro ao criar conta");
+            } catch (e) {
+                console.warn("[API] Could not parse error context:", e);
             }
+
+            if (!customMessage) {
+                try {
+                    // Sometimes the error object itself is/contains the JSON string
+                    const parsed = JSON.parse(error.message);
+                    customMessage = parsed.message || parsed.error;
+                } catch {
+                    customMessage = error.message;
+                }
+            }
+
+            throw new Error(customMessage || "Erro ao criar conta");
         }
         if (!response?.success) throw new Error(response?.message || "Erro ao criar conta");
 

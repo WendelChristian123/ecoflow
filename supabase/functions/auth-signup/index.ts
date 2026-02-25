@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
                 success: false,
                 type: "validation_error",
                 field: "email",
-                message: "Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail."
+                message: "Este e-mail já está em uso."
             }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
         }
 
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
                 success: false,
                 type: "validation_error",
                 field: "cpf_cnpj",
-                message: "Este CPF/CNPJ já está cadastrado. Tente fazer login ou use outro documento."
+                message: "Este CPF/CNPJ já está em uso."
             }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
         }
 
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
                     success: false,
                     type: "validation_error",
                     field: "whatsapp",
-                    message: "Este número de WhatsApp já está cadastrado. Use outro número."
+                    message: "Este WhatsApp já está em uso."
                 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
             }
         }
