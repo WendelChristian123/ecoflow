@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact } from '../../types';
@@ -17,6 +18,7 @@ import { useCompany } from '../../context/CompanyContext';
 
 export const FinancialOverview: React.FC = () => {
     const { currentCompany } = useCompany();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
@@ -767,7 +769,17 @@ export const FinancialOverview: React.FC = () => {
                 </div>
             </div>
 
-            <DrilldownModal isOpen={modalState.isOpen} onClose={() => setModalState({ ...modalState, isOpen: false })} title={modalState.title} type="finance" data={modalState.data} />
+            <DrilldownModal
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ ...modalState, isOpen: false })}
+                title={modalState.title}
+                type="finance"
+                data={modalState.data}
+                users={[]}
+                onPayAction={(item) => {
+                    navigate(`/finance/cards?payInvoice=${item.id}`);
+                }}
+            />
             <TransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} onSuccess={loadData} accounts={accounts} categories={categories} cards={cards} contacts={contacts} />
 
             <FinancialReportModal

@@ -4,11 +4,13 @@ import { api } from '../../services/api';
 import { FinancialCategory, FinancialTransaction } from '../../types';
 import { Loader, Badge, Button, Card } from '../../components/Shared';
 import { DrilldownModal, CategoryModal, ConfirmationModal } from '../../components/Modals';
-import { Tags, ArrowUpCircle, ArrowDownCircle, Plus, Trash2, Edit2, ChevronRight } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Plus, Trash2, Edit2, ChevronRight, Tags } from 'lucide-react';
 import { useCompany } from '../../context/CompanyContext';
+import { useNavigate } from 'react-router-dom';
 
 export const FinancialCategories: React.FC = () => {
     const { currentCompany } = useCompany();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<FinancialCategory[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -137,6 +139,10 @@ export const FinancialCategories: React.FC = () => {
                 title={drilldownState.title}
                 type="finance"
                 data={drilldownState.data}
+                users={[]}
+                onPayAction={(item) => {
+                    navigate(`/finance/cards?payInvoice=${item.id}`);
+                }}
             />
 
             <CategoryModal

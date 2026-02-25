@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { CreditCard, FinancialTransaction, FinancialAccount, FinancialCategory, Contact } from '../../types';
 import { Loader, Card, ProgressBar, cn, Button, Modal, Input, Select, CurrencyInput } from '../../components/Shared';
@@ -90,6 +91,7 @@ const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({ isOpen, onClo
 
 export const FinancialCards: React.FC = () => {
     const { currentCompany } = useCompany();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [cards, setCards] = useState<CreditCard[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -139,6 +141,34 @@ export const FinancialCards: React.FC = () => {
             console.error(error);
         } finally { setLoading(false); }
     };
+
+    // Auto-open payment modal from URL params
+    useEffect(() => {
+        if (cards.length > 0 && transactions.length > 0) {
+            const payInvoiceId = searchParams.get('payInvoice');
+            if (payInvoiceId) {
+                const match = payInvoiceId.match(/virtual-invoice-(.+?)-\d{4}-\d{2}-\d{2}/);
+                const cardId = match ? match[1] : null;
+                const card = cards.find(c => c.id === cardId);
+
+                if (card) {
+                    // Extract amount from virtual invoice directly using logic or passing via param
+                    // Since it's hard to re-calculate exact amount without getCardInvoices, let's use getCardInvoices
+                    const invoices = getCardInvoices(card);
+                    const targetInvoice = invoices.overdue.find(i => i.id === payInvoiceId) || (invoices.current?.id === payInvoiceId ? invoices.current : null);
+
+                    if (targetInvoice) {
+                        setPaymentModalData({ card, amount: targetInvoice.amount });
+                        setIsPaymentModalOpen(true);
+
+                        // Clean up URL
+                        searchParams.delete('payInvoice');
+                        setSearchParams(searchParams, { replace: true });
+                    }
+                }
+            }
+        }
+    }, [cards, transactions, searchParams, setSearchParams]);
 
     // --- Actions ---
 

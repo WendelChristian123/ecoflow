@@ -562,6 +562,9 @@ export const Dashboard: React.FC = () => {
                 type={modalState.type}
                 data={modalState.data}
                 users={users}
+                onPayAction={(item) => {
+                    navigate(`/finance/cards?payInvoice=${item.id}`);
+                }}
             />
         </div>
     );

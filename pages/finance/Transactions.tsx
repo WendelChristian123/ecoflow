@@ -13,7 +13,7 @@ import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
 import { useCompany } from '../../context/CompanyContext';
 
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 /* --- Icon Helper --- */
 const getCategoryIcon = (categoryName?: string) => {
@@ -50,6 +50,7 @@ export const FinancialTransactions: React.FC = () => {
 
     const { currentCompany } = useCompany();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
@@ -598,6 +599,9 @@ export const FinancialTransactions: React.FC = () => {
                 data={drilldownState.data}
                 type="finance"
                 users={[]}
+                onPayAction={(item) => {
+                    navigate(`/finance/cards?payInvoice=${item.id}`);
+                }}
             />
 
             <ConfirmationModal

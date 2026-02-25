@@ -6,9 +6,11 @@ import { Loader, Card, Badge, cn, Button } from '../../components/Shared';
 import { DrilldownModal, AccountModal, ConfirmationModal } from '../../components/Modals';
 import { Wallet, Building2, Landmark, DollarSign, Plus, Trash2, Edit2 } from 'lucide-react';
 import { useCompany } from '../../context/CompanyContext';
+import { useNavigate } from 'react-router-dom';
 
 export const FinancialAccounts: React.FC = () => {
     const { currentCompany } = useCompany();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -211,6 +213,10 @@ export const FinancialAccounts: React.FC = () => {
                 type="finance"
                 data={drilldownState.data}
                 accountSummary={drilldownState.summary}
+                users={[]}
+                onPayAction={(item) => {
+                    navigate(`/finance/cards?payInvoice=${item.id}`);
+                }}
             />
 
             <AccountModal
