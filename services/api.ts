@@ -65,16 +65,19 @@ export const api = {
 
     // Unified Logs Fetcher
     getLogs: async (entityId: string) => {
+        // Since there is no foreign key from activity_logs to profiles in Supabase,
+        // we cannot use a nested join. We fetch the logs and let the UI map the users
+        // via the generic users array it already has (like HistoryTimeline does).
         const { data, error } = await supabase
             .from('activity_logs')
-            .select(`
-                *,
-                user:user_id ( id, name, avatar_url )
-            `)
+            .select('*')
             .eq('entity_id', entityId)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error("Failed to fetch logs:", error);
+            return []; // Fail gracefully instead of crashing the UI
+        }
 
         return data.map((log: any) => ({
             id: log.id,
@@ -84,8 +87,7 @@ export const api = {
             userId: log.user_id,
             timestamp: log.created_at,
             details: log.details,
-            metadata: log.metadata,
-            user: log.user // Optional, for UI display
+            metadata: log.metadata
         }));
     },
 
@@ -168,6 +170,7 @@ export const api = {
         if (error) throw error;
 
         const firstData = data[0];
+
         return {
             ...firstData,
             assigneeId: firstData.assignee_id,

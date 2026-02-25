@@ -157,7 +157,7 @@ export const kanbanService = {
         // Fetch stage to see if it maps to a system status
         const { data: stage } = await supabase
             .from('kanban_stages')
-            .select('system_status')
+            .select('name, system_status')
             .eq('id', stageId)
             .single();
 
@@ -172,5 +172,20 @@ export const kanbanService = {
             .eq('id', entityId);
 
         if (error) throw error;
+
+        // Log the movement if it's a task
+        if (entityTable === 'tasks') {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase.from('activity_logs').insert({
+                    entity_id: entityId,
+                    entity_type: 'task',
+                    action: 'status_change',
+                    user_id: user.id,
+                    details: `Moveu para a etapa ${stage?.name || 'desconhecida'}`,
+                    metadata: { kanban_id: kanbanId, stage_id: stageId, status: stage?.system_status }
+                });
+            }
+        }
     }
 };

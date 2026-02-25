@@ -100,6 +100,116 @@ export const RecurrenceActionModal: React.FC<{
     );
 };
 
+// --- Dynamic Kanban Stage Mover ---
+export const KanbanStageMover: React.FC<{
+    module: 'tasks' | 'projects' | 'teams' | 'quotes';
+    entityId: string;
+    currentKanbanId?: string;
+    currentStageId?: string;
+    currentStatus?: string;
+    onMoved: () => void;
+    onQuickComplete?: () => void;
+}> = ({ module, entityId, currentKanbanId, currentStageId: initialStageId, currentStatus, onMoved, onQuickComplete }) => {
+    const [stages, setStages] = useState<KanbanStage[]>([]);
+    const [currentStageId, setCurrentStageId] = useState<string>('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!entityId) return;
+        fetchStages();
+    }, [entityId, currentStatus, module, currentKanbanId, initialStageId]);
+
+    const fetchStages = async () => {
+        setLoading(true);
+        try {
+            const allBoards = await kanbanService.listKanbans(module);
+            let targetBoard = allBoards.find(b => b.isDefault);
+            if (currentKanbanId) {
+                const found = allBoards.find(b => b.id === currentKanbanId);
+                if (found) targetBoard = found;
+            }
+
+            if (targetBoard && targetBoard.stages?.length > 0) {
+                setStages(targetBoard.stages);
+
+                if (initialStageId) {
+                    setCurrentStageId(initialStageId);
+                } else if (currentStatus) {
+                    const mapped = targetBoard.stages.find(s => {
+                        if (currentStatus === 'done' || currentStatus === 'completed') return s.systemStatus === 'done';
+                        if (currentStatus === 'in_progress') return s.systemStatus === 'in_progress';
+                        return s.systemStatus === 'todo';
+                    });
+                    if (mapped) setCurrentStageId(mapped.id);
+                    else setCurrentStageId(targetBoard.stages[0].id);
+                } else {
+                    setCurrentStageId(targetBoard.stages[0].id);
+                }
+            } else {
+                setStages([]);
+            }
+        } catch (error) {
+            console.error("Failed to fetch Kanban stages", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleStageChange = async (newStageId: string) => {
+        if (!newStageId || newStageId === currentStageId) return;
+        setLoading(true);
+        try {
+            const stage = stages.find(s => s.id === newStageId);
+            if (!stage) return;
+            await kanbanService.moveEntity(module, entityId, stage.kanbanId, newStageId);
+            setCurrentStageId(newStageId);
+            onMoved();
+        } catch (error) {
+            console.error("Failed to move stage", error);
+            alert("Erro ao mover etapa.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!stages || stages.length === 0) return null;
+
+    return (
+        <div className="bg-muted p-3 rounded-xl border border-border">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-3">
+                Mover para Etapa
+            </span>
+            <div className="flex items-center gap-2">
+                <Select
+                    value={currentStageId}
+                    onChange={(e) => handleStageChange(e.target.value)}
+                    className="w-full bg-background"
+                    disabled={loading}
+                >
+                    {stages.map(stage => (
+                        <option key={stage.id} value={stage.id}>
+                            {stage.name}
+                        </option>
+                    ))}
+                </Select>
+
+                {onQuickComplete && !['done', 'completed'].includes(currentStatus || '') && (
+                    <Button
+                        variant="success"
+                        size="sm"
+                        className="h-9 px-3 shrink-0 bg-emerald-600 hover:bg-emerald-500 border-none"
+                        onClick={onQuickComplete}
+                        disabled={loading}
+                        title="Concluir rapidamente"
+                    >
+                        <CheckCircle2 size={16} />
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // --- Shared Drilldown Modal ---
 interface DrilldownModalProps {
     isOpen: boolean;
@@ -217,7 +327,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
         if (type === 'tasks') navigate(`/tasks?openModal=${item.id}`);
         else if (type === 'events') navigate(`/agenda?openModal=${item.id}`);
         else if (type === 'finance') {
-            if (item.isVirtualBill) { navigate(`/finance/cards?openModal=${item.id}`); return; } // Might need handling in Cards page too, or just open generic
+            if (item.isVirtualBill || item.isVirtual) { navigate(`/finance/cards?openModal=${item.id}`); return; } // Might need handling in Cards page too, or just open generic
             navigate(`/finance/transactions?openModal=${item.id}`);
         }
         else if (type === 'quotes') navigate(`/commercial/quotes?openModal=${item.id}`);
@@ -359,7 +469,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                         <div className={cn("font-bold", t.type === 'expense' ? 'text-rose-400' : 'text-emerald-400')}>
                                             {t.type === 'expense' ? '-' : '+'}{displayAmount}
                                         </div>
-                                        {!(t as any).isVirtualBill && (
+                                        {!(t as any).isVirtualBill && !(t as any).isVirtual && !t.creditCardId && (
                                             <button
                                                 onClick={(e) => handleToggleStatus(e, t)}
                                                 className={cn(
@@ -1396,36 +1506,15 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                             {task.description || "Sem descrição."}
                         </div>
 
-                        <div className="bg-muted p-3 rounded-xl border border-border">
-                            <label className="text-xs text-muted-foreground block mb-2 font-semibold uppercase tracking-wider">Mover para Etapa</label>
-                            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
-                                {['todo', 'in_progress', 'review'].map((st) => (
-                                    <button
-                                        key={st}
-                                        onClick={() => handleAction(st as Status)}
-                                        disabled={task.status === st}
-                                        className={cn(
-                                            "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap",
-                                            task.status === st
-                                                ? "bg-primary text-primary-foreground border-primary cursor-default"
-                                                : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground"
-                                        )}
-                                    >
-                                        {translateStatus(st)}
-                                    </button>
-                                ))}
-                                <div className="w-px h-6 bg-border mx-2 hidden sm:block"></div>
-                                <Button
-                                    size="sm"
-                                    className={cn("gap-2 ml-auto sm:ml-0", task.status === 'done' ? "opacity-50 cursor-not-allowed" : "")}
-                                    variant={task.status === 'done' ? 'secondary' : 'primary'}
-                                    onClick={() => task.status !== 'done' && handleAction('done')}
-                                    disabled={task.status === 'done'}
-                                >
-                                    <CheckCircle2 size={14} /> Concluir Tarefa
-                                </Button>
-                            </div>
-                        </div>
+                        <KanbanStageMover
+                            module="tasks"
+                            entityId={task.id}
+                            currentKanbanId={task.kanbanId}
+                            currentStageId={task.kanbanStageId}
+                            currentStatus={task.status}
+                            onMoved={() => { onSuccess(); refreshLogs(); }}
+                            onQuickComplete={() => task.status !== 'done' && handleAction('done')}
+                        />
 
                         <div className="grid grid-cols-2 gap-4 text-sm pt-2">
                             <div>
@@ -1784,6 +1873,16 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                                     <UserMultiSelect users={users} selectedIds={formData.members || []} onChange={ids => setFormData({ ...formData, members: ids })} />
                                 </div>
                                 <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+                                {initialData?.id && (
+                                    <KanbanStageMover
+                                        module="projects"
+                                        entityId={initialData.id}
+                                        currentKanbanId={initialData.kanbanId}
+                                        currentStageId={initialData.kanbanStageId}
+                                        currentStatus={initialData.status}
+                                        onMoved={onSuccess}
+                                    />
+                                )}
                             </div>
                         </div>
 
@@ -1940,6 +2039,15 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
                                 <UserMultiSelect users={users} selectedIds={formData.memberIds || []} onChange={ids => setFormData({ ...formData, memberIds: ids })} />
                             </div>
                             <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
+                            {initialData?.id && (
+                                <KanbanStageMover
+                                    module="teams"
+                                    entityId={initialData.id}
+                                    currentKanbanId={initialData.kanbanId}
+                                    currentStageId={initialData.kanbanStageId}
+                                    onMoved={onSuccess}
+                                />
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-2 pt-4 border-t border-border">
@@ -2397,74 +2505,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
     const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
     const isTask = event?.origin === 'task';
 
-    // Task Stage Logic
-    const [stages, setStages] = useState<KanbanStage[]>([]);
-    const [currentStageId, setCurrentStageId] = useState<string>('');
-    const [loadingStages, setLoadingStages] = useState(false);
-
-
-
-    useEffect(() => {
-        if (isOpen && isTask) {
-            fetchStages();
-        }
-    }, [isOpen, isTask, event?.id]);
-
-    const fetchStages = async () => {
-        setLoadingStages(true);
-        try {
-            // Determine module context. For now, we assume 'tasks'.
-            const allBoards = await kanbanService.listKanbans('tasks');
-
-            let targetBoard = allBoards.find(b => b.isDefault);
-            if (event.metadata?.kanbanId) {
-                const found = allBoards.find(b => b.id === event.metadata.kanbanId);
-                if (found) targetBoard = found;
-            }
-
-            if (targetBoard && targetBoard.stages) {
-                setStages(targetBoard.stages);
-
-                // Determine current stage
-                if (event.metadata?.kanbanStageId) {
-                    setCurrentStageId(event.metadata.kanbanStageId);
-                } else if (event.metadata?.status) {
-                    // Start with explicit status mapping
-                    const status = event.metadata.status;
-                    const mapped = targetBoard.stages.find(s => {
-                        if (status === 'done' || status === 'completed') return s.systemStatus === 'done';
-                        if (status === 'in_progress') return s.systemStatus === 'in_progress';
-                        return s.systemStatus === 'todo'; // Default fallback logic?
-                    });
-
-                    if (mapped) setCurrentStageId(mapped.id);
-                    else if (targetBoard.stages.length > 0) setCurrentStageId(targetBoard.stages[0].id);
-                }
-            }
-        } catch (error) {
-            console.error("Failed to fetch stages", error);
-        } finally {
-            setLoadingStages(false);
-        }
-    };
-
-    const handleStageChange = async (newStageId: string) => {
-        if (!newStageId) return;
-        setLoading(true);
-        try {
-            const stage = stages.find(s => s.id === newStageId);
-            if (!stage) return;
-
-            await kanbanService.moveEntity('tasks', event.metadata.id, stage.kanbanId, newStageId);
-            setCurrentStageId(newStageId);
-            onSuccess();
-        } catch (error) {
-            console.error("Failed to move stage", error);
-            alert("Erro ao mover etapa.");
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Task Stage Logic is now handled by KanbanStageMover
 
     const handleTransfer = async (userId: string, comment?: string, link?: string) => {
         if (isTask && event.metadata) {
@@ -2529,6 +2570,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
                 const newPaidStatus = !currentIsPaid;
 
                 if (newPaidStatus) {
+                    // Prevent paying virtual invoices directly
+                    if (event.metadata.id.startsWith('virtual-invoice-') || event.metadata.isVirtual) {
+                        alert('Para pagar a fatura do cartão, acesse a tela de Cartões de Crédito e use o botão "Pagar Fatura" para definir a conta de origem do pagamento.');
+                        setLoading(false);
+                        return;
+                    }
+
                     // Confirm Payment
                     const fakeTx = { id: event.metadata.id, date: event.startDate, isPaid: false } as any;
                     // event.startDate is the date we have. metadata might have original date?
@@ -2586,42 +2634,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({ isOpen, onCl
     );
 
     const renderTaskStageMover = () => {
-        if (!stages || stages.length === 0) return null;
+        if (!event.metadata || !event.metadata.id) return null;
 
         return (
-            <div className="mt-4 border border-border bg-muted/50 rounded-lg p-4">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-3">
-                    Mover para Etapa
-                </span>
-                <div className="flex items-center gap-2">
-                    <Select
-                        value={currentStageId}
-                        onChange={(e) => handleStageChange(e.target.value)}
-                        className="w-full bg-background"
-                        disabled={loading || loadingStages}
-                    >
-                        {stages.map(stage => (
-                            <option key={stage.id} value={stage.id}>
-                                {stage.name}
-                            </option>
-                        ))}
-                    </Select>
-
-                    {/* Optional: 'Done' quick action if needed, but Select covers it */}
-                    {!['done', 'completed'].includes(event.metadata?.status) && (
-                        <Button
-                            variant="success"
-                            size="sm"
-                            className="h-9 px-3 shrink-0 bg-emerald-600 hover:bg-emerald-500 border-none"
-                            onClick={() => handleStatusUpdate('done')}
-                            disabled={loading}
-                            title="Concluir rapidamente"
-                        >
-                            <CheckCircle2 size={16} />
-                        </Button>
-                    )}
-                </div>
-            </div>
+            <KanbanStageMover
+                module="tasks"
+                entityId={event.metadata.id}
+                currentKanbanId={event.metadata.kanbanId}
+                currentStageId={event.metadata.kanbanStageId}
+                currentStatus={event.metadata.status}
+                onMoved={onSuccess}
+                onQuickComplete={() => handleStatusUpdate('done')}
+            />
         );
     };
 
