@@ -337,7 +337,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
       <div className={cn(
-        "relative w-full bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200",
+        "relative z-10 w-full bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200",
         className || "max-w-lg"
       )}>
         <div className="flex items-center justify-between p-5 border-b border-border/40 shrink-0 bg-muted/20 rounded-t-2xl">

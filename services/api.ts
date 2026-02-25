@@ -835,6 +835,7 @@ export const api = {
         return data.map((t: any) => ({
             ...t,
             isPaid: t.is_paid,
+            paymentMethod: t.payment_method,
             accountId: t.account_id,
             toAccountId: t.to_account_id,
             categoryId: t.category_id,
@@ -862,6 +863,7 @@ export const api = {
             type: trans.type,
             date: date,
             is_paid: trans.isPaid,
+            payment_method: trans.paymentMethod || null,
             account_id: uuidOrNull(trans.accountId),
             to_account_id: uuidOrNull(trans.toAccountId),
             category_id: uuidOrNull(trans.categoryId),
@@ -879,6 +881,7 @@ export const api = {
         if (recurrence && recurrence.isRecurring) {
             const count = recurrence.repeatCount || 1;
             const startDate = new Date(t.date || new Date());
+            const isIndefinite = recurrence.isIndefinite;
 
             for (let i = 0; i < count; i++) {
                 let nextDate = new Date(startDate);
@@ -888,7 +891,13 @@ export const api = {
                 if (recurrence.frequency === 'yearly') nextDate = addYears(startDate, i);
 
                 const dateStr = nextDate.toISOString().split('T')[0];
-                transactionsToInsert.push(createDbObj(t, dateStr, baseRecurrenceId, i + 1, count));
+                // Only the first installment (i === 0) keeps the user's isPaid value;
+                // all subsequent installments are created as unpaid
+                const installmentData = i === 0 ? t : { ...t, isPaid: false };
+                // Only set installment index/total for true installments, not indefinite recurrences
+                const instIndex = isIndefinite ? undefined : i + 1;
+                const instTotal = isIndefinite ? undefined : count;
+                transactionsToInsert.push(createDbObj(installmentData, dateStr, baseRecurrenceId, instIndex, instTotal));
             }
         } else {
             // Single transaction
@@ -905,6 +914,7 @@ export const api = {
             description: t.description,
             amount: t.amount,
             type: t.type,
+            payment_method: t.paymentMethod || null,
             account_id: uuidOrNull(t.accountId),
             to_account_id: uuidOrNull(t.toAccountId),
             category_id: uuidOrNull(t.categoryId),

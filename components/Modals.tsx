@@ -736,7 +736,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                 const finalRecurrence = recurrence.isRecurring ? {
                     ...recurrence,
                     isRecurring: true,
-                    repeatCount: isIndefinite ? 12 : recurrence.repeatCount
+                    repeatCount: isIndefinite ? 12 : recurrence.repeatCount,
+                    isIndefinite: isIndefinite
                 } : undefined;
                 await api.addTransaction(formData, finalRecurrence);
             }

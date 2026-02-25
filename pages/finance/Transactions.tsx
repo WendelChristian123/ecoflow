@@ -299,7 +299,7 @@ export const FinancialTransactions: React.FC = () => {
                 {/* 2. Description - Clean Font, High Contrast */}
                 <div className="flex flex-col min-w-0 pr-2">
                     <span className={cn("text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate tracking-tight", isVirtual && "italic text-muted-foreground")}>
-                        {t.description}
+                        {t.totalInstallments && t.installmentIndex ? `Parc. ${t.installmentIndex}/${t.totalInstallments} - ` : ''}{t.description}
                     </span>
                     {isVirtual && <span className="text-[10px] text-muted-foreground">Agrupado</span>}
                 </div>
@@ -360,7 +360,14 @@ export const FinancialTransactions: React.FC = () => {
                             )}
 
                             <button
-                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(t.id); }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (t.recurrenceId) {
+                                        setRecurrenceDeleteTarget(t as FinancialTransaction);
+                                    } else {
+                                        setConfirmDeleteId(t.id);
+                                    }
+                                }}
                                 className="transition-all p-2 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
                                 title="Excluir"
                             >
