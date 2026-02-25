@@ -17,6 +17,7 @@ import { ProtectedRoute, PermissionRoute } from './components/ProtectedRoute';
 import { SettingsPage } from './pages/Settings';
 import { LandingPage } from './pages/Landing/LandingPage';
 import { CheckoutPage } from './pages/Checkout/CheckoutPage';
+import { ReloadPrompt } from './components/ReloadPrompt';
 
 // Super Admin Pages
 import { SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
@@ -97,6 +98,7 @@ const App: React.FC = () => {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              <ReloadPrompt />
             </Router>
           </ThemeProvider>
         </RBACProvider>
