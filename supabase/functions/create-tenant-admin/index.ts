@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
             }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
         }
 
-        const { name, ownerEmail, adminName, planId, modules = [], cnpj, phone, subscriptionStart, subscriptionEnd } = body;
+        const { name, ownerEmail, adminName, planId, modules = [], cnpj, phone, subscriptionStart, subscriptionEnd, customLimits, customModules } = body;
         let { password } = body;
 
         const missingFields = [];
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
                     status: 'active',
                     type: 'client',
                     financial_status: 'ok',
-                    settings: { calendar: {} }
+                    settings: { calendar: {}, custom_limits: customLimits }
                 })
                 .select()
                 .single();
@@ -165,8 +165,27 @@ Deno.serve(async (req) => {
 
         // 5. INSERT MODULES
         try {
-            if (modules && modules.length > 0) {
-                console.log(`[V10] Inserting Modules: ${modules.length}`);
+            if (customModules && typeof customModules === 'object') {
+                console.log(`[V10] Inserting Custom Modules`);
+                const inserts: any[] = [];
+                for (const [modIdRaw, features] of Object.entries(customModules)) {
+                    let modId = modIdRaw;
+                    if (modId === 'mod_tasks') modId = 'routines';
+                    if (modId === 'mod_finance') modId = 'finance';
+                    if (modId === 'mod_commercial') modId = 'commercial';
+                    inserts.push({
+                        company_id: createdTenantId,
+                        module_id: modId,
+                        status: 'active',
+                        config: { type: 'included', features: features }
+                    });
+                }
+                if (inserts.length > 0) {
+                    const { error: modError } = await supabaseAdmin.from('company_modules').insert(inserts);
+                    if (modError) throw modError;
+                }
+            } else if (modules && modules.length > 0) {
+                console.log(`[V10] Inserting Legacy Modules: ${modules.length}`);
 
                 // Process and Deduplicate
                 const uniqueModules = new Map();

@@ -90,6 +90,8 @@ export const SuperAdminDashboard: React.FC = () => {
         setEditingId(null);
         setNewCompany({ name: '', ownerEmail: '', phone: '', document: '', adminName: '', password: '', status: 'active', planId: '', billingCycle: 'monthly', subscriptionStart: '', subscriptionEnd: '' });
         setDraftModules(['mod_tasks']);
+        setSelectedFeatures(new Set());
+        setCustomLimits({ maxUsers: 5 });
         setTempPassword('');
         setUserCreationError(null);
         setCreateTab('data');
@@ -107,12 +109,30 @@ export const SuperAdminDashboard: React.FC = () => {
             adminName: company.adminName || '',
             password: '',
             status: company.status,
-            planId: company.planId || '',
+            planId: company.planId || 'custom',
             billingCycle: company.billingCycle || 'monthly',
             subscriptionStart: '', // Only set if creating/renewing explicitly
-            subscriptionEnd: ''
+            subscriptionEnd: company.subscriptionEnd || ''
         });
-        setDraftModules(company.contractedModules || []);
+
+        const baseModules = new Set<string>();
+        const feats = new Set<string>();
+        company.contractedModules?.forEach(m => {
+            if (m.includes(':')) {
+                feats.add(m);
+                baseModules.add(m.split(':')[0]);
+            } else {
+                baseModules.add(m);
+            }
+        });
+        setDraftModules(Array.from(baseModules));
+        setSelectedFeatures(feats);
+
+        // @ts-ignore
+        const customLim = company.settings?.custom_limits?.maxUsers || company.settings?.calendar?.custom_limits?.maxUsers || 5;
+        setCustomLimits({ maxUsers: customLim });
+
+        setCreateTab('data');
         setIsModalOpen(true);
         setActiveMenuId(null);
     };
@@ -141,27 +161,37 @@ export const SuperAdminDashboard: React.FC = () => {
         }
 
         try {
+            const isCustom = newCompany.planId === 'custom' || !newCompany.planId;
+            const customModulesPayload: Record<string, string[]> = {};
+            if (isCustom) {
+                draftModules.forEach(mod => {
+                    const feats = Array.from<string>(selectedFeatures)
+                        .filter(f => f.startsWith(mod + ':'))
+                        .map(f => f.split(':')[1]);
+                    customModulesPayload[mod] = feats;
+                });
+            }
+
+            const payload = {
+                name: newCompany.name,
+                ownerEmail: newCompany.ownerEmail,
+                phone: newCompany.phone,
+                cnpj: newCompany.document,
+                adminName: newCompany.adminName,
+                status: newCompany.status,
+                planId: isCustom ? null : newCompany.planId,
+                billingCycle: newCompany.billingCycle,
+                subscriptionStart: newCompany.subscriptionStart,
+                subscriptionEnd: newCompany.subscriptionEnd,
+                modules: isCustom ? [] : draftModules,
+                customLimits: isCustom ? customLimits : undefined,
+                customModules: isCustom ? customModulesPayload : undefined
+            };
+
             if (editingId) {
-                await api.updateCompany(editingId, {
-                    name: newCompany.name,
-                    ownerEmail: newCompany.ownerEmail,
-                    phone: newCompany.phone,
-                    cnpj: newCompany.document,
-                    adminName: newCompany.adminName,
-                    status: newCompany.status,
-                    modules: draftModules
-                });
+                await api.updateCompany(editingId, payload);
             } else {
-                const newId = await api.createCompany({
-                    name: newCompany.name,
-                    ownerEmail: newCompany.ownerEmail,
-                    phone: newCompany.phone,
-                    cnpj: newCompany.document,
-                    adminName: newCompany.adminName,
-                    password: newCompany.password,
-                    status: newCompany.status,
-                    modules: draftModules
-                });
+                await api.createCompany({ ...payload, password: newCompany.password });
             }
             setIsModalOpen(false);
             loadData();
@@ -457,87 +487,202 @@ export const SuperAdminDashboard: React.FC = () => {
             >
                 {/* Modal Content - Simplified for Brevity (Same fields as original but using newCompany state) */}
                 <form onSubmit={handleCreateOrUpdate} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Nome da Empresa" value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} required />
-                        <Input label="Email do Proprietário" value={newCompany.ownerEmail} onChange={e => setNewCompany({ ...newCompany, ownerEmail: e.target.value })} required disabled={!!editingId} />
-                        <div className="flex gap-2 items-end">
-                            <div className="w-24">
-                                <label className="text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider block">Tipo Doc</label>
-                                <select value={docType} onChange={e => setDocType(e.target.value as any)} className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer">
-                                    <option value="CNPJ">CNPJ</option>
-                                    <option value="CPF">CPF</option>
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <Input
-                                    label="Documento"
-                                    value={newCompany.document}
-                                    onChange={e => setNewCompany({ ...newCompany, document: docType === 'CNPJ' ? maskCNPJ(e.target.value) : maskCPF(e.target.value) })}
-                                />
-                            </div>
-                        </div>
-                        <Input label="Telefone" value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: maskPhone(e.target.value) })} />
-
-                        <Input label="Nome do Admin" value={newCompany.adminName} onChange={e => setNewCompany({ ...newCompany, adminName: e.target.value })} />
-                        {!editingId && (
-                            <Input label="Senha Inicial" type="password" value={newCompany.password} onChange={e => setNewCompany({ ...newCompany, password: e.target.value })} />
-                        )}
-
-                        <div>
-                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Status</label>
-                            <select
-                                value={newCompany.status}
-                                onChange={e => setNewCompany({ ...newCompany, status: e.target.value })}
-                                className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
-                            >
-                                <option value="active">Ativo</option>
-                                <option value="suspended">Suspenso</option>
-                                <option value="trial">Trial</option>
-                            </select>
-                        </div>
+                    {/* Tabs Header */}
+                    <div className="flex border-b border-border mb-4 overflow-x-auto">
+                        <button type="button" onClick={() => setCreateTab('data')} className={cn("px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap", createTab === 'data' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>Dados da Empresa</button>
+                        <button type="button" onClick={() => setCreateTab('plans')} className={cn("px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap", createTab === 'plans' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>Administrador</button>
+                        <button type="button" onClick={() => setCreateTab('modules')} className={cn("px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap", createTab === 'modules' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>Plano e Permissões</button>
                     </div>
 
-                    <div className="border-t border-border pt-4">
-                        <label className="block text-sm font-medium text-foreground mb-2">Módulos Liberados</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {SYSTEM_MODULES.map(module => (
-                                <div key={module.id}
-                                    onClick={() => {
-                                        if (draftModules.includes(module.id)) {
-                                            setDraftModules(draftModules.filter(m => m !== module.id));
-                                        } else {
-                                            setDraftModules([...draftModules, module.id]);
-                                        }
-                                    }}
-                                    className={cn(
-                                        "cursor-pointer border rounded-lg p-3 flex items-center gap-3 transition-all",
-                                        draftModules.includes(module.id)
-                                            ? "bg-indigo-50/10 border-indigo-500/50 ring-1 ring-indigo-500/20"
-                                            : "bg-card border-border hover:border-primary/50"
-                                    )}>
-                                    <div className={cn("w-4 h-4 rounded border flex items-center justify-center",
-                                        draftModules.includes(module.id) ? "bg-indigo-600 border-indigo-600" : "border-gray-300"
-                                    )}>
-                                        {draftModules.includes(module.id) && <Check className="w-3 h-3 text-white" />}
+                    <div className="min-h-[300px]">
+                        {createTab === 'data' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                                <Input label="Nome da Empresa" value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} required />
+                                <Input label="Email Principal" value={newCompany.ownerEmail} onChange={e => setNewCompany({ ...newCompany, ownerEmail: e.target.value })} required disabled={!!editingId} />
+                                <div className="flex gap-2 items-end">
+                                    <div className="w-24">
+                                        <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Tipo Doc</label>
+                                        <select value={docType} onChange={e => setDocType(e.target.value as any)} className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer">
+                                            <option value="CNPJ">CNPJ</option>
+                                            <option value="CPF">CPF</option>
+                                        </select>
                                     </div>
-                                    <span className="text-sm font-medium text-foreground">{module.name}</span>
+                                    <div className="flex-1">
+                                        <Input
+                                            label="Documento"
+                                            value={newCompany.document}
+                                            onChange={e => setNewCompany({ ...newCompany, document: docType === 'CNPJ' ? maskCNPJ(e.target.value) : maskCPF(e.target.value) })}
+                                        />
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
+                                <Input label="Telefone" value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: maskPhone(e.target.value) })} />
+
+                                <div>
+                                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Status</label>
+                                    <select
+                                        value={newCompany.status}
+                                        onChange={e => setNewCompany({ ...newCompany, status: e.target.value })}
+                                        className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
+                                    >
+                                        <option value="active">Ativo</option>
+                                        <option value="suspended">Suspenso</option>
+                                        <option value="trial">Trial</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
+                        {createTab === 'plans' && (
+                            <div className="space-y-4 animate-in fade-in duration-300">
+                                <Input label="Nome do Responsável/Admin" value={newCompany.adminName} onChange={e => setNewCompany({ ...newCompany, adminName: e.target.value })} />
+                                {!editingId && (
+                                    <Input label="Senha Inicial do Admin" type="password" value={newCompany.password} onChange={e => setNewCompany({ ...newCompany, password: e.target.value })} />
+                                )}
+                                {editingId && (
+                                    <div className="p-4 bg-muted/30 rounded-lg border border-border flex items-center justify-between mt-4">
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-foreground">Acesso Administrativo</h4>
+                                            <p className="text-xs text-muted-foreground mt-1">Conecte-se como administrador desta empresa para suporte ou auditoria.</p>
+                                        </div>
+                                        <Button type="button" variant="outline" onClick={() => handleLoginAs(editingId)}>Acessar Empresa</Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {createTab === 'modules' && (
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Tipo de Plano</label>
+                                        <select
+                                            value={newCompany.planId === 'custom' ? 'custom' : newCompany.planId}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setNewCompany({ ...newCompany, planId: val });
+                                            }}
+                                            className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
+                                        >
+                                            <option value="">Selecione um plano (Opcional)</option>
+                                            <optgroup label="Planos Fixos">
+                                                {availablePlans.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name} ({p.maxUsers} usu.)</option>
+                                                ))}
+                                            </optgroup>
+                                            <option value="custom">Plano Personalizado (Avulso)</option>
+                                        </select>
+                                    </div>
+
+                                    {(newCompany.planId === 'custom' || !newCompany.planId) && (
+                                        <div>
+                                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Limite Máx. Usuários</label>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                value={customLimits.maxUsers.toString()}
+                                                onChange={e => setCustomLimits({ ...customLimits, maxUsers: parseInt(e.target.value) || 1 })}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Vencimento da Assinatura</label>
+                                        <Input
+                                            type="date"
+                                            value={newCompany.subscriptionEnd ? newCompany.subscriptionEnd.split('T')[0] : ''}
+                                            onChange={e => setNewCompany({ ...newCompany, subscriptionEnd: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Modules Selection (Granular) */}
+                                {(newCompany.planId === 'custom' || !newCompany.planId) && (
+                                    <div className="border border-border rounded-lg overflow-hidden mt-4">
+                                        <div className="bg-muted px-4 py-3 border-b border-border">
+                                            <h4 className="font-semibold text-sm text-foreground">Configuração de Módulos Avulsos</h4>
+                                        </div>
+                                        <div className="p-4 space-y-4 max-h-[300px] overflow-y-auto">
+                                            {SYSTEM_MODULES.map(module => {
+                                                const isModuleSelected = draftModules.includes(module.id);
+
+                                                return (
+                                                    <div key={module.id} className="border border-border rounded-lg overflow-hidden">
+                                                        <div
+                                                            onClick={() => {
+                                                                if (isModuleSelected) {
+                                                                    setDraftModules(draftModules.filter(m => m !== module.id));
+                                                                } else {
+                                                                    setDraftModules([...draftModules, module.id]);
+                                                                }
+                                                            }}
+                                                            className={cn("p-3 flex items-center justify-between cursor-pointer transition-colors", isModuleSelected ? "bg-indigo-50/10 border-b border-indigo-200 dark:border-indigo-900/50" : "bg-card hover:bg-muted/30")}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={cn("w-5 h-5 rounded border flex items-center justify-center transition-colors",
+                                                                    isModuleSelected ? "bg-indigo-600 border-indigo-600" : "border-gray-300"
+                                                                )}>
+                                                                    {isModuleSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                                                </div>
+                                                                <div>
+                                                                    <span className="font-semibold text-sm text-foreground">{module.name}</span>
+                                                                    <p className="text-xs text-muted-foreground hidden md:block">{module.description}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {isModuleSelected && module.features && (
+                                                            <div className="p-4 bg-muted/30 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                {module.features.map(feat => {
+                                                                    const featKey = `${module.id}:${feat.id}`;
+                                                                    const hasFeat = selectedFeatures.has(featKey);
+                                                                    return (
+                                                                        <div key={feat.id} onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const newSet = new Set(selectedFeatures);
+                                                                            if (hasFeat) newSet.delete(featKey);
+                                                                            else newSet.add(featKey);
+                                                                            setSelectedFeatures(newSet);
+                                                                        }} className="flex items-center gap-2 cursor-pointer group">
+                                                                            <div className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors", hasFeat ? "bg-primary border-primary" : "border-border group-hover:border-primary/50")}>
+                                                                                {hasFeat && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                                                            </div>
+                                                                            <span className="text-sm text-foreground/80 group-hover:text-foreground">{feat.name}</span>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {userCreationError && (
-                        <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm flex items-center gap-2">
+                        <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm flex items-center gap-2 mt-4">
                             <AlertTriangle className="w-4 h-4" />
                             {userCreationError}
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                        <Button type="submit" loading={creating}>
-                            {editingId ? 'Salvar Alterações' : 'Criar Empresa'}
-                        </Button>
+                    <div className="flex flex-wrap justify-between items-center gap-4 pt-6 mt-6 border-t border-border">
+                        <div>
+                            {createTab !== 'data' && <Button type="button" variant="outline" onClick={() => setCreateTab(createTab === 'modules' ? 'plans' : 'data')}>Voltar</Button>}
+                        </div>
+                        <div className="flex gap-3 ml-auto">
+                            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+                            {createTab !== 'modules' ? (
+                                <Button type="button" onClick={() => setCreateTab(createTab === 'data' ? 'plans' : 'modules')}>Avançar</Button>
+                            ) : (
+                                <Button type="submit" loading={creating}>
+                                    {editingId ? 'Salvar Alterações' : 'Criar Empresa'}
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </form>
             </Modal>

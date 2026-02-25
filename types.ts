@@ -85,6 +85,9 @@ export interface Company {
   billingType?: 'credit_card' | 'pix' | string;
   subscriptionStart?: string;
   subscriptionEnd?: string;
+  // --- New fields for Custom Plans ---
+  customLimits?: { maxUsers?: number;[key: string]: any };
+  customModules?: Record<string, string[]>; // e.g., { 'finance': ['finance_overview', 'payables'], 'commercial': ['crm_overview'] }
 }
 
 export interface CompanySettings {

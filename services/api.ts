@@ -1879,7 +1879,9 @@ export const api = {
                 billingCycle: data.billingCycle,
                 subscriptionStart: data.subscriptionStart,
                 subscriptionEnd: data.subscriptionEnd,
-                modules: data.modules,
+                modules: data.modules, // Legacy simple array
+                customLimits: data.customLimits, // New: for custom limits
+                customModules: data.customModules, // New: granular module selection
                 cnpj: data.cnpj,
                 phone: data.phone
             }
@@ -1967,7 +1969,34 @@ export const api = {
             if (subError) throw subError;
         }
 
-        if (data.modules && Array.isArray(data.modules)) {
+        if (data.customModules && typeof data.customModules === 'object') {
+            // New Granular Logic
+            await supabase.from('company_modules').delete().eq('company_id', id);
+
+            const inserts = Object.entries(data.customModules).map(([modId, features]) => {
+                let dbModuleId = modId;
+                if (modId === 'mod_tasks') dbModuleId = 'routines';
+                if (modId === 'mod_finance') dbModuleId = 'finance';
+                if (modId === 'mod_commercial') dbModuleId = 'commercial';
+                if (modId === 'mod_reports') dbModuleId = 'reports';
+
+                return {
+                    company_id: id,
+                    module_id: dbModuleId,
+                    status: 'active',
+                    config: {
+                        type: 'included',
+                        features: features // Array of strings (the tabs)
+                    }
+                };
+            });
+
+            if (inserts.length > 0) {
+                const { error: modError } = await supabase.from('company_modules').insert(inserts);
+                if (modError) throw modError;
+            }
+        } else if (data.modules && Array.isArray(data.modules)) {
+            // Legacy Logic
             // 1. Deduplicate input modules (Fix for duplicate key error)
             const uniqueModules = Array.from(new Set(data.modules as string[]));
 
@@ -1995,16 +2024,10 @@ export const api = {
                     };
                 });
 
-                // 3. Final safety check: Filter out any duplicates that might have slipped through mapping (e.g. 'finance' and 'finance:extra' both map to module_id 'finance')
-                // We prioritize 'included' over 'extra' if both exist? Or just take the first one?
-                // Let's use a Map to ensure unique module_id
                 const uniqueInserts = new Map();
                 companyModules.forEach((tm: any) => {
                     if (!uniqueInserts.has(tm.module_id)) {
                         uniqueInserts.set(tm.module_id, tm);
-                    } else {
-                        // If we have a conflict, we might want to prefer 'included'
-                        // But for now, first wins is fine as dedupe on string already handled exact matches.
                     }
                 });
 
