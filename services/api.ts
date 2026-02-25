@@ -1639,7 +1639,7 @@ export const api = {
             adminName: data.name,
             status: data.status || 'active',
             createdAt: data.created_at,
-            type: sub.status === 'trialing' ? 'trial' : 'client',
+            type: sub.status === 'active' ? 'client' : (sub.status === 'trialing' ? 'trial' : (data.type || 'trial')),
             subscriptionEnd: sub.status === 'trialing' ? sub.trial_ends_at : sub.current_period_end,
             planId: sub.plan_id,
             planName: sub.saas_plans?.name || 'Plano Personalizado',
@@ -1664,7 +1664,10 @@ export const api = {
                 subscriptions(
                     plan_id,
                     status,
+                    current_period_start,
                     current_period_end,
+                    billing_type,
+                    cycle,
                     saas_plans(name)
                 ),
                 company_modules(*)
@@ -1724,6 +1727,11 @@ export const api = {
                 contractedModules: modules,
                 createdAt: t.created_at,
                 lastActiveAt: t.updated_at, // Approximate
+                billingType: sub?.billing_type,
+                subscriptionStart: sub?.current_period_start,
+                subscriptionEnd: sub?.current_period_end,
+                billingCycle: sub?.cycle,
+                planId: sub?.plan_id,
                 settings: {
                     ...t.settings,
                     calendar: t.calendar_settings
@@ -2055,12 +2063,40 @@ export const api = {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
 
-        const { data: result, error } = await supabase.functions.invoke('billing-checkout', {
-            body: data,
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        const mappedData = {
+            ...data,
+            company: {
+                legal_name: data.company.name,
+                cpf_cnpj: data.company.cnpj,
+                whatsapp: data.company.phone,
+                email: data.company.email
+            }
+        };
+
+        // Use native fetch to get RAW error from Edge Function instead of invoke() which masks it
+        console.log("SENDING CHECKOUT REQUEST...");
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/billing-checkout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...token && { 'Authorization': `Bearer ${token}` }
+            },
+            body: JSON.stringify(mappedData)
         });
 
-        if (error) throw new Error(error.message || "Erro na assinatura");
+        const textResponse = await response.text();
+        console.log("EDGE FUNCTION RAW RESPONSE HTTP:", response.status, textResponse);
+
+        if (!response.ok) {
+            let errorMsg = textResponse;
+            try {
+                const jsonErr = JSON.parse(textResponse);
+                errorMsg = jsonErr.error || textResponse;
+            } catch (e) { }
+            throw new Error(`Edge Function ${response.status}: ${errorMsg}`);
+        }
+
+        const result = JSON.parse(textResponse);
         if (result.error) throw new Error(result.error);
         return result;
     },

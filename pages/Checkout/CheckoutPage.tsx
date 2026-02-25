@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PublicLayout } from '../../components/PublicLayout';
 import { Button, cn } from '../../components/Shared';
-import { ArrowLeft, Lock, CheckCircle, Copy, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Lock, CheckCircle, Copy, AlertCircle, PartyPopper, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
 import { SaasPlan } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +27,7 @@ export const CheckoutPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [pixData, setPixData] = useState<{ encodedImage: string, payload: string, expirationDate: string } | null>(null);
     const [checkoutError, setCheckoutError] = useState<string | null>(null);
+    const [subscriptionSuccess, setSubscriptionSuccess] = useState(false);
 
     // Fetch Plans & Sync with URL
     React.useEffect(() => {
@@ -62,7 +63,7 @@ export const CheckoutPage: React.FC = () => {
     const selectedPlan = plans.find(p => p.id === selectedPlanId) || plans[0];
 
     const { user } = useAuth();
-    const { currentCompany } = useCompany();
+    const { currentCompany, refreshCompanies } = useCompany();
 
     useEffect(() => {
         if (currentCompany) {
@@ -179,9 +180,9 @@ export const CheckoutPage: React.FC = () => {
                 billing_type: paymentMethod === 'credit' ? 'credit_card' : 'pix' as 'credit_card' | 'pix',
                 credit_card: paymentMethod === 'credit' ? {
                     holderName: formData.cardName,
-                    number: formData.cardNumber,
+                    number: formData.cardNumber.replace(/\s/g, ''),
                     expiryMonth: formData.cardExpiry.split('/')[0],
-                    expiryYear: formData.cardExpiry.split('/')[1],
+                    expiryYear: '20' + formData.cardExpiry.split('/')[1],
                     ccv: formData.cardCvv
                 } : undefined
             };
@@ -191,8 +192,8 @@ export const CheckoutPage: React.FC = () => {
             if (response.pix) {
                 setPixData(response.pix);
             } else {
-                // Credit Card Success
-                navigate('/dashboard');
+                // Credit Card Success — show congratulations screen
+                setSubscriptionSuccess(true);
             }
 
         } catch (error: any) {
@@ -203,6 +204,53 @@ export const CheckoutPage: React.FC = () => {
         }
     };
 
+    // --- SUCCESS SCREEN (Credit Card) ---
+    if (subscriptionSuccess) {
+        return (
+            <PublicLayout className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+                <div className="max-w-md w-full bg-card border border-border rounded-2xl shadow-2xl p-10 text-center space-y-6 relative overflow-hidden">
+                    {/* Decorative elements */}
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
+
+                    <div className="relative z-10 space-y-6">
+                        <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-4 ring-emerald-500/10">
+                            <PartyPopper className="w-10 h-10 text-emerald-500" />
+                        </div>
+
+                        <div>
+                            <h2 className="text-3xl font-bold mb-2">Parabéns! 🎉</h2>
+                            <p className="text-muted-foreground text-sm leading-relaxed">
+                                Sua assinatura do plano <strong className="text-emerald-500">{selectedPlan?.name}</strong> foi ativada com sucesso!
+                            </p>
+                        </div>
+
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 space-y-2">
+                            <div className="flex items-center justify-center gap-2 text-emerald-500">
+                                <Sparkles size={16} />
+                                <span className="text-sm font-semibold">Assinatura Ativa</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Plano {selectedPlan?.name} • {cycle === 'monthly' ? 'Mensal' : cycle === 'semiannual' ? 'Semestral' : 'Anual'}
+                            </p>
+                        </div>
+
+                        <Button
+                            className="w-full py-3 text-base rounded-xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
+                            onClick={async () => {
+                                await refreshCompanies();
+                                navigate('/dashboard');
+                            }}
+                        >
+                            Voltar ao App
+                        </Button>
+                    </div>
+                </div>
+            </PublicLayout>
+        );
+    }
+
+    // --- PIX SCREEN ---
     if (pixData) {
         return (
             <PublicLayout className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -212,14 +260,14 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                     <h2 className="text-2xl font-bold">Pague com PIX</h2>
                     <p className="text-muted-foreground text-sm">
-                        Sua assinatura no plano <strong>{selectedPlan?.name}</strong> foi reservada. 
+                        Sua assinatura no plano <strong>{selectedPlan?.name}</strong> foi reservada.
                         Escaneie o QR Code abaixo ou utilize o recurso Copia e Cola.
                     </p>
-                    
+
                     <div className="bg-white p-4 rounded-xl inline-block border-2 border-dashed border-border mx-auto">
-                        <img 
-                            src={pixData.encodedImage.startsWith('data:') ? pixData.encodedImage : `data:image/png;base64,${pixData.encodedImage}`} 
-                            alt="QR Code PIX" 
+                        <img
+                            src={pixData.encodedImage.startsWith('data:') ? pixData.encodedImage : `data:image/png;base64,${pixData.encodedImage}`}
+                            alt="QR Code PIX"
                             className="w-48 h-48"
                         />
                     </div>
@@ -227,13 +275,13 @@ export const CheckoutPage: React.FC = () => {
                     <div className="space-y-2 text-left">
                         <p className="text-sm font-medium">Código PIX Copia e Cola:</p>
                         <div className="flex items-center gap-2">
-                            <input 
-                                type="text" 
-                                readOnly 
-                                value={pixData.payload} 
+                            <input
+                                type="text"
+                                readOnly
+                                value={pixData.payload}
                                 className="w-full text-xs p-2 bg-muted rounded border border-border outline-none focus:ring-1 focus:ring-primary"
                             />
-                            <Button 
+                            <Button
                                 onClick={() => {
                                     navigator.clipboard.writeText(pixData.payload);
                                     alert('Código copiado!');
@@ -266,7 +314,7 @@ export const CheckoutPage: React.FC = () => {
                 {/* Header Navigation */}
                 <div className="flex items-center justify-between mb-8">
                     <Button
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/dashboard')}
                         variant="ghost"
                         className="pl-0 gap-2 text-muted-foreground hover:text-foreground"
                     >

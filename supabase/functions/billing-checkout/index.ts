@@ -63,9 +63,9 @@ serve(async (req) => {
                 .from("companies")
                 .insert({
                     owner_user_id: user.id,
-                    legal_name: company.legal_name,
-                    cpf_cnpj: sanitizeNumbers(company.cpf_cnpj),
-                    whatsapp: sanitizeNumbers(company.whatsapp),
+                    name: company.legal_name,
+                    cnpj: sanitizeNumbers(company.cpf_cnpj),
+                    phone: sanitizeNumbers(company.whatsapp),
                     email: company.email,
                 })
                 .select()
@@ -94,10 +94,17 @@ serve(async (req) => {
         }
 
         // 5. Create Subscription in Asaas
-        // Trial logic: nextDueDate = now + 7 days
+        // Cobrança imediata (usuário já usou trial no registro)
         const nextDueDate = new Date();
-        nextDueDate.setDate(nextDueDate.getDate() + 7);
         const nextDueDateStr = nextDueDate.toISOString().split('T')[0];
+
+        // Calculate period dates using noon UTC to avoid timezone display issues
+        const today = new Date();
+        const periodStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 12, 0, 0));
+        const periodEnd = new Date(periodStart);
+        if (cycle === 'semiannual') periodEnd.setUTCDate(periodEnd.getUTCDate() + 180);
+        else if (cycle === 'annual') periodEnd.setUTCDate(periodEnd.getUTCDate() + 365);
+        else periodEnd.setUTCDate(periodEnd.getUTCDate() + 30);
 
         const subscriptionPayload: any = {
             customer: asaasCustomer.id,
@@ -139,30 +146,72 @@ serve(async (req) => {
             throw e;
         }
 
-        // 6. Save Subscription in DB (Status = trialing)
-        const { data: subData, error: subError } = await supabase
+        // 6. Update existing subscription or create new (Status = active, immediate charge)
+        const { data: existingSub } = await supabase
             .from("subscriptions")
-            .insert({
-                company_id: companyData.id,
-                plan_id: plan_id,
-                cycle: cycle,
-                billing_type: billing_type,
-                status: 'trialing',
-                trial_ends_at: nextDueDate.toISOString(),
-                current_period_start: new Date().toISOString(),
-                current_period_end: nextDueDate.toISOString(),
-                access_until: nextDueDate.toISOString(),
-                asaas_customer_id: asaasCustomer.id,
-                asaas_subscription_id: asaasSubscription.id,
-            })
-            .select()
-            .single();
+            .select("id")
+            .eq("company_id", companyData.id)
+            .in("status", ["trialing", "pending_payment"])
+            .maybeSingle();
+
+        let subData;
+        let subError;
+
+        if (existingSub) {
+            // Update existing trial subscription to active
+            const result = await supabase
+                .from("subscriptions")
+                .update({
+                    plan_id: plan_id,
+                    cycle: cycle,
+                    billing_type: billing_type,
+                    status: 'active',
+                    trial_ends_at: null,
+                    current_period_start: periodStart.toISOString(),
+                    current_period_end: periodEnd.toISOString(),
+                    access_until: periodEnd.toISOString(),
+                    asaas_customer_id: asaasCustomer.id,
+                    asaas_subscription_id: asaasSubscription.id,
+                })
+                .eq("id", existingSub.id)
+                .select()
+                .single();
+            subData = result.data;
+            subError = result.error;
+        } else {
+            // Create new subscription
+            const result = await supabase
+                .from("subscriptions")
+                .insert({
+                    company_id: companyData.id,
+                    plan_id: plan_id,
+                    cycle: cycle,
+                    billing_type: billing_type,
+                    status: 'active',
+                    trial_ends_at: null,
+                    current_period_start: periodStart.toISOString(),
+                    current_period_end: periodEnd.toISOString(),
+                    access_until: periodEnd.toISOString(),
+                    asaas_customer_id: asaasCustomer.id,
+                    asaas_subscription_id: asaasSubscription.id,
+                })
+                .select()
+                .single();
+            subData = result.data;
+            subError = result.error;
+        }
 
         if (subError) {
             // Rollback: Cancel Asaas Subscription
             await asaas.cancelSubscription(asaasSubscription.id);
             throw new Error("Failed to save subscription: " + subError.message);
         }
+
+        // 6b. Update company type from 'trial' to 'client'
+        await supabase
+            .from("companies")
+            .update({ type: 'client', plan_id: plan_id })
+            .eq("id", companyData.id);
 
         // 7. Handle PIX specifics (if needed immediately)
         // Asaas Subscriptions with PIX usually generate the first charge automatically.
@@ -200,7 +249,7 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({
             subscription_id: subData.id,
-            status: 'trialing',
+            status: 'active',
             pix: pixData
         }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },

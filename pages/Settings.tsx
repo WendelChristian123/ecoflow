@@ -10,6 +10,7 @@ import { CreateUserModal, EditUserModal, DelegationModal } from '../components/U
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
 import { SharedAccessPanel } from '../components/Permissions/SharedAccessPanel';
+import { MyPlanTab } from '../components/MyPlanTab';
 import { checkUserLimit, UserLimitStatus } from '../services/limits';
 
 export const SettingsPage: React.FC = () => {
@@ -25,7 +26,7 @@ export const SettingsPage: React.FC = () => {
     const [userLimits, setUserLimits] = useState<UserLimitStatus | null>(null);
 
     // UI State
-    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'audit'>('delegation');
+    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'audit' | 'plan'>('delegation');
     const [pendingMode, setPendingMode] = useState<'competence' | 'cash'>('competence');
 
     // Modals State
@@ -175,6 +176,12 @@ export const SettingsPage: React.FC = () => {
                         Auditoria
                     </button>
                 )}
+                <button
+                    onClick={() => setActiveTab('plan')}
+                    className={`pb-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'plan' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                >
+                    Meu Plano
+                </button>
             </div>
 
             {/* TAB: DELEGATION (SHARED ACCESS) */}
@@ -386,6 +393,11 @@ export const SettingsPage: React.FC = () => {
                 <Card className="p-6">
                     <AuditLogsTab />
                 </Card>
+            )}
+
+            {/* TAB: MEU PLANO */}
+            {activeTab === 'plan' && (
+                <MyPlanTab />
             )}
 
 

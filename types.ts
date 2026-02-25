@@ -82,6 +82,7 @@ export interface Company {
   settings?: CompanySettings;
   addons?: CompanyAddon[]; // Joined data
   billingCycle?: 'monthly' | 'semiannually' | 'yearly';
+  billingType?: 'credit_card' | 'pix' | string;
   subscriptionStart?: string;
   subscriptionEnd?: string;
 }

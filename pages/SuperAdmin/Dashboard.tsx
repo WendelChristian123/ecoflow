@@ -327,9 +327,9 @@ export const SuperAdminDashboard: React.FC = () => {
                             <tr>
                                 <th className="px-6 py-3 w-[280px]">Empresa</th>
                                 <th className="px-6 py-3 w-[120px]">Status</th>
-                                <th className="px-6 py-3 w-[120px]">Plano</th>
+                                <th className="px-6 py-3 w-[150px]">Plano / Pgto</th>
                                 <th className="px-6 py-3">Módulos</th>
-                                <th className="px-6 py-3 w-[130px]">Criado em</th>
+                                <th className="px-6 py-3 w-[160px]">Período</th>
                                 <th className="px-6 py-3 text-right w-[80px]">Ações</th>
                             </tr>
                         </thead>
@@ -368,12 +368,13 @@ export const SuperAdminDashboard: React.FC = () => {
                                                 {company.status.toUpperCase()}
                                             </Badge>
                                         </td>
-                                        {/* Plano */}
+                                        {/* Plano / Pgto */}
                                         <td className="px-6 py-4 align-middle">
                                             <span className="font-medium text-foreground">{(company as any).planName || 'Custom'}</span>
-                                            {company.subscriptionEnd && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Exp: {new Date(company.subscriptionEnd).toLocaleDateString('pt-BR')}
+                                            {company.billingType && (
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                                                    <CreditCard className="w-3.5 h-3.5" />
+                                                    {company.billingType === 'credit_card' ? 'Cartão de Crédito' : company.billingType.toUpperCase()}
                                                 </div>
                                             )}
                                         </td>
@@ -399,9 +400,30 @@ export const SuperAdminDashboard: React.FC = () => {
                                                 )}
                                             </div>
                                         </td>
-                                        {/* Criado em */}
-                                        <td className="px-6 py-4 align-middle text-muted-foreground text-sm">
-                                            {new Date(company.createdAt).toLocaleDateString('pt-BR')}
+                                        {/* Período */}
+                                        <td className="px-6 py-4 align-middle text-sm text-foreground">
+                                            {company.subscriptionStart ? (
+                                                <div className="flex flex-col gap-1 text-xs">
+                                                    <div>
+                                                        <span className="text-muted-foreground mr-1">Início:</span>
+                                                        {new Date(company.subscriptionStart).toLocaleDateString('pt-BR')}
+                                                    </div>
+                                                    {company.subscriptionEnd && (
+                                                        <div>
+                                                            <span className="text-muted-foreground mr-1">Venc:</span>
+                                                            <span className="font-medium">
+                                                                {new Date(company.subscriptionEnd).toLocaleDateString('pt-BR')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col gap-1 text-xs">
+                                                    <div className="text-muted-foreground">
+                                                        Criado em: {new Date(company.createdAt).toLocaleDateString('pt-BR')}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </td>
                                         {/* Ações */}
                                         <td className="px-6 py-4 align-middle text-right">
