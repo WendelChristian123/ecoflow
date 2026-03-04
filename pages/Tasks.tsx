@@ -10,6 +10,7 @@ import { TaskModal, TaskDetailModal, ConfirmationModal } from '../components/Mod
 import { api } from '../services/api';
 import { Task, User, Status, Project, Team } from '../types';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
 import { useCompany } from '../context/CompanyContext';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
@@ -67,7 +68,13 @@ export const TasksPage: React.FC = () => {
   const { user } = useAuth();
   const { currentCompany } = useCompany();
   const { can, canDelete } = useRBAC();
+  const { isApp } = useAppEnvironment();
   const [view, setView] = useState<'list' | 'board'>('board');
+
+  // Force list view in App mode
+  useEffect(() => {
+    if (isApp) setView('list');
+  }, [isApp]);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -251,19 +258,21 @@ export const TasksPage: React.FC = () => {
       <div className="h-full flex flex-col gap-4">
         {/* Unified Controls Bar */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
-          {/* 1. Search */}
-          <div className="relative flex-1 min-w-[120px] max-w-[200px]">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <Filter size={14} />
+          {/* 1. Search - Web only */}
+          {!isApp && (
+            <div className="relative flex-1 min-w-[120px] max-w-[200px]">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Filter size={14} />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-full focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-full focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
-            />
-          </div>
+          )}
 
           {/* 2. New Task Button */}
           {can('routines', 'create') && (
@@ -288,21 +297,23 @@ export const TasksPage: React.FC = () => {
             className="min-w-[120px] md:min-w-[140px] flex-1 sm:flex-none"
           />
 
-          {/* 5. Priority */}
-          <FilterSelect
-            inlineLabel="Prioridade:"
-            value={filterPriority}
-            onChange={setFilterPriority}
-            options={[
-              { value: 'all', label: 'Todas' },
-              { value: 'low', label: 'Baixa' },
-              { value: 'medium', label: 'Média' },
-              { value: 'high', label: 'Alta' },
-              { value: 'urgent', label: 'Urgente' }
-            ]}
-            darkMode={false}
-            className="min-w-[120px] md:min-w-[140px] flex-1 sm:flex-none"
-          />
+          {/* 5. Priority - Web only */}
+          {!isApp && (
+            <FilterSelect
+              inlineLabel="Prioridade:"
+              value={filterPriority}
+              onChange={setFilterPriority}
+              options={[
+                { value: 'all', label: 'Todas' },
+                { value: 'low', label: 'Baixa' },
+                { value: 'medium', label: 'Média' },
+                { value: 'high', label: 'Alta' },
+                { value: 'urgent', label: 'Urgente' }
+              ]}
+              darkMode={false}
+              className="min-w-[120px] md:min-w-[140px] flex-1 sm:flex-none"
+            />
+          )}
 
           {/* 6. Assignee */}
           <FilterSelect
@@ -322,24 +333,26 @@ export const TasksPage: React.FC = () => {
             className="min-w-[140px] md:min-w-[180px] flex-1 sm:flex-none"
           />
 
-          {/* 7. View Toggle + Manage Stages */}
-          <div className="flex bg-card border border-border rounded-lg p-0.5 ml-auto">
-            <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <LayoutList size={16} />
-            </button>
-            <button onClick={() => setView('board')} className={`p-1.5 rounded transition-all ${view === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <Kanban size={16} />
-            </button>
-            {view === 'board' && (
-              <button
-                onClick={() => setIsStageManagerOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors border-l border-border"
-              >
-                <Settings size={14} />
-                <span className="hidden sm:inline">Etapas</span>
+          {/* 7. View Toggle - Web only */}
+          {!isApp && (
+            <div className="flex bg-card border border-border rounded-lg p-0.5 ml-auto">
+              <button onClick={() => setView('list')} className={`p-1.5 rounded transition-all ${view === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <LayoutList size={16} />
               </button>
-            )}
-          </div>
+              <button onClick={() => setView('board')} className={`p-1.5 rounded transition-all ${view === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Kanban size={16} />
+              </button>
+              {view === 'board' && (
+                <button
+                  onClick={() => setIsStageManagerOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors border-l border-border"
+                >
+                  <Settings size={14} />
+                  <span className="hidden sm:inline">Etapas</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content Area */}
