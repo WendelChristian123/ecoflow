@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { isAppMode } from '../hooks/useAppMode';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -32,6 +33,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Calcular tema resolvido
   const calculateResolvedTheme = (currentTheme: Theme): 'light' | 'dark' => {
+    // APP mode: always dark (fintech style)
+    if (isAppMode()) return 'dark';
+
     if (currentTheme === 'system') {
       return getSystemTheme();
     }

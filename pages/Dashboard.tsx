@@ -29,6 +29,7 @@ import { parseDateLocal } from '../utils/formatters';
 import { isBefore, isSameDay, addDays, isWithinInterval, startOfDay, format, setDate, addMonths, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useCompany } from '../context/CompanyContext';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
 import { useRBAC } from '../context/RBACContext';
 import { supabase } from '../services/supabase';
 
@@ -45,6 +46,7 @@ export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const { currentCompany, loading: companyLoading } = useCompany();
     const { isSuperAdmin } = useRBAC();
+    const { isApp } = useAppEnvironment();
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -397,48 +399,50 @@ export const Dashboard: React.FC = () => {
             <div className="sticky top-0 z-30 bg-background/98 backdrop-blur-lg py-3 md:py-4 -mx-4 px-4 md:-mx-6 md:px-6 shadow-sm border-b border-border/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                 {/* Grupo 1: Filtros de Conteúdo */}
                 <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
-                    {/* Modules Dropdown - Premium */}
-                    <div className="relative flex-1 md:flex-none">
-                        <button
-                            onClick={() => setIsModulesOpen(!isModulesOpen)}
-                            className="flex items-center justify-between md:justify-start gap-2 bg-card border border-border hover:border-emerald-500/50 text-foreground px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm w-full"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Layers size={16} className="text-emerald-600 dark:text-emerald-500" />
-                                <span className="hidden sm:inline">Módulos ({selectedModules.length})</span>
-                                <span className="sm:hidden">({selectedModules.length})</span>
-                            </div>
-                            <ChevronDown size={14} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {isModulesOpen && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={() => setIsModulesOpen(false)} />
-                                <div className="absolute top-full left-0 mt-2 w-52 bg-popover border border-border rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Exibir Módulos</div>
-                                    <div className="space-y-1">
-                                        {['tasks', 'events', 'finance', 'quotes'].map(m => (
-                                            <button
-                                                key={m}
-                                                onClick={() => toggleModule(m)}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
-                                                    selectedModules.includes(m)
-                                                        ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold"
-                                                        : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
-                                                )}
-                                            >
-                                                <span>{moduleNames[m]}</span>
-                                                {selectedModules.includes(m) && <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-500" />}
-                                            </button>
-                                        ))}
-                                    </div>
+                    {/* Modules Dropdown - Web only */}
+                    {!isApp && (
+                        <div className="relative flex-1 md:flex-none">
+                            <button
+                                onClick={() => setIsModulesOpen(!isModulesOpen)}
+                                className="flex items-center justify-between md:justify-start gap-2 bg-card border border-border hover:border-emerald-500/50 text-foreground px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm w-full"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Layers size={16} className="text-emerald-600 dark:text-emerald-500" />
+                                    <span className="hidden sm:inline">Módulos ({selectedModules.length})</span>
+                                    <span className="sm:hidden">({selectedModules.length})</span>
                                 </div>
-                            </>
-                        )}
-                    </div>
+                                <ChevronDown size={14} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
+                            </button>
 
-                    <div className="hidden md:block h-6 w-px bg-border" />
+                            {isModulesOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setIsModulesOpen(false)} />
+                                    <div className="absolute top-full left-0 mt-2 w-52 bg-popover border border-border rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Exibir Módulos</div>
+                                        <div className="space-y-1">
+                                            {['tasks', 'events', 'finance', 'quotes'].map(m => (
+                                                <button
+                                                    key={m}
+                                                    onClick={() => toggleModule(m)}
+                                                    className={cn(
+                                                        "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
+                                                        selectedModules.includes(m)
+                                                            ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold"
+                                                            : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
+                                                    )}
+                                                >
+                                                    <span>{moduleNames[m]}</span>
+                                                    {selectedModules.includes(m) && <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-500" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {!isApp && <div className="hidden md:block h-6 w-px bg-border" />}
 
                     {/* Horizon Toggle - Premium */}
                     <div className="flex bg-secondary/50 rounded-lg p-1 border border-border gap-0.5 md:gap-1 overflow-x-auto custom-scrollbar flex-1 md:flex-none">
@@ -459,8 +463,8 @@ export const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Grupo 2: Usuário e Ações */}
-                <div className="flex items-center justify-between w-full md:w-auto gap-2 md:gap-4">
+                {/* Grupo 2: Usuário e Ações - Web only */}
+                {!isApp && (<div className="flex items-center justify-between w-full md:w-auto gap-2 md:gap-4">
                     {/* Assignee Dropdown - Premium Custom */}
                     <div className="relative flex-1 md:flex-none">
                         <button
@@ -541,7 +545,7 @@ export const Dashboard: React.FC = () => {
                             )} />
                         </button>
                     </div>
-                </div>
+                </div>)}
             </div>
         );
     };

@@ -12,6 +12,7 @@ import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDa
 import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
 import { useCompany } from '../../context/CompanyContext';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
 
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
@@ -49,6 +50,7 @@ export const FinancialTransactions: React.FC = () => {
     `;
 
     const { currentCompany } = useCompany();
+    const { isApp } = useAppEnvironment();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -429,7 +431,7 @@ export const FinancialTransactions: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className={`grid ${isApp ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-3`}>
                     <FilterSelect
                         value={filters.type}
                         onChange={(val) => setFilters({ ...filters, type: val as any })}
@@ -454,17 +456,20 @@ export const FinancialTransactions: React.FC = () => {
                         className="w-full"
                     />
 
-                    <FilterSelect
-                        value={filters.accountId}
-                        onChange={(val) => setFilters({ ...filters, accountId: val })}
-                        options={[
-                            { value: 'all', label: 'Contas e Cartões' },
-                            ...accounts.map(acc => ({ value: acc.id, label: acc.name, group: 'Contas Bancárias' })),
-                            ...cards.map(card => ({ value: `card_${card.id}`, label: card.name, group: 'Cartões de Crédito' }))
-                        ]}
-                        className="w-full"
-                        searchable
-                    />
+                    {/* Account filter - Web only */}
+                    {!isApp && (
+                        <FilterSelect
+                            value={filters.accountId}
+                            onChange={(val) => setFilters({ ...filters, accountId: val })}
+                            options={[
+                                { value: 'all', label: 'Contas e Cartões' },
+                                ...accounts.map(acc => ({ value: acc.id, label: acc.name, group: 'Contas Bancárias' })),
+                                ...cards.map(card => ({ value: `card_${card.id}`, label: card.name, group: 'Cartões de Crédito' }))
+                            ]}
+                            className="w-full"
+                            searchable
+                        />
+                    )}
 
                     <div className="relative group">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={16} />
