@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
 import { useRBAC } from '../context/RBACContext';
 import { BottomNavigation } from './BottomNavigation';
-import { FABButton } from './FABButton';
 import { NotificationPopover } from './NotificationPopover';
 import { TrialExpired } from './TrialExpired';
 import { TrialBanner } from './TrialBanner';
@@ -116,13 +115,6 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 {children}
             </main>
 
-            {/* Contextual FAB */}
-            <FABButton
-                onCreateTransaction={() => setFabModal('transaction')}
-                onCreateQuote={() => setFabModal('quote')}
-                onCreateTask={() => setFabModal('task')}
-                onCreateEvent={() => setFabModal('event')}
-            />
 
             {/* Bottom Navigation */}
             <BottomNavigation />
