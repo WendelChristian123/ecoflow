@@ -14,14 +14,30 @@ export function PwaInstallPrompt() {
             return;
         }
 
-        // iOS detection (No automatic install prompts exist for iOS)
+        // Detect Mobile
         const userAgent = window.navigator.userAgent.toLowerCase();
+        const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        
+        if (!isMobileDevice) {
+            return; // only show on mobile
+        }
+
+        // Only show once
+        const hasSeenPrompt = localStorage.getItem('contazze_pwa_prompt_seen');
+        if (hasSeenPrompt) {
+            return;
+        }
+
+        // iOS detection (No automatic install prompts exist for iOS)
         const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
         setIsIOS(isIOSDevice);
 
         if (isIOSDevice && !isStandalone) {
             // Show iOS prompt with a slight delay
-            const timer = setTimeout(() => setShowPrompt(true), 3000);
+            const timer = setTimeout(() => {
+                setShowPrompt(true);
+                localStorage.setItem('contazze_pwa_prompt_seen', 'true');
+            }, 3000);
             return () => clearTimeout(timer);
         }
 
@@ -29,6 +45,7 @@ export function PwaInstallPrompt() {
         if ((window as any).__deferredPwaPrompt) {
             setDeferredPrompt((window as any).__deferredPwaPrompt);
             setShowPrompt(true);
+            localStorage.setItem('contazze_pwa_prompt_seen', 'true');
         }
 
         // Android / Chrome custom install trigger
@@ -39,6 +56,7 @@ export function PwaInstallPrompt() {
             setDeferredPrompt(e);
             // Update UI notify the user they can install the PWA
             setShowPrompt(true);
+            localStorage.setItem('contazze_pwa_prompt_seen', 'true');
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
