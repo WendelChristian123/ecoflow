@@ -14,7 +14,7 @@
 import { supabase } from './supabase';
 
 // VAPID public key — must match the private key stored in Supabase Secrets
-const VAPID_PUBLIC_KEY = 'BEB-VPqFMci1v_FlCeGyqnkjP5w70-wfdHRBds5SbfQVjL_dXmoNP6dsWqndcTGSSOe3ftbPBR8qDXNFgpvMAJg';
+const VAPID_PUBLIC_KEY = 'BJ4n14s6bHjCDPWZ6WwK4hI5fHH-CqgDwA-3oq0gMH5S_io1hbjzrBV8VRVcrL7rHaWD3KA102Cac5zCdBlWpXQ';
 
 /**
  * Detect if running as a mobile PWA (standalone mode on a mobile device).
