@@ -90,7 +90,24 @@ export async function registerPushSubscription(userId: string, companyId: string
     // 3. Check for existing subscription
     let subscription = await registration.pushManager.getSubscription();
 
-    // 4. Subscribe if no current subscription
+    // 4. If existing subscription uses a different VAPID key, unsubscribe first
+    if (subscription) {
+      const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const currentKey = subscription.options?.applicationServerKey
+        ? new Uint8Array(subscription.options.applicationServerKey)
+        : null;
+
+      const keysMatch = currentKey && expectedKey.length === currentKey.length &&
+        expectedKey.every((val, i) => val === currentKey[i]);
+
+      if (!keysMatch) {
+        console.log('[Push] VAPID key changed, re-subscribing...');
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+    }
+
+    // 5. Subscribe if no current subscription
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
