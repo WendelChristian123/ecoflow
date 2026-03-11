@@ -448,97 +448,160 @@ export const TaskTableView: React.FC<{
   };
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-x-auto shadow-sm custom-scrollbar">
-      <table className="w-full min-w-[800px] text-left text-sm text-muted-foreground">
-        <thead className="bg-muted/50 text-foreground uppercase text-xs font-bold tracking-wider">
-          <tr>
-            <th className="px-6 py-4">Título</th>
-            <th className="px-6 py-4">Status</th>
-            <th className="px-6 py-4">Prioridade</th>
-            <th className="px-6 py-4">Responsável</th>
-            <th className="px-6 py-4">Prazo</th>
-            <th className="px-6 py-4 text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {tasks.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
-                Nenhuma tarefa encontrada.
-              </td>
-            </tr>
-          ) : (
-            tasks.map(task => {
-              const assignee = getUser(task.assigneeId);
-
-              const isOverdue = task.status !== 'done' && task.dueDate && isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate));
-
-              return (
-                <tr
-                  key={task.id}
-                  className={cn(
-                    "transition-colors cursor-pointer",
-                    getRowClass(task)
+    <div className="bg-card rounded-xl border border-border shadow-sm">
+      {/* Mobile card view */}
+      <div className="md:hidden divide-y divide-border">
+        {tasks.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground italic">Nenhuma tarefa encontrada.</div>
+        ) : (
+          tasks.map(task => {
+            const assignee = getUser(task.assigneeId);
+            const isOverdue = task.status !== 'done' && task.dueDate && isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate));
+            return (
+              <div
+                key={task.id}
+                className={cn('p-3 cursor-pointer transition-colors', getRowClass(task))}
+                onClick={() => onTaskClick && onTaskClick(task)}
+              >
+                {/* Title row */}
+                <div className={cn('text-sm font-semibold text-foreground mb-2', task.status === 'done' && 'line-through opacity-60')}>
+                  {task.title}
+                </div>
+                {task.description && (
+                  <div className="text-xs text-muted-foreground truncate mb-2">{task.description}</div>
+                )}
+                {/* Controls row */}
+                <div className="flex flex-wrap items-center gap-2" onClick={e => e.stopPropagation()}>
+                  {/* Status */}
+                  <div className="flex-1 min-w-[130px]">
+                    <FilterSelect
+                      value={task.status}
+                      onChange={(val) => onStatusChange && onStatusChange(task.id, val as Status)}
+                      options={[
+                        { value: 'todo', label: 'A Fazer' },
+                        { value: 'in_progress', label: 'Em Progresso' },
+                        { value: 'review', label: 'Revisão' },
+                        { value: 'done', label: 'Concluído' }
+                      ]}
+                      darkMode={false}
+                      className="text-xs w-full"
+                    />
+                  </div>
+                  {/* Priority */}
+                  <Badge variant={getPriorityColor(task.priority)} className="text-[10px] flex-shrink-0">
+                    {translatePriority(task.priority)}
+                  </Badge>
+                  {/* Due date */}
+                  {task.dueDate && (
+                    <span className={cn('text-[10px] font-medium flex-shrink-0', isOverdue ? 'text-rose-500' : 'text-muted-foreground')}>
+                      {isOverdue && '⚠ '}{new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                    </span>
                   )}
-                  onClick={() => onTaskClick && onTaskClick(task)}
-                >
-                  <td className="px-6 py-4 font-medium text-foreground">
-                    <div className={task.status === 'done' ? 'line-through opacity-60' : ''}>{task.title}</div>
-                    {task.description && <div className="text-xs text-muted-foreground truncate max-w-[200px] mt-0.5">{task.description}</div>}
-                  </td>
-                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="w-36">
-                      <FilterSelect
-                        value={task.status}
-                        onChange={(val) => onStatusChange && onStatusChange(task.id, val as Status)}
-                        options={[
-                          { value: 'todo', label: 'A Fazer' },
-                          { value: 'in_progress', label: 'Em Progresso' },
-                          { value: 'review', label: 'Revisão' },
-                          { value: 'done', label: 'Concluído' }
-                        ]}
-                        darkMode={false}
-                        className="text-xs"
-                      />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge variant={getPriorityColor(task.priority)}>{translatePriority(task.priority)}</Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    {assignee ? (
-                      <div className="flex items-center gap-2" title={assignee.email}>
-                        <Avatar size="sm" src={assignee.avatarUrl} name={assignee.name} />
-                        <span className="truncate max-w-[120px]">{assignee.name}</span>
+                  {/* Delete */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+                    className="ml-auto p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block overflow-x-auto custom-scrollbar">
+        <table className="w-full min-w-[800px] text-left text-sm text-muted-foreground">
+          <thead className="bg-muted/50 text-foreground uppercase text-xs font-bold tracking-wider">
+            <tr>
+              <th className="px-6 py-4">Título</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Prioridade</th>
+              <th className="px-6 py-4">Responsável</th>
+              <th className="px-6 py-4">Prazo</th>
+              <th className="px-6 py-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {tasks.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
+                  Nenhuma tarefa encontrada.
+                </td>
+              </tr>
+            ) : (
+              tasks.map(task => {
+                const assignee = getUser(task.assigneeId);
+                const isOverdue = task.status !== 'done' && task.dueDate && isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate));
+                return (
+                  <tr
+                    key={task.id}
+                    className={cn(
+                      "transition-colors cursor-pointer",
+                      getRowClass(task)
+                    )}
+                    onClick={() => onTaskClick && onTaskClick(task)}
+                  >
+                    <td className="px-6 py-4 font-medium text-foreground">
+                      <div className={task.status === 'done' ? 'line-through opacity-60' : ''}>{task.title}</div>
+                      {task.description && <div className="text-xs text-muted-foreground truncate max-w-[200px] mt-0.5">{task.description}</div>}
+                    </td>
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="w-36">
+                        <FilterSelect
+                          value={task.status}
+                          onChange={(val) => onStatusChange && onStatusChange(task.id, val as Status)}
+                          options={[
+                            { value: 'todo', label: 'A Fazer' },
+                            { value: 'in_progress', label: 'Em Progresso' },
+                            { value: 'review', label: 'Revisão' },
+                            { value: 'done', label: 'Concluído' }
+                          ]}
+                          darkMode={false}
+                          className="text-xs"
+                        />
                       </div>
-                    ) : <span className="text-muted-foreground italic">--</span>}
-                  </td>
-                  <td className="px-6 py-4 text-xs font-medium text-foreground">
-                    <div className="flex flex-col">
-                      <span>{new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
-                      {isOverdue && (
-                        <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mt-0.5">Vencido</span>
-                      )}
-                      {!isOverdue && (
-                        <span className="text-muted-foreground text-[10px]">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-                      className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      title="Excluir Tarefa"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant={getPriorityColor(task.priority)}>{translatePriority(task.priority)}</Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      {assignee ? (
+                        <div className="flex items-center gap-2" title={assignee.email}>
+                          <Avatar size="sm" src={assignee.avatarUrl} name={assignee.name} />
+                          <span className="truncate max-w-[120px]">{assignee.name}</span>
+                        </div>
+                      ) : <span className="text-muted-foreground italic">--</span>}
+                    </td>
+                    <td className="px-6 py-4 text-xs font-medium text-foreground">
+                      <div className="flex flex-col">
+                        <span>{new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                        {isOverdue && (
+                          <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mt-0.5">Vencido</span>
+                        )}
+                        {!isOverdue && (
+                          <span className="text-muted-foreground text-[10px]">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Excluir Tarefa"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

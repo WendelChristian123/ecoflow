@@ -7,7 +7,7 @@ import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, 
 import { Loader, Card, Badge, cn, Button } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText, Printer, LayoutList } from 'lucide-react';
 import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
 import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
@@ -340,14 +340,29 @@ export const FinancialOverview: React.FC = () => {
                     </h1>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2 md:gap-3">
+                    {/* Relatórios: ícone apenas no mobile */}
                     <Button
                         variant="ghost"
                         onClick={() => setIsReportModalOpen(true)}
                         className="bg-secondary/50 border border-border hover:bg-secondary text-foreground gap-2"
+                        title="Relatórios"
                     >
-                        <FileText size={18} className="text-primary" /> Relatórios
+                        <Printer size={18} className="text-primary" />
+                        <span className="hidden sm:inline">Relatórios</span>
                     </Button>
+
+                    {/* Lançamentos - somente mobile */}
+                    <Button
+                        variant="ghost"
+                        onClick={() => navigate('/finance/transactions')}
+                        className="sm:hidden bg-secondary/50 border border-border hover:bg-secondary text-foreground gap-2"
+                        title="Lançamentos"
+                    >
+                        <LayoutList size={18} className="text-primary" />
+                        <span>Lançamentos</span>
+                    </Button>
+
                     <Button
                         className="px-6 gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-105"
                         onClick={() => setIsTransactionModalOpen(true)}

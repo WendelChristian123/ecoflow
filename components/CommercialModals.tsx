@@ -409,7 +409,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Editar Orçamento" : "Novo Orçamento"} className="max-w-4xl">
+        <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Editar Orçamento" : "Novo Orçamento"} className="max-w-4xl w-full">
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Header Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/30 p-4 rounded-xl border border-border">
@@ -441,7 +441,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                         )}
                     </div>
                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Input label="Data Emissão" type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
                             <Input label="Validade" type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} />
                         </div>
@@ -474,27 +474,26 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
 
                 {/* Items Table */}
                 <div>
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
                         <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Itens do Orçamento</h3>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                             <FilterSelect
                                 value=""
                                 onChange={(val) => {
                                     if (val) {
                                         addItem(catalog.find(i => i.id === val));
-                                        // Reset handled by value=""
                                     }
                                 }}
                                 options={[{ value: '', label: '+ Adicionar do Catálogo' }, ...catalog.map(i => ({ value: i.id, label: `${i.name} - R$ ${i.price}` }))]}
-                                className="w-56"
+                                className="min-w-[180px]"
                                 triggerClassName="w-full justify-between text-xs py-1 h-9"
                                 placeholder="+ Adicionar do Catálogo"
                             />
-                            <Button type="button" size="sm" variant="secondary" onClick={() => addItem()}>+ Item Manual</Button>
+                            <Button type="button" size="sm" variant="secondary" onClick={() => addItem()} className="whitespace-nowrap">+ Item Manual</Button>
                         </div>
                     </div>
 
-                    <div className="border border-border rounded-lg overflow-hidden">
+                    <div className="border border-border rounded-lg overflow-x-auto">
                         <table className="w-full text-left text-xs">
                             <thead className="bg-secondary text-muted-foreground">
                                 <tr>
@@ -523,7 +522,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                                             />
                                         </td>
                                         <td className="p-2 text-right font-medium text-emerald-400">
-                                            R$ {(item.total || 0).toFixed(2)}
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}
                                         </td>
                                         <td className="p-2 text-center">
                                             <button type="button" onClick={() => removeItem(idx)} className="text-muted-foreground hover:text-rose-500"><Trash2 size={14} /></button>
@@ -537,7 +536,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                             <tfoot className="bg-secondary font-bold text-foreground">
                                 <tr>
                                     <td colSpan={3} className="p-3 text-right text-muted-foreground uppercase text-xs">Total Final</td>
-                                    <td className="p-3 text-right text-emerald-600 dark:text-emerald-400">R$ {totalValue.toFixed(2)}</td>
+                                    <td className="p-3 text-right text-emerald-600 dark:text-emerald-400">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}</td>
                                     <td></td>
                                 </tr>
                             </tfoot>

@@ -840,7 +840,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                 />
                             </div>
 
-                            <div className="grid grid-cols-[170px_1fr] gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-[170px_1fr] gap-4">
                                 <Input label="Data" type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
                                 {formData.type !== 'transfer' && (
                                     <div className="pt-6">
@@ -857,13 +857,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                             title={formData.creditCardId ? "Lançamentos no cartão são considerados pagos automaticamente." : ""}
                                         >
                                             <div className={cn(
-                                                "w-4 h-4 rounded flex items-center justify-center transition-all",
+                                                "w-4 h-4 rounded flex items-center justify-center transition-all shrink-0",
                                                 formData.isPaid ? "bg-white/20 text-white" : "bg-background border border-input"
                                             )}>
                                                 {formData.isPaid && <Check size={12} strokeWidth={4} />}
                                             </div>
                                             <span className="text-sm font-medium whitespace-nowrap truncate">
-                                                {formData.creditCardId ? 'Pago no Crédito' : (formData.isPaid ? 'Pagamento Confirmado' : 'Marcar como Pago')}
+                                                {/* Mobile: texto curto */}
+                                                <span className="sm:hidden">
+                                                    {formData.creditCardId ? 'Crédito' : (formData.isPaid ? '✓ Pago' : 'Pago?')}
+                                                </span>
+                                                {/* Desktop: texto completo */}
+                                                <span className="hidden sm:inline">
+                                                    {formData.creditCardId ? 'Pago no Crédito' : (formData.isPaid ? 'Pagamento Confirmado' : 'Marcar como Pago')}
+                                                </span>
                                             </span>
                                         </div>
                                     </div>
