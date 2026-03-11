@@ -37,8 +37,8 @@ export const FABButton: React.FC<FABButtonProps> = ({
 
     const context = getContext();
 
-    // Hide FAB on settings
-    if (context === 'settings' || context === 'unknown') return null;
+    // Hide FAB on settings and finance (as requested)
+    if (context === 'settings' || context === 'finance' || context === 'unknown') return null;
 
     // For routines: show action sheet with 2 options
     if (context === 'routines') {
@@ -104,7 +104,6 @@ export const FABButton: React.FC<FABButtonProps> = ({
     const handleClick = () => {
         switch (context) {
             case 'dashboard':
-            case 'finance':
                 onCreateTransaction?.();
                 break;
             case 'commercial':
