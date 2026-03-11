@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
 
 type ViewMode = 'month' | 'week' | 'day';
 type FilterType = 'all' | 'agenda' | 'task' | 'finance';
@@ -26,6 +27,7 @@ interface UnifiedEvent extends CalendarEvent {
 export const AgendaPage: React.FC = () => {
   const { user } = useAuth();
   const { currentCompany } = useCompany();
+  const { isApp } = useAppEnvironment();
   const [loading, setLoading] = useState(true);
 
   console.log('[Agenda] Component Rendering');
@@ -356,6 +358,22 @@ export const AgendaPage: React.FC = () => {
     .filter(e => isSameDay(parseISO(e.startDate), selectedDate))
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
+  // App mode: group ALL filteredEvents by date, sorted closest first
+  const groupedByDate = React.useMemo(() => {
+    if (!isApp) return [];
+    const now = new Date();
+    const upcoming = filteredEvents
+      .filter(e => activeFilter === 'all' ? e.origin === 'agenda' || e.origin === 'task' : true)
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    const groups: Record<string, UnifiedEvent[]> = {};
+    upcoming.forEach(e => {
+      const key = e.startDate.split('T')[0];
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(e);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [isApp, filteredEvents, activeFilter]);
+
   if (loading) return <Loader />;
 
   // Helper to get solid colors for grid text pills based on event type/color
@@ -387,6 +405,108 @@ export const AgendaPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col space-y-3">
+
+      {/* APP MODE: Simplified list, no calendar */}
+      {isApp ? (
+        <>
+          {/* App Filter Bar: Status + Assignee only */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <FilterSelect
+              inlineLabel="Status:"
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val as any)}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'upcoming', label: 'A Vencer' },
+                { value: 'overdue', label: 'Atrasado' },
+                { value: 'completed', label: 'Concluído' }
+              ]}
+              darkMode={false}
+              className="min-w-[140px] flex-1"
+            />
+            <FilterSelect
+              inlineLabel="Resp:"
+              icon={<UserIcon size={14} />}
+              value={assigneeFilter}
+              onChange={setAssigneeFilter}
+              options={[
+                { value: 'all', label: 'Todos' },
+                ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+              ]}
+              darkMode={false}
+              className="min-w-[140px] flex-1"
+            />
+            <button
+              onClick={handleCreate}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg shadow-emerald-500/30 flex-shrink-0"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          {/* App Grouped Event List */}
+          <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pb-4">
+            {groupedByDate.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground border border-dashed border-border rounded-xl">
+                <CalendarIcon size={24} className="mb-2 opacity-30" />
+                <span className="text-sm">Nenhum compromisso encontrado</span>
+              </div>
+            ) : (
+              groupedByDate.map(([dateKey, dayEvents]) => {
+                const date = parseISO(dateKey);
+                const isCurrentDay = isToday(date);
+                return (
+                  <div key={dateKey}>
+                    {/* Date header */}
+                    <div className={`flex items-center gap-2 mb-2 px-1`}>
+                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                        isCurrentDay ? 'bg-emerald-500' :
+                        date < new Date() ? 'bg-rose-500' : 'bg-muted-foreground'
+                      }`} />
+                      <span className={`text-xs font-bold uppercase tracking-widest ${
+                        isCurrentDay ? 'text-emerald-500' : 'text-muted-foreground'
+                      }`}>
+                        {isCurrentDay
+                          ? 'Hoje'
+                          : format(date, "EEE, dd 'de' MMM", { locale: ptBR })}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {dayEvents.map(event => {
+                        const isCompleted = event.status === 'completed' || event.status === 'done';
+                        return (
+                          <div
+                            key={event.id}
+                            onClick={() => setSelectedEvent(event)}
+                            className={`flex items-start gap-3 p-3 rounded-xl bg-card border border-border cursor-pointer hover:border-emerald-500/40 transition-all ${
+                              isCompleted ? 'opacity-50' : ''
+                            }`}
+                          >
+                            <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${getEventPillClass(event).split(' ')[0]}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold text-foreground truncate ${
+                                isCompleted ? 'line-through' : ''
+                              }`}>{event.title}</p>
+                              {event.description && (
+                                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{event.description}</p>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">
+                              {format(parseISO(event.startDate), 'HH:mm')}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </>
+      ) : (
+      <>
+      {/* WEB MODE: Original full calendar layout below */}
       {/* TOP BAR: FILTERS & SEARCH - Compacted */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 shrink-0">
         <div className="flex bg-secondary/50 rounded-full p-0.5 border border-border/50">
@@ -408,8 +528,6 @@ export const AgendaPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-96">
-
-
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
             <Input
@@ -421,8 +539,6 @@ export const AgendaPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* MAIN CONTENT SPLIT */}
       <div className="flex-1 flex flex-col md:flex-row gap-3 overflow-y-auto md:overflow-hidden min-h-0 custom-scrollbar pb-4 md:pb-0">
 
         {/* LEFT: CALENDAR GRID */}
@@ -731,6 +847,8 @@ export const AgendaPage: React.FC = () => {
         users={users}
         initialData={selectedTask}
       />
+      </>
+      )}
     </div>
   );
 };
