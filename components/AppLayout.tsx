@@ -11,6 +11,7 @@ import { Bell, ChevronLeft } from 'lucide-react';
 import { UserProfileModal } from './UserModals';
 import { User } from '../types';
 import { Avatar } from './Shared';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 // Compact App Header for mobile
 interface AppHeaderProps {
@@ -98,6 +99,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     const { currentCompany } = useCompany();
     const { isSuperAdmin } = useRBAC();
     const { user, refreshSession } = useAuth();
+
+    // Push notifications — mobile PWA only (no-op on desktop)
+    usePushNotifications();
 
     // FAB modal state
     const [fabModal, setFabModal] = useState<'transaction' | 'quote' | 'task' | 'event' | null>(null);
