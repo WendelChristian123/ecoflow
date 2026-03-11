@@ -102,7 +102,7 @@ export const NotificationPopover: React.FC = () => {
     );
 
     return (
-        <div className="relative" ref={wrapperRef}>
+        <div className="relative flex items-center justify-center" ref={wrapperRef}>
             <button
                 onClick={() => { setIsOpen(!isOpen); if (!isOpen) refetch(); }}
                 className="relative p-2 rounded-full hover:bg-secondary/50 transition-colors group"
@@ -120,7 +120,7 @@ export const NotificationPopover: React.FC = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-96 bg-popover border border-border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 origin-top-right">
+                <div className="absolute right-0 sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-popover border border-border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 origin-top-right !fixed sm:!absolute sm:translate-x-0 !left-1/2 !-translate-x-1/2 sm:!left-auto" style={{ top: '60px' }}>
                     <div className="p-3 border-b border-border bg-secondary/30 space-y-3">
                         <div className="flex items-center justify-between">
                             <h4 className="font-semibold text-sm">Notificações</h4>

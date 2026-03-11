@@ -13,7 +13,11 @@ import { User } from '../types';
 import { Avatar } from './Shared';
 
 // Compact App Header for mobile
-const AppHeader: React.FC = () => {
+interface AppHeaderProps {
+    onOpenProfile: (user: User | null) => void;
+}
+
+const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
     const { user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
@@ -69,9 +73,13 @@ const AppHeader: React.FC = () => {
 
                 <div className="flex items-center gap-2 shrink-0">
                     <NotificationPopover />
-                    <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-emerald-500/30">
+                    {/* Fixed alignment: flex items-center justify-center, and made it clickable */}
+                    <button 
+                        onClick={() => onOpenProfile(user)}
+                        className="w-9 h-9 rounded-full overflow-hidden border-2 border-emerald-500/30 flex items-center justify-center focus:outline-none hover:border-emerald-500/60 transition-colors"
+                    >
                         <Avatar name={userName} size="sm" />
-                    </div>
+                    </button>
                 </div>
             </div>
         </header>
@@ -108,13 +116,12 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     return (
         <div className="h-[100dvh] w-[100dvw] bg-slate-950 flex flex-col text-white font-sans overflow-hidden">
             <TrialBanner />
-            <AppHeader />
+            <AppHeader onOpenProfile={(u) => { setCurrentUserProfile(u); setIsProfileOpen(true); }} />
 
             {/* Main Content — scrollable, with bottom padding for BottomNav + FAB */}
             <main className="flex-1 overflow-y-auto custom-scrollbar pb-20">
                 {children}
             </main>
-
 
             {/* Bottom Navigation */}
             <BottomNavigation />

@@ -183,18 +183,24 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
     return (
         <div className="space-y-8">
             <Card className="p-6 space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="bg-emerald-500/10 p-2 rounded-lg text-emerald-500">
+                        <div className="bg-emerald-500/10 p-2 rounded-lg text-emerald-500 shrink-0">
                             <Share2 size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold">Acessos Compartilhados</h2>
-                            <p className="text-sm text-muted-foreground">Gerencie quem tem acesso aos seus recursos.</p>
+                            <h2 className="text-lg sm:text-xl font-bold">Acessos Compartilhados</h2>
+                            <p className="text-xs sm:text-sm text-muted-foreground">Gerencie quem tem acesso aos seus recursos.</p>
                         </div>
                     </div>
-                    <Button onClick={() => setIsSharing(!isSharing)} className="gap-2">
-                        {isSharing ? 'Cancelar' : <><UserPlus size={16} /> Novo Compartilhamento</>}
+                    <Button onClick={() => setIsSharing(!isSharing)} className="gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        {isSharing ? 'Cancelar' : (
+                            <>
+                                <UserPlus size={16} /> 
+                                <span className="hidden sm:inline">Novo Compartilhamento</span>
+                                <span className="sm:hidden">Novo</span>
+                            </>
+                        )}
                     </Button>
                 </div>
 
