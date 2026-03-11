@@ -173,7 +173,18 @@
   }
 }
 
-/* Safe Area utilities for PWA mobile */
+/* PWA Status Bar: viewport-fit=cover support
+   On iOS with black-translucent status bar, content renders behind it.
+   We paint the html background with the header color so the status bar
+   area appears visually integrated, then push body content down. */
+html {
+  background-color: #0f172a; /* slate-900 — matches AppHeader */
+}
+
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 .safe-area-top {
   padding-top: env(safe-area-inset-top, 0px);
 }

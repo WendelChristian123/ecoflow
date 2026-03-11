@@ -16,11 +16,11 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'safari-pinned-tab.svg'],
         manifest: {
-          name: 'EcoFlow SaaS',
-          short_name: 'EcoFlow',
-          description: 'Gestão Inteligente EcoFlow',
-          theme_color: '#ffffff',
-          background_color: '#ffffff',
+          name: 'Contazze',
+          short_name: 'Contazze',
+          description: 'Gestão Financeira Inteligente',
+          theme_color: '#0f172a',
+          background_color: '#020617',
           display: 'standalone',
           start_url: '/',
           icons: [

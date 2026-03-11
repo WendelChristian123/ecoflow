@@ -48,7 +48,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
     const greeting = getGreeting();
 
     return (
-        <header className="bg-slate-900 border-b border-slate-800/50 px-4 py-3 shrink-0 z-[60] sticky top-0 safe-area-top">
+        <header className="bg-slate-900 border-b border-slate-800/50 px-4 py-3 shrink-0 z-[60] sticky top-0">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
                     {isSubPage() ? (
