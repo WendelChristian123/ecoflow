@@ -19,9 +19,9 @@ const getCurrentCompanyId = () => {
 };
 
 // Helper: Convert empty strings to null for UUID fields to prevent Postgres errors
-const uuidOrNull = (val: any) => (val === '' || val === undefined) ? null : val;
+const uuidOrNull = (val: any) => val === undefined ? undefined : (val === '' ? null : val);
 // Helper: Ensure date is valid string or null (sanitizes empty strings)
-const sanitizeDate = (val: any) => (val === '' || val === undefined) ? null : val;
+const sanitizeDate = (val: any) => val === undefined ? undefined : (val === '' ? null : val);
 
 // ==========================================
 // REAL SUPABASE API IMPLEMENTATION
@@ -627,11 +627,11 @@ export const api = {
         const { data, error } = await supabase
             .from('shared_access')
             .select(`
-                *,
-                target:profiles!target_id(email, name, avatar_url),
-                owner:profiles!owner_id(email, name, avatar_url),
-                feature:feature_id(name)
-            `)
+                    *,
+                    target:profiles!target_id(email, name, avatar_url),
+                    owner:profiles!owner_id(email, name, avatar_url),
+                    feature:feature_id(name)
+                `)
             .or(`owner_id.eq.${user.id},target_id.eq.${user.id}`);
 
         if (error) throw error;
@@ -713,9 +713,9 @@ export const api = {
         let query = supabase
             .from('audit_logs')
             .select(`
-                *,
-                user:profiles!user_id(name, email, avatar_url, role)
-            `)
+                    *,
+                    user:profiles!user_id(name, email, avatar_url, role)
+                `)
             .order('created_at', { ascending: false })
             .limit(500); // Increased limit for better client-side search
 
@@ -1269,7 +1269,7 @@ export const api = {
     },
 
     getQuotes: async (companyId?: string) => {
-        let query = supabase.from('quotes').select('*, contacts(*), quote_items(*)');
+        let query = supabase.from('quotes').select('*, contacts(*), quote_items(*), kanban_stages(name)');
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -1284,6 +1284,7 @@ export const api = {
             companyId: q.company_id,
             kanbanId: q.kanban_id,
             kanbanStageId: q.kanban_stage_id,
+            stage: q.kanban_stages ? { name: q.kanban_stages.name } : undefined,
             // Deep map relations if necessary
             contact: q.contacts ? { ...q.contacts, fantasyName: q.contacts.fantasy_name } : undefined,
             items: q.quote_items.map((qi: any) => ({

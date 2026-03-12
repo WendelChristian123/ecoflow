@@ -7,11 +7,15 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, Button, Loader, Badge } from '../../components/Shared';
 import { TrendingUp, DollarSign, FileText, Plus, BarChart2, PieChart, X, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
+import { formatDate, parseDateLocal } from '../../utils/formatters';
 import { Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart as RechartsPieChart, Pie } from 'recharts';
 import { CommercialReportModal } from '../../components/Reports/CommercialReportModal';
-import { QuoteModal } from '../../components/CommercialModals'; // Imported from Modals
+import { QuoteModal, QuoteApprovalModal, RecurringModal } from '../../components/CommercialModals';
+import { TransactionModal } from '../../components/Modals';
 import { commercialLogic } from '../../services/commercialLogic';
+import { kanbanService } from '../../services/kanbanService';
+import { KanbanStage, FinancialCategory, FinancialAccount, RecurringService } from '../../types';
 
 // Components
 const KpiCard: React.FC<{
@@ -23,11 +27,11 @@ const KpiCard: React.FC<{
     onClick?: () => void;
 }> = ({ title, value, icon, color, subtitle, onClick }) => {
     const colors = {
-        emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'hover:border-emerald-500/50', header: 'bg-emerald-500' },
-        rose: { bg: 'bg-rose-500/10', text: 'text-rose-500', border: 'hover:border-rose-500/50', header: 'bg-rose-500' },
-        amber: { bg: 'bg-amber-500/10', text: 'text-amber-500', border: 'hover:border-amber-500/50', header: 'bg-amber-500' },
-        indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-500', border: 'hover:border-indigo-500/50', header: 'bg-indigo-500' },
-        slate: { bg: 'bg-secondary', text: 'text-muted-foreground', border: 'hover:border-border', header: 'bg-slate-600' },
+        emerald: { bg: 'bg-card', text: 'text-foreground', border: 'border-emerald-500/30 hover:border-emerald-500/70', header: 'bg-emerald-500 text-white' },
+        rose: { bg: 'bg-card', text: 'text-foreground', border: 'border-rose-500/30 hover:border-rose-500/70', header: 'bg-rose-500 text-white' },
+        amber: { bg: 'bg-card', text: 'text-foreground', border: 'border-amber-500/30 hover:border-amber-500/70', header: 'bg-amber-500 text-white' },
+        indigo: { bg: 'bg-card', text: 'text-foreground', border: 'border-indigo-500/30 hover:border-indigo-500/70', header: 'bg-indigo-500 text-white' },
+        slate: { bg: 'bg-card', text: 'text-foreground', border: 'border-slate-500/30 hover:border-slate-500/70', header: 'bg-slate-500 text-white' },
     };
 
     const theme = colors[color];
@@ -39,17 +43,18 @@ const KpiCard: React.FC<{
             onClick={onClick}
             className={cn(
                 "relative overflow-hidden flex flex-col justify-between h-full transition-all group",
-                onClick ? `cursor-pointer hover:shadow-lg hover:-translate-y-1 ${theme.border}` : ""
+                theme.bg, theme.text, "border", theme.border,
+                onClick ? `cursor-pointer hover:shadow-lg hover:-translate-y-1` : ""
             )}
         >
             {/* 🎨 Header Bar with Module Name */}
             <div className={cn(
-                "px-4 py-2.5 flex items-center justify-between border-b border-white/10 transition-all",
+                "px-4 py-2.5 flex items-center justify-between border-b border-border/50 transition-all",
                 theme.header
             )}>
-                <span className="text-[11px] uppercase tracking-widest text-white font-bold">{title}</span>
-                <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-lg">
-                    <div className="text-white">
+                <span className="text-[11px] uppercase tracking-widest font-bold">{title}</span>
+                <div className="bg-black/10 backdrop-blur-sm p-1.5 rounded-lg">
+                    <div className="text-current opacity-90">
                         {icon}
                     </div>
                 </div>
@@ -58,8 +63,8 @@ const KpiCard: React.FC<{
             {/* Content Area */}
             <div className="p-4 flex flex-col justify-between flex-1 relative z-10">
                 <div className="mt-auto">
-                    <div className="text-2xl font-black text-foreground tracking-tight">{value}</div>
-                    {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
+                    <div className="text-2xl font-black tracking-tight">{value}</div>
+                    {subtitle && <div className="text-xs opacity-80 mt-1">{subtitle}</div>}
                 </div>
             </div>
         </Card>
@@ -109,14 +114,14 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                                         <div>
                                             <div className="font-bold text-foreground">{q.customerName || q.contact?.name || 'Cliente sem nome'}</div>
                                             <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                                {format(parseISO(q.createdAt || q.date), 'dd/MM/yyyy')} • {getUserName(q.userId)}
+                                                {formatDate(q.date || q.createdAt)} {q.validUntil ? ` • Venc: ${formatDate(q.validUntil)}` : ''}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="text-left sm:text-right w-full sm:w-auto mt-2 sm:mt-0">
                                         <div className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">{fmt(q.totalValue)}</div>
-                                        <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : (q.validUntil && new Date(q.validUntil) < new Date()) ? 'error' : 'warning'}>
-                                            {(q.status === 'approved' ? 'NEGÓCIO FECHADO' : q.status === 'rejected' ? 'NEGÓCIO PERDIDO' : (q.validUntil && new Date(q.validUntil) < new Date()) ? 'VENCIDO' : translateQuoteStatus(q.status)).toUpperCase()}
+                                        <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : (q.validUntil && parseDateLocal(q.validUntil) < startOfDay(new Date())) ? 'neutral' : 'warning'}>
+                                            {(q.status === 'approved' ? 'NEGÓCIO FECHADO' : q.status === 'rejected' ? 'NEGÓCIO PERDIDO' : (q.validUntil && parseDateLocal(q.validUntil) < startOfDay(new Date())) ? 'VENCIDO' : (q.stage?.name || translateQuoteStatus(q.status))).toUpperCase()}
                                         </Badge>
                                     </div>
                                 </div>
@@ -145,14 +150,25 @@ export const CommercialOverview: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+    const [kanbanStages, setKanbanStages] = useState<KanbanStage[]>([]);
 
     // UI State
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // Drilldown State
-    const [drilldownType, setDrilldownType] = useState<'total' | 'negotiation' | 'approved' | 'lost' | 'overdue' | null>(null);
+    const [drilldownType, setDrilldownType] = useState<string | null>(null);
     const [editingQuote, setEditingQuote] = useState<Quote | undefined>(undefined);
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+    const [financialCategories, setFinancialCategories] = useState<FinancialCategory[]>([]);
+    const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
+
+    // Approval Workflow State
+    const [approvedQuote, setApprovedQuote] = useState<Quote | undefined>(undefined);
+    const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+    const [transactionInitialData, setTransactionInitialData] = useState<any>(undefined);
+    const [recurringInitialData, setRecurringInitialData] = useState<Partial<RecurringService> | undefined>(undefined);
 
     useEffect(() => {
         loadData();
@@ -164,16 +180,27 @@ export const CommercialOverview: React.FC = () => {
             // Lazy check for expiration
             await commercialLogic.checkAndEnforceQuoteExpiration();
 
-            const [fetchedQuotes, fetchedUsers, fetchedContacts, fetchedCatalog] = await Promise.all([
+            const [fetchedQuotes, fetchedUsers, fetchedContacts, fetchedCatalog, kbs, fc, acc] = await Promise.all([
                 api.getQuotes(),
                 api.getUsers(),
                 api.getContacts(),
-                api.getCatalogItems()
+                api.getCatalogItems(),
+                kanbanService.listKanbans('crm'),
+                api.getFinancialCategories(),
+                api.getFinancialAccounts()
             ]);
             setQuotes(fetchedQuotes);
             setUsers(fetchedUsers || []);
             setContacts(fetchedContacts || []);
             setCatalog(fetchedCatalog || []);
+            setFinancialCategories(fc);
+            setAccounts(acc);
+            
+            const allStages = kbs.reduce((acc: KanbanStage[], k) => {
+                if (k.stages) return [...acc, ...k.stages];
+                return acc;
+            }, []);
+            setKanbanStages(allStages);
         } catch (error) {
             console.error('Error loading commercial data', error);
         } finally {
@@ -181,80 +208,140 @@ export const CommercialOverview: React.FC = () => {
         }
     };
 
+    const handleApprovalFlow = async (quote: Quote) => {
+        let currentQuote = { ...quote };
+        if (!currentQuote.contactId) {
+            try {
+                const newContact = await api.addContact({
+                    name: currentQuote.customerName || 'Cliente Novo',
+                    phone: currentQuote.customerPhone,
+                    scope: 'client',
+                    type: 'pj'
+                });
+                setContacts(prev => [...prev, newContact]);
+                await api.updateQuote({ id: currentQuote.id, contactId: newContact.id } as any, null as any);
+                currentQuote.contactId = newContact.id;
+                currentQuote.contact = newContact;
+                setQuotes(prev => prev.map(q => q.id === currentQuote.id ? { ...q, contactId: newContact.id, contact: newContact } : q));
+            } catch (error) {
+                console.error("Failed to auto-create contact", error);
+                alert("Erro ao criar contato automaticamente. Verifique os dados do cliente.");
+                return;
+            }
+        }
+        setApprovedQuote(currentQuote);
+        setIsApprovalModalOpen(true);
+    };
+
+    const handleApprovalDecision = (option: 'contract' | 'finance') => {
+        setIsApprovalModalOpen(false);
+        if (!approvedQuote) return;
+
+        if (option === 'finance') {
+            const firstItem = approvedQuote.items?.[0];
+            const catItem = catalog.find(c => c.id === firstItem?.catalogItemId);
+
+            setTransactionInitialData({
+                description: `Venda: ${approvedQuote.contact?.name || approvedQuote.customerName} (Orç #${approvedQuote.id.substring(0, 4)})`,
+                amount: approvedQuote.totalValue,
+                type: 'income',
+                date: new Date().toISOString().split('T')[0],
+                contactId: approvedQuote.contactId,
+                categoryId: catItem?.financialCategoryId || ''
+            });
+            setIsTransactionModalOpen(true);
+        } else {
+            setRecurringInitialData({
+                contactId: approvedQuote.contactId,
+                startDate: new Date().toISOString().split('T')[0],
+                description: `Contrato Ref. Orçamento #${approvedQuote.id.substring(0, 4)}`,
+                amount: approvedQuote.totalValue,
+                active: true,
+                contractMonths: 12
+            });
+            setIsRecurringModalOpen(true);
+        }
+    };
+
     // --- KPI CALCULATIONS ---
     const kpiData = useMemo(() => {
         const totalQuotes = quotes.length;
         const now = new Date();
-        const approved = quotes.filter(q => q.status === 'approved');
-        const rejected = quotes.filter(q => q.status === 'rejected');
+        
+        const approved = quotes.filter(q => q.status === 'approved' || kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus === 'approved');
+        const rejected = quotes.filter(q => q.status === 'rejected' || kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus === 'rejected');
+        
+        const overdue = quotes.filter(q => {
+            const st = kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus || q.status;
+            return st === 'expired' || (st !== 'approved' && st !== 'rejected' && q.validUntil && new Date(q.validUntil) < now);
+        });
 
-        // Vencidos: Exclude rejected/approved, only strictly expired
-        const overdue = quotes.filter(q =>
-            q.status !== 'rejected' &&
-            q.status !== 'approved' &&
-            (q.validUntil && new Date(q.validUntil) < now)
-        );
+        const open = quotes.filter(q => {
+            const st = kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus || q.status;
+            return ['draft', 'sent'].includes(st) && !(q.validUntil && new Date(q.validUntil) < now);
+        });
 
-        // Open: Status is in list AND NOT overdue
-        const open = quotes.filter(q =>
-            ['draft', 'sent', 'negotiation', 'viewed'].includes(q.status) &&
-            !(q.validUntil && new Date(q.validUntil) < now)
-        );
-
-        const pipelineValue = open.reduce((acc, q) => acc + q.totalValue, 0);
         const conversionRate = totalQuotes > 0 ? (approved.length / totalQuotes) * 100 : 0;
 
         return {
             totalQuotes,
+            conversionRate,
             approvedCount: approved.length,
             lostCount: rejected.length,
             overdueCount: overdue.length,
-            openCount: open.length, // Negotiation
-            pipelineValue,
-            conversionRate,
-            // Lists for drilldown
+            openCount: open.length,
             listApproved: approved,
             listLost: rejected,
             listOverdue: overdue,
             listOpen: open,
             listTotal: quotes
         };
-    }, [quotes]);
+    }, [quotes, kanbanStages]);
 
     // --- CHARTS DATA ---
     const STATUS_COLORS: Record<string, string> = {
         'Rascunho': '#64748b',   // slate-500
-        'Enviado': '#f59e0b',    // amber-500
+        'Enviado': '#f59e0b',    // amber-500 (Amarelo)
         'Visualizado': '#3b82f6', // blue-500
-        'Negociação': '#6366f1', // indigo-500
-        'Negócio Fechado': '#10b981',   // emerald-500
-        'Negócio Perdido': '#f43f5e', // rose-500
-        'Vencido': '#ef4444',  // red-500
+        'Negociação': '#f59e0b', // amber-500 (Amarelo)
+        'Negócio Fechado': '#10b981',   // emerald-500 (Verde)
+        'Negócio Perdido': '#f43f5e', // rose-500 (Vermelho)
+        'Vencido': '#64748b',  // slate-500 (Cinza)
     };
-    const DEFAULT_COLOR = '#94a3b8';
+    const DEFAULT_COLOR = '#f59e0b';
 
     const statusDistribution = useMemo(() => {
         const counts: Record<string, number> = {};
         quotes.forEach(q => {
             let s = q.status;
-            if (s === 'draft') s = 'Rascunho';
-            else if (s === 'sent') s = 'Enviado';
-            else if (s === 'viewed') s = 'Visualizado';
-            else if (s === 'negotiation') s = 'Negociação';
-            else if (s === 'approved') s = 'Negócio Fechado';
-            else if (s === 'rejected') s = 'Negócio Perdido';
-            else if (q.validUntil && new Date(q.validUntil) < new Date()) s = 'Vencido';
-
+            const stage = kanbanStages.find(st => st.id === q.kanbanStageId) || kanbanStages.find(st => st.systemStatus === q.status);
+            
+            if (stage) {
+                s = stage.name;
+            } else {
+                const isOverdue = q.status === 'expired' || (q.validUntil && new Date(q.validUntil) < new Date());
+                if (isOverdue && !['approved', 'rejected'].includes(q.status)) {
+                    s = 'Vencido';
+                } else {
+                    if (s === 'draft') s = 'Rascunho';
+                    else if (s === 'sent') s = 'Enviado';
+                    else if (s === 'viewed') s = 'Visualizado';
+                    else if (s === 'negotiation') s = 'Negociação';
+                    else if (s === 'approved') s = 'Negócio Fechado';
+                    else if (s === 'rejected') s = 'Negócio Perdido';
+                }
+            }
             counts[s] = (counts[s] || 0) + 1;
         });
         return Object.entries(counts)
-            .map(([name, value]) => ({
-                name,
-                value,
-                color: STATUS_COLORS[name] || DEFAULT_COLOR
-            }))
+            .map(([name, value]) => {
+                // Determine color: prioritize hardcoded standard colors, then fallback
+                let finalColor = STATUS_COLORS[name] || DEFAULT_COLOR;
+
+                return { name, value, color: finalColor };
+            })
             .sort((a, b) => b.value - a.value);
-    }, [quotes]);
+    }, [quotes, kanbanStages]);
 
     const recentActivity = useMemo(() => {
         return [...quotes]
@@ -347,7 +434,6 @@ export const CommercialOverview: React.FC = () => {
                     icon={<BarChart2 size={18} />}
                     color="indigo"
                     subtitle="Aprov / Total"
-                // No drilldown for rate
                 />
             </div>
 
@@ -456,13 +542,42 @@ export const CommercialOverview: React.FC = () => {
             <QuoteModal
                 isOpen={isQuoteModalOpen}
                 onClose={() => setIsQuoteModalOpen(false)}
-                onSuccess={() => {
+                onSuccess={(savedQuote) => {
                     loadData();
-                    setIsQuoteModalOpen(false);
+                    if (savedQuote && savedQuote.status === 'approved') {
+                        handleApprovalFlow(savedQuote);
+                    }
                 }}
                 contacts={contacts}
                 catalog={catalog}
                 initialData={editingQuote}
+            />
+
+            <QuoteApprovalModal
+                isOpen={isApprovalModalOpen}
+                onClose={() => setIsApprovalModalOpen(false)}
+                onOptionSelected={handleApprovalDecision}
+            />
+
+            <TransactionModal
+                isOpen={isTransactionModalOpen}
+                onClose={() => setIsTransactionModalOpen(false)}
+                onSuccess={() => { loadData(); }}
+                contacts={contacts}
+                categories={financialCategories}
+                accounts={accounts}
+                initialData={transactionInitialData}
+            />
+
+            <RecurringModal
+                isOpen={isRecurringModalOpen}
+                onClose={() => setIsRecurringModalOpen(false)}
+                onSave={loadData}
+                contacts={contacts}
+                catalog={catalog}
+                financialCategories={financialCategories}
+                bankAccounts={accounts}
+                initialData={recurringInitialData}
             />
         </div>
     );

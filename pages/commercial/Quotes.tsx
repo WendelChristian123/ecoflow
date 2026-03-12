@@ -14,14 +14,16 @@ import { ptBR } from 'date-fns/locale';
 import { Select } from '../../components/Shared';
 import { QuoteKanban } from '../../components/Commercial/QuoteKanban';
 import { FilterSelect } from '../../components/FilterSelect';
+import { kanbanService } from '../../services/kanbanService';
+import { KanbanStage, FinancialCategory, FinancialAccount, RecurringService } from '../../types';
 import { translateQuoteStatus } from '../../utils/i18n';
 import { LayoutGrid, List } from 'lucide-react';
-import { FinancialCategory, FinancialAccount, RecurringService } from '../../types';
 
 export const QuotesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
+    const [kanbanStages, setKanbanStages] = useState<KanbanStage[]>([]);
 
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
     // Data for subsequent modals
@@ -51,14 +53,22 @@ export const QuotesPage: React.FC = () => {
     const loadData = async (showLoading = true) => {
         if (showLoading) setLoading(true);
         try {
-            const [q, c, cat, fc, acc] = await Promise.all([
+            const [q, c, cat, fc, acc, kbs] = await Promise.all([
                 api.getQuotes(),
                 api.getContacts(),
                 api.getCatalogItems(),
                 api.getFinancialCategories(),
-                api.getFinancialAccounts()
+                api.getFinancialAccounts(),
+                kanbanService.listKanbans('crm')
             ]);
             setQuotes(q); setContacts(c); setCatalog(cat); setFinancialCategories(fc); setAccounts(acc);
+            
+            // Extract all stages from all CRM kanbans
+            const allStages = kbs.reduce((acc: KanbanStage[], k) => {
+                if (k.stages) return [...acc, ...k.stages];
+                return acc;
+            }, []);
+            setKanbanStages(allStages);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -86,20 +96,41 @@ export const QuotesPage: React.FC = () => {
     };
 
 
-    const handleStatusChange = async (id: string, newStatus: string) => {
-        // Optimistic Update
+    const handleStatusChange = async (id: string, newValue: string) => {
         const targetQuote = quotes.find(q => q.id === id);
-        setQuotes(prev => prev.map(q => q.id === id ? { ...q, status: newStatus as any } : q));
+        if (!targetQuote) return;
+
+        const stage = kanbanStages.find(s => s.id === newValue || s.systemStatus === newValue);
+        
+        let updatePayload: Partial<Quote> = { id };
+        
+        if (stage) {
+            updatePayload.kanbanStageId = stage.id;
+            if (stage.systemStatus) {
+                updatePayload.status = stage.systemStatus as any;
+            } else if (['rejected', 'approved', 'expired'].includes(targetQuote.status as string)) {
+                updatePayload.status = 'sent' as any;
+            }
+        } else {
+            updatePayload.status = newValue as any;
+        }
+
+        // Optimistic Update
+        setQuotes(prev => prev.map(q => q.id === id ? { ...q, ...updatePayload } : q));
 
         try {
-            await api.updateQuote({ id, status: newStatus as any }, null as any);
+            await api.updateQuote(updatePayload as any, null as any);
 
             // AUTOMATION: If Approved, trigger flow
-            if (newStatus === 'approved' && targetQuote) {
-                handleApprovalFlow({ ...targetQuote, status: 'approved' } as Quote);
+            if (updatePayload.status === 'approved') {
+                handleApprovalFlow({ ...targetQuote, ...updatePayload } as Quote);
             }
-        } catch (e) {
+            
+            // Re-load data silently to ensure state matches DB
+            loadData();
+        } catch (e: any) {
             console.error("Failed to move quote", e);
+            alert(`Erro ao alterar etapa: ${e.message || "Tente novamente."}\nPor favor, atualize a página.`);
             loadData(); // Revert on error
         }
     };
@@ -183,7 +214,7 @@ export const QuotesPage: React.FC = () => {
 
     // Filter Logic
     const filteredQuotes = quotes.filter(q => {
-        const matchesStatus = statusFilter === 'all' || q.status === statusFilter;
+        const matchesStatus = statusFilter === 'all' || q.status === statusFilter || q.kanbanStageId === statusFilter;
 
         // Date Logic: Parse quote date (string or Date)
         const quoteDate = new Date(q.date);
@@ -238,10 +269,7 @@ export const QuotesPage: React.FC = () => {
                     onChange={setStatusFilter}
                     options={[
                         { value: 'all', label: 'Todos Status' },
-                        { value: 'draft', label: 'Rascunhos' },
-                        { value: 'sent', label: 'Enviados' },
-                        { value: 'approved', label: 'Aprovados' },
-                        { value: 'rejected', label: 'Rejeitados' }
+                        ...kanbanStages.map(s => ({ value: s.id, label: s.name }))
                     ]}
                     className="w-36"
                     placeholder="Status"
@@ -327,21 +355,27 @@ export const QuotesPage: React.FC = () => {
                                         </div>
                                         <div onClick={(e) => e.stopPropagation()} className="w-32 md:w-32">
                                             <select
-                                                value={q.status}
+                                                value={q.kanbanStageId || (kanbanStages.find(s => s.systemStatus === q.status)?.id) || ''}
                                                 onChange={(e) => handleStatusChange(q.id, e.target.value)}
                                                 className={`
                                                 w-full appearance-none text-xs font-bold px-3 py-1.5 md:py-1.5 p-1 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
-                                                ${q.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' :
-                                                        q.status === 'sent' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' :
-                                                            q.status === 'rejected' || q.status === 'expired' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' :
+                                                ${q.status === 'approved' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' :
+                                                        q.status === 'sent' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'sent' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' :
+                                                            q.status === 'rejected' || q.status === 'expired' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'rejected' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'expired' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' :
                                                                 'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}
                                             `}
                                             >
-                                                <option value="draft" className="bg-popover text-muted-foreground">Rascunho</option>
-                                                <option value="sent" className="bg-popover text-amber-500">Enviado</option>
-                                                <option value="approved" className="bg-popover text-emerald-500">Aprovado</option>
-                                                <option value="rejected" className="bg-popover text-rose-500">Rejeitado</option>
-                                                <option value="expired" className="bg-popover text-rose-500">Expirado</option>
+                                                {kanbanStages.length > 0 ? kanbanStages.map(s => (
+                                                    <option key={s.id} value={s.id} className="bg-popover text-foreground">{s.name}</option>
+                                                )) : (
+                                                    <>
+                                                        <option value="draft" className="bg-popover text-muted-foreground">Rascunho</option>
+                                                        <option value="sent" className="bg-popover text-amber-500">Enviado</option>
+                                                        <option value="approved" className="bg-popover text-emerald-500">Aprovado</option>
+                                                        <option value="rejected" className="bg-popover text-rose-500">Rejeitado</option>
+                                                        <option value="expired" className="bg-popover text-rose-500">Expirado</option>
+                                                    </>
+                                                )}
                                             </select>
                                         </div>
                                     </div>

@@ -330,17 +330,30 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
             if (stage && stage.systemStatus) {
                 // Map systemStatus to QuoteStatus if possible, or just string match
                 setFormData(prev => ({ ...prev, status: stage.systemStatus as any }));
+            } else if (stage && formData.status && ['rejected', 'approved', 'expired'].includes(formData.status as string)) {
+                // If stage has no specific systemStatus but quote was closed, reopen it as draft
+                setFormData(prev => ({ ...prev, status: 'draft' }));
             }
         }
     }, [formData.kanbanStageId, stages]);
+
+    // Auto-map empty kanbanStageId based on systemStatus if present
+    useEffect(() => {
+        if (isOpen && initialData && !formData.kanbanStageId && stages.length > 0) {
+            const matchedStage = stages.find(s => s.systemStatus === initialData.status);
+            if (matchedStage) {
+                setFormData(prev => ({ ...prev, kanbanStageId: matchedStage.id }));
+            }
+        }
+    }, [isOpen, initialData, stages, formData.kanbanStageId]);
 
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
                 setFormData({
                     ...initialData,
-                    date: initialData.date?.substring(0, 10) || '',
-                    validUntil: initialData.validUntil?.substring(0, 10) || ''
+                    date: initialData.date ? (initialData.date.includes('T') ? initialData.date.split('T')[0] : initialData.date) : '',
+                    validUntil: initialData.validUntil ? (initialData.validUntil.includes('T') ? initialData.validUntil.split('T')[0] : initialData.validUntil) : ''
                 });
                 setItems(initialData.items || []);
                 setIsGuest(!initialData.contactId);
@@ -385,7 +398,16 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
         e.preventDefault();
         setLoading(true);
         try {
-            const payload = { ...formData, totalValue };
+            // Ensure status is synced with stage before payload creation
+            let finalStatus = formData.status;
+            if (formData.kanbanStageId) {
+                const stage = stages.find(s => s.id === formData.kanbanStageId);
+                if (stage && stage.systemStatus) {
+                    finalStatus = stage.systemStatus as any;
+                }
+            }
+
+            const payload = { ...formData, status: finalStatus, totalValue };
             let result: Quote | undefined;
 
             if (initialData?.id) {

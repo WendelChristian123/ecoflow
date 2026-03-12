@@ -2,7 +2,8 @@ import React from 'react';
 import { Quote } from '../../types';
 import { cn } from '../Shared';
 import { Calendar } from 'lucide-react';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, parseDateLocal } from '../../utils/formatters';
+import { startOfDay } from 'date-fns';
 import { KanbanProvider, useKanban } from '../Kanban/KanbanContext';
 import { KanbanBoard } from '../Kanban/KanbanBoard';
 import { KanbanHeader } from '../Kanban/KanbanHeader';
@@ -54,10 +55,10 @@ export const QuoteKanban: React.FC<QuoteKanbanProps> = (props) => {
             module="crm"
             entityTable="quotes"
             onEntityMove={(id, stageId) => {
-                // Determine status change for parent callback if needed
-                // But props.onStatusChange expects a status string, not stageId
-                // We might rely on the context to handle the DB update
-                console.log('Moved', id, stageId);
+                // Determine status change for parent callback
+                if (props.onStatusChange) {
+                    props.onStatusChange(id, stageId);
+                }
                 if (props.onMove) props.onMove();
             }}
         >
@@ -67,7 +68,7 @@ export const QuoteKanban: React.FC<QuoteKanbanProps> = (props) => {
 };
 
 const QuoteCard: React.FC<{ quote: Quote; onClick: () => void }> = ({ quote, onClick }) => {
-    const isExpired = quote.validUntil && new Date(quote.validUntil) < new Date();
+    const isExpired = quote.validUntil && parseDateLocal(quote.validUntil) < startOfDay(new Date());
 
     return (
         <KanbanCard id={quote.id} onClick={onClick}>

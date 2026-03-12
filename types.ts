@@ -402,6 +402,7 @@ export interface Quote {
   companyId?: string;
   kanbanId?: string;
   kanbanStageId?: string;
+  stage?: { name: string };
 }
 
 export interface RecurringService {

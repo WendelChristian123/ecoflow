@@ -5,7 +5,7 @@ import { FilterSelect } from '../FilterSelect';
 import { X, Printer, FileText } from 'lucide-react';
 import { isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { format as formatDateFns } from 'date-fns'; // Renaming original to avoid conflict, though we mostly replace it
-import { formatDate } from '../../utils/formatters';
+import { formatDate, parseDateLocal } from '../../utils/formatters';
 import { translateQuoteStatus } from '../../utils/i18n';
 
 import { DateRange } from 'react-day-picker';
@@ -27,7 +27,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
         to: endOfDay(new Date())
     });
     const [statusFilter, setStatusFilter] = useState('all');
-    const [assigneeFilter, setAssigneeFilter] = useState('all');
+
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
@@ -39,7 +39,10 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
             // Date Range
             if (!dateRange?.from || !dateRange?.to) return false;
 
-            const qDate = parseISO(q.createdAt);
+            const baseDateStr = q.date || q.createdAt;
+            if (!baseDateStr) return false;
+            
+            const qDate = parseISO(baseDateStr);
             const start = startOfDay(dateRange.from);
             const end = endOfDay(dateRange.to);
             const inRange = isWithinInterval(qDate, { start, end });
@@ -47,18 +50,20 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
             // Status
             let statusMatch = true;
             if (statusFilter !== 'all') {
-                statusMatch = q.status === statusFilter;
+                const isOverdue = q.status === 'expired' || (q.validUntil && new Date(q.validUntil) < new Date());
+                if (statusFilter === 'approved') statusMatch = q.status === 'approved';
+                else if (statusFilter === 'rejected') statusMatch = q.status === 'rejected';
+                else if (statusFilter === 'overdue') statusMatch = (isOverdue && !['approved', 'rejected'].includes(q.status)) || false; // need || false to force boolean type strictly if needed but JS is fine
+                else if (statusFilter === 'open') statusMatch = !['approved', 'rejected'].includes(q.status) && !isOverdue;
             }
 
-            // Assignee
-            let assigneeMatch = true;
-            if (assigneeFilter !== 'all') {
-                assigneeMatch = (q.userId === assigneeFilter) || ((q as any).assigneeId === assigneeFilter);
-            }
-
-            return inRange && statusMatch && assigneeMatch;
-        }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }, [quotes, dateRange, statusFilter, assigneeFilter]);
+            return inRange && statusMatch;
+        }).sort((a, b) => {
+            const dateA = new Date(a.date || a.createdAt || 0).getTime();
+            const dateB = new Date(b.date || b.createdAt || 0).getTime();
+            return dateB - dateA;
+        });
+    }, [quotes, dateRange, statusFilter]);
 
     // Summary Calculations
     const calculateTotals = () => {
@@ -73,7 +78,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
             if (q.status === 'approved') {
                 approvedValue += q.totalValue;
                 approvedCount++;
-            } else if (['draft', 'sent', 'negotiation'].includes(q.status)) {
+            } else if (['draft', 'sent'].includes(q.status)) {
                 openValue += q.totalValue;
             }
         });
@@ -174,15 +179,15 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                     </thead>
                     <tbody>
                         ${filteredData.map(q => {
-            const isOverdue = q.validUntil && new Date(q.validUntil) < new Date() && q.status !== 'approved' && q.status !== 'rejected';
+            const isOverdue = (q.status === 'expired' || (q.validUntil && parseDateLocal(q.validUntil) < startOfDay(new Date()))) && q.status !== 'approved' && q.status !== 'rejected';
             return `
                             <tr>
-                                <td style="border-left: ${isOverdue ? '4px solid #ef4444' : 'none'}; padding-left: ${isOverdue ? '4px' : '8px'};">${formatDate(q.createdAt || q.date)}</td>
-                                <td><strong>${q.customerName || (q.contact ? q.contact.name : 'N/A')}</strong></td>
+                                <td style="border-left: ${isOverdue ? '4px solid #94a3b8' : 'none'}; padding-left: ${isOverdue ? '4px' : '8px'};">${formatDate(q.date || q.createdAt)}</td>
+                                <td><strong>${q.customerName || (q.contact ? q.contact.name : '-')}</strong></td>
                                 <td>#${q.id.substring(0, 4)}</td>
                                 <td>${formatDate(q.validUntil)}</td>
                                 <td>
-                                    <span style="font-weight: 600; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isOverdue ? '#fee2e2' : '#e2e8f0'}; background: ${isOverdue ? '#fef2f2' : '#fff'}; color: ${isOverdue ? '#ef4444' : '#334155'};">${isOverdue ? 'VENCIDO' : translateQuoteStatus(q.status).toUpperCase()}</span>
+                                    <span style="font-weight: 600; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isOverdue ? '#cbd5e1' : '#e2e8f0'}; background: ${isOverdue ? '#f1f5f9' : '#fff'}; color: ${isOverdue ? '#475569' : '#334155'};">${isOverdue ? 'VENCIDO' : (q.stage?.name || translateQuoteStatus(q.status)).toUpperCase()}</span>
                                 </td>
                                 <td class="text-right" style="font-weight: 700;">${fmt(q.totalValue)}</td>
                             </tr>
@@ -232,21 +237,10 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                                 onChange={setStatusFilter}
                                 options={[
                                     { value: 'all', label: 'Todos' },
-                                    { value: 'won', label: 'Ganhos' },
-                                    { value: 'lost', label: 'Perdidos' },
-                                    { value: 'in_progress', label: 'Em Andamento' }
-                                ]}
-                                darkMode={true}
-                            />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <FilterSelect
-                                inlineLabel="Resp:"
-                                value={assigneeFilter}
-                                onChange={setAssigneeFilter}
-                                options={[
-                                    { value: 'all', label: 'Todos' },
-                                    ...users.map(u => ({ value: u.id, label: u.name }))
+                                    { value: 'open', label: 'Em Andamento' },
+                                    { value: 'approved', label: 'Ganhos / Fechados' },
+                                    { value: 'rejected', label: 'Perdidos' },
+                                    { value: 'overdue', label: 'Vencidos' }
                                 ]}
                                 darkMode={true}
                             />
@@ -297,16 +291,16 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                                     {filteredData.length === 0 ? (
                                         <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">Nenhum orçamento encontrado.</td></tr>
                                     ) : filteredData.map(t => {
-                                        const isOverdue = t.validUntil && new Date(t.validUntil) < new Date() && t.status !== 'approved' && t.status !== 'rejected';
+                                        const isOverdue = (t.status === 'expired' || (t.validUntil && parseDateLocal(t.validUntil) < startOfDay(new Date()))) && t.status !== 'approved' && t.status !== 'rejected';
                                         return (
                                             <tr key={t.id} className="group hover:bg-slate-800/60 transition-colors odd:bg-transparent even:bg-slate-900/40 relative">
                                                 <td className="px-6 py-4 text-slate-400 font-medium relative">
                                                     {isOverdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />}
-                                                    {formatDate(t.createdAt || t.date)}
+                                                    {formatDate(t.date || t.createdAt)}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="font-bold text-base text-white group-hover:text-emerald-400 transition-colors">
-                                                        {t.customerName || t.contact?.name || 'N/A'}
+                                                        {t.customerName || t.contact?.name || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-slate-400">#{t.id.substring(0, 4)}</td>
@@ -314,8 +308,8 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                                                     {formatDate(t.validUntil)}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <Badge variant={isOverdue ? 'error' : t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'error' : 'neutral'} className="px-3 py-1 text-[10px] uppercase tracking-wide">
-                                                        {isOverdue ? 'VENCIDO' : t.status === 'approved' ? 'APROVADO' : t.status === 'rejected' ? 'REJEITADO' : translateQuoteStatus(t.status).toUpperCase()}
+                                                    <Badge variant={isOverdue ? 'neutral' : t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'error' : 'warning'} className="px-3 py-1 text-[10px] uppercase tracking-wide">
+                                                        {isOverdue ? 'VENCIDO' : t.status === 'approved' ? 'APROVADO' : t.status === 'rejected' ? 'REJEITADO' : (t.stage?.name || translateQuoteStatus(t.status)).toUpperCase()}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
