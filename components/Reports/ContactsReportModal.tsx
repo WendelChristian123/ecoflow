@@ -15,15 +15,21 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
     if (!isOpen) return null;
 
     const [typeFilter, setTypeFilter] = useState('all');
+    const [entityTypeFilter, setEntityTypeFilter] = useState('all');
 
     const filteredData = useMemo(() => {
         return contacts.filter(c => {
-            if (typeFilter === 'all') return true;
-            if (typeFilter === 'client') return c.scope === 'client' || c.scope === 'both';
-            if (typeFilter === 'supplier') return c.scope === 'supplier' || c.scope === 'both';
-            return true;
+            let scopeMatch = true;
+            if (typeFilter === 'client') scopeMatch = c.scope === 'client' || c.scope === 'both';
+            else if (typeFilter === 'supplier') scopeMatch = c.scope === 'supplier' || c.scope === 'both';
+            
+            let entityMatch = true;
+            if (entityTypeFilter === 'pf') entityMatch = c.type === 'pf';
+            else if (entityTypeFilter === 'pj') entityMatch = c.type === 'pj';
+
+            return scopeMatch && entityMatch;
         }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [contacts, typeFilter]);
+    }, [contacts, typeFilter, entityTypeFilter]);
 
     const calculateTotals = () => {
         const total = filteredData.length;
@@ -61,7 +67,7 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
                     <div><h1>Relatório de Contatos</h1><div class="meta"><strong>EcoFlow Systems</strong></div></div>
                     <div class="meta" style="text-align: right;">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
-                        <div><strong>Filtro:</strong> ${typeFilter === 'all' ? 'Todos' : typeFilter === 'client' ? 'Clientes' : 'Fornecedores'}</div>
+                        <div><strong>Perfil:</strong> ${typeFilter === 'all' ? 'Todos' : typeFilter === 'client' ? 'Clientes' : 'Fornecedores'} &nbsp;|&nbsp; <strong>Tipo:</strong> ${entityTypeFilter === 'all' ? 'Todos' : entityTypeFilter === 'pf' ? 'Pessoa Física' : 'Pessoa Jurídica'}</div>
                     </div>
                 </div>
 
@@ -124,20 +130,33 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
                 </div>
 
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800">
-                    <div className="flex flex-col gap-1 w-48">
-                        <FilterSelect
-                            inlineLabel="Tipo:"
-                            value={typeFilter}
-                            onChange={setTypeFilter}
-                            options={[
-                                { value: 'all', label: 'Todos' },
-                                { value: 'customer', label: 'Clientes' },
-                                { value: 'supplier', label: 'Fornecedores' },
-                                { value: 'partner', label: 'Parceiros' },
-                                { value: 'lead', label: 'Leads' }
-                            ]}
-                            darkMode={true}
-                        />
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex flex-col gap-1 w-full sm:w-48">
+                            <FilterSelect
+                                inlineLabel="Perfil:"
+                                value={typeFilter}
+                                onChange={setTypeFilter}
+                                options={[
+                                    { value: 'all', label: 'Todos' },
+                                    { value: 'client', label: 'Clientes' },
+                                    { value: 'supplier', label: 'Fornecedores' }
+                                ]}
+                                darkMode={true}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1 w-full sm:w-56">
+                            <FilterSelect
+                                inlineLabel="Tipo:"
+                                value={entityTypeFilter}
+                                onChange={setEntityTypeFilter}
+                                options={[
+                                    { value: 'all', label: 'Todos' },
+                                    { value: 'pf', label: 'Pessoa Física' },
+                                    { value: 'pj', label: 'Pessoa Jurídica' }
+                                ]}
+                                darkMode={true}
+                            />
+                        </div>
                     </div>
                 </div>
 

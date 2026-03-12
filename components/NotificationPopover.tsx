@@ -42,7 +42,7 @@ export const NotificationPopover: React.FC = () => {
             const fakeTx = { id: item.id, date: item.date, isPaid: false } as any;
             confirmPayment(fakeTx, (id, status) => {
                 // If confirmed, remove locally (Optimistic update via helper)
-                removeNotification(id);
+                removeNotification(id, 'finance');
             });
         } else {
             completeItem(item.id, item.type);

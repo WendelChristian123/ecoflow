@@ -144,6 +144,7 @@ export const useNotifications = () => {
     const completeItem = async (id: string, type: NotificationType) => {
         // Optimistic Update
         setNotifications(prev => prev.filter(n => n.id !== id));
+        window.dispatchEvent(new CustomEvent('item-completed', { detail: { id, type } }));
 
         try {
             if (type === 'task') {
@@ -162,8 +163,11 @@ export const useNotifications = () => {
         }
     };
 
-    const removeNotification = useCallback((id: string) => {
+    const removeNotification = useCallback((id: string, type?: NotificationType) => {
         setNotifications(prev => prev.filter(n => n.id !== id));
+        if (type) {
+            window.dispatchEvent(new CustomEvent('item-completed', { detail: { id, type } }));
+        }
     }, []);
 
     return {

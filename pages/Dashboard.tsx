@@ -82,6 +82,22 @@ export const Dashboard: React.FC = () => {
         }
     }, [currentCompany, companyLoading]);
 
+    useEffect(() => {
+        const handleItemCompleted = (e: any) => {
+            const { id, type } = e.detail;
+            if (type === 'task') {
+                setTasks(prev => prev.filter(t => t.id !== id));
+            } else if (type === 'agenda') {
+                setEvents(prev => prev.filter(ev => ev.id !== id));
+            } else if (type === 'finance') {
+                setTransactions(prev => prev.map(tr => tr.id === id ? { ...tr, isPaid: true } : tr));
+            }
+        };
+
+        window.addEventListener('item-completed', handleItemCompleted);
+        return () => window.removeEventListener('item-completed', handleItemCompleted);
+    }, []);
+
     const loadDashboard = async () => {
         if (!currentCompany) return;
         setLoading(true);
