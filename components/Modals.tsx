@@ -226,6 +226,7 @@ interface DrilldownModalProps {
         finalBalance: number;
     };
     onPayAction?: (item: any) => void;
+    onStatusChange?: (item: any, newStatus: boolean) => void;
 }
 
 // --- Refactored & Robust Drilldown Modal ---
@@ -250,7 +251,7 @@ interface DrilldownItem {
     metadata?: any;
 }
 
-export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary, onPayAction }) => {
+export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary, onPayAction, onStatusChange }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
     const navigate = useNavigate();
@@ -290,31 +291,23 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
         if (newStatus) {
             // "Marking as Paid" - Use Confirmation Logic
             confirmPayment(item, async (id, finalStatus) => {
-                // Optimistic Local Update
-                setLocalData(prev => prev.map(i => i.id === id ? { ...i, isPaid: true } : i));
+                // Optimistic Local Update: Remove it from the pendency array
+                setLocalData(prev => prev.filter(i => i.id !== id));
 
-                // Actual API call is handled by confirmPayment?
-                // Wait, confirmPayment implementation in hook CALLS the API.
-                // So we just update local state here.
-                // But confirmPayment logic handles the "isPaid=true" case.
-
-                // If the user cancelled the date selection, confirmPayment callback won't fire.
+                // Add success alert
+                alert("Pagamento confirmado com sucesso!");
+                
+                if (onStatusChange) onStatusChange(item, true);
             });
         } else {
-            // "Marking as Unpaid" - Direct Call (or maybe we want to confirm too? Usually safe to untoggle transparently)
-            // But wait, confirmPayment logic inside the hook might expect to handle BOTH?
-            // "openModal" logic inside usePaymentConfirmation seems designed for "Marking as Paid" (status=true).
-            // Let's check usePaymentConfirmation implementation. 
-            // Step 12: `toggleTransactionStatus(transaction.id, true, dates.dueDate)`
-            // It seems to be for CONFIRMATION (paid).
-            // So for Unpaid, we can keep direct call or use the hook if it supports it.
-            // But the hook is named `usePaymentConfirmation`.
-            // So for unpaying, we do it manually here.
-
+            // "Marking as Unpaid" 
             (async () => {
+                // Currently only used from Dashboard which only shows unpaid items anyway,
+                // but just in case, we'd update it to isPaid: false.
                 setLocalData(prev => prev.map(i => i.id === item.id ? { ...i, isPaid: false } : i));
                 try {
                     await api.toggleTransactionStatus(item.id, false);
+                    if (onStatusChange) onStatusChange(item, false);
                 } catch (error) {
                     setLocalData(prev => prev.map(i => i.id === item.id ? { ...i, isPaid: true } : i)); // Revert
                     alert(`Erro ao atualizar: ${getErrorMessage(error)}`);

@@ -576,6 +576,10 @@ export const Dashboard: React.FC = () => {
                 onPayAction={(item) => {
                     navigate(`/finance/cards?payInvoice=${item.id}`);
                 }}
+                onStatusChange={(item, isPaid) => {
+                    // Atualiza a transação localmente para refletir na contagem (Remover do vencidos/hoje/próximos) sem full reload
+                    setTransactions(prev => prev.map(t => t.id === item.id ? { ...t, isPaid } : t));
+                }}
             />
         </div>
     );

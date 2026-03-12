@@ -45,7 +45,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
         return subPages.some(p => location.pathname === p);
     };
 
-    const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+    const userName = user?.name || user?.email?.split('@')[0] || 'Usuário';
     const greeting = getGreeting();
 
     return (

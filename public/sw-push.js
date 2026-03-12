@@ -25,7 +25,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body || '',
     icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
+    badge: '/badge.svg',
     tag: payload.data?.tag || 'contazze-notification',
     renotify: true,
     data: {
@@ -33,8 +33,8 @@ self.addEventListener('push', (event) => {
       type: payload.data?.type || 'general',
       id: payload.data?.id || null
     },
-    vibrate: [200, 100, 200],
-    requireInteraction: false
+    vibrate: [300, 100, 300, 100, 300],
+    requireInteraction: true
   };
 
   event.waitUntil(

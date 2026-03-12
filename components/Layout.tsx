@@ -331,9 +331,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             // For simplicity in this layout fix, we reconstruct a User object from auth state
             const safeUser: User = {
                 id: user.id,
-                name: user.user_metadata?.name || user.email || '',
+                name: user.name || user.email || '',
                 email: user.email,
-                avatarUrl: '',
+                phone: user.phone || '',
+                avatarUrl: user.avatarUrl || '',
                 role: user.role || 'user'
             };
             setCurrentUserProfile(safeUser);

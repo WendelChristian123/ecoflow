@@ -68,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!prev || prev.id !== currentUser.id) return prev; // Avoid ordering issues
 
           const newName = profile.name || prev.name;
+          const newPhone = profile.phone || prev.phone;
           const newRole = profile.role || prev.role;
           const newCompanyId = cId || prev.companyId;
           const newAvatar = profile.avatar_url || prev.avatarUrl;
@@ -78,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Optimization: Only update state if something changed
           if (
             prev.name === newName &&
+            prev.phone === newPhone &&
             prev.role === newRole &&
             prev.companyId === newCompanyId &&
             prev.avatarUrl === newAvatar &&
@@ -91,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return {
             ...prev,
             name: newName,
+            phone: newPhone,
             role: newRole,
             companyId: newCompanyId,
             avatarUrl: newAvatar,
