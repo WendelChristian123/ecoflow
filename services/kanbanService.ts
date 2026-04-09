@@ -4,11 +4,19 @@ import { Kanban, KanbanStage } from '../types';
 export const kanbanService = {
     // --- Kanbans ---
 
-    async listKanbans(module: string): Promise<Kanban[]> {
-        const { data, error } = await supabase
+    async listKanbans(module: string, referenceId?: string): Promise<Kanban[]> {
+        let query = supabase
             .from('kanbans')
             .select('*, stages:kanban_stages(*)')
-            .eq('module', module)
+            .eq('module', module);
+
+        if (referenceId) {
+            query = query.eq('reference_id', referenceId);
+        } else {
+            query = query.is('reference_id', null);
+        }
+
+        const { data, error } = await query
             .order('is_default', { ascending: false })
             .order('created_at', { ascending: true });
 
@@ -17,6 +25,7 @@ export const kanbanService = {
         return data.map((k: any) => ({
             ...k,
             isDefault: k.is_default,
+            referenceId: k.reference_id,
             stages: (k.stages || [])
                 .sort((a: any, b: any) => a.position - b.position)
                 .map((s: any) => ({
@@ -29,11 +38,12 @@ export const kanbanService = {
     },
 
     async createKanban(kanban: Partial<Kanban>): Promise<Kanban> {
-        const { isDefault, companyId, ...rest } = kanban;
+        const { isDefault, companyId, referenceId, ...rest } = kanban;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload: any = { ...rest };
         if (isDefault !== undefined) payload.is_default = isDefault;
         if (companyId !== undefined) payload.company_id = companyId;
+        if (referenceId !== undefined) payload.reference_id = referenceId;
 
         const { data, error } = await supabase
             .from('kanbans')
@@ -42,7 +52,7 @@ export const kanbanService = {
             .single();
 
         if (error) throw error;
-        return { ...data, isDefault: data.is_default, companyId: data.company_id } as Kanban;
+        return { ...data, isDefault: data.is_default, companyId: data.company_id, referenceId: data.reference_id } as Kanban;
     },
 
     async updateKanban(id: string, updates: Partial<Kanban>): Promise<Kanban> {

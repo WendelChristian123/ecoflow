@@ -173,16 +173,16 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ logs, users })
                                 <p className="text-xs text-muted-foreground mb-1.5">{log.details}</p>
                             )}
 
-                            {log.comment && (
+                            {log.metadata?.comment && (
                                 <div className="flex gap-2 bg-card p-2 rounded border border-border/50 mt-1">
                                     <MessageSquare size={12} className="text-emerald-500 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-muted-foreground italic">"{log.comment}"</p>
+                                    <p className="text-xs text-muted-foreground italic">"{log.metadata.comment}"</p>
                                 </div>
                             )}
 
-                            {log.link && (
+                            {log.metadata?.link && (
                                 <a
-                                    href={log.link}
+                                    href={log.metadata.link}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="flex items-center gap-1.5 text-xs text-emerald-500 hover:underline mt-1.5 w-fit"

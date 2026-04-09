@@ -33,6 +33,7 @@ import { SuperAdminCompanies } from './pages/SuperAdmin/Companies';
 // Financial Pages
 import { FinancialOverview } from './pages/finance/Overview';
 import { FinancialTransactions } from './pages/finance/Transactions';
+import { Loans } from './pages/finance/Loans';
 import { FinancialAccounts } from './pages/finance/Accounts';
 import { FinancialCategories } from './pages/finance/Categories';
 import { FinancialCards } from './pages/finance/Cards';
@@ -91,6 +92,7 @@ const App: React.FC = () => {
                   {/* Financial Routes */}
                   <Route path="/finance/overview" element={<PermissionRoute module="finance" action="view"><LayoutSwitch><FinancialOverview /></LayoutSwitch></PermissionRoute>} />
                   <Route path="/finance/transactions" element={<PermissionRoute module="finance" action="view"><LayoutSwitch><FinancialTransactions /></LayoutSwitch></PermissionRoute>} />
+                  <Route path="/finance/loans" element={<PermissionRoute module="finance" action="view"><LayoutSwitch><Loans /></LayoutSwitch></PermissionRoute>} />
                   <Route path="/finance/accounts" element={<PermissionRoute module="finance" action="view"><LayoutSwitch><FinancialAccounts /></LayoutSwitch></PermissionRoute>} />
                   <Route path="/finance/categories" element={<AppRoute><PermissionRoute module="finance" action="view"><LayoutSwitch><FinancialCategories /></LayoutSwitch></PermissionRoute></AppRoute>} />
                   <Route path="/finance/cards" element={<AppRoute><PermissionRoute module="finance" action="view"><LayoutSwitch><FinancialCards /></LayoutSwitch></PermissionRoute></AppRoute>} />

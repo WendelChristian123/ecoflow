@@ -866,6 +866,8 @@ export const api = {
         if (error) throw error;
         return data.map((t: any) => ({
             ...t,
+            grossAmount: t.gross_amount,
+            discountAmount: t.discount_amount,
             isPaid: t.is_paid,
             paymentMethod: t.payment_method,
             accountId: t.account_id,
@@ -892,6 +894,8 @@ export const api = {
         const createDbObj = (trans: Partial<FinancialTransaction>, date: string, recId: string | null, index?: number, total?: number) => ({
             description: trans.description,
             amount: trans.amount,
+            gross_amount: trans.grossAmount !== undefined ? trans.grossAmount : trans.amount,
+            discount_amount: trans.discountAmount || 0,
             type: trans.type,
             date: date,
             is_paid: trans.isPaid,
@@ -945,6 +949,8 @@ export const api = {
         const dbBaseOptions = {
             description: t.description,
             amount: t.amount,
+            gross_amount: t.grossAmount !== undefined ? t.grossAmount : t.amount,
+            discount_amount: t.discountAmount || 0,
             type: t.type,
             payment_method: t.paymentMethod || null,
             account_id: uuidOrNull(t.accountId),
@@ -2232,5 +2238,200 @@ export const api = {
         if (result.error) throw new Error(result.error);
 
         return result;
+    },
+
+    // --- LOANS & DEBTS ---
+    getLoans: async (companyId?: string) => {
+        let query = supabase.from('loans').select('*, contact:contacts(*)');
+        if (companyId) query = query.eq('company_id', companyId);
+        
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        return data.map((l: any) => ({
+            id: l.id,
+            companyId: l.company_id,
+            contactId: l.contact_id,
+            name: l.name,
+            type: l.type,
+            principalAmount: parseFloat(l.principal_amount),
+            installmentsCount: l.installments_count,
+            installmentAmount: parseFloat(l.installment_amount),
+            discountAmount: parseFloat(l.discount_amount),
+            interestAmount: parseFloat(l.interest_amount),
+            totalAmount: parseFloat(l.total_amount),
+            firstDueDate: l.first_due_date,
+            status: l.status,
+            createdAt: l.created_at,
+            contact: l.contact ? { ...l.contact, fantasyName: l.contact.fantasy_name } : undefined
+        })) as any[];
+    },
+
+    getLoanInstallments: async (loanId: string) => {
+        const { data, error } = await supabase.from('financial_transactions')
+            .select('*')
+            .eq('origin_type', 'loan')
+            .eq('origin_id', loanId)
+            .order('installment_index', { ascending: true });
+            
+        if (error) throw error;
+        return data.map((t: any) => ({
+            id: t.id,
+            description: t.description,
+            amount: t.amount,
+            grossAmount: t.gross_amount,
+            discountAmount: t.discount_amount,
+            date: t.date,
+            isPaid: t.is_paid,
+            paymentMethod: t.payment_method,
+            accountId: t.account_id,
+            installmentIndex: t.installment_index,
+            totalInstallments: t.total_installments,
+            account: t.account ? { name: t.account.name } : undefined
+        }));
+    },
+    
+    addLoan: async (loan: any) => {
+        const companyId = getCurrentCompanyId();
+        
+        const { data, error } = await supabase.from('loans').insert([{
+            company_id: companyId,
+            contact_id: uuidOrNull(loan.contactId),
+            name: loan.name || (loan.type === 'payable' ? 'Dívida' : 'Empréstimo'),
+            type: loan.type,
+            principal_amount: loan.principalAmount,
+            installments_count: loan.installmentsCount,
+            installment_amount: loan.installmentAmount,
+            discount_amount: loan.discountAmount || 0,
+            interest_amount: loan.interestAmount || 0,
+            total_amount: loan.totalAmount || 0,
+            first_due_date: loan.firstDueDate,
+            status: 'active'
+        }]).select().single();
+        
+        if (error) throw error;
+        
+        // Generate Installments
+        const installmentsToInsert = [];
+        const baseDate = new Date(loan.firstDueDate);
+        // Using straight index month adding since timezone parsing via Date() usually places it properly at midnight UTC if YYYY-MM-DD
+        // Actually, let's just make it simple to avoid time drift:
+        
+        for (let i = 0; i < loan.installmentsCount; i++) {
+            // Using logic from math directly
+            const offsetDate = addMonths(baseDate, i);
+            const formattedDate = offsetDate.toISOString().split('T')[0];
+            
+            // NOTE: amount is installmentAmount
+            installmentsToInsert.push({
+                company_id: companyId,
+                description: `${loan.name || (loan.type === 'payable' ? 'Dívida' : 'Empréstimo')} - ${i + 1}/${loan.installmentsCount}`,
+                amount: loan.installmentAmount,
+                gross_amount: loan.installmentAmount,
+                discount_amount: 0, 
+                type: loan.type === 'payable' ? 'expense' : 'income',
+                date: formattedDate,
+                is_paid: false,
+                contact_id: uuidOrNull(loan.contactId),
+                origin_type: 'loan',
+                origin_id: data.id,
+                installment_index: i + 1,
+                total_installments: loan.installmentsCount
+            });
+        }
+        
+        const { error: errorInst } = await supabase.from('financial_transactions').insert(installmentsToInsert);
+        if (errorInst) throw errorInst;
+        
+        return data;
+    },
+    
+    deleteLoan: async (id: string, mode: 'all' | 'keep_paid' = 'all') => {
+        if (mode === 'keep_paid') {
+            // Only delete unpaid transactions, keep paid ones (remove their loan link)
+            await supabase.from('financial_transactions')
+                .update({ origin_type: null, origin_id: null })
+                .eq('origin_type', 'loan')
+                .eq('origin_id', id)
+                .eq('is_paid', true);
+            // Delete unpaid ones
+            await supabase.from('financial_transactions')
+                .delete()
+                .eq('origin_type', 'loan')
+                .eq('origin_id', id)
+                .eq('is_paid', false);
+        } else {
+            // Delete ALL transactions
+            await supabase.from('financial_transactions')
+                .delete()
+                .eq('origin_type', 'loan')
+                .eq('origin_id', id);
+        }
+        const { error } = await supabase.from('loans').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    updateLoan: async (id: string, loan: any) => {
+        const { data, error } = await supabase.from('loans').update({
+            contact_id: uuidOrNull(loan.contactId),
+            name: loan.name || (loan.type === 'payable' ? 'Dívida' : 'Empréstimo'),
+            type: loan.type,
+            principal_amount: loan.principalAmount,
+            installments_count: loan.installmentsCount,
+            installment_amount: loan.installmentAmount,
+            discount_amount: loan.discountAmount || 0,
+            interest_amount: loan.interestAmount || 0,
+            total_amount: loan.totalAmount || 0,
+            first_due_date: loan.firstDueDate,
+        }).eq('id', id).select().single();
+
+        if (error) throw error;
+
+        // Sync unpaid installments with new values
+        const { data: existingInstallments, error: fetchErr } = await supabase.from('financial_transactions')
+            .select('*')
+            .eq('origin_type', 'loan')
+            .eq('origin_id', id)
+            .order('installment_index', { ascending: true });
+
+        console.log('[updateLoan] Found installments:', existingInstallments?.length, 'fetchErr:', fetchErr);
+
+        if (existingInstallments && existingInstallments.length > 0) {
+            const loanName = loan.name || (loan.type === 'payable' ? 'Dívida' : 'Empréstimo');
+            
+            for (const inst of existingInstallments) {
+                // Skip already fully paid installments
+                if (inst.is_paid === true) {
+                    console.log('[updateLoan] Skipping paid installment:', inst.id);
+                    continue;
+                }
+
+                // Calculate how much was already partially paid on this installment
+                const oldGross = inst.gross_amount || inst.amount;
+                const oldDiscount = inst.discount_amount || 0;
+                const oldAmount = inst.amount || 0;
+                const alreadyPaid = Math.max(0, oldGross - oldDiscount - oldAmount);
+
+                // New values based on updated contract
+                const newGross = loan.installmentAmount;
+                const newAmount = Math.max(0, newGross - oldDiscount - alreadyPaid);
+
+                console.log(`[updateLoan] Updating installment ${inst.id}: oldGross=${oldGross}, alreadyPaid=${alreadyPaid}, newGross=${newGross}, newAmount=${newAmount}`);
+
+                const { error: updateErr } = await supabase.from('financial_transactions').update({
+                    gross_amount: newGross,
+                    amount: newAmount,
+                    description: `${loanName} - ${inst.installment_index}/${loan.installmentsCount}`,
+                    contact_id: uuidOrNull(loan.contactId),
+                    type: loan.type === 'payable' ? 'expense' : 'income',
+                }).eq('id', inst.id);
+
+                if (updateErr) {
+                    console.error('[updateLoan] Failed to update installment:', inst.id, updateErr);
+                }
+            }
+        }
+
+        return data;
     }
 };

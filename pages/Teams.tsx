@@ -397,7 +397,7 @@ export const TeamsPage: React.FC = () => {
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
-            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+            <KanbanProvider module="tasks" entityTable="tasks" referenceId={selectedTeam.id} singleBoardMode={true} onEntityMove={() => loadData(false)}>
               <TeamTasksKanban
                 tasks={teamTasks}
                 users={users}

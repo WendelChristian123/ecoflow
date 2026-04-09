@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { TrialExpired } from './TrialExpired';
 import {
-    LayoutDashboard, CheckSquare, Briefcase, Users, Calendar, Settings, LogOut, Menu, X, Bell, ChevronDown, ChevronRight, PieChart, Wallet, CreditCard, Tags, FileText, DollarSign, PanelLeftClose, PanelLeftOpen, User as UserIcon, Briefcase as CommercialIcon, ShoppingBag, RefreshCw, BarChart2, Building2, Globe, ShieldCheck, Lock, ArrowLeftCircle
+    LayoutDashboard, CheckSquare, Briefcase, Users, Calendar, Settings, LogOut, Menu, X, Bell, ChevronDown, ChevronRight, PieChart, Wallet, CreditCard, Tags, FileText, DollarSign, PanelLeftClose, PanelLeftOpen, User as UserIcon, Briefcase as CommercialIcon, ShoppingBag, RefreshCw, BarChart2, Building2, Globe, ShieldCheck, Lock, ArrowLeftCircle, Landmark
 } from 'lucide-react';
 import { Avatar, cn } from './Shared';
 import { useAuth } from '../context/AuthContext';
@@ -350,6 +350,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         if (path.startsWith('/routines')) return 'Rotinas & Execução';
         if (path.startsWith('/tasks')) return 'Tarefas';
         if (path.startsWith('/projects')) return 'Projetos';
+        if (path.startsWith('/finance/loans')) return 'Dívidas e Empréstimos';
         if (path.startsWith('/finance')) return 'Financeiro';
         if (path.startsWith('/settings')) return 'Configurações';
         if (path.startsWith('/super-admin')) return 'Backoffice Admin';
@@ -481,6 +482,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                                         {can('finance.accounts', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/accounts" icon={<Wallet size={16} />} label="Contas & Bancos" onClick={() => setIsMobileMenuOpen(false)} />}
                                         {can('finance.categories', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/categories" icon={<Tags size={16} />} label="Categorias" onClick={() => setIsMobileMenuOpen(false)} />}
                                         {can('finance.cards', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/cards" icon={<CreditCard size={16} />} label="Cartões" onClick={() => setIsMobileMenuOpen(false)} />}
+                                        {can('finance.loans', 'view') && <SidebarItem isCollapsed={isCollapsed} depth={1} to="/finance/loans" icon={<Landmark size={16} />} label="Dívidas e Empréstimos" onClick={() => setIsMobileMenuOpen(false)} />}
 
                                     </SidebarGroup>
                                 )}

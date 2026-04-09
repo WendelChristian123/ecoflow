@@ -296,6 +296,8 @@ export interface FinancialTransaction {
   id: string;
   description: string;
   amount: number;
+  grossAmount?: number;
+  discountAmount?: number;
   type: TransactionType;
   date: string;
   isPaid: boolean;
@@ -305,7 +307,7 @@ export interface FinancialTransaction {
   categoryId?: string;
   creditCardId?: string;
   contactId?: string;
-  originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical' | 'credit_card';
+  originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical' | 'credit_card' | 'loan';
   category?: FinancialCategory; // Joined content
   contact?: Contact; // Joined content
   originId?: string;
@@ -430,6 +432,25 @@ export interface RecurringService {
   firstRecurrenceDate?: string;
 }
 
+export interface Loan {
+  id: string;
+  companyId: string;
+  contactId?: string;
+  name: string;
+  type: 'payable' | 'receivable';
+  principalAmount: number;
+  installmentsCount: number;
+  installmentAmount: number;
+  discountAmount?: number;
+  interestAmount?: number;
+  totalAmount?: number;
+  firstDueDate: string;
+  status: 'active' | 'paid' | 'cancelled';
+  createdAt: string;
+  
+  contact?: Contact;
+}
+
 export interface DashboardMetrics {
   tasks: {
     total: number;
@@ -516,6 +537,7 @@ export interface KanbanStage {
 export interface Kanban {
   id: string;
   companyId: string;
+  referenceId?: string; // Links this Kanban specifically to a Team/Project
   name: string;
   module: 'crm' | 'tasks' | 'projects' | 'teams';
   isDefault: boolean;

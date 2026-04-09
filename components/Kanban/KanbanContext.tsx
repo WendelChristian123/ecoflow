@@ -25,10 +25,11 @@ const KanbanContext = createContext<KanbanContextType | undefined>(undefined);
 export const KanbanProvider: React.FC<{
     module: 'crm' | 'tasks' | 'projects' | 'teams';
     entityTable: 'quotes' | 'tasks' | 'projects' | 'teams';
+    referenceId?: string;
     singleBoardMode?: boolean;
     onEntityMove?: (entityId: string, stageId: string) => void;
     children: React.ReactNode
-}> = ({ module, entityTable, singleBoardMode = false, onEntityMove, children }) => {
+}> = ({ module, entityTable, referenceId, singleBoardMode = false, onEntityMove, children }) => {
     const [kanbans, setKanbans] = useState<Kanban[]>([]);
     const [currentKanban, setCurrentKanban] = useState<Kanban | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +60,7 @@ export const KanbanProvider: React.FC<{
     const refreshKanbans = async () => {
         setIsLoading(true);
         try {
-            const data = await kanbanService.listKanbans(module);
+            const data = await kanbanService.listKanbans(module, referenceId);
             setKanbans(data);
 
             if (singleBoardMode) {
@@ -72,7 +73,7 @@ export const KanbanProvider: React.FC<{
                         console.log("Repairing empty CRM board...");
                         await initializeDefaultStages(defaultK.id, 'crm');
                         // Refresh again to show stages
-                        const repaireData = await kanbanService.listKanbans(module);
+                        const repaireData = await kanbanService.listKanbans(module, referenceId);
                         setKanbans(repaireData);
                         setCurrentKanban(repaireData.find(k => k.id === defaultK.id) || repaireData[0]);
                     }
@@ -80,10 +81,11 @@ export const KanbanProvider: React.FC<{
                     // Auto-initialize Default Board if missing in single mode
                     try {
                         const companyId = localStorage.getItem('ecoflow-company-id') || undefined;
-                        console.log(`Auto-initializing default Kanban for module: ${module}, Company: ${companyId}`);
+                        console.log(`Auto-initializing default Kanban for module: ${module}, Company: ${companyId}, Reference: ${referenceId}`);
                         const newBoard = await kanbanService.createKanban({
                             name: 'Quadro Principal',
                             module,
+                            referenceId,
                             isDefault: true,
                             companyId: companyId
                         });
@@ -92,7 +94,7 @@ export const KanbanProvider: React.FC<{
                             await initializeDefaultStages(newBoard.id, module);
 
                             // Refresh to get full object
-                            const updatedData = await kanbanService.listKanbans(module);
+                            const updatedData = await kanbanService.listKanbans(module, referenceId);
                             setKanbans(updatedData);
                             setCurrentKanban(updatedData[0]);
                         }
@@ -120,7 +122,7 @@ export const KanbanProvider: React.FC<{
 
     useEffect(() => {
         refreshKanbans();
-    }, [module]);
+    }, [module, referenceId]);
 
     const createKanban = async (name: string) => {
         if (singleBoardMode && kanbans.length > 0) {
@@ -131,6 +133,7 @@ export const KanbanProvider: React.FC<{
         const newBoard = await kanbanService.createKanban({
             name,
             module,
+            referenceId,
             isDefault: kanbans.length === 0,
             companyId
         });

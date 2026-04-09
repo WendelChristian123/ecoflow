@@ -451,7 +451,7 @@ export const ProjectsPage: React.FC = () => {
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
-            <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+            <KanbanProvider module="tasks" entityTable="tasks" referenceId={selectedProject.id} singleBoardMode={true} onEntityMove={() => loadData(false)}>
               <ProjectTasksKanban
                 tasks={projectTasks}
                 users={users}

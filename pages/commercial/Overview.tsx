@@ -300,15 +300,17 @@ export const CommercialOverview: React.FC = () => {
 
     // --- CHARTS DATA ---
     const STATUS_COLORS: Record<string, string> = {
-        'Rascunho': '#64748b',   // slate-500
-        'Enviado': '#f59e0b',    // amber-500 (Amarelo)
-        'Visualizado': '#3b82f6', // blue-500
-        'Negociação': '#f59e0b', // amber-500 (Amarelo)
-        'Negócio Fechado': '#10b981',   // emerald-500 (Verde)
-        'Negócio Perdido': '#f43f5e', // rose-500 (Vermelho)
-        'Vencido': '#64748b',  // slate-500 (Cinza)
+        'rascunho': '#64748b',       // slate-500
+        'enviado': '#3b82f6',        // blue-500
+        'visualizado': '#3b82f6',    // blue-500
+        'negociação': '#f59e0b',     // amber-500
+        'em negociação': '#f59e0b',  // amber-500
+        'negócio fechado': '#10b981',// emerald-500
+        'negócio perdido': '#f43f5e',// rose-500
+        'vencido': '#64748b',        // slate-500
+        'vencidos': '#64748b',       // slate-500
     };
-    const DEFAULT_COLOR = '#f59e0b';
+    const DEFAULT_COLOR = '#64748b'; // Fallback to slate
 
     const statusDistribution = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -321,22 +323,23 @@ export const CommercialOverview: React.FC = () => {
             } else {
                 const isOverdue = q.status === 'expired' || (q.validUntil && new Date(q.validUntil) < new Date());
                 if (isOverdue && !['approved', 'rejected'].includes(q.status)) {
-                    s = 'Vencido';
+                    s = 'Vencidos';
                 } else {
                     if (s === 'draft') s = 'Rascunho';
                     else if (s === 'sent') s = 'Enviado';
                     else if (s === 'viewed') s = 'Visualizado';
-                    else if (s === 'negotiation') s = 'Negociação';
+                    else if (s === 'negotiation') s = 'Em Negociação';
                     else if (s === 'approved') s = 'Negócio Fechado';
                     else if (s === 'rejected') s = 'Negócio Perdido';
+                    else s = 'Desconhecido';
                 }
             }
             counts[s] = (counts[s] || 0) + 1;
         });
         return Object.entries(counts)
             .map(([name, value]) => {
-                // Determine color: prioritize hardcoded standard colors, then fallback
-                let finalColor = STATUS_COLORS[name] || DEFAULT_COLOR;
+                const lowerName = name.toLowerCase();
+                let finalColor = STATUS_COLORS[lowerName] || DEFAULT_COLOR;
 
                 return { name, value, color: finalColor };
             })

@@ -653,6 +653,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
             setFormData({
                 description: initialData?.description || '',
                 amount: initialData?.amount || 0,
+                grossAmount: initialData?.grossAmount !== undefined ? initialData.grossAmount : (initialData?.amount || 0),
+                discountAmount: initialData?.discountAmount || 0,
                 type: initialData?.type || initialType || 'expense',
                 date: initialData?.date ? initialData.date.split('T')[0] : format(new Date(), 'yyyy-MM-dd'),
                 isPaid: initialData?.isPaid || false,
@@ -824,12 +826,31 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                         <div className="space-y-4">
                             <Input label="Descrição" placeholder="Ex: Aluguel" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} required />
 
-                            <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <CurrencyInput
                                     label="Valor"
-                                    value={formData.amount}
-                                    onValueChange={(val) => setFormData({ ...formData, amount: val || 0 })}
+                                    value={formData.grossAmount}
+                                    onValueChange={(val) => {
+                                        const gross = val || 0;
+                                        setFormData({ ...formData, grossAmount: gross, amount: gross - (formData.discountAmount || 0) });
+                                    }}
                                     className="text-lg font-semibold"
+                                />
+                                <CurrencyInput
+                                    label="Desconto"
+                                    value={formData.discountAmount}
+                                    onValueChange={(val) => {
+                                        const discount = val || 0;
+                                        setFormData({ ...formData, discountAmount: discount, amount: (formData.grossAmount || 0) - discount });
+                                    }}
+                                    className="text-lg font-semibold text-rose-500"
+                                />
+                                <CurrencyInput
+                                    label="Valor Líquido"
+                                    value={formData.amount}
+                                    onValueChange={() => {}}
+                                    disabled
+                                    className="text-lg font-bold text-emerald-500"
                                 />
                             </div>
 
