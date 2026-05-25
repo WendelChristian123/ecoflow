@@ -61,7 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Use company_id from profile
         const cId = profile.company_id;
         if (cId) localStorage.setItem('ecoflow-company-id', cId); // Updated key
-        if (profile.role) localStorage.setItem('ecoflow-user-role', profile.role);
 
         // Update User State with full profile
         setUser(prev => {
@@ -162,7 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setLoading(false);
           localStorage.removeItem('ecoflow-company-id');
-          localStorage.removeItem('ecoflow-user-role');
         }
         return;
       }
@@ -226,7 +224,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     localStorage.removeItem('ecoflow-company-id');
-    localStorage.removeItem('ecoflow-user-role');
   };
 
   const refreshSession = async () => {

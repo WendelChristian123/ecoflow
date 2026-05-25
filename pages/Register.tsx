@@ -43,7 +43,8 @@ export const RegisterPage: React.FC = () => {
       await api.registerCompany({
         email,
         password,
-        legal_name: legalName || name, // Fallback if legalName not filled (though we should ask for it)
+        legal_name: legalName || name,
+        admin_name: legalName || name, // Injected for bypass
         cpf_cnpj: cpfCnpj,
         whatsapp
       });

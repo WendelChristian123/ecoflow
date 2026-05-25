@@ -45,15 +45,23 @@ serve(async (req) => {
 
                     // B. Create New Subscription in Asaas
                     // Get Price for new Plan/Cycle
-                    const { data: newPrice, error: priceError } = await supabase
-                        .from("plan_prices")
+                    const { data: targetPlan, error: targetPlanError } = await supabase
+                        .from("saas_plans")
                         .select("*")
-                        .eq("plan_id", change.to_plan_id)
-                        .eq("cycle", change.to_cycle)
+                        .eq("id", change.to_plan_id)
                         .single();
 
-                    if (priceError || !newPrice) {
-                        throw new Error(`Price not found for plan ${change.to_plan_id}/${change.to_cycle}`);
+                    if (targetPlanError || !targetPlan) {
+                        throw new Error(`Plan not found: ${change.to_plan_id}`);
+                    }
+
+                    let newPlanAmount = 0;
+                    if (change.to_cycle === 'monthly') newPlanAmount = targetPlan.price_monthly;
+                    else if (change.to_cycle === 'semiannual' || change.to_cycle === 'semiannually') newPlanAmount = targetPlan.price_semiannually;
+                    else if (change.to_cycle === 'annual' || change.to_cycle === 'yearly') newPlanAmount = targetPlan.price_yearly;
+
+                    if (typeof newPlanAmount !== 'number' || newPlanAmount < 0) {
+                        throw new Error(`Price not found for plan cycle ${change.to_cycle}`);
                     }
 
                     const nextDueDate = new Date();
@@ -66,7 +74,7 @@ serve(async (req) => {
                     const newSubPayload: any = {
                         customer: sub.asaas_customer_id,
                         billingType: sub.billing_type === 'pix' ? 'PIX' : 'CREDIT_CARD', // Inherit billing type? Or should we have stored it in change request? Assuming inherit.
-                        value: newPrice.amount,
+                        value: newPlanAmount,
                         nextDueDate: new Date().toISOString().split('T')[0],
                         cycle: change.to_cycle.toUpperCase(),
                         description: `Plano ${change.to_plan_id} - Ciclo ${change.to_cycle}`,

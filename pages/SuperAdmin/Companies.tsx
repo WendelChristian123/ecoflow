@@ -193,7 +193,7 @@ export const SuperAdminCompanies: React.FC = () => {
     };
 
     const filteredCompanies = availableCompanies.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        (c.name?.toLowerCase() || '').includes(search.toLowerCase()) ||
         c.ownerEmail?.toLowerCase().includes(search.toLowerCase())
     );
 

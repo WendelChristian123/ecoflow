@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "ecoflow-company-id",
+          "value": "154c8013-3f19-4501-8c5e-8249f24e66d6"
+        },
+        {
+          "name": "ecoflow-sidebar-collapsed",
+          "value": "false"
+        },
+        {
+          "name": "sb-fetbelqmlgjvmcondxzk-auth-token",
+          "value": "{\"access_token\":\"eyJhbGciOiJFUzI1NiIsImtpZCI6IjQ0ZjFjNWI3LTFjOWUtNDIzNC1iMWJlLWNmM2FhOTg1YmVkOCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2ZldGJlbHFtbGdqdm1jb25keHprLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJhZmZhMDc2MS00YzA1LTQzNDMtYmNkZi1iMjhiMTlhYTQzZDMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc5NzI3Mjc0LCJpYXQiOjE3Nzk3MjM2NzQsImVtYWlsIjoicWFfYXV0b18xNzc5NzIzNjcwMjcwQGV4YW1wbGUuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJjb21wYW55SWQiOiIxNTRjODAxMy0zZjE5LTQ1MDEtOGM1ZS04MjQ5ZjI0ZTY2ZDYiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiUUEgQXV0byBUZXN0ZXIiLCJsZWdhbF9uYW1lIjoiUUEgQXV0byBUZXN0ZXIiLCJ3aGF0c2FwcCI6IjExOTQyNDMxMzI4In0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3Nzk3MjM2NzR9XSwic2Vzc2lvbl9pZCI6Ijc1ZDA1MjEyLTZhNTItNDE3OS04MThhLTQ1ZThhZDQwMGIyNiIsImlzX2Fub255bW91cyI6ZmFsc2V9.-7SjjU9ZubBlt_q-9SXA41y7Oe8QI2gLzCbpjkRgO3UzhM6x1MQXpjby7rFY4w2g02JZv9BJ7OglYA2fG99UUg\",\"token_type\":\"bearer\",\"expires_in\":3600,\"expires_at\":1779727274,\"refresh_token\":\"bihjdnmcqcen\",\"user\":{\"id\":\"affa0761-4c05-4343-bcdf-b28b19aa43d3\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"qa_auto_1779723670270@example.com\",\"email_confirmed_at\":\"2026-05-25T15:41:12.999009Z\",\"phone\":\"\",\"confirmed_at\":\"2026-05-25T15:41:12.999009Z\",\"last_sign_in_at\":\"2026-05-25T15:41:13.996890454Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"companyId\":\"154c8013-3f19-4501-8c5e-8249f24e66d6\",\"email_verified\":true,\"full_name\":\"QA Auto Tester\",\"legal_name\":\"QA Auto Tester\",\"whatsapp\":\"11942431328\"},\"identities\":[{\"identity_id\":\"fc0f709e-898b-4061-9509-1e556ec5264c\",\"id\":\"affa0761-4c05-4343-bcdf-b28b19aa43d3\",\"user_id\":\"affa0761-4c05-4343-bcdf-b28b19aa43d3\",\"identity_data\":{\"email\":\"qa_auto_1779723670270@example.com\",\"email_verified\":false,\"phone_verified\":false,\"sub\":\"affa0761-4c05-4343-bcdf-b28b19aa43d3\"},\"provider\":\"email\",\"last_sign_in_at\":\"2026-05-25T15:41:12.98882Z\",\"created_at\":\"2026-05-25T15:41:12.988883Z\",\"updated_at\":\"2026-05-25T15:41:12.988883Z\",\"email\":\"qa_auto_1779723670270@example.com\"}],\"created_at\":\"2026-05-25T15:41:12.943569Z\",\"updated_at\":\"2026-05-25T15:41:14.012882Z\",\"is_anonymous\":false},\"weak_password\":null}"
+        }
+      ]
+    }
+  ]
+}

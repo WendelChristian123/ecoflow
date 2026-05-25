@@ -135,7 +135,7 @@ export const SuperAdminUsers: React.FC = () => {
     // Filter Logic
     const filteredUsers = users.filter(u => {
         const term = search.toLowerCase();
-        const matchSearch = u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term);
+        const matchSearch = (u.name?.toLowerCase() || '').includes(term) || (u.email?.toLowerCase() || '').includes(term);
         const matchRole = filterRole === 'all' || u.role === filterRole;
         const userStatus = u.status || 'active';
         const matchStatus = filterStatus === 'all' || userStatus === filterStatus;

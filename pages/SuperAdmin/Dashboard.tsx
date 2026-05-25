@@ -223,7 +223,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
     // --- Computed ---
     const filteredCompanies = availableCompanies.filter(t => {
-        const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
+        const matchesSearch = (t.name?.toLowerCase() || '').includes(search.toLowerCase()) ||
             t.ownerEmail?.toLowerCase().includes(search.toLowerCase()) ||
             t.cnpj?.includes(search);
         const matchesType = filterType === 'all' ? true : t.type === filterType;

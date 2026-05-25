@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { AsaasClient, AsaasCustomer } from "../_shared/asaas.ts";
-import { createSupabaseClient, corsHeaders, validateCpfCnpj, sanitizeNumbers } from "../_shared/supabase.ts";
+import { createSupabaseClient, createSupabaseAdmin, corsHeaders, validateCpfCnpj, sanitizeNumbers } from "../_shared/supabase.ts";
 
 console.log("Hello from billing-checkout!");
 
@@ -14,6 +14,8 @@ serve(async (req) => {
         console.log("Auth Header present:", !!authHeader);
 
         const supabase = createSupabaseClient(req);
+        const supabaseAdmin = createSupabaseAdmin();
+
         const {
             data: { user },
             error: authError
@@ -40,15 +42,21 @@ serve(async (req) => {
         if (!company.legal_name || !company.cpf_cnpj || !company.email) throw new Error("Missing company info");
         if (!validateCpfCnpj(company.cpf_cnpj)) throw new Error("Invalid CPF/CNPJ");
 
-        // 2. Get Plan Price (Server-Side Validation)
-        const { data: priceData, error: priceError } = await supabase
-            .from("plan_prices")
+        // 2. Get Plan Price from saas_plans (Server-Side Validation)
+        const { data: planData, error: planError } = await supabase
+            .from("saas_plans")
             .select("*")
-            .eq("plan_id", plan_id)
-            .eq("cycle", cycle)
+            .eq("id", plan_id)
             .single();
 
-        if (priceError || !priceData) throw new Error("Invalid plan or cycle");
+        if (planError || !planData) throw new Error("Invalid plan ID");
+
+        let priceAmount = 0;
+        if (cycle === 'monthly') priceAmount = planData.price_monthly;
+        else if (cycle === 'semiannual' || cycle === 'semiannually') priceAmount = planData.price_semiannually;
+        else if (cycle === 'annual' || cycle === 'yearly') priceAmount = planData.price_yearly;
+
+        if (typeof priceAmount !== 'number' || priceAmount < 0) throw new Error("Invalid cycle or price not set");
 
         // 3. Create/Get Company & Address in DB
         // Check if company already exists for this user (one company per user rule)
@@ -59,7 +67,7 @@ serve(async (req) => {
             .maybeSingle();
 
         if (!companyData) {
-            const { data: newCompany, error: createError } = await supabase
+            const { data: newCompany, error: createError } = await supabaseAdmin
                 .from("companies")
                 .insert({
                     owner_user_id: user.id,
@@ -109,7 +117,7 @@ serve(async (req) => {
         const subscriptionPayload: any = {
             customer: asaasCustomer.id,
             billingType: billing_type === 'pix' ? 'PIX' : 'CREDIT_CARD',
-            value: priceData.amount,
+            value: priceAmount,
             nextDueDate: nextDueDateStr,
             description: `Plano ${plan_id} - Ciclo ${cycle}`,
             externalReference: companyData.id,
@@ -180,7 +188,7 @@ serve(async (req) => {
             subError = result.error;
         } else {
             // Create new subscription
-            const result = await supabase
+            const result = await supabaseAdmin
                 .from("subscriptions")
                 .insert({
                     company_id: companyData.id,

@@ -156,12 +156,12 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, onS
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                    <Input label={formData.type === 'pj' ? "CNPJ" : "CPF"} value={formData.document} onChange={e => setFormData({ ...formData, document: e.target.value })} />
-                    <Input label="Telefone / WhatsApp" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                    <Input label={formData.type === 'pj' ? "CNPJ" : "CPF"} placeholder={formData.type === 'pj' ? "00.000.000/0000-00" : "000.000.000-00"} value={formData.document} onChange={e => setFormData({ ...formData, document: e.target.value })} />
+                    <Input label="Telefone / WhatsApp" placeholder="(00) 00000-0000" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                 </div>
 
-                <Input label="E-mail" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                <Input label="Endereço Completo" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                <Input label="E-mail" type="email" placeholder="email@exemplo.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                <Input label="Endereço Completo" placeholder="Rua, Número, Bairro, Cidade - UF" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
 
                 <Textarea placeholder="Observações internas..." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="h-20" />
 

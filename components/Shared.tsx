@@ -605,3 +605,29 @@ export const TaskTableView: React.FC<{
     </div>
   );
 };
+
+// --- Confirm Modal ---
+export interface ConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'danger' | 'primary';
+}
+
+export const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirmar', cancelText = 'Cancelar', variant = 'danger' }) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={title} className="max-w-sm">
+      <div className="flex flex-col">
+        <p className="text-sm text-muted-foreground mb-6">{message}</p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onClose}>{cancelText}</Button>
+          <Button variant={variant} onClick={() => { onConfirm(); onClose(); }}>{confirmText}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+};

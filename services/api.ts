@@ -1428,23 +1428,7 @@ export const api = {
         // 1. Delete by recurrence_id (if trigger sets it)
         await supabase.from('financial_transactions').delete().eq('recurrence_id', rec.id);
 
-        // 2. Delete by strict "Ghost Pattern" (Aggressive Mode)
-        // Delete ALL transactions for this contact created in the last 30 seconds to strictly enforce our custom logic
-        // This clears any trigger-generated noise before we write our clean records.
-        const offset = new Date().getTimezoneOffset();
-        const past30s = new Date(Date.now() - 30000 - (offset * 60 * 1000)).toISOString();
-        await supabase.from('financial_transactions')
-            .delete()
-            .eq('contact_id', data.contactId)
-            .gt('created_at', past30s);
 
-        // 3. Delete "Ghost Category" if created by trigger (User request: "NAO é pra criar")
-        try {
-            await supabase.from('financial_categories')
-                .delete()
-                .eq('name', 'Receita Recorrente')
-                .gt('created_at', past30s);
-        } catch (e) { /* Ignore cleanup error */ }
 
 
 
@@ -2150,7 +2134,8 @@ export const api = {
 
         // Use native fetch to get RAW error from Edge Function instead of invoke() which masks it
         console.log("SENDING CHECKOUT REQUEST...");
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/billing-checkout`, {
+        const baseUrl = (typeof process !== 'undefined' && process.env.VITE_SUPABASE_URL) ? process.env.VITE_SUPABASE_URL : (import.meta as any).env?.VITE_SUPABASE_URL;
+        const response = await fetch(`${baseUrl}/functions/v1/billing-checkout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

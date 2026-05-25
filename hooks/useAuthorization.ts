@@ -13,7 +13,7 @@ import {
 
 // Mocking the client for this file generation if 'lib/supabase' isn't known yet
 // You should replace this with: import { supabase } from '../services/supabase';
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
+const supabase = createClient(import.meta.env.VITE_SUPABASE_URL || '', import.meta.env.VITE_SUPABASE_ANON_KEY || '');
 
 interface AuthorizationState {
     tenantModules: Record<string, TenantModule>; // Key: module_id

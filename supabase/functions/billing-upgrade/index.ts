@@ -28,22 +28,39 @@ serve(async (req) => {
         // 1. Verify Subscription & Ownership
         const { data: sub, error: subError } = await supabase
             .from("subscriptions")
-            .select("*, companies!inner(*), plan_prices!inner(*)")
+            .select("*, companies!inner(*)")
             .eq("id", subscription_id)
             .eq("companies.owner_user_id", user.id)
             .single();
 
         if (subError || !sub) throw new Error("Subscription not found");
 
-        // 2. Get New Plan Price
-        const { data: newPrice, error: priceError } = await supabase
-            .from("plan_prices")
+        // 2. Get Plan Prices from saas_plans
+        const { data: currentPlan, error: currentPlanError } = await supabase
+            .from("saas_plans")
             .select("*")
-            .eq("plan_id", to_plan_id)
-            .eq("cycle", to_cycle)
+            .eq("id", sub.plan_id)
             .single();
+        if (currentPlanError || !currentPlan) throw new Error("Invalid current plan");
 
-        if (priceError || !newPrice) throw new Error("Invalid target plan/cycle");
+        const { data: targetPlan, error: targetPlanError } = await supabase
+            .from("saas_plans")
+            .select("*")
+            .eq("id", to_plan_id)
+            .single();
+        if (targetPlanError || !targetPlan) throw new Error("Invalid target plan");
+
+        let currentPlanPrice = 0;
+        if (sub.cycle === 'monthly') currentPlanPrice = currentPlan.price_monthly;
+        else if (sub.cycle === 'semiannual' || sub.cycle === 'semiannually') currentPlanPrice = currentPlan.price_semiannually;
+        else if (sub.cycle === 'annual' || sub.cycle === 'yearly') currentPlanPrice = currentPlan.price_yearly;
+
+        let newPlanAmount = 0;
+        if (to_cycle === 'monthly') newPlanAmount = targetPlan.price_monthly;
+        else if (to_cycle === 'semiannual' || to_cycle === 'semiannually') newPlanAmount = targetPlan.price_semiannually;
+        else if (to_cycle === 'annual' || to_cycle === 'yearly') newPlanAmount = targetPlan.price_yearly;
+
+        if (typeof newPlanAmount !== 'number' || newPlanAmount < 0) throw new Error("Invalid target plan cycle/price");
 
         // 3. Proration Calculation
         const now = new Date();
@@ -60,11 +77,7 @@ serve(async (req) => {
         // Ratio of unused time
         const unusedRatio = totalDurationMs > 0 ? remainingMs / totalDurationMs : 0;
 
-        const currentPlanPrice = sub.plan_prices.amount;
         const creditUnused = currentPlanPrice * unusedRatio;
-
-        // New Price
-        const newPlanAmount = newPrice.amount;
 
         // Charge = Difference
         let charge = newPlanAmount - creditUnused;
@@ -144,7 +157,7 @@ serve(async (req) => {
             const newSubPayload: any = {
                 customer: sub.asaas_customer_id,
                 billingType: billing_type === 'pix' ? 'PIX' : 'CREDIT_CARD',
-                value: newPrice.amount,
+                value: newPlanAmount,
                 nextDueDate: new Date().toISOString().split('T')[0],
                 cycle: to_cycle.toUpperCase(),
                 description: `Plano ${to_plan_id} - Ciclo ${to_cycle}`,
