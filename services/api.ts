@@ -1231,7 +1231,7 @@ export const api = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("No user logged in");
 
-        const { error } = await supabase.from('profiles').update({ company_id: companyId }).eq('id', user.id);
+        const { error } = await supabase.rpc('switch_active_company', { new_company_id: companyId });
         if (error) throw error;
     },
 
