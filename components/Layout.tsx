@@ -289,7 +289,14 @@ const CompanySelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) =>
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [openGroups, setOpenGroups] = useState<string[]>([]);
+    const [openGroups, setOpenGroups] = useState<string[]>(() => {
+        const saved = localStorage.getItem('ecoflow-sidebar-groups');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('ecoflow-sidebar-groups', JSON.stringify(openGroups));
+    }, [openGroups]);
     const { can, isSuperAdmin } = useRBAC();
     const { user, refreshSession } = useAuth();
     const { currentCompany } = useCompany();
