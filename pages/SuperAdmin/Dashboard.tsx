@@ -269,48 +269,60 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
-                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
-                        <div>
-                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Total Empresas</p>
-                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.totalCompanies}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <Card className="p-5 md:p-6 bg-card shadow-sm border border-border/50 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="flex flex-col gap-3 relative z-10">
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 bg-indigo-500/10 rounded-xl">
+                                <Building2 className="w-5 h-5 text-indigo-500" />
+                            </div>
                         </div>
-                        <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg shrink-0">
-                            <Building2 className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
+                        <div>
+                            <h3 className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">{stats.totalCompanies}</h3>
+                            <p className="text-sm font-medium text-muted-foreground mt-1">Total Empresas</p>
                         </div>
                     </div>
                 </Card>
-                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
-                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
-                        <div>
-                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Empresas Ativas</p>
-                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.activeCompanies}</h3>
+                <Card className="p-5 md:p-6 bg-card shadow-sm border border-border/50 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="flex flex-col gap-3 relative z-10">
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                            </div>
                         </div>
-                        <div className="p-1.5 md:p-2 bg-green-50 rounded-lg shrink-0">
-                            <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
+                        <div>
+                            <h3 className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">{stats.activeCompanies}</h3>
+                            <p className="text-sm font-medium text-muted-foreground mt-1">Empresas Ativas</p>
                         </div>
                     </div>
                 </Card>
-                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
-                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
-                        <div>
-                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Total Usuários</p>
-                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.totalUsers}</h3>
+                <Card className="p-5 md:p-6 bg-card shadow-sm border border-border/50 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="flex flex-col gap-3 relative z-10">
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 bg-purple-500/10 rounded-xl">
+                                <UserCog className="w-5 h-5 text-purple-500" />
+                            </div>
                         </div>
-                        <div className="p-1.5 md:p-2 bg-purple-50 rounded-lg shrink-0">
-                            <UserCog className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
+                        <div>
+                            <h3 className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">{stats.totalUsers}</h3>
+                            <p className="text-sm font-medium text-muted-foreground mt-1">Total Usuários</p>
                         </div>
                     </div>
                 </Card>
-                <Card className="p-4 md:p-6 bg-card shadow-sm border border-border">
-                    <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
-                        <div>
-                            <p className="text-xs md:text-sm font-medium text-muted-foreground line-clamp-1">Planos Ativos</p>
-                            <h3 className="text-xl md:text-3xl font-bold text-foreground mt-1 md:mt-2">{stats.activePlans}</h3>
+                <Card className="p-5 md:p-6 bg-card shadow-sm border border-border/50 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="flex flex-col gap-3 relative z-10">
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 bg-amber-500/10 rounded-xl">
+                                <CreditCard className="w-5 h-5 text-amber-500" />
+                            </div>
                         </div>
-                        <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg shrink-0">
-                            <CreditCard className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
+                        <div>
+                            <h3 className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">{stats.activePlans}</h3>
+                            <p className="text-sm font-medium text-muted-foreground mt-1">Planos Ativos</p>
                         </div>
                     </div>
                 </Card>
@@ -353,67 +365,77 @@ export const SuperAdminDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto -mx-4 md:mx-0">
-                    <div className="min-w-[800px] w-full p-4 md:p-0">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
-                                <tr>
-                                    <th className="px-6 py-3 w-[280px]">Empresa</th>
-                                    <th className="px-6 py-3 w-[120px]">Status</th>
-                                    <th className="px-6 py-3 w-[150px]">Plano / Pgto</th>
-                                    <th className="px-6 py-3">Módulos</th>
-                                    <th className="px-6 py-3 w-[160px]">Período</th>
-                                    <th className="px-6 py-3 text-right w-[80px]">Ações</th>
+                <div className="overflow-x-auto -mx-4 md:mx-0 bg-muted/5 p-4 md:p-6 rounded-b-xl">
+                    <div className="min-w-[800px] w-full">
+                        <table className="w-full text-sm text-left border-separate border-spacing-y-3">
+                            <thead>
+                                <tr className="text-muted-foreground text-xs uppercase font-bold tracking-wider">
+                                    <th className="px-6 py-2 w-[280px]">Empresa</th>
+                                    <th className="px-6 py-2 w-[120px]">Status</th>
+                                    <th className="px-6 py-2 w-[150px]">Plano / Pgto</th>
+                                    <th className="px-6 py-2">Módulos</th>
+                                    <th className="px-6 py-2 w-[160px]">Período</th>
+                                    <th className="px-6 py-2 text-right w-[100px]">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border">
+                            <tbody>
                                 {filteredCompanies.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <Search className="w-8 h-8 text-gray-300" />
-                                                <p>Nenhuma empresa encontrada com os filtros atuais.</p>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground bg-card rounded-2xl border border-border/50">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="p-4 bg-muted/50 rounded-full">
+                                                    <Search className="w-8 h-8 text-muted-foreground" />
+                                                </div>
+                                                <p className="font-medium text-base">Nenhuma empresa encontrada</p>
+                                                <p className="text-xs">Tente ajustar os filtros de busca.</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredCompanies.map((company) => (
-                                        <tr key={company.id} className="hover:bg-muted/30 transition-colors group">
+                                        <tr key={company.id} className="group transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
                                             {/* Empresa */}
-                                            <td className="px-6 py-4 align-middle">
-                                                <div className="min-w-0">
-                                                    <span className="font-semibold text-foreground block">{company.name}</span>
-                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                                                        {company.cnpj && <span className="shrink-0">{company.cnpj}</span>}
-                                                        {company.cnpj && company.ownerEmail && <span>•</span>}
-                                                        {company.ownerEmail && (
-                                                            <span className="truncate max-w-[160px]">{company.ownerEmail}</span>
-                                                        )}
+                                            <td className="px-6 py-4 align-middle bg-card rounded-l-2xl border-y border-l border-border/50 group-hover:border-primary/30 transition-colors">
+                                                <div className="min-w-0 flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0 border border-primary/10">
+                                                        <span className="font-bold text-primary text-lg">
+                                                            {company.name.charAt(0).toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-bold text-foreground block text-base leading-tight">{company.name}</span>
+                                                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1 flex-wrap font-medium">
+                                                            {company.cnpj && <span className="shrink-0">{company.cnpj}</span>}
+                                                            {company.cnpj && company.ownerEmail && <span className="opacity-50">•</span>}
+                                                            {company.ownerEmail && (
+                                                                <span className="truncate max-w-[160px]">{company.ownerEmail}</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             {/* Status */}
-                                            <td className="px-6 py-4 align-middle">
-                                                <Badge className={getStatusColor(company.status)}>
-                                                    {company.status === 'active' && <CheckCircle2 className="w-3 h-3 mr-1 inline" />}
-                                                    {company.status === 'suspended' && <PauseCircle className="w-3 h-3 mr-1 inline" />}
-                                                    {company.status === 'trial' && <AlertTriangle className="w-3 h-3 mr-1 inline" />}
+                                            <td className="px-6 py-4 align-middle bg-card border-y border-border/50 group-hover:border-primary/30 transition-colors">
+                                                <Badge className={cn("px-3 py-1 font-bold text-[10px] tracking-wider rounded-full", getStatusColor(company.status))}>
+                                                    {company.status === 'active' && <CheckCircle2 className="w-3.5 h-3.5 mr-1 inline" />}
+                                                    {company.status === 'suspended' && <PauseCircle className="w-3.5 h-3.5 mr-1 inline" />}
+                                                    {company.status === 'trial' && <AlertTriangle className="w-3.5 h-3.5 mr-1 inline" />}
                                                     {company.status.toUpperCase()}
                                                 </Badge>
                                             </td>
                                             {/* Plano / Pgto */}
-                                            <td className="px-6 py-4 align-middle">
-                                                <span className="font-medium text-foreground">{(company as any).planName || 'Custom'}</span>
+                                            <td className="px-6 py-4 align-middle bg-card border-y border-border/50 group-hover:border-primary/30 transition-colors">
+                                                <span className="font-bold text-foreground text-sm">{(company as any).planName || 'Custom'}</span>
                                                 {company.billingType && (
-                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                                                        <CreditCard className="w-3.5 h-3.5" />
+                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 font-medium">
+                                                        <CreditCard className="w-3.5 h-3.5 text-primary/70" />
                                                         {company.billingType === 'credit_card' ? 'Cartão de Crédito' : company.billingType.toUpperCase()}
                                                     </div>
                                                 )}
                                             </td>
                                             {/* Módulos */}
-                                            <td className="px-6 py-4 align-middle">
-                                                <div className="flex flex-wrap gap-1">
+                                            <td className="px-6 py-4 align-middle bg-card border-y border-border/50 group-hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-wrap gap-1.5">
                                                     {company.contractedModules?.slice(0, 4).map(m => {
                                                         const moduleMap: Record<string, string> = {
                                                             'FINANCE': 'Fin', 'COMMERCIAL': 'Com', 'ROUTINES': 'Rot', 'REPORTS': 'Rel', 'API': 'API',
@@ -421,55 +443,56 @@ export const SuperAdminDashboard: React.FC = () => {
                                                         };
                                                         const name = moduleMap[m] || m.replace('mod_', '').substring(0, 3).toUpperCase();
                                                         return (
-                                                            <span key={m} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-secondary text-secondary-foreground border border-border uppercase tracking-wide">
+                                                            <span key={m} className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-secondary/80 text-secondary-foreground border border-border uppercase tracking-widest shadow-sm">
                                                                 {name}
                                                             </span>
                                                         );
                                                     })}
                                                     {(company.contractedModules?.length || 0) > 4 && (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-muted text-muted-foreground border border-border shadow-sm">
                                                             +{(company.contractedModules?.length || 0) - 4}
                                                         </span>
                                                     )}
                                                 </div>
                                             </td>
                                             {/* Período */}
-                                            <td className="px-6 py-4 align-middle text-sm text-foreground">
+                                            <td className="px-6 py-4 align-middle text-sm text-foreground bg-card border-y border-border/50 group-hover:border-primary/30 transition-colors">
                                                 {company.subscriptionStart ? (
-                                                    <div className="flex flex-col gap-1 text-xs">
-                                                        <div>
-                                                            <span className="text-muted-foreground mr-1">Início:</span>
-                                                            {new Date(company.subscriptionStart).toLocaleDateString('pt-BR')}
+                                                    <div className="flex flex-col gap-1.5 text-[11px] font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-muted-foreground uppercase tracking-wider text-[9px]">Início</span>
+                                                            <span>{new Date(company.subscriptionStart).toLocaleDateString('pt-BR')}</span>
                                                         </div>
                                                         {company.subscriptionEnd && (
-                                                            <div>
-                                                                <span className="text-muted-foreground mr-1">Venc:</span>
-                                                                <span className="font-medium">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-muted-foreground uppercase tracking-wider text-[9px]">Venc</span>
+                                                                <span className="font-bold text-primary">
                                                                     {new Date(company.subscriptionEnd).toLocaleDateString('pt-BR')}
                                                                 </span>
                                                             </div>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <div className="flex flex-col gap-1 text-xs">
-                                                        <div className="text-muted-foreground">
-                                                            Criado em: {new Date(company.createdAt).toLocaleDateString('pt-BR')}
+                                                    <div className="flex flex-col gap-1 text-[11px] font-medium">
+                                                        <div className="text-muted-foreground flex items-center gap-2">
+                                                            <span className="uppercase tracking-wider text-[9px]">Criado</span> 
+                                                            {new Date(company.createdAt).toLocaleDateString('pt-BR')}
                                                         </div>
                                                     </div>
                                                 )}
                                             </td>
                                             {/* Ações */}
-                                            <td className="px-6 py-4 align-middle text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleLoginAs(company.id)} title="Acessar como Admin">
-                                                        <Globe className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                            <td className="px-6 py-4 align-middle text-right bg-card rounded-r-2xl border-y border-r border-border/50 group-hover:border-primary/30 transition-colors">
+                                                <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleLoginAs(company.id)} title="Acessar como Admin" className="hover:bg-primary/10 hover:text-primary">
+                                                        <Globe className="w-4 h-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(company)} title="Editar Dados">
-                                                        <Edit2 className="w-4 h-4 text-muted-foreground hover:text-blue-500" />
+                                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(company)} title="Editar Dados" className="hover:bg-blue-500/10 hover:text-blue-500">
+                                                        <Edit2 className="w-4 h-4" />
                                                     </Button>
-                                                    <div className="w-px h-4 bg-border mx-1"></div>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id, company.name)} title="Excluir Empresa">
-                                                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                                                    <div className="w-px h-6 bg-border mx-1"></div>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(company.id, company.name)} title="Excluir Empresa" className="hover:bg-destructive/10 hover:text-destructive">
+                                                        <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </div>
                                             </td>
