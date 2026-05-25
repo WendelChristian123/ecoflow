@@ -278,7 +278,7 @@ export const RoutinesOverview: React.FC = () => {
                         onChange={setSelectedAssignee}
                         options={[
                             { value: 'all', label: 'Todos' },
-                            ...availableUsers.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+                            ...availableUsers.map(u => ({ value: u.id, label: u.name || u.email || 'Usuário', avatarUrl: u.avatarUrl }))
                         ]}
                         darkMode={true}
                         className="min-w-[180px]"

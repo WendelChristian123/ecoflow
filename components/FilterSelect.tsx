@@ -104,7 +104,7 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
 
     const selectedOption = options.find(opt => opt.value === value);
     const filteredOptions = options.filter(opt =>
-        opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+        (opt.label || '').toLowerCase().includes((searchTerm || '').toLowerCase())
     );
 
     // Group options
@@ -256,7 +256,7 @@ const OptionItem: React.FC<{ option: FilterOption, isSelected: boolean, onClick:
                         <img src={option.avatarUrl} alt={option.label} className="h-full w-full object-cover" />
                     ) : (
                         <div className="h-full w-full bg-muted flex items-center justify-center text-[10px] font-bold">
-                            {option.label.substring(0, 2).toUpperCase()}
+                            {(option.label || '').substring(0, 2).toUpperCase()}
                         </div>
                     )}
                 </div>
