@@ -6,6 +6,7 @@ import { useRBAC } from '../../context/RBACContext';
 import { useCompany } from '../../context/CompanyContext';
 import { useAuth } from '../../context/AuthContext';
 import { Loader, Button, Input, Card, Badge, Modal, Select, cn } from '../../components/Shared';
+import { FilterSelect } from '../../components/FilterSelect';
 import {
     Building2, Plus, Search, Globe, Lock, CheckCircle2, Edit2, Package, RefreshCw,
     AlertTriangle, Terminal, MoreVertical, CreditCard, PauseCircle,
@@ -347,16 +348,17 @@ export const SuperAdminDashboard: React.FC = () => {
                             />
                         </div>
                         <div className="w-full lg:w-40">
-                            <select
+                            <FilterSelect
+                                inlineLabel="Status:"
                                 value={filterStatus}
-                                onChange={e => setFilterStatus(e.target.value)}
-                                className="w-full h-10 text-sm bg-card text-foreground border border-input rounded-lg px-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer appearance-none"
-                            >
-                                <option value="all">Todos Status</option>
-                                <option value="active">Ativos</option>
-                                <option value="suspended">Suspensos</option>
-                                <option value="trial">Trial</option>
-                            </select>
+                                onChange={(val) => setFilterStatus(val)}
+                                options={[
+                                    { value: 'all', label: 'Todos' },
+                                    { value: 'active', label: 'Ativos' },
+                                    { value: 'suspended', label: 'Suspensos' },
+                                    { value: 'trial', label: 'Trial' }
+                                ]}
+                            />
                         </div>
                         <Button variant="outline" size="sm" onClick={loadData} className="h-10 bg-card hover:bg-muted text-foreground border-input">
                             <RefreshCw className="w-4 h-4 mr-2" />
@@ -528,11 +530,15 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <Input label="Email Principal" value={newCompany.ownerEmail} onChange={e => setNewCompany({ ...newCompany, ownerEmail: e.target.value })} required disabled={!!editingId} />
                                 <div className="flex gap-2 items-end">
                                     <div className="w-24">
-                                        <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Tipo Doc</label>
-                                        <select value={docType} onChange={e => setDocType(e.target.value as any)} className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer">
-                                            <option value="CNPJ">CNPJ</option>
-                                            <option value="CPF">CPF</option>
-                                        </select>
+                                        <Select
+                                            label="Tipo Doc"
+                                            value={docType}
+                                            onChange={e => setDocType(e.target.value as any)}
+                                            options={[
+                                                { value: 'CNPJ', label: 'CNPJ' },
+                                                { value: 'CPF', label: 'CPF' }
+                                            ]}
+                                        />
                                     </div>
                                     <div className="flex-1">
                                         <Input
@@ -545,16 +551,16 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <Input label="Telefone" value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: maskPhone(e.target.value) })} />
 
                                 <div>
-                                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Status</label>
-                                    <select
+                                    <Select
+                                        label="Status"
                                         value={newCompany.status}
                                         onChange={e => setNewCompany({ ...newCompany, status: e.target.value })}
-                                        className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
-                                    >
-                                        <option value="active">Ativo</option>
-                                        <option value="suspended">Suspenso</option>
-                                        <option value="trial">Trial</option>
-                                    </select>
+                                        options={[
+                                            { value: 'active', label: 'Ativo' },
+                                            { value: 'suspended', label: 'Suspenso' },
+                                            { value: 'trial', label: 'Trial' }
+                                        ]}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -581,23 +587,19 @@ export const SuperAdminDashboard: React.FC = () => {
                             <div className="space-y-6 animate-in fade-in duration-300">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Tipo de Plano</label>
-                                        <select
+                                        <Select
+                                            label="Tipo de Plano"
                                             value={newCompany.planId === 'custom' ? 'custom' : newCompany.planId}
                                             onChange={e => {
                                                 const val = e.target.value;
                                                 setNewCompany({ ...newCompany, planId: val });
                                             }}
-                                            className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
-                                        >
-                                            <option value="">Selecione um plano (Opcional)</option>
-                                            <optgroup label="Planos Fixos">
-                                                {availablePlans.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name} ({p.maxUsers} usu.)</option>
-                                                ))}
-                                            </optgroup>
-                                            <option value="custom">Plano Personalizado (Avulso)</option>
-                                        </select>
+                                            options={[
+                                                { value: '', label: 'Selecione um plano (Opcional)' },
+                                                ...availablePlans.map(p => ({ value: p.id, label: `${p.name} (${p.maxUsers} usu.)` })),
+                                                { value: 'custom', label: 'Plano Personalizado (Avulso)' }
+                                            ]}
+                                        />
                                     </div>
 
                                     {(newCompany.planId === 'custom' || !newCompany.planId) && (

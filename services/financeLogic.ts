@@ -14,11 +14,26 @@ export const processTransactions = (
     mode: 'competence' | 'cash' = 'competence' // Default to competence
 ): ProcessedTransaction[] => {
 
+    // 0. Merge Linked Interest Transactions (Option C)
+    const interestLinks = transactions.filter(t => t.originType === 'interest_link');
+    const displayTransactions = transactions.filter(t => t.originType !== 'interest_link').map(t => {
+        const linkedInterest = interestLinks.find(link => link.originId === t.id);
+        if (linkedInterest) {
+            return {
+                ...t,
+                amount: t.amount + linkedInterest.amount,
+                grossAmount: (t.grossAmount || t.amount) + linkedInterest.amount,
+                linkedInterest // Provide access to it for modals
+            };
+        }
+        return t;
+    });
+
     // 1. Separate regular transactions from Credit Card Purchase transactions
-    const regularTransactions = transactions.filter(t => !t.creditCardId);
+    const regularTransactions = displayTransactions.filter(t => !t.creditCardId);
 
     // 2. Filter Credit Card Transactions
-    const cardTransactions = transactions.filter(t => t.creditCardId);
+    const cardTransactions = displayTransactions.filter(t => t.creditCardId);
     if (cardTransactions.length === 0) return regularTransactions;
 
     // 3. Process based on Mode

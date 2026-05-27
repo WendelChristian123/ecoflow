@@ -376,31 +376,30 @@ export const AgendaPage: React.FC = () => {
 
   if (loading) return <Loader />;
 
-  // Helper to get solid colors for grid text pills based on event type/color
+  // Helper to get translucent colors for grid text pills based on event type/color
   const getEventPillClass = (event: UnifiedEvent) => {
     if (event.origin === 'agenda') {
-      return event.isTeamEvent ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white';
+      return event.isTeamEvent ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20';
     }
     if (event.origin === 'task') {
-      // Use metadata status to avoid TS conflict with CalendarEvent status type
       const status = event.metadata?.status;
       const isOverdue = status !== 'completed' && status !== 'done' && new Date(event.startDate) < new Date() && !isToday(parseISO(event.startDate));
-      if (isOverdue) return 'bg-rose-500 text-white font-bold';
+      if (isOverdue) return 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20 font-bold';
 
       const priority = event.metadata?.priority;
       switch (priority) {
-        case 'urgent': return 'bg-rose-500 text-white';
-        case 'high': return 'bg-orange-500 text-white';
-        case 'medium': return 'bg-blue-500 text-white';
-        case 'low': return 'bg-emerald-500 text-white';
-        default: return 'bg-blue-600 text-white';
+        case 'urgent': return 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20';
+        case 'high': return 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/20';
+        case 'medium': return 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20';
+        case 'low': return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20';
+        default: return 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20';
       }
     }
-    if (event.origin === 'finance_budget') return 'bg-amber-600 text-white';
-    if (event.origin === 'finance_payable') return 'bg-rose-600 text-white';
-    if (event.origin === 'finance_receivable') return 'bg-emerald-600 text-white';
-    if (event.origin === 'finance_card') return event.id.includes('close') ? 'bg-purple-600 text-white' : 'bg-rose-500 text-white';
-    return 'bg-slate-700 text-slate-300';
+    if (event.origin === 'finance_budget') return 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20';
+    if (event.origin === 'finance_payable') return 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20';
+    if (event.origin === 'finance_receivable') return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20';
+    if (event.origin === 'finance_card') return event.id.includes('close') ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/20' : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20';
+    return 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20';
   };
 
   return (

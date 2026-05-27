@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Task, Project, Delegation, User } from '../../types';
-import { Loader, Card, cn, Button, Select, Avatar, Badge } from '../../components/Shared';
+import { Loader, Card, cn, Button, Select, Avatar, Badge, StatCard } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal } from '../../components/Modals';
 import { useAuth } from '../../context/AuthContext';
@@ -46,58 +46,7 @@ import {
     Cell
 } from 'recharts';
 
-const StatCard: React.FC<{
-    title: string;
-    value: number | string;
-    icon: React.ReactNode;
-    color: 'emerald' | 'rose' | 'amber' | 'indigo' | 'slate' | 'orange' | 'red';
-    subtitle?: string;
-    onClick?: () => void;
-}> = ({ title, value, icon, color, subtitle, onClick }) => {
-    const themes = {
-        emerald: { header: 'bg-emerald-500', text: 'text-emerald-500', border: 'hover:border-emerald-500/50' },
-        rose: { header: 'bg-rose-500', text: 'text-rose-500', border: 'hover:border-rose-500/50' },
-        amber: { header: 'bg-amber-500', text: 'text-amber-500', border: 'hover:border-amber-500/50' },
-        indigo: { header: 'bg-indigo-500', text: 'text-indigo-500', border: 'hover:border-indigo-500/50' },
-        slate: { header: 'bg-slate-500', text: 'text-slate-500', border: 'hover:border-slate-500/50' },
-        orange: { header: 'bg-orange-500', text: 'text-orange-500', border: 'hover:border-orange-500/50' },
-        red: { header: 'bg-red-500', text: 'text-red-500', border: 'hover:border-red-500/50' },
-    };
-    const theme = themes[color];
 
-    return (
-        <div
-            onClick={onClick}
-            className={cn(
-                "bg-card border border-border rounded-xl flex flex-col justify-between h-full cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group shadow-sm",
-                theme.border,
-                onClick ? "cursor-pointer" : ""
-            )}
-        >
-            {/* Header Colorido */}
-            <div className={cn("px-4 py-3 flex items-center justify-between", theme.header)}>
-                <span className="text-[11px] font-bold uppercase tracking-widest text-white">{title}</span>
-                <div className="p-1.5 rounded-md bg-white/20 text-white backdrop-blur-sm">
-                    {icon}
-                </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 pt-5 flex flex-col gap-1 relative">
-                <div className={cn("text-3xl font-black tracking-tighter transition-colors", theme.text)}>
-                    {value}
-                </div>
-                {subtitle && <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-70">{subtitle}</span>}
-
-                {onClick && (
-                    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ArrowRight size={18} className="text-muted-foreground" />
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
 export const RoutinesOverview: React.FC = () => {
     const { user } = useAuth();
@@ -302,38 +251,42 @@ export const RoutinesOverview: React.FC = () => {
 
             {/* KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                    title="Projetos Ativos"
-                    value={activeProjectsCount}
-                    icon={<Briefcase size={20} />}
-                    color="indigo"
-                    subtitle="Em andamento"
-                    onClick={() => navigate('/projects')}
-                />
-                <StatCard
-                    title="A Vencer"
-                    value={totalDueSoon}
-                    icon={<Clock size={20} />}
-                    color="orange"
-                    subtitle="Dentro do prazo"
-                    onClick={() => openDrilldown('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))}
-                />
-                <StatCard
-                    title="Vencidos"
-                    value={totalOverdue}
-                    icon={<AlertCircle size={20} />}
-                    color="red"
-                    subtitle="Prazo expirado"
-                    onClick={() => openDrilldown('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))}
-                />
-                <StatCard
-                    title="Concluídos"
-                    value={totalDone}
-                    icon={<CheckCircle2 size={20} />}
-                    color="emerald"
-                    subtitle={period === 'all' ? 'Total histórico' : 'Neste período'}
-                    onClick={() => openDrilldown('Tarefas Concluídas', t => t.status === 'done')}
-                />
+                <div onClick={() => navigate('/projects')} className="cursor-pointer">
+                    <StatCard
+                        title="Projetos Ativos"
+                        value={activeProjectsCount}
+                        icon={Briefcase}
+                        iconColorClass="text-indigo-500 bg-indigo-500/10"
+                        subtitle="Em andamento"
+                    />
+                </div>
+                <div onClick={() => openDrilldown('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                    <StatCard
+                        title="A Vencer"
+                        value={totalDueSoon}
+                        icon={Clock}
+                        iconColorClass="text-orange-500 bg-orange-500/10"
+                        subtitle="Dentro do prazo"
+                    />
+                </div>
+                <div onClick={() => openDrilldown('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                    <StatCard
+                        title="Vencidos"
+                        value={totalOverdue}
+                        icon={AlertCircle}
+                        iconColorClass="text-red-500 bg-red-500/10"
+                        subtitle="Prazo expirado"
+                    />
+                </div>
+                <div onClick={() => openDrilldown('Tarefas Concluídas', t => t.status === 'done')} className="cursor-pointer">
+                    <StatCard
+                        title="Concluídos"
+                        value={totalDone}
+                        icon={CheckCircle2}
+                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                        subtitle={period === 'all' ? 'Total histórico' : 'Neste período'}
+                    />
+                </div>
             </div>
 
             {/* CHARTS ROW */}

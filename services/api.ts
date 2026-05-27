@@ -81,7 +81,7 @@ export const api = {
     // --- TASKS ---
     // --- TASKS ---
     getTasks: async (companyId?: string) => {
-        let query = supabase.from('tasks').select('*');
+        let query = supabase.from('tasks').select('*').order('title', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -92,7 +92,7 @@ export const api = {
             teamId: t.team_id,
             companyId: t.company_id,
             dueDate: t.due_date,
-        })) as Task[];
+        })).sort((a: any, b: any) => (a.title || '').trim().toLowerCase().localeCompare((b.title || '').trim().toLowerCase())) as Task[];
     },
 
     // Unified Logs Fetcher
@@ -263,7 +263,7 @@ export const api = {
 
     // --- PROJECTS ---
     getProjects: async (companyId?: string) => {
-        let query = supabase.from('projects').select('*');
+        let query = supabase.from('projects').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -273,7 +273,7 @@ export const api = {
             companyId: p.company_id,
             teamIds: p.team_ids,
             members: p.member_ids,
-        })) as Project[];
+        })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as Project[];
     },
     addProject: async (project: Partial<Project>) => {
         const companyId = getCurrentCompanyId();
@@ -342,7 +342,7 @@ export const api = {
 
     // --- USERS ---
     getUsers: async (companyId?: string) => {
-        let query = supabase.from('profiles').select('*');
+        let query = supabase.from('profiles').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
 
         const { data: profiles, error: errProfiles } = await query;
@@ -377,7 +377,7 @@ export const api = {
 
     // --- TEAMS ---
     getTeams: async (companyId?: string) => {
-        let query = supabase.from('teams').select('*');
+        let query = supabase.from('teams').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -388,7 +388,7 @@ export const api = {
             companyId: t.company_id,
             memberIds: t.member_ids,
             logs: t.logs
-        })) as Team[];
+        })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as Team[];
     },
 
     addTeam: async (team: Partial<Team>) => {
@@ -431,7 +431,7 @@ export const api = {
             companyId: u.company_id,
             avatarUrl: u.avatar_url,
             companyName: u.companies?.name
-        })) as User[];
+        })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as User[];
     },
     getUserProfile: async (id: string) => {
         const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
@@ -770,7 +770,7 @@ export const api = {
     },
 
     getEvents: async (companyId?: string) => {
-        let query = supabase.from('calendar_events').select('*');
+        let query = supabase.from('calendar_events').select('*').order('title', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -782,7 +782,7 @@ export const api = {
             companyId: e.company_id,
             projectId: e.project_id,
             teamId: e.team_id
-        })) as CalendarEvent[];
+        })).sort((a: any, b: any) => (a.title || '').trim().toLowerCase().localeCompare((b.title || '').trim().toLowerCase())) as CalendarEvent[];
     },
     addEvent: async (evt: Partial<CalendarEvent>, recurrence?: RecurrenceConfig) => {
         const companyId = getCurrentCompanyId();
@@ -942,6 +942,32 @@ export const api = {
 
         const { data, error } = await supabase.from('financial_transactions').insert(transactionsToInsert).select();
         if (error) throw error;
+        
+        // Handle Option C: Interest Separation
+        if ((t as any).interestAmount > 0 && (t as any).interestCategoryId) {
+            const interestTransactionsToInsert = data.map((mainT: any) => ({
+                description: `${mainT.description} (Juros)`,
+                amount: (t as any).interestAmount,
+                gross_amount: (t as any).interestAmount,
+                discount_amount: 0,
+                type: mainT.type,
+                date: mainT.date,
+                is_paid: mainT.is_paid,
+                payment_method: mainT.payment_method,
+                account_id: mainT.account_id,
+                category_id: uuidOrNull((t as any).interestCategoryId),
+                credit_card_id: mainT.credit_card_id,
+                contact_id: mainT.contact_id,
+                origin_type: 'interest_link',
+                origin_id: mainT.id,
+                company_id: mainT.company_id,
+                recurrence_id: mainT.recurrence_id, // keep them together for future updates if needed
+                installment_index: mainT.installment_index,
+                total_installments: mainT.total_installments
+            }));
+            await supabase.from('financial_transactions').insert(interestTransactionsToInsert);
+        }
+
         return data[0] as FinancialTransaction; // Return first for linking if needed
     },
     updateTransaction: async (t: FinancialTransaction, scope: 'single' | 'future' = 'single') => {
@@ -987,6 +1013,42 @@ export const api = {
 
             if (batchError) throw batchError;
         }
+
+        // 3. Handle Option C: Update or Delete Interest Link
+        const ext = t as any;
+        if (ext.interestAmount > 0 && ext.interestCategoryId) {
+            const interestDbObj = {
+                description: `${t.description} (Juros)`,
+                amount: ext.interestAmount,
+                gross_amount: ext.interestAmount,
+                discount_amount: 0,
+                type: t.type,
+                date: t.date,
+                is_paid: t.isPaid,
+                payment_method: t.paymentMethod || null,
+                account_id: uuidOrNull(t.accountId),
+                category_id: uuidOrNull(ext.interestCategoryId),
+                credit_card_id: uuidOrNull(t.creditCardId),
+                contact_id: uuidOrNull(t.contactId)
+            };
+
+            const { data: existingLink } = await supabase.from('financial_transactions')
+                .select('id').eq('origin_id', t.id).eq('origin_type', 'interest_link').single();
+
+            if (existingLink) {
+                await supabase.from('financial_transactions').update(interestDbObj).eq('id', existingLink.id);
+            } else {
+                await supabase.from('financial_transactions').insert([{
+                    ...interestDbObj,
+                    origin_type: 'interest_link',
+                    origin_id: t.id,
+                    company_id: getCurrentCompanyId()
+                }]);
+            }
+        } else {
+            // Delete any linked transactions as well
+            await supabase.from('financial_transactions').delete().in('origin_type', ['cc_technical_limit_release', 'interest_link']).eq('origin_id', t.id);
+        }
     },
     toggleTransactionStatus: async (id: string, isPaid: boolean, date?: string) => {
         const updates: any = { is_paid: isPaid };
@@ -995,11 +1057,11 @@ export const api = {
         }
         const { error } = await supabase.from('financial_transactions').update(updates).eq('id', id);
         if (error) throw error;
-        // Also toggle linked technical transactions (e.g. credit card limit release)
+        // Also toggle linked technical transactions (e.g. credit card limit release AND interest links)
         await supabase.from('financial_transactions')
-            .update({ is_paid: isPaid }) // simple toggle for technicals (usually they follow parent)
-            .eq('origin_id', id)
-            .eq('origin_type', 'technical');
+            .update({ is_paid: isPaid, ...(isPaid && date ? { date } : {}) }) 
+            .in('origin_type', ['cc_technical_limit_release', 'interest_link'])
+            .eq('origin_id', id);
     },
     deleteTransaction: async (id: string, scope: 'single' | 'future' = 'single', recurrenceId?: string, date?: string) => {
         // Helper to delete technical transactions
@@ -1007,7 +1069,7 @@ export const api = {
             await supabase.from('financial_transactions')
                 .delete()
                 .eq('origin_id', targetId)
-                .eq('origin_type', 'technical');
+                .in('origin_type', ['technical', 'cc_technical_limit_release', 'interest_link']);
         };
 
         if (scope === 'single') {
@@ -1053,11 +1115,11 @@ export const api = {
     },
 
     getFinancialAccounts: async (companyId?: string) => {
-        let query = supabase.from('financial_accounts').select('*');
+        let query = supabase.from('financial_accounts').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
-        return data.map((a: any) => ({ ...a, initialBalance: a.initial_balance, companyId: a.company_id })) as FinancialAccount[];
+        return data.map((a: any) => ({ ...a, initialBalance: a.initial_balance, companyId: a.company_id })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as FinancialAccount[];
     },
     addFinancialAccount: async (data: Partial<FinancialAccount>) => {
         const companyId = getCurrentCompanyId();
@@ -1083,11 +1145,11 @@ export const api = {
     },
 
     getFinancialCategories: async (companyId?: string) => {
-        let query = supabase.from('financial_categories').select('*');
+        let query = supabase.from('financial_categories').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
-        return data.map((c: any) => ({ ...c, companyId: c.company_id })) as FinancialCategory[];
+        return data.map((c: any) => ({ ...c, companyId: c.company_id })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as FinancialCategory[];
     },
     addFinancialCategory: async (data: Partial<FinancialCategory>) => {
         const companyId = getCurrentCompanyId();
@@ -1106,7 +1168,7 @@ export const api = {
     },
 
     getCreditCards: async (companyId?: string) => {
-        let query = supabase.from('credit_cards').select('*');
+        let query = supabase.from('credit_cards').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -1116,7 +1178,7 @@ export const api = {
             closingDay: c.closing_day,
             dueDay: c.due_day,
             companyId: c.company_id
-        })) as CreditCard[];
+        })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as CreditCard[];
     },
     addCreditCard: async (data: Partial<CreditCard>) => {
         const companyId = getCurrentCompanyId();
@@ -1145,7 +1207,7 @@ export const api = {
 
     // --- COMMERCIAL ---
     getContacts: async (companyId?: string) => {
-        let query = supabase.from('contacts').select('*');
+        let query = supabase.from('contacts').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -1154,7 +1216,7 @@ export const api = {
             fantasyName: c.fantasy_name,
             adminName: c.admin_name,
             companyId: c.company_id
-        })) as Contact[];
+        })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as Contact[];
     },
     addContact: async (c: Partial<Contact>) => {
         const companyId = getCurrentCompanyId();
@@ -1203,7 +1265,7 @@ export const api = {
     },
 
     getCatalogItems: async (companyId?: string) => {
-        let query = supabase.from('catalog_items').select('*');
+        let query = supabase.from('catalog_items').select('*').order('name', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query;
         if (error) throw error;
@@ -1211,7 +1273,7 @@ export const api = {
             ...i,
             financialCategoryId: i.financial_category_id,
             companyId: i.company_id
-        })) as CatalogItem[];
+        })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as CatalogItem[];
     },
     addCatalogItem: async (i: Partial<CatalogItem>) => {
         const companyId = getCurrentCompanyId();
@@ -1388,7 +1450,7 @@ export const api = {
             setupRemainingDate: r.setup_remaining_date,
             firstRecurrenceDate: r.first_recurrence_date,
             contact: r.contacts ? { ...r.contacts, fantasyName: r.contacts.fantasy_name } : undefined
-        })) as RecurringService[];
+        })).sort((a: any, b: any) => (a.contact?.name || '').trim().toLowerCase().localeCompare((b.contact?.name || '').trim().toLowerCase())) as RecurringService[];
     },
     addRecurringService: async (data: Partial<RecurringService>) => {
         console.log("Adding Recurring Service:", data);
@@ -1802,6 +1864,16 @@ export const api = {
             return 0; // standard DB order for rest
         });
 
+        // INJECT LOANS IF MISSING
+        if (sortedFeatures && !sortedFeatures.some(f => f.id === 'finance.loans')) {
+            sortedFeatures.push({
+                id: 'finance.loans',
+                module_id: 'finance',
+                name: 'Dívidas e Empréstimos',
+                status: 'active'
+            });
+        }
+
         return { modules: sortedModules, features: sortedFeatures };
     },
 
@@ -1821,6 +1893,16 @@ export const api = {
             if (idxB === -1) return -1;
             return idxA - idxB;
         });
+
+        // INJECT LOANS IF MISSING
+        if (features && !features.some(f => f.id === 'finance.loans')) {
+            features.push({
+                id: 'finance.loans',
+                module_id: 'finance',
+                name: 'Dívidas e Empréstimos',
+                description: 'Gestão completa de dívidas e empréstimos'
+            });
+        }
 
         return { modules: sortedModules, features };
     },
@@ -2230,26 +2312,51 @@ export const api = {
         let query = supabase.from('loans').select('*, contact:contacts(*)');
         if (companyId) query = query.eq('company_id', companyId);
         
-        const { data, error } = await query;
+        const { data: loansData, error } = await query;
         if (error) throw error;
+
+        if (!loansData || loansData.length === 0) return [];
+
+        const loanIds = loansData.map(l => l.id);
+        const { data: txData } = await supabase.from('financial_transactions')
+            .select('origin_id, origin_type, category_id, account_id')
+            .in('origin_type', ['loan', 'loan_setup'])
+            .in('origin_id', loanIds);
+
+        const txByLoan = (txData || []).reduce((acc: any, tx: any) => {
+            if (!acc[tx.origin_id]) acc[tx.origin_id] = [];
+            acc[tx.origin_id].push(tx);
+            return acc;
+        }, {});
         
-        return data.map((l: any) => ({
-            id: l.id,
-            companyId: l.company_id,
-            contactId: l.contact_id,
-            name: l.name,
-            type: l.type,
-            principalAmount: parseFloat(l.principal_amount),
-            installmentsCount: l.installments_count,
-            installmentAmount: parseFloat(l.installment_amount),
-            discountAmount: parseFloat(l.discount_amount),
-            interestAmount: parseFloat(l.interest_amount),
-            totalAmount: parseFloat(l.total_amount),
-            firstDueDate: l.first_due_date,
-            status: l.status,
-            createdAt: l.created_at,
-            contact: l.contact ? { ...l.contact, fantasyName: l.contact.fantasy_name } : undefined
-        })) as any[];
+        return loansData.map((l: any) => {
+            const loanTxs = txByLoan[l.id] || [];
+            const setupTx = loanTxs.find((t: any) => t.origin_type === 'loan_setup');
+            const mainTx = loanTxs.find((t: any) => t.origin_type === 'loan');
+            
+            return {
+                id: l.id,
+                companyId: l.company_id,
+                contactId: l.contact_id,
+                categoryId: mainTx?.category_id || loanTxs[0]?.category_id || '',
+                accountId: mainTx?.account_id || loanTxs[0]?.account_id || '',
+                name: l.name,
+                type: l.type,
+                principalAmount: parseFloat(l.principal_amount),
+                installmentsCount: l.installments_count,
+                installmentAmount: parseFloat(l.installment_amount),
+                discountAmount: parseFloat(l.discount_amount),
+                interestAmount: parseFloat(l.interest_amount),
+                totalAmount: parseFloat(l.total_amount),
+                firstDueDate: l.first_due_date,
+                status: l.status,
+                createdAt: l.created_at,
+                contact: l.contact ? { ...l.contact, fantasyName: l.contact.fantasy_name } : undefined,
+                isCapitalSettled: !!setupTx,
+                setupAccountId: setupTx?.account_id || '',
+                setupCategoryId: setupTx?.category_id || ''
+            };
+        }) as any[];
     },
 
     getLoanInstallments: async (loanId: string) => {
@@ -2260,20 +2367,35 @@ export const api = {
             .order('installment_index', { ascending: true });
             
         if (error) throw error;
-        return data.map((t: any) => ({
-            id: t.id,
-            description: t.description,
-            amount: t.amount,
-            grossAmount: t.gross_amount,
-            discountAmount: t.discount_amount,
-            date: t.date,
-            isPaid: t.is_paid,
-            paymentMethod: t.payment_method,
-            accountId: t.account_id,
-            installmentIndex: t.installment_index,
-            totalInstallments: t.total_installments,
-            account: t.account ? { name: t.account.name } : undefined
-        }));
+        
+        const parentIds = data.map((d: any) => d.id);
+        const { data: interestData } = await supabase.from('financial_transactions')
+            .select('*')
+            .eq('origin_type', 'interest_link')
+            .in('origin_id', parentIds);
+            
+        return data.map((t: any) => {
+            const linked = interestData?.find(i => i.origin_id === t.id);
+            const capitalAmt = parseFloat(t.amount);
+            const interestAmt = linked ? parseFloat(linked.amount) : 0;
+            return {
+                id: t.id,
+                description: t.description,
+                amount: capitalAmt + interestAmt,
+                capitalAmount: capitalAmt,
+                interestAmount: interestAmt,
+                grossAmount: parseFloat(t.gross_amount) + (linked ? parseFloat(linked.gross_amount) : 0),
+                discountAmount: parseFloat(t.discount_amount),
+                date: t.date,
+                isPaid: t.is_paid,
+                paymentMethod: t.payment_method,
+                accountId: t.account_id,
+                installmentIndex: t.installment_index,
+                totalInstallments: t.total_installments,
+                account: t.account ? { name: t.account.name } : undefined,
+                linkedInterest: linked ? { id: linked.id, amount: parseFloat(linked.amount), categoryId: linked.category_id } : undefined
+            };
+        });
     },
     
     addLoan: async (loan: any) => {
@@ -2307,17 +2429,20 @@ export const api = {
             const offsetDate = addMonths(baseDate, i);
             const formattedDate = offsetDate.toISOString().split('T')[0];
             
-            // NOTE: amount is installmentAmount
+            const principalPerInstallment = loan.interestCategoryId && loan.interestAmount > 0 ? (loan.principalAmount / loan.installmentsCount) : loan.installmentAmount;
+            
             installmentsToInsert.push({
                 company_id: companyId,
                 description: `${loan.name || (loan.type === 'payable' ? 'Dívida' : 'Empréstimo')} - ${i + 1}/${loan.installmentsCount}`,
-                amount: loan.installmentAmount,
-                gross_amount: loan.installmentAmount,
+                amount: principalPerInstallment,
+                gross_amount: principalPerInstallment,
                 discount_amount: 0, 
                 type: loan.type === 'payable' ? 'expense' : 'income',
                 date: formattedDate,
                 is_paid: false,
                 contact_id: uuidOrNull(loan.contactId),
+                category_id: uuidOrNull(loan.categoryId),
+                account_id: uuidOrNull(loan.accountId),
                 origin_type: 'loan',
                 origin_id: data.id,
                 installment_index: i + 1,
@@ -2325,8 +2450,53 @@ export const api = {
             });
         }
         
-        const { error: errorInst } = await supabase.from('financial_transactions').insert(installmentsToInsert);
+        const { data: insertedInstallments, error: errorInst } = await supabase.from('financial_transactions').insert(installmentsToInsert).select();
         if (errorInst) throw errorInst;
+        
+        // Handle Option C: Interest Links for Loans
+        if (loan.interestCategoryId && loan.interestAmount > 0) {
+            const interestPerInstallment = loan.interestAmount / loan.installmentsCount;
+            const interestLinksToInsert = insertedInstallments.map((mainT: any) => ({
+                description: `${mainT.description} (Juros)`,
+                amount: interestPerInstallment,
+                gross_amount: interestPerInstallment,
+                discount_amount: 0,
+                type: mainT.type,
+                date: mainT.date,
+                is_paid: false,
+                contact_id: mainT.contact_id,
+                category_id: uuidOrNull(loan.interestCategoryId),
+                account_id: uuidOrNull(loan.accountId),
+                origin_type: 'interest_link',
+                origin_id: mainT.id,
+                company_id: mainT.company_id,
+                installment_index: mainT.installment_index,
+                total_installments: mainT.total_installments
+            }));
+            const { error: errLinks } = await supabase.from('financial_transactions').insert(interestLinksToInsert);
+            if (errLinks) throw new Error("Erro ao inserir juros: " + errLinks.message);
+        }
+        
+        // Handle Capital Setup Transaction
+        if (loan.isCapitalSettled && loan.setupAccountId && loan.setupCategoryId) {
+            await supabase.from('financial_transactions').insert([{
+                company_id: companyId,
+                description: `Entrada de Capital: ${loan.name || (loan.type === 'payable' ? 'Dívida' : 'Empréstimo')}`,
+                amount: loan.principalAmount,
+                gross_amount: loan.principalAmount,
+                discount_amount: 0,
+                type: loan.type === 'payable' ? 'income' : 'expense',
+                date: loan.firstDueDate,
+                is_paid: true,
+                contact_id: uuidOrNull(loan.contactId),
+                category_id: uuidOrNull(loan.setupCategoryId),
+                account_id: uuidOrNull(loan.setupAccountId),
+                origin_type: 'loan_setup',
+                origin_id: data.id,
+                installment_index: 0,
+                total_installments: 0
+            }]);
+        }
         
         return data;
     },
@@ -2349,7 +2519,7 @@ export const api = {
             // Delete ALL transactions
             await supabase.from('financial_transactions')
                 .delete()
-                .eq('origin_type', 'loan')
+                .in('origin_type', ['loan', 'loan_setup'])
                 .eq('origin_id', id);
         }
         const { error } = await supabase.from('loans').delete().eq('id', id);
@@ -2397,8 +2567,9 @@ export const api = {
                 const oldAmount = inst.amount || 0;
                 const alreadyPaid = Math.max(0, oldGross - oldDiscount - oldAmount);
 
-                // New values based on updated contract
-                const newGross = loan.installmentAmount;
+                // Handle Option C: Separate Principal vs Interest
+                const isSplit = !!(loan.interestCategoryId && loan.interestAmount > 0);
+                const newGross = isSplit ? (loan.principalAmount / loan.installmentsCount) : loan.installmentAmount;
                 const newAmount = Math.max(0, newGross - oldDiscount - alreadyPaid);
 
                 console.log(`[updateLoan] Updating installment ${inst.id}: oldGross=${oldGross}, alreadyPaid=${alreadyPaid}, newGross=${newGross}, newAmount=${newAmount}`);
@@ -2408,13 +2579,85 @@ export const api = {
                     amount: newAmount,
                     description: `${loanName} - ${inst.installment_index}/${loan.installmentsCount}`,
                     contact_id: uuidOrNull(loan.contactId),
+                    category_id: uuidOrNull(loan.categoryId),
                     type: loan.type === 'payable' ? 'expense' : 'income',
                 }).eq('id', inst.id);
 
                 if (updateErr) {
                     console.error('[updateLoan] Failed to update installment:', inst.id, updateErr);
+                } else {
+                    // Update or create interest link
+                    if (isSplit) {
+                        const interestPerInst = loan.interestAmount / loan.installmentsCount;
+                        const interestDbObj = {
+                            description: `${loanName} - ${inst.installment_index}/${loan.installmentsCount} (Juros)`,
+                            amount: interestPerInst,
+                            gross_amount: interestPerInst,
+                            discount_amount: 0,
+                            type: loan.type === 'payable' ? 'expense' : 'income',
+                            date: inst.date,
+                            contact_id: uuidOrNull(loan.contactId),
+                            category_id: uuidOrNull(loan.interestCategoryId),
+                            account_id: uuidOrNull(loan.accountId)
+                        };
+
+                        const { data: existingLink } = await supabase.from('financial_transactions')
+                            .select('id').eq('origin_id', inst.id).eq('origin_type', 'interest_link').single();
+
+                        if (existingLink) {
+                            await supabase.from('financial_transactions').update(interestDbObj).eq('id', existingLink.id);
+                        } else {
+                            await supabase.from('financial_transactions').insert([{
+                                ...interestDbObj,
+                                origin_type: 'interest_link',
+                                origin_id: inst.id,
+                                company_id: getCurrentCompanyId(),
+                                installment_index: inst.installment_index,
+                                total_installments: loan.installmentsCount
+                            }]);
+                        }
+                    } else {
+                        // Delete link if no longer split
+                        await supabase.from('financial_transactions').delete().eq('origin_id', inst.id).eq('origin_type', 'interest_link');
+                    }
                 }
             }
+        }
+        
+        // Handle Capital Setup Transaction Update
+        if (loan.isCapitalSettled && loan.setupAccountId && loan.setupCategoryId) {
+            const loanName = loan.name || (loan.type === 'payable' ? 'Dívida' : 'Empréstimo');
+            const setupDbObj = {
+                description: `Entrada de Capital: ${loanName}`,
+                amount: loan.principalAmount,
+                gross_amount: loan.principalAmount,
+                type: loan.type === 'payable' ? 'income' : 'expense',
+                contact_id: uuidOrNull(loan.contactId),
+                category_id: uuidOrNull(loan.setupCategoryId),
+                account_id: uuidOrNull(loan.setupAccountId)
+            };
+
+            const { data: existingSetup } = await supabase.from('financial_transactions')
+                .select('id').eq('origin_id', id).eq('origin_type', 'loan_setup').single();
+
+            if (existingSetup) {
+                await supabase.from('financial_transactions').update(setupDbObj).eq('id', existingSetup.id);
+            } else {
+                await supabase.from('financial_transactions').insert([{
+                    ...setupDbObj,
+                    company_id: getCurrentCompanyId(),
+                    date: loan.firstDueDate,
+                    is_paid: true,
+                    origin_type: 'loan_setup',
+                    origin_id: id,
+                    installment_index: 0,
+                    total_installments: 0,
+                    discount_amount: 0
+                }]);
+            }
+        } else {
+            // Delete if unchecked
+            await supabase.from('financial_transactions').delete().eq('origin_id', id).eq('origin_type', 'loan_setup');
         }
 
         return data;

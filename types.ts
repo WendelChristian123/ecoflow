@@ -307,7 +307,7 @@ export interface FinancialTransaction {
   categoryId?: string;
   creditCardId?: string;
   contactId?: string;
-  originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical' | 'credit_card' | 'loan';
+  originType?: 'manual' | 'quote' | 'recurring' | 'setup' | 'technical' | 'credit_card' | 'loan' | 'interest_link' | 'cc_technical_limit_release' | 'loan_setup';
   category?: FinancialCategory; // Joined content
   contact?: Contact; // Joined content
   originId?: string;

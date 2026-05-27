@@ -158,7 +158,13 @@ export const Select: React.FC<SelectProps> = ({ className, noArrow, label, optio
       )}
       {...props}
     >
-      {options ? options.map(opt => (
+      {options ? [...options].sort((a, b) => {
+        const isAPinned = a.value === 'all' || a.value === 'none' || a.value === '' || a.label === 'Todos' || a.label === 'Nenhum' || a.label === 'Selecione...';
+        const isBPinned = b.value === 'all' || b.value === 'none' || b.value === '' || b.label === 'Todos' || b.label === 'Nenhum' || b.label === 'Selecione...';
+        if (isAPinned && !isBPinned) return -1;
+        if (!isAPinned && isBPinned) return 1;
+        return (a.label || '').trim().toLowerCase().localeCompare((b.label || '').trim().toLowerCase());
+      }).map(opt => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
       )) : children}
     </select>
@@ -254,19 +260,20 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
 export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral' | 'outline' | 'info'; className?: string }> = ({ children, variant = 'default', className }) => {
   const styles = {
     default: 'bg-primary/10 text-primary border-primary/20',
-    success: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20', // Green
-    warning: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20', // Orange
-    error: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20', // Red
-    neutral: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20', // Gray (Default fallback)
-    info: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20', // Blue
+    success: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+    warning: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20',
+    error: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/20',
+    neutral: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
+    info: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/20',
     outline: 'bg-transparent text-muted-foreground border-border',
   };
   return (
-    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border uppercase tracking-wider', styles[variant], className)}>
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider', styles[variant], className)}>
       {children}
     </span>
   );
 };
+
 
 
 // --- Avatar ---
@@ -309,7 +316,7 @@ export const Card: React.FC<CardProps> = ({ children, className, variant = 'soli
     <div
       onClick={onClick}
       className={cn(
-        "rounded-xl transition-all duration-200 bg-card border border-border shadow-premium",
+        "rounded-xl transition-all duration-200 bg-card border border-border shadow-sm",
         !noPadding && "p-5 md:p-6",
         onClick && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
         className
@@ -320,6 +327,63 @@ export const Card: React.FC<CardProps> = ({ children, className, variant = 'soli
     </div>
   );
 };
+
+// --- StatCard (Premium KPI Card) ---
+export interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ElementType;
+  iconColorClass?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: string;
+  className?: string;
+}
+
+export const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconColorClass = "text-primary bg-primary/10",
+  trend,
+  trendValue,
+  className
+}) => {
+  return (
+    <div className={cn("relative overflow-hidden rounded-xl bg-card border border-border p-5 flex flex-col gap-3 group transition-all hover:border-border/80 hover:shadow-md", className)}>
+      <div className="flex justify-between items-start">
+        <div className="space-y-1 z-10">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</p>
+          <h3 className="text-2xl font-semibold text-foreground tracking-tight">{value}</h3>
+        </div>
+        <div className={cn("p-2.5 rounded-lg shrink-0 z-10", iconColorClass)}>
+          <Icon size={18} strokeWidth={2.5} />
+        </div>
+      </div>
+      
+      {(subtitle || trendValue) && (
+        <div className="flex items-center gap-2 mt-2 z-10">
+          {trendValue && (
+            <span className={cn(
+              "text-xs font-medium px-1.5 py-0.5 rounded-md",
+              trend === 'up' ? "bg-emerald-500/10 text-emerald-500" : 
+              trend === 'down' ? "bg-rose-500/10 text-rose-500" : 
+              "bg-slate-500/10 text-slate-500"
+            )}>
+              {trend === 'up' ? '↑' : trend === 'down' ? '↓' : ''} {trendValue}
+            </span>
+          )}
+          {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+        </div>
+      )}
+      
+      {/* Subtle background glow effect on hover based on icon color */}
+      <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+    </div>
+  );
+};
+
 
 // --- Modal ---
 interface ModalProps {

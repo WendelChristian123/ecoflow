@@ -126,7 +126,7 @@ export const CatalogReportModal: React.FC<CatalogReportModalProps> = ({ isOpen, 
                         <h2 className="text-2xl font-bold text-white flex items-center gap-2"><ShoppingBag className="text-emerald-500" /> Relatório de Catálogo</h2>
                         <p className="text-slate-400 text-sm mt-1">Listagem de produtos e serviços disponíveis.</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={24} /></button>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-500 hover:text-white hover:bg-slate-800/50 transition-colors"><X size={24} /></Button>
                 </div>
 
                 <div className="p-4 bg-slate-900/50 border-b border-slate-800">

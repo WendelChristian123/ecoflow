@@ -354,11 +354,12 @@ export const QuotesPage: React.FC = () => {
                                             </div>
                                         </div>
                                         <div onClick={(e) => e.stopPropagation()} className="w-32 md:w-32">
-                                            <select
+                                            <Select
+                                                noArrow={true}
                                                 value={q.kanbanStageId || (kanbanStages.find(s => s.systemStatus === q.status)?.id) || ''}
                                                 onChange={(e) => handleStatusChange(q.id, e.target.value)}
                                                 className={`
-                                                w-full appearance-none text-xs font-bold px-3 py-1.5 md:py-1.5 p-1 rounded-md border outline-none cursor-pointer text-center uppercase tracking-wider transition-colors
+                                                w-full text-xs font-bold px-3 py-1.5 md:py-1.5 rounded-md text-center uppercase tracking-wider transition-colors
                                                 ${q.status === 'approved' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' :
                                                         q.status === 'sent' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'sent' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' :
                                                             q.status === 'rejected' || q.status === 'expired' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'rejected' || kanbanStages.find(s => s.id === (q.kanbanStageId || kanbanStages.find(st => st.systemStatus === q.status)?.id))?.systemStatus === 'expired' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' :
@@ -376,7 +377,7 @@ export const QuotesPage: React.FC = () => {
                                                         <option value="expired" className="bg-popover text-rose-500">Expirado</option>
                                                     </>
                                                 )}
-                                            </select>
+                                            </Select>
                                         </div>
                                     </div>
                                 </div>

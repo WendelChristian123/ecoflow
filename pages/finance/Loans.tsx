@@ -7,7 +7,9 @@ import { api } from '../../services/api';
 import { Card, Select, Input, Button } from '../../components/Shared';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDate } from '../../utils/formatters';
 
+import { FilterSelect } from '../../components/FilterSelect';
 import { LoanModal } from '../../components/finance/LoanModal';
 import { LoanDetailsModal } from '../../components/finance/LoanDetailsModal';
 
@@ -101,15 +103,16 @@ export const Loans = () => {
                             className="pl-10 w-full"
                         />
                     </div>
-                    <Select 
+                    <FilterSelect 
                         value={typeFilter} 
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="w-full sm:w-48"
-                    >
-                        <option value="all">Todos os Tipos</option>
-                        <option value="payable">A Pagar (Dívida)</option>
-                        <option value="receivable">A Receber (Empréstimo)</option>
-                    </Select>
+                        onChange={(val) => setTypeFilter(val)}
+                        options={[
+                            { value: 'all', label: 'Todos os Tipos' },
+                            { value: 'payable', label: 'A Pagar (Dívida)' },
+                            { value: 'receivable', label: 'A Receber (Empréstimo)' }
+                        ]}
+                        className="w-full sm:w-64"
+                    />
                 </div>
                 
                 <div className="overflow-x-auto">
@@ -176,7 +179,7 @@ export const Loans = () => {
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.totalAmount)}
                                         </td>
                                         <td className="px-4 py-4 text-center text-muted-foreground">
-                                            {format(new Date(loan.firstDueDate), 'dd/MM/yyyy')}
+                                            {formatDate(loan.firstDueDate, 'dd/MM/yyyy')}
                                         </td>
                                     </tr>
                                 ))

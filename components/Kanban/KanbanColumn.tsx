@@ -43,18 +43,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, count, totalV
             onDrop={handleDrop}
         >
             {/* Header */}
-            <div className={cn(
-                "px-4 py-3 border-b border-white/10 flex flex-col gap-1 sticky top-0 backdrop-blur z-10",
-                stage.color
-            )}>
+            <div className="px-4 py-3 border-b border-border flex flex-col gap-1 sticky top-0 backdrop-blur z-10 bg-muted/20">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-xs uppercase tracking-widest">{stage.name}</span>
-                        <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-bold">{count}</span>
+                        <div className={cn("w-2 h-2 rounded-full", stage.color)} />
+                        <span className="font-bold text-foreground text-xs uppercase tracking-widest">{stage.name}</span>
+                        <span className="bg-background border border-border text-muted-foreground text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">{count}</span>
                     </div>
                 </div>
                 {totalValue !== undefined && (
-                    <div className="text-xs text-white/90 font-mono font-bold">
+                    <div className="text-[10px] text-muted-foreground font-mono font-bold mt-1">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
                     </div>
                 )}

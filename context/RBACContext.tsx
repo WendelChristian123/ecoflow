@@ -42,6 +42,7 @@ export const FEATURE_EXCEPTION_MAP: Record<string, string> = {
   // Finance
   'finance.dashboard': 'finance_overview',
   'finance.accounts': 'finance_banking',
+  'finance.loans': 'finance_loans',
 
   // Routines
   'routines.dashboard': 'tasks_overview',

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, FinanceFilters, Contact } from '../../types';
-import { Loader, Card, Badge, cn, Button } from '../../components/Shared';
+import { Loader, Card, Badge, cn, Button, StatCard } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
 import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText, Printer, LayoutList } from 'lucide-react';
@@ -378,43 +378,9 @@ export const FinancialOverview: React.FC = () => {
             {/* BLOCO 1 - RESUMO */}
             {/* BLOCO 1 - KPIS (HIERARQUIA: SALDO > FLUXO > RESULTADO) */}
             {/* COMPONENT AUXILIAR LOCAL */}
+
+
             {(() => {
-                const FinanceStatCard = ({ title, value, icon, color, onClick, subtitle }: { title: string, value: string, icon: React.ReactNode, color: 'emerald' | 'rose' | 'amber' | 'slate' | 'blue', onClick?: () => void, subtitle?: string }) => {
-                    const themes = {
-                        emerald: { header: 'bg-emerald-500', text: 'text-emerald-500', border: 'hover:border-emerald-500/50' },
-                        rose: { header: 'bg-rose-500', text: 'text-rose-500', border: 'hover:border-rose-500/50' },
-                        amber: { header: 'bg-amber-500', text: 'text-amber-500', border: 'hover:border-amber-500/50' },
-                        slate: { header: 'bg-slate-500', text: 'text-slate-500', border: 'hover:border-slate-500/50' },
-                        blue: { header: 'bg-blue-500', text: 'text-blue-500', border: 'hover:border-blue-500/50' },
-                    };
-                    const theme = themes[color];
-
-                    return (
-                        <div
-                            onClick={onClick}
-                            className={cn(
-                                "bg-card border border-border rounded-xl flex flex-col justify-between cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group shadow-sm",
-                                theme.border
-                            )}
-                        >
-                            {/* Header Colorido */}
-                            <div className={cn("px-4 py-3 flex items-center justify-between", theme.header)}>
-                                <span className="text-[11px] font-bold uppercase tracking-widest text-white">{title}</span>
-                                <div className="p-1.5 rounded-md bg-white/20 text-white backdrop-blur-sm">
-                                    {icon}
-                                </div>
-                            </div>
-                            {/* Content */}
-                            <div className="p-6 pt-5 flex flex-col gap-1">
-                                <div className={cn("text-3xl font-black tracking-tighter transition-colors", theme.text)}>
-                                    {value}
-                                </div>
-                                {subtitle && <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-70">{subtitle}</span>}
-                            </div>
-                        </div>
-                    );
-                };
-
                 return (
                     <>
                         {/* BLOCO 1 - RESUMO */}
@@ -443,29 +409,31 @@ export const FinancialOverview: React.FC = () => {
 
                             {/* FLUXO - SECUNDÁRIO */}
                             <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                <FinanceStatCard
-                                    title="Receitas"
-                                    value={fmt(realizedIncome)}
-                                    icon={<TrendingUp size={18} />}
-                                    color="emerald"
-                                    subtitle="Realizadas este mês"
-                                    onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)}
-                                />
+                                <div onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)} className="cursor-pointer">
+                                    <StatCard
+                                        title="Receitas"
+                                        value={fmt(realizedIncome)}
+                                        icon={TrendingUp}
+                                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                                        subtitle="Realizadas este mês"
+                                    />
+                                </div>
 
-                                <FinanceStatCard
-                                    title="Despesas"
-                                    value={fmt(realizedExpense)}
-                                    icon={<TrendingDown size={18} />}
-                                    color="rose"
-                                    subtitle="Realizadas este mês"
-                                    onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)}
-                                />
+                                <div onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)} className="cursor-pointer">
+                                    <StatCard
+                                        title="Despesas"
+                                        value={fmt(realizedExpense)}
+                                        icon={TrendingDown}
+                                        iconColorClass="text-rose-500 bg-rose-500/10"
+                                        subtitle="Realizadas este mês"
+                                    />
+                                </div>
 
-                                <FinanceStatCard
+                                <StatCard
                                     title="Resultado"
                                     value={fmt(realizedIncome - realizedExpense)}
-                                    icon={<DollarSign size={18} />}
-                                    color={(realizedIncome - realizedExpense) >= 0 ? 'emerald' : 'rose'}
+                                    icon={DollarSign}
+                                    iconColorClass={(realizedIncome - realizedExpense) >= 0 ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}
                                     subtitle="Balanço do Período"
                                 />
                             </div>
@@ -483,44 +451,48 @@ export const FinancialOverview: React.FC = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {/* PAYABLES OVERDUE - ALARM */}
-                                <FinanceStatCard
-                                    title="Contas Atrasadas"
-                                    value={fmt(payablesOverdue)}
-                                    icon={<AlertCircle size={18} />}
-                                    color="rose"
-                                    subtitle="Pagamentos Vencidos"
-                                    onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)}
-                                />
+                                <div onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                                    <StatCard
+                                        title="Contas Atrasadas"
+                                        value={fmt(payablesOverdue)}
+                                        icon={AlertCircle}
+                                        iconColorClass="text-rose-500 bg-rose-500/10"
+                                        subtitle="Pagamentos Vencidos"
+                                    />
+                                </div>
 
                                 {/* PAYABLES FUTURE */}
-                                <FinanceStatCard
-                                    title="A Vencer (7 dias)"
-                                    value={fmt(payablesFuture)}
-                                    icon={<Clock size={18} />}
-                                    color="amber"
-                                    subtitle="Próximos Pagamentos"
-                                    onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)}
-                                />
+                                <div onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                                    <StatCard
+                                        title="A Vencer (7 dias)"
+                                        value={fmt(payablesFuture)}
+                                        icon={Clock}
+                                        iconColorClass="text-amber-500 bg-amber-500/10"
+                                        subtitle="Próximos Pagamentos"
+                                    />
+                                </div>
 
                                 {/* RECEIVABLES OVERDUE - ALARM */}
-                                <FinanceStatCard
-                                    title="Recebimentos Atrasados"
-                                    value={fmt(receivablesOverdue)}
-                                    icon={<AlertCircle size={18} />}
-                                    color="rose"
-                                    subtitle="Clientes Inadimplentes"
-                                    onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))}
-                                />
+                                <div onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                                    <StatCard
+                                        title="Recebimentos Atrasados"
+                                        value={fmt(receivablesOverdue)}
+                                        icon={AlertCircle}
+                                        iconColorClass="text-rose-500 bg-rose-500/10"
+                                        subtitle="Clientes Inadimplentes"
+                                    />
+                                </div>
 
                                 {/* RECEIVABLES FUTURE */}
-                                <FinanceStatCard
-                                    title="A Receber (7 dias)"
-                                    value={fmt(receivablesFuture)}
-                                    icon={<Clock size={18} />}
-                                    color="emerald"
-                                    subtitle="Próximas Entradas"
-                                    onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))}
-                                />
+                                <div onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                                    <StatCard
+                                        title="A Receber (7 dias)"
+                                        value={fmt(receivablesFuture)}
+                                        icon={Clock}
+                                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                                        subtitle="Próximas Entradas"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </>

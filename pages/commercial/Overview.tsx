@@ -4,7 +4,7 @@ import { translateQuoteStatus } from '../../utils/i18n';
 import { api } from '../../services/api';
 import { Quote, User, Contact, CatalogItem } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { Card, Button, Loader, Badge } from '../../components/Shared';
+import { Card, Button, Loader, Badge, StatCard } from '../../components/Shared';
 import { TrendingUp, DollarSign, FileText, Plus, BarChart2, PieChart, X, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO, startOfDay } from 'date-fns';
@@ -17,59 +17,7 @@ import { commercialLogic } from '../../services/commercialLogic';
 import { kanbanService } from '../../services/kanbanService';
 import { KanbanStage, FinancialCategory, FinancialAccount, RecurringService } from '../../types';
 
-// Components
-const KpiCard: React.FC<{
-    title: string;
-    value: string | number;
-    icon: React.ReactNode;
-    color: 'emerald' | 'rose' | 'amber' | 'indigo' | 'slate';
-    subtitle?: string;
-    onClick?: () => void;
-}> = ({ title, value, icon, color, subtitle, onClick }) => {
-    const colors = {
-        emerald: { bg: 'bg-card', text: 'text-foreground', border: 'border-emerald-500/30 hover:border-emerald-500/70', header: 'bg-emerald-500 text-white' },
-        rose: { bg: 'bg-card', text: 'text-foreground', border: 'border-rose-500/30 hover:border-rose-500/70', header: 'bg-rose-500 text-white' },
-        amber: { bg: 'bg-card', text: 'text-foreground', border: 'border-amber-500/30 hover:border-amber-500/70', header: 'bg-amber-500 text-white' },
-        indigo: { bg: 'bg-card', text: 'text-foreground', border: 'border-indigo-500/30 hover:border-indigo-500/70', header: 'bg-indigo-500 text-white' },
-        slate: { bg: 'bg-card', text: 'text-foreground', border: 'border-slate-500/30 hover:border-slate-500/70', header: 'bg-slate-500 text-white' },
-    };
 
-    const theme = colors[color];
-
-    return (
-        <Card
-            variant="solid"
-            noPadding={true}
-            onClick={onClick}
-            className={cn(
-                "relative overflow-hidden flex flex-col justify-between h-full transition-all group",
-                theme.bg, theme.text, "border", theme.border,
-                onClick ? `cursor-pointer hover:shadow-lg hover:-translate-y-1` : ""
-            )}
-        >
-            {/* 🎨 Header Bar with Module Name */}
-            <div className={cn(
-                "px-4 py-2.5 flex items-center justify-between border-b border-border/50 transition-all",
-                theme.header
-            )}>
-                <span className="text-[11px] uppercase tracking-widest font-bold">{title}</span>
-                <div className="bg-black/10 backdrop-blur-sm p-1.5 rounded-lg">
-                    <div className="text-current opacity-90">
-                        {icon}
-                    </div>
-                </div>
-            </div>
-
-            {/* Content Area */}
-            <div className="p-4 flex flex-col justify-between flex-1 relative z-10">
-                <div className="mt-auto">
-                    <div className="text-2xl font-black tracking-tight">{value}</div>
-                    {subtitle && <div className="text-xs opacity-80 mt-1">{subtitle}</div>}
-                </div>
-            </div>
-        </Card>
-    );
-};
 
 // Internal Drilldown Modal
 interface DrilldownModalProps {
@@ -399,43 +347,47 @@ export const CommercialOverview: React.FC = () => {
 
             {/* KPI Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 shrink-0">
-                <KpiCard
-                    title="Em Negociação"
-                    value={kpiData.openCount}
-                    icon={<TrendingUp size={18} />}
-                    color="amber"
-                    subtitle="Abertos"
-                    onClick={() => setDrilldownType('negotiation')}
-                />
-                <KpiCard
-                    title="Negócio Fechado"
-                    value={kpiData.approvedCount}
-                    icon={<CheckCircle size={18} />}
-                    color="emerald"
-                    subtitle="Aprovados"
-                    onClick={() => setDrilldownType('approved')}
-                />
-                <KpiCard
-                    title="Negócio Perdido"
-                    value={kpiData.lostCount}
-                    icon={<XCircle size={18} />}
-                    color="rose"
-                    subtitle="Rejeitados"
-                    onClick={() => setDrilldownType('lost')}
-                />
-                <KpiCard
-                    title="Vencidos"
-                    value={kpiData.overdueCount}
-                    icon={<XCircle size={18} />}
-                    color="slate"
-                    subtitle="Expirados"
-                    onClick={() => setDrilldownType('overdue')}
-                />
-                <KpiCard
+                <div onClick={() => setDrilldownType('negotiation')} className="cursor-pointer">
+                    <StatCard
+                        title="Em Negociação"
+                        value={kpiData.openCount}
+                        icon={TrendingUp}
+                        iconColorClass="text-amber-500 bg-amber-500/10"
+                        subtitle="Abertos"
+                    />
+                </div>
+                <div onClick={() => setDrilldownType('approved')} className="cursor-pointer">
+                    <StatCard
+                        title="Negócio Fechado"
+                        value={kpiData.approvedCount}
+                        icon={CheckCircle}
+                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                        subtitle="Aprovados"
+                    />
+                </div>
+                <div onClick={() => setDrilldownType('lost')} className="cursor-pointer">
+                    <StatCard
+                        title="Negócio Perdido"
+                        value={kpiData.lostCount}
+                        icon={XCircle}
+                        iconColorClass="text-rose-500 bg-rose-500/10"
+                        subtitle="Rejeitados"
+                    />
+                </div>
+                <div onClick={() => setDrilldownType('overdue')} className="cursor-pointer">
+                    <StatCard
+                        title="Vencidos"
+                        value={kpiData.overdueCount}
+                        icon={XCircle}
+                        iconColorClass="text-slate-500 bg-slate-500/10"
+                        subtitle="Expirados"
+                    />
+                </div>
+                <StatCard
                     title="Taxa de Conversão"
                     value={`${kpiData.conversionRate.toFixed(1)}%`}
-                    icon={<BarChart2 size={18} />}
-                    color="indigo"
+                    icon={BarChart2}
+                    iconColorClass="text-indigo-500 bg-indigo-500/10"
                     subtitle="Aprov / Total"
                 />
             </div>

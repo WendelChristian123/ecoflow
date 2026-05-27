@@ -258,7 +258,7 @@ const CompanySelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) =>
                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Alternar Empresa</p>
                         </div>
                         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {availableCompanies.map(t => (
+                            {[...availableCompanies].sort((a, b) => a.name.localeCompare(b.name)).map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => { switchCompany(t.id); setIsOpen(false); }}

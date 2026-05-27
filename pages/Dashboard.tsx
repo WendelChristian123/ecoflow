@@ -39,7 +39,7 @@ const getUniqueAssignees = (tasks: Task[], users: User[]) => {
     return ids.map(id => {
         const user = users.find(u => u.id === id);
         return { id, name: user?.name || 'Usuário Desconhecido' };
-    });
+    }).sort((a, b) => a.name.localeCompare(b.name));
 };
 
 export const Dashboard: React.FC = () => {
@@ -258,37 +258,37 @@ export const Dashboard: React.FC = () => {
             <div
                 onClick={onClick}
                 className={cn(
-                    "bg-card border border-border shadow-sm rounded-2xl flex flex-col justify-between cursor-pointer min-h-[160px] select-none group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg relative overflow-hidden",
+                    "bg-card border border-border shadow-sm rounded-xl flex flex-col justify-between cursor-pointer min-h-[110px] select-none group transition-all duration-300 hover:-translate-y-1 hover:shadow-md relative overflow-hidden",
                     theme.border
                 )}
             >
                 {/* 🎨 Header Bar with Module Name */}
                 <div className={cn(
-                    "px-4 py-2.5 flex items-center justify-between border-b border-white/10 transition-all",
+                    "px-3 py-2 flex items-center justify-between border-b border-white/10 transition-all",
                     theme.header
                 )}>
-                    <span className="text-[11px] uppercase tracking-widest text-white font-bold">
+                    <span className="text-[10px] uppercase tracking-widest text-white font-bold">
                         {title}
                     </span>
-                    <div className="bg-white/20 backdrop-blur-sm p-1.5 rounded-lg">
-                        <div className="text-white">
+                    <div className="bg-white/20 backdrop-blur-sm p-1 rounded-md">
+                        <div className="text-white scale-75 origin-center">
                             {icon}
                         </div>
                     </div>
                 </div>
 
                 {/* Background Decoration */}
-                <div className={cn("absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none", theme.bg.replace('/10', ''))} />
+                <div className={cn("absolute -right-4 -bottom-4 w-16 h-16 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none", theme.bg.replace('/10', ''))} />
 
                 {/* Content Area */}
-                <div className="p-4 md:p-6 pt-3 md:pt-4 flex flex-col justify-between flex-1 relative z-10">
+                <div className="p-3 md:p-4 flex flex-col justify-between flex-1 relative z-10">
                     <div className="mt-auto">
-                        <div className={cn("text-4xl md:text-5xl font-black tracking-tighter leading-none mb-1 md:mb-2 transition-transform duration-300 group-hover:translate-x-1",
+                        <div className={cn("text-3xl md:text-4xl font-black tracking-tighter leading-none mb-1 transition-transform duration-300 group-hover:translate-x-1",
                             variant === 'info' ? "text-emerald-500" : theme.text  // 🎨 VERDE para "Próximos Dias"
                         )}>
                             {count}
                         </div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block opacity-70">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block opacity-70">
                             Itens Pendentes
                         </span>
                     </div>
@@ -436,7 +436,9 @@ export const Dashboard: React.FC = () => {
                                     <div className="absolute top-full left-0 mt-2 w-52 bg-popover border border-border rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
                                         <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Exibir Módulos</div>
                                         <div className="space-y-1">
-                                            {['tasks', 'events', 'finance', 'quotes'].map(m => (
+                                            {['tasks', 'events', 'finance', 'quotes']
+                                                .sort((a, b) => moduleNames[a].localeCompare(moduleNames[b]))
+                                                .map(m => (
                                                 <button
                                                     key={m}
                                                     onClick={() => toggleModule(m)}

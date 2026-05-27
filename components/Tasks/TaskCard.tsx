@@ -28,11 +28,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
 
     const getPriorityColor = (p: string) => {
         switch (p) {
-            case 'urgent': return 'bg-rose-500 text-white border-0'; // Vermelho
-            case 'high': return 'bg-orange-500 text-white border-0'; // Laranja
-            case 'medium': return 'bg-blue-500 text-white border-0'; // Azul
-            case 'low': return 'bg-emerald-500 text-white border-0'; // Verde
-            default: return 'bg-slate-500 text-white border-0';
+            case 'urgent': return 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20';
+            case 'high': return 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/20';
+            case 'medium': return 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20';
+            case 'low': return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20';
+            default: return 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20';
         }
     };
 
@@ -56,25 +56,25 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
             <Card
                 noPadding
                 className={cn(
-                    "p-4 hover:border-primary/30 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border",
+                    "p-3 hover:border-border/80 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border",
                     canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default",
                     getTaskStyles(task)
                 )}
             >
                 <div className="flex justify-between items-start mb-2">
                     <span className={cn(
-                        "inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                        "inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
                         getPriorityColor(task.priority)
                     )}>
                         {translatePriority(task.priority)}
                     </span>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive">
-                        <Trash2 size={16} />
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-rose-500">
+                        <Trash2 size={14} />
                     </button>
                 </div>
 
-                <h4 className={`text-sm font-medium text-foreground mb-1 ${task.status === 'done' ? 'line-through opacity-70' : ''}`}>{task.title}</h4>
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{task.description}</p>
+                <h4 className={`text-sm font-semibold text-foreground mb-1 leading-tight ${task.status === 'done' ? 'line-through opacity-70' : ''}`}>{task.title}</h4>
+                {task.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{task.description}</p>}
 
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
                     <div className="flex flex-col gap-1">

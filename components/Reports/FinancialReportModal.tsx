@@ -480,9 +480,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                         </h2>
                         <p className="text-slate-400 text-sm mt-2 ml-1">Visão completa e detalhada do fluxo financeiro.</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                    <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-500 hover:text-white hover:bg-slate-800/50 transition-colors">
                         <X size={24} />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Filters */}

@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Circle, ArrowUpCircle, ArrowDownCircle, Info, Landmark, Calendar, Banknote, DollarSign, Edit3, Trash2, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, Circle, ArrowUpCircle, ArrowDownCircle, Info, Landmark, Calendar, Banknote, DollarSign, Edit3, Trash2, AlertTriangle, Building2 } from 'lucide-react';
 import { Modal, Card, Button } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { useRBAC } from '../../context/RBACContext';
+import { useCompany } from '../../context/CompanyContext';
 import { api } from '../../services/api';
 import { format } from 'date-fns';
+import { formatDate } from '../../utils/formatters';
+import { FinancialAccount } from '../../types';
 
 interface LoanDetailsModalProps {
     isOpen: boolean;
@@ -15,16 +19,20 @@ interface LoanDetailsModalProps {
 
 export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onClose, loan, onUpdate, onEdit }) => {
     const { can } = useRBAC();
+    const { currentCompany } = useCompany();
     const [installments, setInstallments] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isPaying, setIsPaying] = useState<string | null>(null);
+    const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
 
     // Inner payment modal state
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [selectedInstallment, setSelectedInstallment] = useState<any>(null);
     const [paymentDiscount, setPaymentDiscount] = useState(0);
+    const [paymentSurcharge, setPaymentSurcharge] = useState(0);
     const [partialPayment, setPartialPayment] = useState<number | null>(null);
-    const [partialDate, setPartialDate] = useState(new Date().toISOString().split('T')[0]);
+    const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+    const [paymentAccountId, setPaymentAccountId] = useState('');
 
     // Delete modal state
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -33,6 +41,7 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
     useEffect(() => {
         if (isOpen && loan) {
             loadInstallments();
+            loadAccounts();
         }
     }, [isOpen, loan]);
 
@@ -48,11 +57,22 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
         }
     };
 
+    const loadAccounts = async () => {
+        try {
+            const data = await api.getFinancialAccounts(currentCompany?.id);
+            setAccounts(data || []);
+        } catch (error) {
+            console.error("Failed to load accounts:", error);
+        }
+    };
+
     const handleOpenPayment = (inst: any) => {
         setSelectedInstallment(inst);
         setPaymentDiscount(inst.discountAmount || inst.discount_amount || 0);
+        setPaymentSurcharge(0);
         setPartialPayment(null);
-        setPartialDate(new Date().toISOString().split('T')[0]);
+        setPaymentDate(new Date().toISOString().split('T')[0]);
+        setPaymentAccountId(inst.accountId || loan.accountId || '');
         setPaymentModalOpen(true);
     };
 
@@ -61,7 +81,7 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
         try {
             setIsPaying(selectedInstallment.id);
             
-            const originalGross = selectedInstallment.gross_amount || selectedInstallment.grossAmount || selectedInstallment.amount;
+            const originalGross = (selectedInstallment.grossAmount || selectedInstallment.gross_amount || selectedInstallment.amount) + paymentSurcharge;
             const fullNet = originalGross - paymentDiscount;
             const isPartial = partialPayment !== null && partialPayment > 0 && partialPayment < fullNet;
 
@@ -75,9 +95,10 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                     grossAmount: partialPayment,
                     discountAmount: 0,
                     type: selectedInstallment.type || (loan.type === 'payable' ? 'expense' : 'income'),
-                    date: partialDate,
+                    date: paymentDate,
                     isPaid: true,
                     contactId: selectedInstallment.contact_id || loan.contact?.id,
+                    accountId: paymentAccountId || undefined,
                     originType: 'loan',
                     originId: loan.id,
                 });
@@ -89,7 +110,8 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                     date: selectedInstallment.date,
                     discountAmount: paymentDiscount,
                     grossAmount: originalGross,
-                    amount: newRemainingAmount
+                    amount: newRemainingAmount,
+                    accountId: paymentAccountId || undefined
                 } as any, "single");
 
                 // Reload all installments to get the new partial payment entry
@@ -100,10 +122,11 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                 await api.updateTransaction({
                     id: selectedInstallment.id,
                     isPaid: true,
-                    date: selectedInstallment.date,
+                    date: paymentDate,
                     discountAmount: paymentDiscount,
                     grossAmount: originalGross,
-                    amount: finalAmount
+                    amount: finalAmount,
+                    accountId: paymentAccountId || undefined
                 } as any, "single");
 
                 setInstallments(prev => prev.map(i => i.id === selectedInstallment.id ? { 
@@ -114,7 +137,8 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                     discount_amount: paymentDiscount,
                     grossAmount: originalGross,
                     gross_amount: originalGross,
-                    amount: finalAmount
+                    amount: finalAmount,
+                    accountId: paymentAccountId
                 } : i));
             }
 
@@ -153,10 +177,7 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
     const totalCount = installments.length;
     const progress = totalCount === 0 ? 0 : Math.round((paidCount / totalCount) * 100);
 
-    // Calculate from actual installment data (source of truth), NOT from editable contract header
-    // For paid installments: the amount field IS what was paid
     const totalFromPaid = paidInstallments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-    // For unpaid installments with partial payments: gross_amount - discount - current amount = what was already paid
     const totalFromPartial = unpaidInstallments.reduce((acc, curr) => {
         const gross = curr.grossAmount || curr.gross_amount || curr.amount;
         const current = curr.amount || 0;
@@ -167,50 +188,68 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
     const totalActuallyPaid = totalFromPaid + totalFromPartial;
 
     const totalDiscountApplied = installments.reduce((acc, curr) => acc + (curr.discountAmount || curr.discount_amount || 0), 0);
-    // Remaining = contract total - what was paid - discounts (stays accurate when contract is edited)
     const remainingAmount = Math.max(0, loan.totalAmount - totalActuallyPaid - totalDiscountApplied);
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
+    // Helper: compute discount distribution (interest first, then capital)
+    const computeDiscountBreakdown = (capital: number, interest: number, discount: number) => {
+        let discountOnInterest = 0;
+        let discountOnCapital = 0;
+        if (interest > 0) {
+            discountOnInterest = Math.min(discount, interest);
+            discountOnCapital = Math.max(0, discount - discountOnInterest);
+        } else {
+            discountOnCapital = Math.min(discount, capital);
+        }
+        return { discountOnInterest, discountOnCapital };
+    };
+
     return (
         <>
-        <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do Contrato" size="xl">
+        <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do Contrato" className="max-w-4xl">
             <div className="space-y-6">
                 
                 {/* Header Information */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                    <div className={`p-4 rounded-2xl ${loan.type === 'payable' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                        {loan.type === 'payable' ? <ArrowDownCircle size={40} /> : <ArrowUpCircle size={40} />}
-                    </div>
-                    <div className="flex-1 text-center sm:text-left">
-                        <h2 className="text-2xl font-bold text-foreground">{loan.name}</h2>
-                        <p className="text-muted-foreground">{loan.type === 'payable' ? 'Dívida a Pagar com' : 'Empréstimo a Receber de'} <strong className="text-foreground">{loan.contact?.name || 'Não informado'}</strong></p>
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className={`p-4 rounded-2xl ${loan.type === 'payable' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                            {loan.type === 'payable' ? <ArrowDownCircle size={40} /> : <ArrowUpCircle size={40} />}
+                        </div>
+                        <div className="text-left">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{loan.name}</h2>
+                            <p className="text-muted-foreground mt-1">{loan.type === 'payable' ? 'Dívida a Pagar com' : 'Empréstimo a Receber de'} <strong className="text-foreground">{loan.contact?.name || 'Não informado'}</strong></p>
+                        </div>
                     </div>
                     
-                    <div className="flex items-start gap-3">
-                        {onEdit && can('finance.loans', 'edit') && (
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => { onClose(); onEdit(loan); }}
-                            >
-                                <Edit3 size={14} className="mr-1.5" />
-                                Editar
-                            </Button>
-                        )}
-                        {can('finance.loans', 'delete') && (
-                            <Button 
-                                variant="danger" 
-                                size="sm" 
-                                onClick={() => setDeleteModalOpen(true)}
-                            >
-                                <Trash2 size={14} className="mr-1.5" />
-                                Excluir
-                            </Button>
-                        )}
-                        <div className="text-center sm:text-right">
-                            <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Valor Final</p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6 bg-secondary/20 p-4 rounded-2xl border border-border w-full md:w-auto">
+                        <div className="text-left">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mb-1">Valor Final</p>
                             <p className="text-3xl font-black text-foreground">{formatCurrency(loan.totalAmount)}</p>
+                        </div>
+                        <div className="flex flex-row flex-wrap sm:flex-col gap-2 w-full sm:w-auto">
+                            {onEdit && can('finance.loans', 'edit') && (
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => { onClose(); onEdit(loan); }}
+                                    className="flex-1 sm:flex-none justify-center"
+                                >
+                                    <Edit3 size={14} className="mr-1.5" />
+                                    Editar
+                                </Button>
+                            )}
+                            {can('finance.loans', 'delete') && (
+                                <Button 
+                                    variant="danger" 
+                                    size="sm" 
+                                    onClick={() => setDeleteModalOpen(true)}
+                                    className="flex-1 sm:flex-none justify-center"
+                                >
+                                    <Trash2 size={14} className="mr-1.5" />
+                                    Excluir
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -236,7 +275,7 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                     <div className="bg-secondary/30 p-3 rounded-xl border border-border flex flex-col gap-1">
                         <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1"><Calendar size={12}/> Venc. Inicial</span>
                         <span className="font-semibold text-foreground">
-                            {format(new Date(loan.firstDueDate), 'dd/MM/yyyy')}
+                            {formatDate(loan.firstDueDate, 'dd/MM/yyyy')}
                         </span>
                     </div>
                 </div>
@@ -289,27 +328,34 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                                         <div className={`p-2 rounded-full ${inst.isPaid ? 'text-primary bg-primary/10' : 'text-muted-foreground bg-secondary'}`}>
                                             {inst.isPaid ? <CheckCircle size={18} /> : <Circle size={18} />}
                                         </div>
-                                        <div>
-                                            <p className={`text-sm font-semibold ${inst.isPaid ? 'text-foreground' : 'text-foreground'}`}>
-                                                {inst.description}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                Vencimento: {format(new Date(inst.date), 'dd/MM/yyyy')}
-                                            </p>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-foreground">{inst.description}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                            Vencimento: {formatDate(inst.date, 'dd/MM/yyyy')}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className={`font-bold ${inst.isPaid ? 'text-muted-foreground' : 'text-foreground'}`}>
-                                            {formatCurrency(inst.amount)}
-                                        </span>
+                                        <div className="text-right">
+                                            <span className={`font-bold ${inst.isPaid ? 'text-muted-foreground' : 'text-foreground'}`}>
+                                                {formatCurrency(inst.amount)}
+                                            </span>
+                                            {inst.interestAmount > 0 && (
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {formatCurrency(inst.capitalAmount)} + {formatCurrency(inst.interestAmount)} juros
+                                                </p>
+                                            )}
+                                        </div>
                                         {!inst.isPaid && can('finance.transactions', 'edit') ? (
-                                            <button 
+                                            <Button 
+                                                variant="ghost"
+                                                size="sm"
                                                 onClick={() => handleOpenPayment(inst)}
                                                 disabled={isPaying === inst.id}
-                                                className="px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors min-w-[80px]"
+                                                className="text-primary bg-primary/10 hover:bg-primary/20 min-w-[80px]"
                                             >
                                                 {isPaying === inst.id ? 'Baixando...' : 'Pagar'}
-                                            </button>
+                                            </Button>
                                         ) : (
                                             <span className="px-3 py-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 rounded-lg">
                                                 Paga
@@ -375,22 +421,90 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
         )}
 
         {/* Nested Payment Confirmation Modal */}
-        {paymentModalOpen && selectedInstallment && (
+        {paymentModalOpen && selectedInstallment && (() => {
+            const capital = selectedInstallment.capitalAmount || selectedInstallment.amount;
+            const baseInterest = selectedInstallment.interestAmount || 0;
+            const interest = baseInterest + paymentSurcharge;
+            const hasInterest = interest > 0;
+            const { discountOnInterest, discountOnCapital } = computeDiscountBreakdown(capital, interest, paymentDiscount);
+            const capitalAfterDiscount = capital - discountOnCapital;
+            const interestAfterDiscount = interest - discountOnInterest;
+            const totalAfterDiscount = capitalAfterDiscount + interestAfterDiscount;
+            const isPartial = partialPayment !== null && partialPayment > 0 && partialPayment < totalAfterDiscount;
+            const remaining = isPartial ? totalAfterDiscount - partialPayment : 0;
+
+            const selectedAccount = accounts.find(a => a.id === paymentAccountId);
+
+            return (
             <Modal isOpen={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} title="Confirmar Baixa" size="md">
                 <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">Você está quitando a parcela: <strong className="text-foreground">{selectedInstallment.description}</strong></p>
                     
+                    {/* Values breakdown */}
                     <div className="bg-secondary/30 p-4 rounded-xl space-y-3 border border-border">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-muted-foreground">Vencimento Original:</span>
-                            <span className="font-semibold">{format(new Date(selectedInstallment.date), 'dd/MM/yyyy')}</span>
+                            <span className="font-semibold text-foreground">
+                            {formatDate(selectedInstallment.date, 'dd/MM/yyyy')}
+                            </span>
                         </div>
+
+                        {/* Payment date - always visible */}
+                        <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/50">
+                            <label className="text-sm text-foreground font-semibold">Data da Baixa</label>
+                            <input 
+                                type="date" 
+                                className="bg-card border border-input text-foreground rounded-lg px-3 py-2 max-w-[160px] text-right focus:ring-2 focus:ring-ring focus:border-primary outline-none transition-all font-medium text-sm"
+                                value={paymentDate}
+                                onChange={(e) => setPaymentDate(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Capital */}
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground">Valor (Bruto):</span>
-                            <span className="font-semibold">{formatCurrency(selectedInstallment.grossAmount || selectedInstallment.amount)}</span>
+                            <span className="text-muted-foreground flex items-center gap-1.5">
+                                <Landmark size={13} className="text-blue-400" /> Valor Capital:
+                            </span>
+                            <div className="text-right">
+                                <span className="font-semibold">{formatCurrency(capital)}</span>
+                                {discountOnCapital > 0 && (
+                                    <span className="text-xs text-rose-400 ml-2">(-{formatCurrency(discountOnCapital)})</span>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Interest */}
+                        {hasInterest && (
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground flex items-center gap-1.5">
+                                    <Banknote size={13} className="text-amber-400" /> Juros:
+                                </span>
+                                <div className="text-right">
+                                    <span className="font-semibold text-amber-400">{formatCurrency(interest)}</span>
+                                    {paymentSurcharge > 0 && (
+                                        <span className="text-xs text-emerald-400 ml-1">(+{formatCurrency(paymentSurcharge)} acrésc.)</span>
+                                    )}
+                                    {discountOnInterest > 0 && (
+                                        <span className="text-xs text-rose-400 ml-1">(-{formatCurrency(discountOnInterest)})</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Total line */}
+                        <div className="flex justify-between items-center text-sm pt-2 border-t border-border/50">
+                            <span className="font-semibold text-foreground">Total da Parcela:</span>
+                            <span className="font-bold text-foreground">{formatCurrency(totalAfterDiscount)}</span>
+                        </div>
+
+                        {/* Discount input */}
                         <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/50">
-                            <label className="text-sm text-foreground font-semibold">Desconto (R$)</label>
+                            <div>
+                                <label className="text-sm text-foreground font-semibold">Desconto (R$)</label>
+                                {paymentDiscount > 0 && hasInterest && (
+                                    <p className="text-[10px] text-rose-400 mt-0.5">Desconto aplicado nos juros primeiro</p>
+                                )}
+                            </div>
                             <input 
                                 type="number" 
                                 min="0" 
@@ -400,6 +514,26 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                                 onChange={(e) => setPaymentDiscount(Number(e.target.value))}
                             />
                         </div>
+
+                        {/* Surcharge (late fee) */}
+                        <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/50">
+                            <div>
+                                <label className="text-sm text-foreground font-semibold">Acréscimo / Multa (R$)</label>
+                                {paymentSurcharge > 0 && (
+                                    <p className="text-[10px] text-amber-400 mt-0.5">Adicionado ao valor dos juros</p>
+                                )}
+                            </div>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                step="0.01"
+                                className="bg-card border border-input text-foreground rounded-lg px-3 py-2 max-w-[140px] text-right focus:ring-2 focus:ring-ring focus:border-primary outline-none transition-all font-medium text-sm"
+                                value={paymentSurcharge || ''}
+                                onChange={(e) => setPaymentSurcharge(Number(e.target.value) || 0)}
+                            />
+                        </div>
+
+                        {/* Partial payment */}
                         <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/50">
                             <label className="text-sm text-amber-500 font-semibold">Pagamento Parcial (R$)</label>
                             <input 
@@ -412,47 +546,44 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                                 onChange={(e) => setPartialPayment(e.target.value ? Number(e.target.value) : null)}
                             />
                         </div>
-                        {partialPayment !== null && partialPayment > 0 && (
-                            <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/50">
-                                <label className="text-sm text-amber-500 font-semibold">Data do Pagamento</label>
-                                <input 
-                                    type="date" 
-                                    className="bg-card border border-input text-foreground rounded-lg px-3 py-2 max-w-[160px] text-right focus:ring-2 focus:ring-ring focus:border-primary outline-none transition-all font-medium text-sm"
-                                    value={partialDate}
-                                    onChange={(e) => setPartialDate(e.target.value)}
-                                />
-                            </div>
-                        )}
+
+                        {/* Bank Account selector */}
+                        <div className="pt-3 border-t border-border/50">
+                            <FilterSelect
+                                inlineLabel="Conta Bancária"
+                                value={paymentAccountId}
+                                onChange={(val) => setPaymentAccountId(String(val))}
+                                options={[{ value: '', label: 'Nenhuma conta selecionada...' }, ...accounts.map(a => ({
+                                    value: a.id,
+                                    label: a.name
+                                }))]}
+                                className="w-full text-sm"
+                                searchable
+                            />
+                        </div>
                     </div>
 
-                    {(() => {
-                        const baseGross = selectedInstallment.grossAmount || selectedInstallment.amount;
-                        const fullNet = baseGross - paymentDiscount;
-                        const isPartial = partialPayment !== null && partialPayment > 0 && partialPayment < fullNet;
-                        const remaining = isPartial ? fullNet - partialPayment : 0;
-                        return (
-                            <div className="space-y-2">
-                                {isPartial && (
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-amber-500 font-semibold">Valor Pago Agora:</span>
-                                        <span className="text-amber-500 font-bold">{formatCurrency(partialPayment)}</span>
-                                    </div>
-                                )}
-                                {isPartial && (
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-rose-500 font-semibold">Saldo Restante:</span>
-                                        <span className="text-rose-500 font-bold">{formatCurrency(remaining)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-border/50">
-                                    <span>{isPartial ? 'Saldo Remanescente:' : 'Valor Finalizado:'}</span>
-                                    <span className={isPartial ? 'text-amber-500' : 'text-primary'}>
-                                        {formatCurrency(isPartial ? remaining : fullNet)}
-                                    </span>
-                                </div>
+                    {/* Summary */}
+                    <div className="space-y-2">
+                        {isPartial && (
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-amber-500 font-semibold">Valor Pago Agora:</span>
+                                <span className="text-amber-500 font-bold">{formatCurrency(partialPayment)}</span>
                             </div>
-                        );
-                    })()}
+                        )}
+                        {isPartial && (
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-rose-500 font-semibold">Saldo Restante:</span>
+                                <span className="text-rose-500 font-bold">{formatCurrency(remaining)}</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-border/50">
+                            <span>{isPartial ? 'Saldo Remanescente:' : 'Valor Finalizado:'}</span>
+                            <span className={isPartial ? 'text-amber-500' : 'text-primary'}>
+                                {formatCurrency(isPartial ? remaining : totalAfterDiscount)}
+                            </span>
+                        </div>
+                    </div>
 
                     <div className="flex justify-end gap-3 mt-6">
                         <Button variant="secondary" onClick={() => setPaymentModalOpen(false)}>
@@ -468,7 +599,8 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
                     </div>
                 </div>
             </Modal>
-        )}
+            );
+        })()}
         </>
     );
 };

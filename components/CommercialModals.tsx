@@ -438,9 +438,9 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <label className="text-xs text-muted-foreground block ml-1">Cliente</label>
-                            <button type="button" onClick={() => setIsGuest(!isGuest)} className="text-xs text-emerald-400 hover:underline flex items-center gap-1">
+                            <Button variant="ghost" size="sm" type="button" onClick={() => setIsGuest(!isGuest)} className="text-xs text-emerald-400 hover:text-emerald-500 hover:bg-emerald-500/10 flex items-center gap-1 h-auto py-1 px-2">
                                 {isGuest ? <><UserIcon size={12} /> Selecionar Cadastrado</> : <><UserPlus size={12} /> Novo / Prospect</>}
-                            </button>
+                            </Button>
                         </div>
 
                         {!isGuest ? (
@@ -547,7 +547,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total || 0)}
                                         </td>
                                         <td className="p-2 text-center">
-                                            <button type="button" onClick={() => removeItem(idx)} className="text-muted-foreground hover:text-rose-500"><Trash2 size={14} /></button>
+                                            <Button variant="ghost" size="icon" type="button" onClick={() => removeItem(idx)} className="text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 h-7 w-7"><Trash2 size={14} /></Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -586,7 +586,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                         <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-800">
                             <div className="p-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
                                 <h3 className="font-bold text-lg text-slate-100">Visualizar Impressão</h3>
-                                <button onClick={() => setShowPreview(false)} className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-full"><X size={20} /></button>
+                                <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-full h-8 w-8"><X size={20} /></Button>
                             </div>
                             <div className="flex-1 overflow-auto p-8 bg-black/50 flex justify-center">
                                 <div className="shadow-2xl shadow-black scale-90 origin-top">

@@ -286,14 +286,14 @@ export const FinancialTransactions: React.FC = () => {
             <div
                 key={t.id}
                 onClick={handleRowClick}
-                className="grid grid-cols-[40px_1fr_auto_auto_auto_80px] md:grid-cols-[48px_1fr_150px_150px_130px_80px] items-center gap-4 px-4 py-3.5 cursor-pointer border-b border-border hover:bg-secondary/30 transition-all group lg:first:rounded-t-lg lg:last:rounded-b-lg lg:last:border-0"
+                className="grid grid-cols-[32px_1fr_auto_auto_auto_70px] md:grid-cols-[32px_1fr_140px_140px_120px_70px] items-center gap-3 px-3 py-2 cursor-pointer border-b border-border hover:bg-accent/50 transition-all group lg:first:rounded-t-lg lg:last:rounded-b-lg lg:last:border-0"
             >
                 {/* 1. Icon - Minimalist with subtle colored bg */}
                 <div className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center transition-colors shadow-inner",
-                    t.type === 'transfer' ? "bg-blue-500/10 text-blue-500" :
-                        (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? "bg-yellow-500/10 text-yellow-500" :
-                            t.type === 'income' ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                    "w-7 h-7 rounded flex items-center justify-center transition-colors border",
+                    t.type === 'transfer' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                        (t.type === 'expense' && t.description.toLowerCase().includes('fatura')) ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                            t.type === 'income' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
                 )}>
                     {getCategoryIcon(category?.name)}
                 </div>

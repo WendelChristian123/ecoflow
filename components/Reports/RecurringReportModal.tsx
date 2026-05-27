@@ -166,7 +166,7 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                         <h2 className="text-2xl font-bold text-white flex items-center gap-2"><RefreshCw className="text-emerald-500" /> Relatório de Contratos</h2>
                         <p className="text-slate-400 text-sm mt-1">Análise de receita recorrente e status de contratos.</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={24} /></button>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-500 hover:text-white hover:bg-slate-800/50 transition-colors"><X size={24} /></Button>
                 </div>
 
                 {/* Filters */}

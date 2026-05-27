@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Landmark, Check, AlertCircle } from 'lucide-react';
 import { Modal, Input, Button, Card, CurrencyInput, Select } from '../Shared';
+import { FilterSelect } from '../FilterSelect';
 import { useAuth } from '../../context/AuthContext';
 import { useCompany } from '../../context/CompanyContext';
 import { api } from '../../services/api';
@@ -16,16 +17,24 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, e
     const { currentCompany } = useCompany();
     const [isLoading, setIsLoading] = useState(false);
     const [contacts, setContacts] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [accounts, setAccounts] = useState<any[]>([]);
     
     const [formData, setFormData] = useState({
         name: '',
         type: 'payable',
         contactId: '',
+        categoryId: '',
+        accountId: '',
         firstDueDate: new Date().toISOString().split('T')[0],
         principalAmount: 0,
         installmentsCount: 1,
         installmentAmount: 0,
-        discountAmount: 0
+        discountAmount: 0,
+        interestCategoryId: '',
+        isCapitalSettled: false,
+        setupAccountId: '',
+        setupCategoryId: ''
     });
 
     // Load necessary dependencies like contacts
@@ -37,11 +46,17 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, e
                     name: editingLoan.name || '',
                     type: editingLoan.type || 'payable',
                     contactId: editingLoan.contactId || editingLoan.contact_id || '',
+                    categoryId: editingLoan.categoryId || editingLoan.category_id || '',
+                    accountId: editingLoan.accountId || editingLoan.account_id || '',
                     firstDueDate: editingLoan.firstDueDate || editingLoan.first_due_date || new Date().toISOString().split('T')[0],
                     principalAmount: editingLoan.principalAmount || editingLoan.principal_amount || 0,
                     installmentsCount: editingLoan.installmentsCount || editingLoan.installments_count || 1,
                     installmentAmount: editingLoan.installmentAmount || editingLoan.installment_amount || 0,
-                    discountAmount: editingLoan.discountAmount || editingLoan.discount_amount || 0
+                    discountAmount: editingLoan.discountAmount || editingLoan.discount_amount || 0,
+                    interestCategoryId: editingLoan.interestCategoryId || editingLoan.interest_category_id || '',
+                    isCapitalSettled: editingLoan.isCapitalSettled || false,
+                    setupAccountId: editingLoan.setupAccountId || '',
+                    setupCategoryId: editingLoan.setupCategoryId || ''
                 });
             } else {
                 resetForm();
@@ -53,10 +68,16 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, e
 
     const loadContacts = async () => {
         try {
-            const data = await api.getContacts(currentCompany?.id);
-            setContacts(data);
+            const [contactsData, categoriesData, accountsData] = await Promise.all([
+                api.getContacts(currentCompany?.id),
+                api.getFinancialCategories(currentCompany?.id),
+                api.getFinancialAccounts(currentCompany?.id)
+            ]);
+            setContacts(contactsData || []);
+            setCategories(categoriesData || []);
+            setAccounts(accountsData || []);
         } catch (error) {
-            console.error("Failed to load contacts", error);
+            console.error("Failed to load contacts/categories/accounts", error);
         }
     };
 
@@ -65,11 +86,17 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, e
             name: '',
             type: 'payable',
             contactId: '',
+            categoryId: '',
+            accountId: '',
             firstDueDate: new Date().toISOString().split('T')[0],
             principalAmount: 0,
             installmentsCount: 1,
             installmentAmount: 0,
-            discountAmount: 0
+            discountAmount: 0,
+            interestCategoryId: '',
+            isCapitalSettled: false,
+            setupAccountId: '',
+            setupCategoryId: ''
         });
     };
 
@@ -107,143 +134,243 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, e
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={editingLoan ? 'Editar Contrato' : 'Nova Dívida | Empréstimo'}>
-            <form onSubmit={handleSubmit} className="space-y-6">
-                
-                <div className="flex gap-4">
-                    <div className="flex-1">
-                        <Select
-                            label="Tipo de Contrato"
-                            value={formData.type}
-                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                            required
-                        >
-                            <option value="payable">A Pagar (Dívida)</option>
-                            <option value="receivable">A Receber (Empréstimo)</option>
-                        </Select>
-                    </div>
-                </div>
+        <Modal isOpen={isOpen} onClose={onClose} title={editingLoan ? 'Editar Contrato' : 'Nova Dívida | Empréstimo'} className="max-w-4xl">
+            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+                    {/* LEFT COLUMN: Basic Info */}
+                    <div className="space-y-5">
+                        <div className="bg-card border border-border p-5 rounded-xl shadow-sm space-y-4">
+                            <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2">Informações Iniciais</h4>
+                            <FilterSelect
+                                inlineLabel="Tipo de Contrato"
+                                value={formData.type}
+                                onChange={(val) => setFormData({ ...formData, type: String(val) })}
+                                options={[
+                                    { value: 'payable', label: 'A Pagar (Dívida)' },
+                                    { value: 'receivable', label: 'A Receber (Empréstimo)' }
+                                ]}
+                                className="w-full"
+                            />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                        label="Descrição Curta (Opcional)"
-                        placeholder={formData.type === 'payable' ? 'Ex: Empréstimo Carro' : 'Ex: Dinheiro emprestado pro João'}
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
+                            <FilterSelect
+                                inlineLabel={formData.type === 'payable' ? 'Credor / Fornecedor' : 'Devedor / Cliente'}
+                                value={formData.contactId}
+                                onChange={(val) => setFormData({ ...formData, contactId: String(val) })}
+                                options={contacts.map(c => ({
+                                    value: c.id, 
+                                    label: `${c.name} ${c.fantasyName ? `(${c.fantasyName})` : ''}`
+                                }))}
+                                placeholder="Selecione um contato"
+                                searchable
+                                className="w-full"
+                            />
 
-                    <Select
-                        label={formData.type === 'payable' ? 'Credor / Fornecedor' : 'Devedor / Cliente'}
-                        value={formData.contactId}
-                        onChange={(e) => setFormData({ ...formData, contactId: e.target.value })}
-                    >
-                        <option value="">Selecione um contato</option>
-                        {contacts.map(c => (
-                            <option key={c.id} value={c.id}>{c.name} {c.fantasyName ? `(${c.fantasyName})` : ''}</option>
-                        ))}
-                    </Select>
-                </div>
+                            <FilterSelect
+                                inlineLabel="Categoria"
+                                value={formData.categoryId}
+                                onChange={(val) => setFormData({ ...formData, categoryId: String(val) })}
+                                options={categories
+                                    .filter(c => c.type === (formData.type === 'payable' ? 'expense' : 'income'))
+                                    .map(c => ({
+                                        value: c.id, 
+                                        label: c.name
+                                    }))}
+                                placeholder="Selecione uma categoria"
+                                searchable
+                                className="w-full"
+                            />
 
-                <div className="bg-secondary/30 p-4 rounded-xl border border-border">
-                    <h4 className="text-sm font-semibold mb-4 text-foreground flex flex-col">
-                        Detalhes do Contrato
-                        <span className="text-xs text-muted-foreground font-normal">
-                            Preencha o capital, quantidade e o valor das parcelas que o sistema calcula o resto.
-                        </span>
-                    </h4>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <CurrencyInput
-                            label="1. Valor Capital (Pego/Emprestado)"
-                            value={formData.principalAmount}
-                            onValueChange={(val) => setFormData({ ...formData, principalAmount: val || 0 })}
-                            required
-                        />
-                        <div className="space-y-1">
-                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">2. Qtd Parcelas</label>
-                            <input
-                                type="number"
-                                min="1"
-                                className="w-full h-11 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                value={formData.installmentsCount || ''}
-                                onChange={(e) => setFormData({ ...formData, installmentsCount: parseInt(e.target.value) || 1 })}
+                            <Input
+                                label="Descrição Curta (Opcional)"
+                                placeholder={formData.type === 'payable' ? 'Ex: Empréstimo Carro' : 'Ex: Dinheiro emprestado pro João'}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
+
+                            <Input
+                                label="Vencimento Inicial (1ª Parcela)"
+                                type="date"
+                                value={formData.firstDueDate}
+                                onChange={(e) => setFormData({ ...formData, firstDueDate: e.target.value })}
                                 required
                             />
                         </div>
-                        <CurrencyInput
-                            label="3. Valor de cada Parcela"
-                            value={formData.installmentAmount}
-                            onValueChange={(val) => setFormData({ ...formData, installmentAmount: val || 0 })}
-                            required
-                        />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Vencimento Inicial (1ª Parcela)"
-                            type="date"
-                            value={formData.firstDueDate}
-                            onChange={(e) => setFormData({ ...formData, firstDueDate: e.target.value })}
-                            required
-                        />
-                        <CurrencyInput
-                            label="Desconto sobre o Contrato"
-                            value={formData.discountAmount}
-                            onValueChange={(val) => setFormData({ ...formData, discountAmount: val || 0 })}
-                            className="text-rose-500"
-                        />
+                    {/* RIGHT COLUMN: Financial Details */}
+                    <div className="space-y-5 flex flex-col">
+                        <div className="bg-secondary/30 p-5 rounded-xl border border-border shadow-sm flex-1">
+                            <h4 className="text-sm font-semibold mb-4 text-foreground flex flex-col">
+                                Estrutura do Contrato
+                                <span className="text-xs text-muted-foreground font-normal mt-1">
+                                    Preencha o capital, quantidade e o valor das parcelas que o sistema calcula os juros automaticamente.
+                                </span>
+                            </h4>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <CurrencyInput
+                                    label="1. Valor Capital (Emprestado)"
+                                    value={formData.principalAmount}
+                                    onValueChange={(val) => setFormData({ ...formData, principalAmount: val || 0 })}
+                                    required
+                                />
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">2. Qtd Parcelas</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="w-full h-11 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                        value={formData.installmentsCount || ''}
+                                        onChange={(e) => setFormData({ ...formData, installmentsCount: parseInt(e.target.value) || 1 })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <CurrencyInput
+                                    label="3. Valor da Parcela"
+                                    value={formData.installmentAmount}
+                                    onValueChange={(val) => setFormData({ ...formData, installmentAmount: val || 0 })}
+                                    required
+                                />
+                                <CurrencyInput
+                                    label="Desconto Final"
+                                    value={formData.discountAmount}
+                                    onValueChange={(val) => setFormData({ ...formData, discountAmount: val || 0 })}
+                                    className="text-rose-500"
+                                />
+                                <div className="sm:col-span-2">
+                                    <FilterSelect
+                                        inlineLabel="Conta de Pagamento"
+                                        value={formData.accountId}
+                                        onChange={(val) => setFormData({ ...formData, accountId: String(val) })}
+                                        options={[{ value: '', label: 'Selecione uma conta bancária...' }, ...accounts.map(a => ({
+                                            value: a.id,
+                                            label: a.name
+                                        }))]}
+                                        className="w-full text-sm"
+                                        searchable
+                                    />
+                                </div>
+                            </div>
+                            
+                            {interestAmount > 0 && (
+                                <div className="mt-4 pt-4 border-t border-border">
+                                    <FilterSelect
+                                        inlineLabel="Categoria dos Juros (Opcional)"
+                                        value={formData.interestCategoryId}
+                                        onChange={(val) => setFormData({ ...formData, interestCategoryId: String(val) })}
+                                        options={[{ value: '', label: 'Não separar (manter junto ao Capital)' }, ...categories
+                                            .filter(c => c.type === (formData.type === 'payable' ? 'expense' : 'income'))
+                                            .map(c => ({
+                                                value: c.id, 
+                                                label: c.name
+                                            }))]}
+                                        placeholder="Selecione..."
+                                        searchable
+                                        className="w-full text-sm"
+                                    />
+                                    <p className="text-[11px] text-muted-foreground mt-1.5 ml-2">
+                                        Ao selecionar uma categoria, o sistema dividirá automaticamente o valor das parcelas na DRE, separando Capital e Juros.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Capital Settlement Checkbox & Fields */}
+                            <div className="mt-4 pt-4 border-t border-border">
+                                <label className="flex items-center gap-2 cursor-pointer mb-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.isCapitalSettled}
+                                        onChange={(e) => setFormData({ ...formData, isCapitalSettled: e.target.checked })}
+                                        className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                                    />
+                                    <span className="text-sm font-medium text-foreground">
+                                        O valor capital ({new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.principalAmount || 0)}) já movimentou alguma conta?
+                                    </span>
+                                </label>
+                                
+                                {formData.isCapitalSettled && (
+                                    <div className="bg-background/50 border border-border p-3 rounded-lg grid grid-cols-1 gap-3">
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Um lançamento de {formData.type === 'payable' ? 'Receita' : 'Despesa'} no valor exato do Capital será criado automaticamente e marcado como pago hoje.
+                                        </p>
+                                        <FilterSelect
+                                            inlineLabel="Destino/Origem:"
+                                            value={formData.setupAccountId}
+                                            onChange={(val) => setFormData({ ...formData, setupAccountId: String(val) })}
+                                            options={[{ value: '', label: 'Selecione a Conta Bancária' }, ...accounts.map(a => ({
+                                                value: a.id,
+                                                label: a.name
+                                            }))]}
+                                            className="w-full text-sm"
+                                            searchable
+                                        />
+                                        <FilterSelect
+                                            inlineLabel="Categoria (Setup):"
+                                            value={formData.setupCategoryId}
+                                            onChange={(val) => setFormData({ ...formData, setupCategoryId: String(val) })}
+                                            options={[{ value: '', label: 'Selecione a Categoria...' }, ...categories
+                                                .filter(c => c.type === (formData.type === 'payable' ? 'income' : 'expense'))
+                                                .map(c => ({
+                                                    value: c.id, 
+                                                    label: c.name
+                                                }))]}
+                                            className="w-full text-sm"
+                                            searchable
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Summary Block */}
+                        <div className="bg-card p-4 rounded-xl border-l-4 border-primary shadow-sm">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="flex flex-col">
+                                    <span className="text-muted-foreground">Valor Bruto S/ Desc:</span>
+                                    <span className="font-semibold text-foreground">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(grossTotalWithoutDiscount)}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-muted-foreground">Total de Desconto:</span>
+                                    <span className="font-semibold text-rose-500">
+                                        - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.discountAmount)}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-muted-foreground">Juros Gerados:</span>
+                                    <span className={`font-semibold ${interestAmount >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(interestAmount)}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-primary font-bold uppercase tracking-wider text-[10px]">Valor Líquido Final:</span>
+                                    <span className="font-black text-xl text-primary leading-none mt-1">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finalTotalAmount)}
+                                    </span>
+                                </div>
+                            </div>
+                            {(installmentsCount => installmentsCount > 0 ? (
+                            <div className="mt-4 text-xs text-muted-foreground border-t border-border/50 pt-3 flex items-start gap-2">
+                                <AlertCircle size={14} className="shrink-0 text-primary mt-0.5" />
+                                <span>Serão geradas <strong>{installmentsCount}</strong> parcelas a partir do dia {formData.firstDueDate.split('-').reverse().join('/')}. Qualquer renegociação ou avanço de parcelas futuras deverá ser feita no próprio contrato ou nos lançamentos.</span>
+                            </div>) : null)(formData.installmentsCount)}
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-secondary/10 p-4 rounded-xl border-l-4 border-primary">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex flex-col">
-                            <span className="text-muted-foreground">Valor Bruto Sem Desconto:</span>
-                            <span className="font-semibold text-foreground">
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(grossTotalWithoutDiscount)}
-                            </span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-muted-foreground">Total de Desconto:</span>
-                            <span className="font-semibold text-rose-500">
-                                - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(formData.discountAmount)}
-                            </span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-muted-foreground">Juros Gerados:</span>
-                            <span className={`font-semibold ${interestAmount >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(interestAmount)}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
-                                (Comparação do Total a Pagar contra o Capital Inicial)
-                            </span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-primary font-bold uppercase tracking-wider">Valor Líquido Final:</span>
-                            <span className="font-bold text-lg text-primary">
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finalTotalAmount)}
-                            </span>
-                        </div>
-                    </div>
-                    {(installmentsCount => installmentsCount > 0 ? (
-                    <div className="mt-3 text-xs text-muted-foreground border-t border-border/50 pt-2 flex items-start gap-2">
-                        <AlertCircle size={14} className="shrink-0 text-primary mt-0.5" />
-                        <span>Este contrato irá gerar <strong>{installmentsCount}</strong> parcelas a partir do dia {formData.firstDueDate.split('-').reverse().join('/')} na aba de Lançamentos do Financeiro. Toda edição futura deverá ser feita no próprio contrato ou nas parcelas caso haja avanço de parcelas ou renegociações esporádicas.</span>
-                    </div>) : null)(formData.installmentsCount)}
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors border border-border"
-                    >
+                <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
+                    <Button variant="secondary" onClick={onClose}>
                         Cancelar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
+                        variant="primary"
                         disabled={isLoading || formData.principalAmount <= 0 || formData.installmentAmount <= 0}
-                        className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center justify-center min-w-[120px] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="min-w-[120px]"
                     >
                         {isLoading ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -253,7 +380,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, e
                                 Salvar Contrato
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
             </form>
         </Modal>

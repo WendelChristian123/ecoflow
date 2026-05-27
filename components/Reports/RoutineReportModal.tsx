@@ -204,9 +204,9 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
                         </h2>
                         <p className="text-slate-400 text-sm mt-1">Gere relatórios detalhados para análise e impressão.</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                    <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-500 hover:text-white hover:bg-slate-800/50 transition-colors">
                         <X size={24} />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Filters */}

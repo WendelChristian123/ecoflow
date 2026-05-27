@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useKanban } from './KanbanContext';
 import { Plus, Trash2, GripVertical, Check, X } from 'lucide-react';
-import { cn } from '../Shared';
+import { cn, Modal, Button, Input } from '../Shared';
 
 // Simple colors for stages
 const COLORS = [
@@ -77,31 +77,25 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-card w-full max-w-lg rounded-xl shadow-2xl border border-border flex flex-col max-h-[80vh]">
-                <div className="p-4 border-b border-border flex justify-between items-center">
-                    <h3 className="font-bold text-lg">Gerenciar Etapas</h3>
-                    <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={20} /></button>
-                </div>
-
-                <div className="p-4 overflow-y-auto flex-1">
+        <Modal isOpen={isOpen} onClose={onClose} title="Gerenciar Etapas" width="max-w-lg">
+            <div className="flex flex-col max-h-[70vh]">
+                <div className="overflow-y-auto flex-1 pb-4">
                     {/* Add New */}
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex gap-2 mb-4 items-center">
                         <input
                             type="text"
                             placeholder="Nova etapa..."
-                            className="flex-1 bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            className="flex-1 bg-background border border-input rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
                             value={newStageName}
                             onChange={e => setNewStageName(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleAddStage()}
                         />
-                        <button
+                        <Button
                             onClick={handleAddStage}
                             disabled={!newStageName.trim()}
-                            className="bg-primary text-primary-foreground px-4 py-2 rounded text-sm font-semibold hover:bg-primary/90 disabled:opacity-50"
                         >
                             Adicionar
-                        </button>
+                        </Button>
                     </div>
 
                     {/* List */}
@@ -114,7 +108,7 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                 onDragOver={handleDragOver}
                                 onDrop={(e) => handleDrop(e, stage.id)}
                                 className={cn(
-                                    "flex items-center gap-3 p-3 rounded-lg border border-border bg-background group hover:border-primary/50 transition-colors",
+                                    "flex items-center gap-3 p-3 rounded-lg border border-border bg-background group hover:border-primary/50 transition-colors shadow-sm",
                                     draggingId === stage.id && "opacity-50"
                                 )}
                             >
@@ -126,14 +120,20 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                             <input
                                                 autoFocus
                                                 type="text"
-                                                className="flex-1 bg-secondary px-2 py-1 rounded text-sm"
+                                                className="flex-1 bg-secondary px-2 py-1.5 border border-input rounded-md text-sm outline-none focus:border-primary"
                                                 value={editName}
                                                 onChange={e => setEditName(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && saveEdit()}
                                                 disabled={stage.isLocked}
                                             />
-                                            {!stage.isLocked && <button onClick={saveEdit} className="text-emerald-500"><Check size={16} /></button>}
-                                            <button onClick={() => setEditingId(null)} className="text-rose-500"><X size={16} /></button>
+                                            {!stage.isLocked && (
+                                                <button onClick={saveEdit} className="p-1.5 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors">
+                                                    <Check size={16} />
+                                                </button>
+                                            )}
+                                            <button onClick={() => setEditingId(null)} className="p-1.5 rounded hover:bg-rose-500/20 text-rose-500 transition-colors">
+                                                <X size={16} />
+                                            </button>
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-between">
@@ -142,19 +142,19 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                                 onClick={() => !stage.isLocked && startEditing(stage)}
                                             >
                                                 {stage.name}
-                                                {stage.isLocked && <span className="ml-2 text-[10px] border border-border px-1 rounded uppercase">Fixo</span>}
+                                                {stage.isLocked && <span className="ml-2 text-[10px] border border-border px-1 rounded uppercase bg-secondary">Fixo</span>}
                                             </span>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Color Picker - Simplified */}
+                                {/* Color Picker */}
                                 <div className="flex gap-1">
                                     {!stage.isLocked && COLORS.map(c => (
                                         <button
                                             key={c.value}
                                             className={cn(
-                                                "w-4 h-4 rounded-full transition-transform hover:scale-125",
+                                                "w-4 h-4 rounded-full transition-transform hover:scale-125 cursor-pointer",
                                                 c.value,
                                                 stage.color === c.value && "ring-2 ring-white ring-offset-1 ring-offset-background"
                                             )}
@@ -170,37 +170,39 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                 {!stage.isLocked ? (
                                     <button
                                         onClick={() => deleteStage(stage.id)}
-                                        className="text-muted-foreground hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="p-1.5 rounded text-muted-foreground hover:bg-rose-500/20 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
                                         title="Excluir etapa"
                                     >
                                         <Trash2 size={16} />
                                     </button>
                                 ) : (
-                                    <div className="w-4" /> // Spacer
+                                    <div className="w-7 h-7" /> // Spacer
                                 )}
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-border bg-secondary/30 rounded-b-xl flex justify-between items-center">
-                    <button
+                <div className="pt-4 border-t border-border mt-2 flex justify-between items-center bg-card">
+                    <Button
+                        variant="danger"
+                        size="sm"
                         onClick={async () => {
                             if (confirm(`ATENÇÃO: Isso excluirá todo o funil "${currentKanban.name}" e todas as etapas.\n\nSe estiver no modo único (Commercial), um novo funil padrão será criado.\n\nDeseja continuar?`)) {
                                 onClose();
                                 await deleteKanban(currentKanban.id);
                             }
                         }}
-                        className="text-xs text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-rose-500/10 transition-colors"
+                        className="flex items-center gap-1.5"
                     >
                         <Trash2 size={14} />
                         Apagar Funil
-                    </button>
-                    <p className="text-xs text-muted-foreground text-center">
-                        Arraste para reordenar. Clique no nome para editar.
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                        Arraste para reordenar.
                     </p>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 };

@@ -103,7 +103,14 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
 
 
     const selectedOption = options.find(opt => opt.value === value);
-    const filteredOptions = options.filter(opt =>
+    const sortedOptions = [...options].sort((a, b) => {
+        const isAPinned = a.value === 'all' || a.value === 'none' || a.value === '' || a.label === 'Todos' || a.label === 'Nenhum' || a.label === 'Selecione...';
+        const isBPinned = b.value === 'all' || b.value === 'none' || b.value === '' || b.label === 'Todos' || b.label === 'Nenhum' || b.label === 'Selecione...';
+        if (isAPinned && !isBPinned) return -1;
+        if (!isAPinned && isBPinned) return 1;
+        return (a.label || '').trim().toLowerCase().localeCompare((b.label || '').trim().toLowerCase());
+    });
+    const filteredOptions = sortedOptions.filter(opt =>
         (opt.label || '').toLowerCase().includes((searchTerm || '').toLowerCase())
     );
 

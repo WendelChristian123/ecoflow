@@ -25,7 +25,8 @@ export const SYSTEM_MODULES: AppModule[] = [
             { id: 'finance_transactions', name: 'Lançamentos', module_id: 'mod_finance' },
             { id: 'finance_banking', name: 'Contas e Bancos', module_id: 'mod_finance' },
             { id: 'finance_categories', name: 'Categorias', module_id: 'mod_finance' },
-            { id: 'finance_cards', name: 'Cartões', module_id: 'mod_finance' }
+            { id: 'finance_cards', name: 'Cartões', module_id: 'mod_finance' },
+            { id: 'finance_loans', name: 'Dívidas e Empréstimos', module_id: 'mod_finance' }
         ]
     },
     {

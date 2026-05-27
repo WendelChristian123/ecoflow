@@ -2,6 +2,7 @@
 import React from 'react';
 import { Quote, Company } from '../../types';
 import { format } from 'date-fns';
+import { formatDate } from '../../utils/formatters';
 
 interface QuotePrintTemplateProps {
     quote: Quote;
@@ -26,8 +27,8 @@ export const QuotePrintTemplate: React.FC<QuotePrintTemplateProps> = ({ quote, c
                     <h2 className="text-2xl font-light text-slate-400">ORÇAMENTO</h2>
                     <p className="text-xl font-bold text-slate-900">#{quote.id.slice(0, 8).toUpperCase()}</p>
                     <div className="mt-4 text-sm">
-                        <p><span className="font-semibold">Data:</span> {format(new Date(quote.date), 'dd/MM/yyyy')}</p>
-                        {quote.validUntil && <p><span className="font-semibold">Válido até:</span> {format(new Date(quote.validUntil), 'dd/MM/yyyy')}</p>}
+                        <p><span className="font-semibold">Data:</span> {formatDate(quote.date, 'dd/MM/yyyy')}</p>
+                        {quote.validUntil && <p><span className="font-semibold">Válido até:</span> {formatDate(quote.validUntil, 'dd/MM/yyyy')}</p>}
                     </div>
                 </div>
             </div>

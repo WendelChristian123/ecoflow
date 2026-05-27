@@ -8,6 +8,7 @@ import { ContactsReportModal } from '../../components/Reports/ContactsReportModa
 import { translateContactScope, translatePersonType } from '../../utils/i18n';
 import { ConfirmationModal } from '../../components/Modals';
 import { Users, Search, Plus, Phone, Mail, MapPin, Building, User as UserIcon, Trash2, Edit2, FileText } from 'lucide-react';
+import { cn } from '../../components/Shared';
 
 export const ContactsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -48,24 +49,24 @@ export const ContactsPage: React.FC = () => {
     const ContactTable = ({ items, type }: { items: Contact[], type: 'supplier' | 'client' }) => (
         <Card className="rounded-xl border border-border flex flex-col h-full max-h-full shadow-sm overflow-hidden" variant="solid" noPadding>
             {/* HEADER FIXO */}
-            <div className={`px-4 py-3.5 border-b border-white/10 flex items-center justify-between shrink-0 ${type === 'client' ? 'bg-emerald-500' : 'bg-amber-500'}`}>
+            <div className="px-4 py-3.5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
                 <div className="flex items-center gap-3">
-                    <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
-                        {type === 'client' ? <UserIcon size={18} className="text-white" /> : <Building size={18} className="text-white" />}
+                    <div className={cn("p-2 rounded-lg", type === 'client' ? 'bg-emerald-500/10' : 'bg-amber-500/10')}>
+                        {type === 'client' ? <UserIcon size={18} className="text-emerald-500" /> : <Building size={18} className="text-amber-500" />}
                     </div>
-                    <span className="text-sm uppercase tracking-widest text-white font-bold">
+                    <span className="text-sm uppercase tracking-widest text-foreground font-bold">
                         {type === 'client' ? 'Clientes' : 'Fornecedores'}
                     </span>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg text-white text-sm font-bold">
+                <div className="bg-background border border-border px-3 py-1 rounded-lg text-foreground text-sm font-bold shadow-sm">
                     {items.length}
                 </div>
             </div>
 
             {/* ÁREA SCROLLÁVEL INTERNA */}
-            <div className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar w-full ${type === 'client' ? 'bg-emerald-500/10' : 'bg-amber-500/10'}`}>
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar w-full bg-card">
                 <table className="w-full min-w-full text-left text-xs text-muted-foreground table-fixed">
-                    <thead className={`w-full text-muted-foreground uppercase text-[9px] font-bold tracking-wider sticky top-0 backdrop-blur-sm z-10 border-b ${type === 'client' ? 'bg-emerald-500/30 border-emerald-500/30' : 'bg-amber-500/30 border-amber-500/30'}`}>
+                    <thead className="w-full text-muted-foreground uppercase text-[9px] font-bold tracking-wider sticky top-0 backdrop-blur-sm z-10 border-b bg-muted/50 border-border">
                         <tr>
                             <th className="pl-3 py-2 w-[40%]">Nome</th>
                             <th className="pl-4 py-2 w-[40%] hidden sm:table-cell">Contato</th>
@@ -76,7 +77,7 @@ export const ContactsPage: React.FC = () => {
                         {items.length === 0 ? (
                             <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground italic">Nenhum registro.</td></tr>
                         ) : items.map(c => (
-                            <tr key={c.id} className={`transition-colors group ${type === 'client' ? 'hover:bg-emerald-500/30' : 'hover:bg-amber-500/30'}`}>
+                            <tr key={c.id} className="transition-colors group hover:bg-accent/50">
                                 <td className="pl-3 py-1.5 overflow-hidden">
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="w-7 h-7 rounded-md bg-secondary/50 flex items-center justify-center text-muted-foreground shrink-0 border border-border">

@@ -615,9 +615,9 @@ interface TransactionModalProps {
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSuccess, accounts, categories, cards = [], contacts, initialData, initialType }) => {
-    const [formData, setFormData] = useState<Partial<FinancialTransaction>>({
+    const [formData, setFormData] = useState<Partial<FinancialTransaction> & { interestAmount?: number, interestCategoryId?: string }>({
         description: '', amount: 0, type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), isPaid: false,
-        accountId: '', categoryId: '', creditCardId: '', contactId: '', links: []
+        accountId: '', categoryId: '', creditCardId: '', contactId: '', links: [], interestAmount: 0, interestCategoryId: ''
     });
     const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'monthly', repeatCount: 0 });
     const [isIndefinite, setIsIndefinite] = useState(false);
@@ -653,21 +653,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
             setFormData({
                 description: initialData?.description || '',
                 amount: initialData?.amount || 0,
-                grossAmount: initialData?.grossAmount !== undefined ? initialData.grossAmount : (initialData?.amount || 0),
+                grossAmount: initialData?.grossAmount !== undefined ? initialData?.grossAmount : initialData?.amount || 0,
                 discountAmount: initialData?.discountAmount || 0,
                 type: initialData?.type || initialType || 'expense',
-                date: initialData?.date ? initialData.date.split('T')[0] : format(new Date(), 'yyyy-MM-dd'),
+                date: initialData?.date || format(new Date(), 'yyyy-MM-dd'),
                 isPaid: initialData?.isPaid || false,
-                paymentMethod: initialData?.paymentMethod || 'cash', // Default to cash or force selection
                 accountId: initialData?.accountId || accounts[0]?.id || '',
+                toAccountId: initialData?.toAccountId || '',
                 categoryId: initialData?.categoryId || '',
                 creditCardId: initialData?.creditCardId || '',
                 contactId: initialData?.contactId || '',
-                toAccountId: initialData?.toAccountId || '',
+                paymentMethod: initialData?.paymentMethod || 'cash',
                 recurrenceId: initialData?.recurrenceId,
                 installmentIndex: initialData?.installmentIndex,
                 totalInstallments: initialData?.totalInstallments,
-                links: initialData?.links || []
+                links: initialData?.links || [],
+                interestAmount: (initialData as any)?.linkedInterest?.amount || 0,
+                interestCategoryId: (initialData as any)?.linkedInterest?.categoryId || '',
+                id: initialData?.id
             });
             setRecurrence({ isRecurring: false, frequency: 'monthly', repeatCount: 0 });
             setIsIndefinite(false);
@@ -826,31 +829,39 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                         <div className="space-y-4">
                             <Input label="Descrição" placeholder="Ex: Aluguel" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} required />
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 <CurrencyInput
                                     label="Valor"
                                     value={formData.grossAmount}
                                     onValueChange={(val) => {
                                         const gross = val || 0;
-                                        setFormData({ ...formData, grossAmount: gross, amount: gross - (formData.discountAmount || 0) });
+                                        setFormData({ ...formData, grossAmount: gross, amount: gross + (formData.interestAmount || 0) - (formData.discountAmount || 0) });
                                     }}
-                                    className="text-lg font-semibold"
+                                />
+                                <CurrencyInput
+                                    label="Juros"
+                                    value={formData.interestAmount}
+                                    onValueChange={(val) => {
+                                        const interest = val || 0;
+                                        setFormData({ ...formData, interestAmount: interest, amount: (formData.grossAmount || 0) + interest - (formData.discountAmount || 0) });
+                                    }}
+                                    className="text-indigo-500"
                                 />
                                 <CurrencyInput
                                     label="Desconto"
                                     value={formData.discountAmount}
                                     onValueChange={(val) => {
                                         const discount = val || 0;
-                                        setFormData({ ...formData, discountAmount: discount, amount: (formData.grossAmount || 0) - discount });
+                                        setFormData({ ...formData, discountAmount: discount, amount: (formData.grossAmount || 0) + (formData.interestAmount || 0) - discount });
                                     }}
-                                    className="text-lg font-semibold text-rose-500"
+                                    className="text-rose-500"
                                 />
                                 <CurrencyInput
-                                    label="Valor Líquido"
+                                    label="Líquido"
                                     value={formData.amount}
                                     onValueChange={() => {}}
                                     disabled
-                                    className="text-lg font-bold text-emerald-500"
+                                    className="text-emerald-500 font-bold bg-emerald-500/10"
                                 />
                             </div>
 
@@ -951,6 +962,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                                             <Plus size={18} />
                                         </Button>
                                     </div>
+                                    
+                                    {(formData.interestAmount || 0) > 0 && (
+                                        <div className="pl-4 ml-2 border-l-2 border-indigo-500/30">
+                                            <FilterSelect
+                                                inlineLabel="Categoria dos Juros:"
+                                                value={formData.interestCategoryId || ''}
+                                                onChange={(val) => setFormData({ ...formData, interestCategoryId: String(val) })}
+                                                options={[{ value: '', label: 'Junto com a principal...' }, ...localCategories.filter(c => c.type === formData.type).sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ value: c.id, label: c.name }))]}
+                                                className="w-full text-sm"
+                                                searchable
+                                            />
+                                        </div>
+                                    )}
                                     {/* Payment Method Selection */}
                                     <div>
                                         <FilterSelect

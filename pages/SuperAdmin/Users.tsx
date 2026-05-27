@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Input, Modal, Badge, Card } from '../../components/Shared';
+import { Button, Input, Modal, Badge, Card, Select } from '../../components/Shared';
+import { FilterSelect } from '../../components/FilterSelect';
 import {
     Search, Plus, Key, CheckCircle2, MoreVertical, Shield,
     Power, LogOut, RefreshCw, Users as UsersIcon, Trash2
@@ -202,46 +203,44 @@ export const SuperAdminUsers: React.FC = () => {
                         </div>
 
                         {/* Company Filter */}
-                        <div className="relative w-full md:w-44">
-                            <select
-                                value={filterCompany}
-                                onChange={e => setFilterCompany(e.target.value)}
-                                className={selectClass}
-                            >
-                                <option value="all">Todas Empresas</option>
-                                {availableCompanies.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <FilterSelect
+                            inlineLabel="Empresa:"
+                            value={filterCompany}
+                            onChange={(val) => setFilterCompany(val)}
+                            options={[
+                                { value: 'all', label: 'Todas' },
+                                ...availableCompanies.map(c => ({ value: c.id, label: c.name }))
+                            ]}
+                            className="w-full md:w-auto md:min-w-[160px]"
+                        />
 
                         {/* Role Filter */}
-                        <div className="relative w-full md:w-40">
-                            <select
-                                value={filterRole}
-                                onChange={e => setFilterRole(e.target.value as any)}
-                                className={selectClass}
-                            >
-                                <option value="all">Todos Perfis</option>
-                                <option value="super_admin">Super Admin</option>
-                                <option value="admin">Admin</option>
-                                <option value="user">Usuário</option>
-                            </select>
-                        </div>
+                        <FilterSelect
+                            inlineLabel="Perfil:"
+                            value={filterRole}
+                            onChange={(val) => setFilterRole(val as any)}
+                            options={[
+                                { value: 'all', label: 'Todos' },
+                                { value: 'super_admin', label: 'Super Admin' },
+                                { value: 'admin', label: 'Admin' },
+                                { value: 'user', label: 'Usuário' }
+                            ]}
+                            className="w-full md:w-auto md:min-w-[140px]"
+                        />
 
                         {/* Status Filter */}
-                        <div className="relative w-full md:w-40">
-                            <select
-                                value={filterStatus}
-                                onChange={e => setFilterStatus(e.target.value as any)}
-                                className={selectClass}
-                            >
-                                <option value="all">Todos Status</option>
-                                <option value="active">Ativo</option>
-                                <option value="suspended">Suspenso</option>
-                                <option value="blocked">Bloqueado</option>
-                            </select>
-                        </div>
+                        <FilterSelect
+                            inlineLabel="Status:"
+                            value={filterStatus}
+                            onChange={(val) => setFilterStatus(val as any)}
+                            options={[
+                                { value: 'all', label: 'Todos' },
+                                { value: 'active', label: 'Ativo' },
+                                { value: 'suspended', label: 'Suspenso' },
+                                { value: 'blocked', label: 'Bloqueado' }
+                            ]}
+                            className="w-full md:w-auto md:min-w-[140px]"
+                        />
 
                         {/* Refresh Button */}
                         <Button variant="outline" size="sm" onClick={loadData} className="shrink-0 w-full md:w-auto">
@@ -437,31 +436,29 @@ export const SuperAdminUsers: React.FC = () => {
                         <Input label="Telefone (WhatsApp)" value={newUser.phone} onChange={e => setNewUser({ ...newUser, phone: e.target.value })} />
 
                         <div>
-                            <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Empresa Vinculada</label>
-                            <select
+                            <Select
+                                label="Empresa Vinculada"
                                 value={newUser.companyId}
                                 onChange={e => setNewUser({ ...newUser, companyId: e.target.value })}
-                                className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
                                 required
-                            >
-                                <option value="">Selecione uma empresa...</option>
-                                {availableCompanies.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
+                                options={[
+                                    { value: '', label: 'Selecione uma empresa...' },
+                                    ...availableCompanies.map(c => ({ value: c.id, label: c.name }))
+                                ]}
+                            />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Perfil de Acesso</label>
-                                <select
+                                <Select
+                                    label="Perfil de Acesso"
                                     value={newUser.role}
                                     onChange={e => setNewUser({ ...newUser, role: e.target.value })}
-                                    className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
-                                >
-                                    <option value="user">Usuário Padrão</option>
-                                    <option value="admin">Administrador</option>
-                                </select>
+                                    options={[
+                                        { value: 'user', label: 'Usuário Padrão' },
+                                        { value: 'admin', label: 'Administrador' }
+                                    ]}
+                                />
                             </div>
                             <Input label="Senha Inicial" type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} required minLength={6} />
                         </div>
@@ -517,16 +514,16 @@ export const SuperAdminUsers: React.FC = () => {
                         <>
                             <p className="text-sm text-muted-foreground">Selecione o novo perfil de acesso.</p>
                             <div>
-                                <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">Perfil</label>
-                                <select
+                                <Select
+                                    label="Perfil"
                                     value={actionValue}
                                     onChange={e => setActionValue(e.target.value)}
-                                    className="w-full bg-card border border-input text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer"
-                                >
-                                    <option value="user">Usuário Padrão</option>
-                                    <option value="admin">Administrador</option>
-                                    <option value="super_admin">Super Admin</option>
-                                </select>
+                                    options={[
+                                        { value: 'user', label: 'Usuário Padrão' },
+                                        { value: 'admin', label: 'Administrador' },
+                                        { value: 'super_admin', label: 'Super Admin' }
+                                    ]}
+                                />
                             </div>
                         </>
                     )}
