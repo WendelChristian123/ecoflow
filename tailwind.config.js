@@ -81,6 +81,11 @@ export default {
                 "accordion-down": "accordion-down 0.2s ease-out",
                 "accordion-up": "accordion-up 0.2s ease-out",
             },
+            boxShadow: {
+                'premium': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                'card': '0 4px 20px -2px rgba(0,0,0,0.04)',
+                'soft': '0 2px 10px -1px rgba(0,0,0,0.02)',
+            },
         },
     },
     plugins: [require("tailwindcss-animate")],

@@ -38,12 +38,12 @@
     --destructive-foreground: 0 0% 100%;
     /* White text on red */
 
-    --border: 214.3 31.8% 88%;
-    /* Slightly darker border */
-    --input: 214.3 31.8% 88%;
+    --border: 210 40% 93%;
+    /* Lighter border for clean look */
+    --input: 210 40% 93%;
     --ring: 155 60% 50%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     /* 🎨 Cores Vibrantes para Status (Experimental) */
     --status-overdue: 350 85% 60%;

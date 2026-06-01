@@ -244,54 +244,30 @@ export const Dashboard: React.FC = () => {
     const ZoneCard = ({ title, count, icon, type, variant, onClick }: { title: string, count: number, icon: React.ReactNode, type: string, variant: 'danger' | 'warning' | 'info', onClick: () => void }) => {
         if (count === 0) return null;
 
-        // Semantic Colors only for Icons and Text - STRONG Contrast
+        // Clean Pastel Colors for Icons
         const colorMap = {
-            danger: { text: "text-red-500", bg: "bg-red-500/10", border: "group-hover:border-red-500/40", title: "text-red-500", header: "bg-red-500" },
-            warning: { text: "text-amber-500", bg: "bg-amber-500/10", border: "group-hover:border-amber-500/40", title: "text-amber-500", header: "bg-amber-500" },
-            info: { text: "text-emerald-500", bg: "bg-emerald-500/10", border: "group-hover:border-emerald-500/40", title: "text-emerald-500", header: "bg-emerald-500" }
+            danger: { text: "text-rose-500", bg: "bg-rose-500/10" },
+            warning: { text: "text-amber-500", bg: "bg-amber-500/10" },
+            info: { text: "text-emerald-500", bg: "bg-emerald-500/10" }
         };
 
         const theme = colorMap[variant];
 
-        // Standard Card Structure - PREMIUM with Header Bar
         return (
             <div
                 onClick={onClick}
-                className={cn(
-                    "bg-card border border-border shadow-sm rounded-xl flex flex-col justify-between cursor-pointer min-h-[110px] select-none group transition-all duration-300 hover:-translate-y-1 hover:shadow-md relative overflow-hidden",
-                    theme.border
-                )}
+                className="bg-card border border-border/50 shadow-card hover:shadow-premium rounded-2xl p-6 flex items-center gap-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1"
             >
-                {/* 🎨 Header Bar with Module Name */}
-                <div className={cn(
-                    "px-3 py-2 flex items-center justify-between border-b border-white/10 transition-all",
-                    theme.header
-                )}>
-                    <span className="text-[10px] uppercase tracking-widest text-white font-bold">
+                <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-300", theme.bg, theme.text)}>
+                    {icon}
+                </div>
+                <div className="flex flex-col justify-center">
+                    <div className="text-3xl font-bold text-foreground leading-none tracking-tight mb-1">
+                        {count}
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">
                         {title}
                     </span>
-                    <div className="bg-white/20 backdrop-blur-sm p-1 rounded-md">
-                        <div className="text-white scale-75 origin-center">
-                            {icon}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Background Decoration */}
-                <div className={cn("absolute -right-4 -bottom-4 w-16 h-16 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none", theme.bg.replace('/10', ''))} />
-
-                {/* Content Area */}
-                <div className="p-3 md:p-4 flex flex-col justify-between flex-1 relative z-10">
-                    <div className="mt-auto">
-                        <div className={cn("text-3xl md:text-4xl font-black tracking-tighter leading-none mb-1 transition-transform duration-300 group-hover:translate-x-1",
-                            variant === 'info' ? "text-emerald-500" : theme.text  // 🎨 VERDE para "Próximos Dias"
-                        )}>
-                            {count}
-                        </div>
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block opacity-70">
-                            Itens Pendentes
-                        </span>
-                    </div>
                 </div>
             </div>
         );
@@ -330,20 +306,16 @@ export const Dashboard: React.FC = () => {
 
         return (
             <section className="mb-6 md:mb-8">
-                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4 pl-1">
-                    <div className={cn("w-1 h-3 md:h-4 rounded-full", variant === 'danger' ? 'bg-red-500' : variant === 'warning' ? 'bg-amber-500' : 'bg-emerald-500')}></div>
-                    <div className={cn("text-xs md:text-sm font-bold uppercase tracking-widest", variant === 'danger' ? 'text-red-500' : variant === 'warning' ? 'text-amber-500' : 'text-emerald-500')}>
-                        {title}
-                    </div>
-                    <div className="h-px bg-border flex-1 ml-1 md:ml-2"></div>
+                <div className="flex flex-col gap-1 mb-4 pl-1">
+                    <h2 className="text-lg font-bold text-foreground tracking-tight">{title}</h2>
                 </div>
 
                 {hasItems ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-3 md:gap-5">
-                        <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={20} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />
-                        <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={20} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />
-                        <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={20} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />
-                        <ZoneCard title="Orçamentos" count={items.quotes.length} icon={<FileText size={20} />} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                        <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={24} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />
+                        <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={24} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />
+                        <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={24} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />
+                        <ZoneCard title="Orçamentos" count={items.quotes.length} icon={<FileText size={24} />} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />
                     </div>
                 ) : (
                     <EmptyState />

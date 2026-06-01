@@ -36,14 +36,13 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, onClick, dep
                 isCollapsed ? "justify-center px-2" : "px-4",
                 (!isCollapsed && depth > 0) && "pl-11",
                 isActive
-                    ? "bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/30 scale-[1.02]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:shadow-sm hover:scale-[1.01] border border-transparent"
+                    ? "bg-primary/10 text-primary font-bold shadow-none"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent"
             )}
         >
-            {/* Glow Effect on Hover */}
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            {/* Glow Effect on Hover removed for cleaner look */}
 
-            <div className="shrink-0 relative z-10 transition-transform group-hover:scale-110 duration-200">{icon}</div>
+            <div className="shrink-0 relative z-10 transition-transform group-hover:scale-105 duration-200">{icon}</div>
             {!isCollapsed && <span className="relative z-10">{label}</span>}
 
             {isCollapsed && (
@@ -75,10 +74,9 @@ const SidebarGroup: React.FC<{
             >
                 <div className={cn(
                     "w-full flex items-center justify-center py-2.5 rounded-lg transition-all duration-200 cursor-pointer relative overflow-hidden border border-transparent group",
-                    highlight ? "text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/20 font-semibold hover:shadow-sm" : "text-muted-foreground hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-foreground hover:shadow-sm"
+                    highlight ? "text-primary hover:bg-primary/10 font-bold" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                 )}>
-                    {/* Glow Effect on Hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    {/* Glow Effect removed */}
                     <div className="relative z-10 transition-transform group-hover:scale-110 duration-200">{icon}</div>
                 </div>
 
@@ -101,14 +99,13 @@ const SidebarGroup: React.FC<{
                 onClick={onToggle}
                 className={cn(
                     "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group relative overflow-hidden border border-transparent",
-                    highlight ? "text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/20 font-semibold hover:shadow-sm" : "text-muted-foreground hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-foreground hover:shadow-sm"
+                    highlight ? "text-primary hover:bg-primary/10 font-bold" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                 )}
             >
-                {/* Glow Effect on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                {/* Glow Effect removed */}
 
                 <div className="flex items-center gap-3 relative z-10">
-                    <div className="transition-transform group-hover:scale-110 duration-200">{icon}</div>
+                    <div className="transition-transform group-hover:scale-105 duration-200">{icon}</div>
                     <span>{label}</span>
                 </div>
                 <div className="relative z-10">{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</div>
@@ -388,13 +385,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             )}
 
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-[100] bg-card border-r border-border transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-900/5",
+                "fixed inset-y-0 left-0 z-[100] bg-card transition-all duration-300 flex flex-col h-full shadow-soft",
                 "lg:static",
                 isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
                 (!isMobileMenuOpen && isCollapsed) ? "lg:w-20" : "lg:w-64"
             )}>
                 <div className="h-full flex flex-col">
-                    <div className={cn("h-16 flex items-center border-b border-white/5 transition-all px-4 shrink-0 bg-white/5", isCollapsed ? "justify-center" : "justify-between")}>
+                    <div className={cn("h-20 flex items-center transition-all px-6 shrink-0 bg-transparent", isCollapsed ? "justify-center px-4" : "justify-between")}>
                         {!isCollapsed ? (
                             <div className="flex items-center gap-2">
                                 <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg glow", isSuperAdminArea ? "bg-primary" : "bg-gradient-to-br from-primary to-primary")}>
@@ -497,7 +494,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         )}
                     </div>
 
-                    <div className="p-4 border-t border-white/10 shrink-0 space-y-1">
+                    <div className="p-4 shrink-0 space-y-1">
                         {!isSuperAdminArea && <SidebarItem isCollapsed={isCollapsed} to="/settings" icon={<Settings size={18} />} label="Configurações" onClick={() => setIsMobileMenuOpen(false)} />}
                         {isSuperAdmin && !isSuperAdminArea && (
                             <SidebarItem isCollapsed={isCollapsed} to="/super-admin/dashboard" icon={<Globe size={18} />} label="Área Super Admin" onClick={() => setIsMobileMenuOpen(false)} />
@@ -508,11 +505,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
             <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-secondary/5">
                 <TrialBanner />
-                <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-[60] sticky top-0 shadow-sm relative">
+                <header className="h-20 bg-background/80 backdrop-blur-md px-8 flex items-center justify-between shrink-0 z-[60] sticky top-0 relative">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>
                         <div className="flex flex-col">
-                            <h1 className="text-xl font-semibold text-foreground leading-tight">{getPageTitle()}</h1>
+                            <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">{getPageTitle()}</h1>
                             {currentCompany && !isSuperAdminArea && (
                                 <span className="text-xs text-primary font-medium">{currentCompany.name}</span>
                             )}
@@ -527,7 +524,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </header>
 
                 {/* Main Content Area - Optimized for 100% Height */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col relative">
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8 flex flex-col relative">
                     {children}
                 </div>
             </main>

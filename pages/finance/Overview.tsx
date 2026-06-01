@@ -386,21 +386,21 @@ export const FinancialOverview: React.FC = () => {
                         {/* BLOCO 1 - RESUMO */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
                             {/* SALDO - PROTAGONISTA (Mantido layout especial mas alinhado) */}
-                            <div className="lg:col-span-4 bg-card border border-border p-0 rounded-xl flex flex-col justify-between relative overflow-hidden group shadow-sm transition-all hover:shadow-md hover:-translate-y-1">
-                                <div className="bg-slate-900 dark:bg-slate-800 p-6 flex justify-between items-start border-b border-white/5">
+                            <div className="lg:col-span-4 bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 p-0 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-card transition-all duration-300 hover:shadow-premium hover:-translate-y-1">
+                                <div className="p-6 lg:p-8 flex justify-between items-start">
                                     <div>
-                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Saldo Atual</span>
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Saldo Atual</span>
                                         <div className="mt-2 text-4xl xl:text-5xl font-black text-white tracking-tighter">
                                             {fmt(currentBalance)}
                                         </div>
                                     </div>
-                                    <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full border border-white/10 flex items-center justify-center shrink-0">
                                         <Wallet size={32} className="text-emerald-400" />
                                     </div>
                                 </div>
-                                <div className="p-4 bg-slate-950/30 flex-1 flex items-center">
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                <div className="px-6 lg:px-8 py-5 bg-black/20 flex-1 flex items-center border-t border-white/5 mt-auto">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                                         <span>Consolidado de todas as contas</span>
                                     </div>
                                 </div>
@@ -585,12 +585,12 @@ export const FinancialOverview: React.FC = () => {
 
                                         <div className="relative h-2 bg-secondary rounded-full overflow-hidden mb-2">
                                             <div
-                                                className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-500"
+                                                className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-500 shadow-sm"
                                                 style={{ width: `${percent}%` }}
                                             ></div>
                                         </div>
 
-                                        <div className="flex justify-between text-[10px] font-medium uppercase tracking-wide">
+                                        <div className="flex justify-between text-[11px] font-bold uppercase tracking-wide">
                                             <span className="text-muted-foreground">Usado: {Math.round(percent)}%</span>
                                             <span className="text-primary">Disponível: {fmt(available)}</span>
                                         </div>
@@ -605,10 +605,10 @@ export const FinancialOverview: React.FC = () => {
 
 
             {/* BLOCO 5 - EVOLUÇÃO */}
-            <div className="bg-card border border-border shadow-sm rounded-2xl p-6 sm:p-8">
+            <div className="bg-card border border-border/50 shadow-card rounded-2xl p-6 sm:p-8">
                 <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-                    <h3 className="font-bold text-muted-foreground uppercase tracking-widest text-xs flex items-center gap-2">
-                        <BarChart2 size={16} /> Evolução Financeira
+                    <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                        <BarChart2 size={20} className="text-primary" /> Evolução Financeira
                     </h3>
                     <div className="flex items-center gap-2">
                         <FilterSelect

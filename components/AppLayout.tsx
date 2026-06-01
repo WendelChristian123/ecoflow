@@ -49,13 +49,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
     const greeting = getGreeting();
 
     return (
-        <header className="bg-slate-900 border-b border-slate-800/50 px-4 py-3 shrink-0 z-[60] sticky top-0">
+        <header className="bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-3 shrink-0 z-[60] sticky top-0">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
                     {isSubPage() ? (
                         <button
                             onClick={() => navigate(-1)}
-                            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0"
+                            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors shrink-0"
                         >
                             <ChevronLeft size={22} />
                         </button>
@@ -63,11 +63,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
                     <div className="min-w-0">
                         {!isSubPage() && location.pathname === '/dashboard' ? (
                             <>
-                                <p className="text-xs text-slate-500 font-medium">{greeting},</p>
-                                <h1 className="text-lg font-bold text-white truncate">{userName}</h1>
+                                <p className="text-xs text-muted-foreground font-medium">{greeting},</p>
+                                <h1 className="text-lg font-bold text-foreground truncate">{userName}</h1>
                             </>
                         ) : (
-                            <h1 className="text-lg font-bold text-white truncate">{getTitle()}</h1>
+                            <h1 className="text-lg font-bold text-foreground truncate">{getTitle()}</h1>
                         )}
                     </div>
                 </div>
@@ -77,7 +77,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
                     {/* Fixed alignment: flex items-center justify-center, and made it clickable */}
                     <button 
                         onClick={() => onOpenProfile(user)}
-                        className="w-9 h-9 rounded-full overflow-hidden border-2 border-emerald-500/30 flex items-center justify-center focus:outline-none hover:border-emerald-500/60 transition-colors"
+                        className="w-9 h-9 rounded-full overflow-hidden border-2 border-primary/30 flex items-center justify-center focus:outline-none hover:border-primary/60 transition-colors"
                     >
                         <Avatar name={userName} size="sm" />
                     </button>
@@ -118,7 +118,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     }
 
     return (
-        <div className="h-[100dvh] w-[100dvw] bg-slate-950 flex flex-col text-white font-sans overflow-hidden">
+        <div className="h-[100dvh] w-[100dvw] bg-background flex flex-col text-foreground font-sans overflow-hidden">
             <TrialBanner />
             <AppHeader onOpenProfile={(u) => { setCurrentUserProfile(u); setIsProfileOpen(true); }} />
 
