@@ -2319,9 +2319,17 @@ export const api = {
 
         const loanIds = loansData.map(l => l.id);
         const { data: txData } = await supabase.from('financial_transactions')
-            .select('origin_id, origin_type, category_id, account_id')
+            .select('id, origin_id, origin_type, category_id, account_id, amount, gross_amount, discount_amount, is_paid, installment_index')
             .in('origin_type', ['loan', 'loan_setup'])
             .in('origin_id', loanIds);
+
+        const parentTxIds = txData?.filter(t => t.origin_type === 'loan').map(t => t.id) || [];
+        const { data: interestData } = parentTxIds.length > 0 
+            ? await supabase.from('financial_transactions')
+                .select('origin_id, amount, gross_amount, discount_amount, is_paid')
+                .eq('origin_type', 'interest_link')
+                .in('origin_id', parentTxIds)
+            : { data: [] };
 
         const txByLoan = (txData || []).reduce((acc: any, tx: any) => {
             if (!acc[tx.origin_id]) acc[tx.origin_id] = [];
@@ -2332,14 +2340,38 @@ export const api = {
         return loansData.map((l: any) => {
             const loanTxs = txByLoan[l.id] || [];
             const setupTx = loanTxs.find((t: any) => t.origin_type === 'loan_setup');
-            const mainTx = loanTxs.find((t: any) => t.origin_type === 'loan');
+            const mainTxs = loanTxs.filter((t: any) => t.origin_type === 'loan');
             
+            let paidCount = 0;
+            let totalActuallyPaid = 0;
+            let totalDiscountApplied = 0;
+
+            mainTxs.forEach((t: any) => {
+                const linked = interestData?.find(i => i.origin_id === t.id);
+                const isPaid = t.is_paid;
+                
+                const capitalAmt = parseFloat(t.amount || 0);
+                const interestAmt = linked ? parseFloat(linked.amount || 0) : 0;
+                const currentAmt = capitalAmt + interestAmt;
+
+                const grossAmt = parseFloat(t.gross_amount || t.amount || 0) + (linked ? parseFloat(linked.gross_amount || linked.amount || 0) : 0);
+                const discountAmt = parseFloat(t.discount_amount || 0);
+                
+                if (isPaid) {
+                    paidCount++;
+                    totalActuallyPaid += currentAmt;
+                }
+                totalDiscountApplied += discountAmt;
+            });
+
+            const remainingAmount = Math.max(0, parseFloat(l.total_amount) - totalActuallyPaid - totalDiscountApplied);
+
             return {
                 id: l.id,
                 companyId: l.company_id,
                 contactId: l.contact_id,
-                categoryId: mainTx?.category_id || loanTxs[0]?.category_id || '',
-                accountId: mainTx?.account_id || loanTxs[0]?.account_id || '',
+                categoryId: mainTxs[0]?.category_id || loanTxs[0]?.category_id || '',
+                accountId: mainTxs[0]?.account_id || loanTxs[0]?.account_id || '',
                 name: l.name,
                 type: l.type,
                 principalAmount: parseFloat(l.principal_amount),
@@ -2348,8 +2380,11 @@ export const api = {
                 discountAmount: parseFloat(l.discount_amount),
                 interestAmount: parseFloat(l.interest_amount),
                 totalAmount: parseFloat(l.total_amount),
+                remainingAmount: remainingAmount,
+                totalPaid: totalActuallyPaid,
+                paidInstallmentsCount: paidCount,
                 firstDueDate: l.first_due_date,
-                status: l.status,
+                status: remainingAmount <= 0 ? 'paid' : l.status,
                 createdAt: l.created_at,
                 contact: l.contact ? { ...l.contact, fantasyName: l.contact.fantasy_name } : undefined,
                 isCapitalSettled: !!setupTx,

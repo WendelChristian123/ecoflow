@@ -12,6 +12,7 @@ import { formatDate } from '../../utils/formatters';
 import { FilterSelect } from '../../components/FilterSelect';
 import { LoanModal } from '../../components/finance/LoanModal';
 import { LoanDetailsModal } from '../../components/finance/LoanDetailsModal';
+import { LoansReportModal } from '../../components/Reports/LoansReportModal';
 
 export const Loans = () => {
     const { user } = useAuth();
@@ -21,6 +22,7 @@ export const Loans = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [selectedLoan, setSelectedLoan] = useState<any>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
@@ -59,12 +61,18 @@ export const Loans = () => {
                     <h1 className="text-2xl font-bold flex items-center gap-2"><Landmark className="text-primary" /> Dívidas e Empréstimos</h1>
                     <p className="text-sm text-muted-foreground mt-1">Gerencie financiamentos, empréstimos e negociações parceladas.</p>
                 </div>
-                {can('finance.loans', 'create') && (
-                    <Button onClick={() => setIsModalOpen(true)} variant="primary" className="whitespace-nowrap">
-                        <Plus size={20} className="mr-2" />
-                        Nova Dívida/Empréstimo
+                <div className="flex gap-2">
+                    <Button onClick={() => setIsReportModalOpen(true)} variant="outline" className="whitespace-nowrap">
+                        <FileText size={20} className="mr-2" />
+                        Relatório
                     </Button>
-                )}
+                    {can('finance.loans', 'create') && (
+                        <Button onClick={() => setIsModalOpen(true)} variant="primary" className="whitespace-nowrap">
+                            <Plus size={20} className="mr-2" />
+                            Nova Dívida/Empréstimo
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -124,6 +132,7 @@ export const Loans = () => {
                                 <th className="px-4 py-3 font-medium">Parcelas</th>
                                 <th className="px-4 py-3 font-medium text-right">Valor Capital</th>
                                 <th className="px-4 py-3 font-medium text-right">Valor Total (c/ Juros e Desc.)</th>
+                                <th className="px-4 py-3 font-medium text-right">Resta Pagar</th>
                                 <th className="px-4 py-3 font-medium text-center">Início</th>
                             </tr>
                         </thead>
@@ -178,6 +187,9 @@ export const Loans = () => {
                                         <td className="px-4 py-4 text-right font-bold text-foreground">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.totalAmount)}
                                         </td>
+                                        <td className="px-4 py-4 text-right font-bold text-amber-500">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.remainingAmount)}
+                                        </td>
                                         <td className="px-4 py-4 text-center text-muted-foreground">
                                             {formatDate(loan.firstDueDate, 'dd/MM/yyyy')}
                                         </td>
@@ -216,6 +228,12 @@ export const Loans = () => {
                     setEditingLoan(loan);
                     setIsModalOpen(true);
                 }}
+            />
+
+            <LoansReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                loans={filteredLoans}
             />
         </div>
     );

@@ -178,14 +178,7 @@ export const LoanDetailsModal: React.FC<LoanDetailsModalProps> = ({ isOpen, onCl
     const progress = totalCount === 0 ? 0 : Math.round((paidCount / totalCount) * 100);
 
     const totalFromPaid = paidInstallments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-    const totalFromPartial = unpaidInstallments.reduce((acc, curr) => {
-        const gross = curr.grossAmount || curr.gross_amount || curr.amount;
-        const current = curr.amount || 0;
-        const discount = curr.discountAmount || curr.discount_amount || 0;
-        const partialPaid = gross - discount - current;
-        return acc + Math.max(0, partialPaid);
-    }, 0);
-    const totalActuallyPaid = totalFromPaid + totalFromPartial;
+    const totalActuallyPaid = totalFromPaid;
 
     const totalDiscountApplied = installments.reduce((acc, curr) => acc + (curr.discountAmount || curr.discount_amount || 0), 0);
     const remainingAmount = Math.max(0, loan.totalAmount - totalActuallyPaid - totalDiscountApplied);

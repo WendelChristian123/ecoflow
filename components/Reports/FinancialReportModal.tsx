@@ -221,6 +221,45 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
         return Object.values(stats).sort((a, b) => b.amount - a.amount);
     }, [filteredData, financeSettings, categories]);
 
+    // Stats by Contact
+    const contactStats = useMemo(() => {
+        const stats: Record<string, { name: string, amount: number, type: 'income' | 'expense' }> = {};
+        const mode = financeSettings?.credit_card_expense_mode || 'competence';
+
+        filteredData.forEach(t => {
+            if (t.type === 'expense') {
+                const isCardPayment = t.description.toLowerCase().includes('fatura');
+                const isCardPurchase = !!t.creditCardId;
+
+                if (isCardPayment) {
+                    if (mode === 'competence') return;
+                    if (mode === 'cash' && !t.isPaid) return;
+                } else {
+                    if (mode === 'cash' && isCardPurchase) return;
+                    if (mode === 'competence' && !t.isPaid && !isCardPurchase) return;
+                    if (mode === 'cash' && !t.isPaid) return;
+                }
+            } else if (t.type === 'income') {
+                if (t.description.toLowerCase().includes('fatura')) return;
+                if (!t.isPaid) return;
+            } else return;
+
+            // Accumulate
+            const contactId = t.contactId || 'no_contact';
+            if (!stats[contactId]) {
+                const contact = contacts.find(c => c.id === t.contactId);
+                stats[contactId] = {
+                    name: contact?.name || (t.type === 'income' ? 'Cliente Não Informado' : 'Fornecedor Não Informado'),
+                    amount: 0,
+                    type: t.type as 'income' | 'expense'
+                };
+            }
+            stats[contactId].amount += t.amount;
+        });
+
+        return Object.values(stats).sort((a, b) => b.amount - a.amount);
+    }, [filteredData, financeSettings, contacts]);
+
     // Global Balance
 
     // Global Balance
@@ -304,10 +343,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
-                        <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>
-                        <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Filtros:</strong> ${accountFilter.includes('all') ? 'Todas Contas' : 'Contas Selecionadas'} • ${categoryFilter.includes('all') ? 'Todas Categorias' : 'Categorias Selecionadas'} • ${paymentMethodFilter.includes('all') ? 'Todas Formas Pgto' : 'Formas Pgto Selecionadas'}</div>
-                    </div>
                     </div>
                 </div>
 
@@ -454,6 +490,63 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                                     `;
                 }).join('')}
                                 ${categoryStats.filter(s => s.type === 'expense').length === 0 ? '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 10px;">Nenhuma despesa categorizada</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top: 30px;">Resumo por Fornecedor / Cliente</div>
+                <div style="display: flex; gap: 30px; align-items: flex-start;">
+                    <!-- RECEITAS (CLIENTES) -->
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; font-weight: 700; color: #10b981; margin-bottom: 10px; text-transform: uppercase;">Receitas por Cliente</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%">Cliente</th>
+                                    <th style="width: 20%; text-align: right;">%</th>
+                                    <th style="width: 30%; text-align: right;">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${contactStats.filter(s => s.type === 'income').map(s => {
+                    const percent = totals.totalIncome ? (s.amount / totals.totalIncome) * 100 : 0;
+                    return `
+                                        <tr>
+                                            <td style="padding: 8px;">${s.name}</td>
+                                            <td style="padding: 8px; text-align: right;">${percent.toFixed(1)}%</td>
+                                            <td style="padding: 8px; text-align: right; font-weight: bold;">${fmt(s.amount)}</td>
+                                        </tr>
+                                    `;
+                }).join('')}
+                                ${contactStats.filter(s => s.type === 'income').length === 0 ? '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 10px;">Nenhuma receita com cliente</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- DESPESAS (FORNECEDORES) -->
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; font-weight: 700; color: #f43f5e; margin-bottom: 10px; text-transform: uppercase;">Despesas por Fornecedor</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%">Fornecedor</th>
+                                    <th style="width: 20%; text-align: right;">%</th>
+                                    <th style="width: 30%; text-align: right;">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${contactStats.filter(s => s.type === 'expense').map(s => {
+                    const percent = totals.totalExpense ? (s.amount / totals.totalExpense) * 100 : 0;
+                    return `
+                                        <tr>
+                                            <td style="padding: 8px;">${s.name}</td>
+                                            <td style="padding: 8px; text-align: right;">${percent.toFixed(1)}%</td>
+                                            <td style="padding: 8px; text-align: right; font-weight: bold;">${fmt(s.amount)}</td>
+                                        </tr>
+                                    `;
+                }).join('')}
+                                ${contactStats.filter(s => s.type === 'expense').length === 0 ? '<tr><td colspan="3" style="text-align:center; color: #94a3b8; padding: 10px;">Nenhuma despesa com fornecedor</td></tr>' : ''}
                             </tbody>
                         </table>
                     </div>
