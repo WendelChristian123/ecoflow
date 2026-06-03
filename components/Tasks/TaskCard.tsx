@@ -10,10 +10,11 @@ interface TaskCardProps {
     onClick: (task: Task) => void;
     onDelete: (id: string) => void;
     canMove: boolean;
+    isReference?: boolean;
 }
 
 // ... imports
-export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDelete, canMove }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDelete, canMove, isReference }) => {
     const assignee = users.find(u => u.id === task.assigneeId);
 
     const translatePriority = (p: string) => {
@@ -73,7 +74,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
                     </button>
                 </div>
 
-                <h4 className={`text-xs font-semibold text-foreground mb-0.5 leading-tight ${task.status === 'done' ? 'line-through opacity-70' : ''}`}>{task.title}</h4>
+                <h4 className={`text-xs font-semibold text-foreground mb-0.5 leading-tight ${task.status === 'done' ? 'line-through opacity-70' : ''}`}>
+                    {task.title}
+                    {isReference && <span className="ml-2 inline-flex items-center rounded-full bg-indigo-500/10 px-1.5 py-0.5 text-[8px] font-medium text-indigo-500 ring-1 ring-inset ring-indigo-500/20 uppercase">Da Equipe</span>}
+                </h4>
                 {task.description && <p className="text-[10px] text-muted-foreground line-clamp-2 mb-1.5">{task.description}</p>}
 
                 <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-border/50">

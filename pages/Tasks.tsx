@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Filter, LayoutList, Kanban, ChevronDown, ChevronRight, ChevronLeft, Calendar as CalendarIcon, X, User as UserIcon } from 'lucide-react';
+import { Plus, Filter, LayoutList, Kanban as KanbanIcon, ChevronDown, ChevronRight, ChevronLeft, Calendar as CalendarIcon, X, User as UserIcon } from 'lucide-react';
 import { Button, Loader, TaskTableView, Select as SelectComponent } from '../components/Shared';
 import { FilterSelect } from '../components/FilterSelect';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, parseISO, isValid } from 'date-fns';
@@ -20,6 +20,8 @@ import { KanbanHeader } from '../components/Kanban/KanbanHeader';
 import { TaskCard } from '../components/Tasks/TaskCard';
 import { Settings } from 'lucide-react';
 import { StageManagerModal } from '../components/Kanban/StageManagerModal';
+import { kanbanService } from '../services/kanbanService';
+import { Kanban } from '../types';
 
 const TaskKanbanWithContext: React.FC<{
   tasks: Task[];
@@ -34,11 +36,39 @@ const TaskKanbanWithContext: React.FC<{
   const groupByStage = (entities: Task[], stageId: string) => {
     if (!currentKanban) return [];
     const stage = currentKanban.stages.find(s => s.id === stageId);
-    return entities.filter(t => {
+    const firstStageId = currentKanban.stages[0]?.id;
+    const filtered = entities.filter(t => {
       if (t.kanbanStageId === stageId) return true;
       if (!t.kanbanStageId && stage?.systemStatus && t.status === stage.systemStatus) return true;
+      
+      // Fallback: Se a tarefa não tem kanbanStageId e nenhum systemStatus bate com ela, 
+      // coloque na etapa padrão de "A Fazer" ou na primeira etapa.
+      if (!t.kanbanStageId && t.status !== 'done') {
+         const hasMatchingStage = currentKanban.stages.some(s => s.systemStatus === t.status);
+         if (!hasMatchingStage) {
+            let defaultStage = currentKanban.stages.find(s => s.systemStatus === 'todo');
+            if (!defaultStage) {
+                defaultStage = currentKanban.stages.find(s => s.name.trim().toLowerCase() === 'a fazer');
+            }
+            if (!defaultStage) {
+                defaultStage = currentKanban.stages[0];
+            }
+            if (stage?.id === defaultStage?.id) return true;
+         }
+      }
       return false;
     });
+
+    // Se for a etapa de conclusão, ordena dos mais recentes para os mais antigos (Data decrescente)
+    if (stage?.systemStatus === 'done') {
+      filtered.sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+      });
+    }
+
+    return filtered;
   };
 
   return (
@@ -83,6 +113,7 @@ export const TasksPage: React.FC = () => {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [boardStages, setBoardStages] = useState<{ id: string, name: string }[]>([]);
 
   // Filters & State
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -125,13 +156,17 @@ export const TasksPage: React.FC = () => {
     if (!currentCompany) return;
     if (showLoading) setLoading(true);
     try {
-      const [t, u, p, tm, delegatorIds] = await Promise.all([
+      const [t, p, u, tm, kbs, delegatorIds] = await Promise.all([
         api.getTasks(currentCompany.id),
-        api.getUsers(currentCompany.id),
         api.getProjects(currentCompany.id),
+        api.getUsers(currentCompany.id),
         api.getTeams(currentCompany.id),
+        kanbanService.listKanbans('tasks'),
         api.getDelegators('tasks')
       ]);
+      if (kbs && kbs.length > 0) {
+        setBoardStages(kbs[0].stages || []);
+      }
       setTasks(t);
       setUsers(u);
       setProjects(p);
@@ -213,13 +248,14 @@ export const TasksPage: React.FC = () => {
     }
   };
 
-  let filteredTasks = tasks;
+  // 1. Base Filter: Apenas tarefas sem projeto e sem equipe
+  let filteredTasks = tasks.filter(t => !t.projectId && !t.teamId);
 
 
 
   // 2. Status Filter
   if (filterStatus !== 'all') {
-    filteredTasks = filteredTasks.filter(t => t.status === filterStatus);
+    filteredTasks = filteredTasks.filter(t => t.kanbanStageId === filterStatus || t.status === filterStatus);
   }
 
   // 3. Assignee Filter
@@ -254,7 +290,10 @@ export const TasksPage: React.FC = () => {
   if (loading) return <Loader />;
 
   return (
-    <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+    <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={(entityId, stageId) => {
+      setTasks(prev => prev.map(t => t.id === entityId ? { ...t, kanbanStageId: stageId } : t));
+      loadData(false);
+    }}>
       <div className="h-full flex flex-col gap-3">
         {/* Unified Controls Bar */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -288,13 +327,16 @@ export const TasksPage: React.FC = () => {
             onChange={setFilterStatus}
             options={[
               { value: 'all', label: 'Todos' },
-              { value: 'todo', label: 'A Fazer' },
-              { value: 'in_progress', label: 'Em Progresso' },
-              { value: 'review', label: 'Revisão' },
-              { value: 'done', label: 'Concluído' }
+              ...(boardStages.length > 0 ? boardStages.map(s => ({ value: s.id, label: s.name })) : [
+                { value: 'todo', label: 'A Fazer' },
+                { value: 'in_progress', label: 'Em Progresso' },
+                { value: 'review', label: 'Revisão' },
+                { value: 'done', label: 'Concluído' }
+              ])
             ]}
             darkMode={false}
             className="min-w-[120px] md:min-w-[140px] flex-1 sm:flex-none"
+            disableSort
           />
 
           {/* 5. Priority - Web only */}
@@ -340,7 +382,7 @@ export const TasksPage: React.FC = () => {
                 <LayoutList size={16} />
               </button>
               <button onClick={() => setView('board')} className={`p-1.5 rounded transition-all ${view === 'board' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                <Kanban size={16} />
+                <KanbanIcon size={16} />
               </button>
               {view === 'board' && (
                 <button
@@ -383,6 +425,7 @@ export const TasksPage: React.FC = () => {
                 onDelete={requestDelete}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                boardStages={boardStages}
               />
             </div>
 
@@ -403,6 +446,7 @@ export const TasksPage: React.FC = () => {
                     onDelete={requestDelete}
                     onTaskClick={setSelectedTask}
                     onStatusChange={handleStatusChange}
+                    boardStages={boardStages}
                   />
                 </div>
               )}

@@ -94,7 +94,9 @@ export const api = {
             dueDate: t.due_date,
             ownerId: t.owner_id,
             contextType: t.context_type,
-            contextId: t.context_id
+            contextId: t.context_id,
+            kanbanStageId: t.kanban_stage_id,
+            kanbanId: t.kanban_id
         })).sort((a: any, b: any) => (a.title || '').trim().toLowerCase().localeCompare((b.title || '').trim().toLowerCase())) as Task[];
     },
 
@@ -176,7 +178,8 @@ export const api = {
                 owner_id: uuidOrNull(t.ownerId) || uuidOrNull(t.assigneeId) || currentUserId,
                 context_type: t.contextType || 'personal',
                 context_id: uuidOrNull(t.contextId),
-                // logs: REMOVED
+                kanban_stage_id: uuidOrNull(t.kanbanStageId),
+                kanban_id: uuidOrNull(t.kanbanId),
             };
         };
 
@@ -227,21 +230,25 @@ export const api = {
         } as Task;
     },
     updateTask: async (task: Task) => {
+        const pId = task.projectId === 'none' ? null : uuidOrNull(task.projectId);
+        const tId = task.teamId === 'none' ? null : uuidOrNull(task.teamId);
+        
         const dbTask = {
             title: task.title,
             description: task.description,
             status: task.status,
             priority: task.priority,
             assignee_id: uuidOrNull(task.assigneeId),
-            project_id: uuidOrNull(task.projectId),
-            team_id: uuidOrNull(task.teamId),
+            project_id: pId,
+            team_id: tId,
             due_date: task.dueDate,
             tags: task.tags,
             links: task.links,
             owner_id: uuidOrNull(task.ownerId),
             context_type: task.contextType || 'personal',
-            context_id: uuidOrNull(task.contextId),
-            // logs: REMOVED field
+            context_id: task.contextId === 'none' ? null : uuidOrNull(task.contextId),
+            kanban_stage_id: uuidOrNull(task.kanbanStageId),
+            kanban_id: uuidOrNull(task.kanbanId),
         };
 
         const { error } = await supabase
@@ -288,6 +295,8 @@ export const api = {
             companyId: p.company_id,
             teamIds: p.team_ids,
             members: p.member_ids,
+            kanbanStageId: p.kanban_stage_id,
+            kanbanId: p.kanban_id
         })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as Project[];
     },
     addProject: async (project: Partial<Project>) => {
@@ -402,7 +411,9 @@ export const api = {
             leaderId: t.lead_id,
             companyId: t.company_id,
             memberIds: t.member_ids,
-            logs: t.logs
+            logs: t.logs,
+            kanbanStageId: t.kanban_stage_id,
+            kanbanId: t.kanban_id
         })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as Team[];
     },
 

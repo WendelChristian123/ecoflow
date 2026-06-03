@@ -6,6 +6,7 @@ import { X, Trash2, Link as LinkIcon, Plus } from 'lucide-react';
 import { Task, User, Status, Priority } from '../types';
 import { parseISO, isPast, isToday, differenceInDays } from 'date-fns';
 import { FilterSelect } from './FilterSelect';
+import { KanbanContext } from './Kanban/KanbanContext';
 
 // Utility for classes
 export function cn(...inputs: ClassValue[]) {
@@ -489,9 +490,21 @@ export const TaskTableView: React.FC<{
   users: User[],
   onDelete: (id: string) => void,
   onTaskClick?: (task: Task) => void,
-  onStatusChange?: (taskId: string, status: Status) => void
-}> = ({ tasks, users, onDelete, onTaskClick, onStatusChange }) => {
+  onStatusChange?: (taskId: string, status: Status) => void, // mantido por compatibilidade
+  boardStages?: { id: string, name: string }[]
+}> = ({ tasks, users, onDelete, onTaskClick, onStatusChange, boardStages }) => {
   const getUser = (id: string) => users.find(u => u.id === id);
+  const kanbanContext = React.useContext(KanbanContext);
+  const stages = boardStages && boardStages.length > 0 ? boardStages : (kanbanContext?.currentKanban?.stages || []);
+
+  const handleStageChange = (taskId: string, stageId: string) => {
+      if (kanbanContext && kanbanContext.currentKanban) {
+          kanbanContext.moveEntity(taskId, stageId);
+      } else if (onStatusChange) {
+          // Fallback se não houver kanban context (embora agora deva sempre ter)
+          onStatusChange(taskId, stageId as Status);
+      }
+  };
 
   const getPriorityColor = (p: Priority) => {
     switch (p) {
@@ -563,18 +576,36 @@ export const TaskTableView: React.FC<{
                 <div className="flex flex-wrap items-center gap-2" onClick={e => e.stopPropagation()}>
                   {/* Status */}
                   <div className="flex-1 min-w-[130px]">
-                    <FilterSelect
-                      value={task.status}
-                      onChange={(val) => onStatusChange && onStatusChange(task.id, val as Status)}
-                      options={[
-                        { value: 'todo', label: 'A Fazer' },
-                        { value: 'in_progress', label: 'Em Progresso' },
-                        { value: 'review', label: 'Revisão' },
-                        { value: 'done', label: 'Concluído' }
-                      ]}
-                      darkMode={false}
-                      className="text-xs w-full"
-                    />
+                    {(() => {
+                        let selectedValue = task.kanbanStageId || task.status;
+                        if (stages.length > 0) {
+                            const isExternal = task.kanbanStageId && !stages.some(s => s.id === task.kanbanStageId);
+                            if (!task.kanbanStageId || isExternal) {
+                                let fallbackStage = stages.find(s => s.systemStatus === task.status);
+                                if (!fallbackStage && task.status !== 'done') {
+                                    fallbackStage = stages.find(s => s.systemStatus === 'todo') || stages.find(s => s.name.trim().toLowerCase() === 'a fazer') || stages[0];
+                                }
+                                if (fallbackStage) {
+                                    selectedValue = fallbackStage.id;
+                                }
+                            }
+                        }
+                        return (
+                            <FilterSelect
+                              value={selectedValue}
+                              onChange={(val) => handleStageChange(task.id, val)}
+                              options={stages.length > 0 ? stages.map(s => ({ value: s.id, label: s.name })) : [
+                                { value: 'todo', label: 'A Fazer' },
+                                { value: 'in_progress', label: 'Em Progresso' },
+                                { value: 'review', label: 'Revisão' },
+                                { value: 'done', label: 'Concluído' }
+                              ]}
+                              darkMode={false}
+                              className="text-xs w-full"
+                              disableSort
+                            />
+                        );
+                    })()}
                   </div>
                   {/* Priority */}
                   <Badge variant={getPriorityColor(task.priority)} className="text-[10px] flex-shrink-0">
@@ -640,9 +671,9 @@ export const TaskTableView: React.FC<{
                     <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <div className="w-36">
                         <FilterSelect
-                          value={task.status}
-                          onChange={(val) => onStatusChange && onStatusChange(task.id, val as Status)}
-                          options={[
+                          value={task.kanbanStageId || task.status}
+                          onChange={(val) => handleStageChange(task.id, val)}
+                          options={stages.length > 0 ? stages.map(s => ({ value: s.id, label: s.name })) : [
                             { value: 'todo', label: 'A Fazer' },
                             { value: 'in_progress', label: 'Em Progresso' },
                             { value: 'review', label: 'Revisão' },
@@ -650,6 +681,7 @@ export const TaskTableView: React.FC<{
                           ]}
                           darkMode={false}
                           className="text-xs"
+                          disableSort
                         />
                       </div>
                     </td>

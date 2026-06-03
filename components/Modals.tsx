@@ -23,6 +23,7 @@ import { translateStatus, translatePriority, translateTaskStatus, translateConta
 import { usePaymentConfirmation } from './PaymentConfirmation';
 import { kanbanService } from '../services/kanbanService';
 import { KanbanStage } from '../types';
+import { KanbanContext } from './Kanban/KanbanContext';
 
 // --- Generic Confirmation Modal ---
 
@@ -1120,10 +1121,13 @@ interface TaskModalProps {
     teams: Team[];
     users: User[];
     initialData?: Partial<Task>;
+    boardStages?: KanbanStage[];
 }
 
-export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess, projects, teams, users, initialData }) => {
+export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess, projects, teams, users, initialData, boardStages }) => {
     const { user: currentUser } = useAuth();
+    const kanbanContext = React.useContext(KanbanContext);
+    const stages = (boardStages && boardStages.length > 0) ? boardStages : (kanbanContext?.currentKanban?.stages || []);
     const [formData, setFormData] = useState<Partial<Task>>({
         title: '', description: '', status: 'todo', priority: 'medium', assigneeId: '', projectId: '', teamId: '', dueDate: '', links: [], contextType: 'personal'
     });
@@ -1240,13 +1244,35 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
         setLoading(true);
         try {
             const finalFormData = { ...formData };
+            if (kanbanContext && kanbanContext.currentKanban) {
+                finalFormData.kanbanId = kanbanContext.currentKanban.id;
+            }
             if (formData.dueDate) {
                 const d = new Date(formData.dueDate);
                 finalFormData.dueDate = d.toISOString();
             }
 
+            // Se o contexto (projeto ou equipe) mudou, precisamos limpar o kanban_id e kanban_stage_id
+            // para que a tarefa seja recategorizada na etapa padrão do novo contexto
             if (initialData?.id) {
-                await api.updateTask({ ...initialData, ...finalFormData } as Task);
+                const contextChanged = 
+                    (initialData.projectId || 'none') !== (formData.projectId || 'none') || 
+                    (initialData.teamId || 'none') !== (formData.teamId || 'none');
+                
+                if (contextChanged) {
+                    finalFormData.kanbanId = undefined;
+                    finalFormData.kanbanStageId = undefined;
+                }
+            }
+
+            const taskPayload = { ...initialData, ...finalFormData } as Task;
+            
+            // Forçar explicitamente a limpeza das propriedades caso estejam definidas como 'none' ou undefined
+            if (formData.projectId === 'none' || !formData.projectId) taskPayload.projectId = 'none';
+            if (formData.teamId === 'none' || !formData.teamId) taskPayload.teamId = 'none';
+
+            if (initialData?.id) {
+                await api.updateTask(taskPayload);
                 onSuccess();
             } else {
                 const recurrenceConfig = recurrence.isRecurring ? {
@@ -1317,15 +1343,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FilterSelect
                         inlineLabel="Status:"
-                        value={formData.status}
-                        onChange={(val) => setFormData({ ...formData, status: val as any })}
-                        options={[
+                        value={
+                            stages.length > 0 
+                                ? (stages.some(s => s.id === formData.kanbanStageId) 
+                                    ? formData.kanbanStageId 
+                                    : (stages.find(s => s.systemStatus === formData.status)?.id || formData.status)) 
+                                : formData.status
+                        }
+                        onChange={(val) => {
+                            const selectedStage = stages.find(s => s.id === val);
+                            if (selectedStage) {
+                                setFormData({ ...formData, kanbanStageId: selectedStage.id, status: selectedStage.systemStatus || 'todo' });
+                            } else {
+                                setFormData({ ...formData, status: val as any, kanbanStageId: undefined });
+                            }
+                        }}
+                        options={stages.length > 0 ? stages.map(s => ({ value: s.id, label: s.name })) : [
                             { value: 'todo', label: 'A Fazer' },
                             { value: 'in_progress', label: 'Em Progresso' },
                             { value: 'review', label: 'Revisão' },
                             { value: 'done', label: 'Concluído' }
                         ]}
                         darkMode={false}
+                        disableSort
                     />
 
                     <FilterSelect
@@ -1463,9 +1503,10 @@ interface TaskDetailModalProps {
     users: User[];
     projects: Project[];
     teams: Team[];
+    boardStages?: KanbanStage[];
 }
 
-export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClose, onSuccess, task, users, projects, teams }) => {
+export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClose, onSuccess, task, users, projects, teams, boardStages }) => {
     // ... Implementation logic ...
     const [isEditing, setIsEditing] = useState(false);
     const [isDuplicating, setIsDuplicating] = useState(false);
@@ -1696,6 +1737,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                     projects={projects}
                     teams={teams}
                     users={users}
+                    boardStages={boardStages}
                     initialData={task}
                 />
             )}

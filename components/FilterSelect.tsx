@@ -24,6 +24,7 @@ interface FilterSelectProps {
     placeholder?: string;
     darkMode?: boolean; // Force dark background
     searchable?: boolean;
+    disableSort?: boolean; // If true, preserves the original order of options
 }
 
 export const FilterSelect: React.FC<FilterSelectProps> = ({
@@ -38,7 +39,8 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
     triggerClassName,
     placeholder = "Selecione",
     darkMode = false,
-    searchable = false
+    searchable = false,
+    disableSort = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -103,7 +105,7 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
 
 
     const selectedOption = options.find(opt => opt.value === value);
-    const sortedOptions = [...options].sort((a, b) => {
+    const sortedOptions = disableSort ? [...options] : [...options].sort((a, b) => {
         const isAPinned = a.value === 'all' || a.value === 'none' || a.value === '' || a.label === 'Todos' || a.label === 'Nenhum' || a.label === 'Selecione...';
         const isBPinned = b.value === 'all' || b.value === 'none' || b.value === '' || b.label === 'Todos' || b.label === 'Nenhum' || b.label === 'Selecione...';
         if (isAPinned && !isBPinned) return -1;

@@ -174,6 +174,12 @@ export const kanbanService = {
         const updates: any = { kanban_id: kanbanId, kanban_stage_id: stageId };
         if (stage?.system_status) {
             updates.status = stage.system_status;
+        } else if (entityTable === 'tasks') {
+            // Se a etapa não tem um system_status mapeado e estamos movendo uma tarefa,
+            // garantimos que ela não continue com status 'done', forçando para 'in_progress'.
+            updates.status = 'in_progress';
+        } else if (entityTable === 'projects') {
+            updates.status = 'active';
         }
 
         const { error } = await supabase

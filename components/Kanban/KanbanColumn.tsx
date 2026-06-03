@@ -26,7 +26,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, count, totalV
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
-        const entityId = e.dataTransfer.getData('entityId');
+        const entityId = e.dataTransfer.getData('text/plain');
         if (entityId) {
             onDrop(entityId);
         }

@@ -39,6 +39,7 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
 
     const handleDragStart = (e: React.DragEvent, id: string) => {
         setDraggingId(id);
+        e.dataTransfer.setData('text/plain', id);
         e.dataTransfer.effectAllowed = 'move';
     };
 
@@ -63,6 +64,22 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
         const updates = stages.map((s, idx) => ({ id: s.id, position: idx }));
         await reorderStages(updates);
         setDraggingId(null);
+    };
+
+    const handleMarkAsCompletion = async (stageId: string) => {
+        // Encontra a etapa atual de conclusão se houver
+        const currentCompletionStage = currentKanban.stages.find(s => s.systemStatus === 'done');
+        
+        // Se já é a etapa de conclusão, não faz nada
+        if (currentCompletionStage?.id === stageId) return;
+
+        // Se havia uma anterior, remove o status dela
+        if (currentCompletionStage) {
+            await updateStage(currentCompletionStage.id, { systemStatus: null } as any);
+        }
+
+        // Define a nova como conclusão
+        await updateStage(stageId, { systemStatus: 'done' });
     };
 
     const startEditing = (stage: any) => {
@@ -143,6 +160,11 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                             >
                                                 {stage.name}
                                                 {stage.isLocked && <span className="ml-2 text-[10px] border border-border px-1 rounded uppercase bg-secondary">Fixo</span>}
+                                                {stage.systemStatus === 'done' && (
+                                                    <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-500 ring-1 ring-inset ring-emerald-500/20 uppercase" title="Etapa de Conclusão">
+                                                        <Check size={10} className="mr-0.5" /> Conclusão
+                                                    </span>
+                                                )}
                                             </span>
                                         </div>
                                     )}
@@ -168,15 +190,26 @@ export const StageManagerModal: React.FC<StageManagerModalProps> = ({ isOpen, on
                                 </div>
 
                                 {!stage.isLocked ? (
-                                    <button
-                                        onClick={() => deleteStage(stage.id)}
-                                        className="p-1.5 rounded text-muted-foreground hover:bg-rose-500/20 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-                                        title="Excluir etapa"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                        {stage.systemStatus !== 'done' && (
+                                            <button
+                                                onClick={() => handleMarkAsCompletion(stage.id)}
+                                                className="p-1.5 rounded text-muted-foreground hover:bg-emerald-500/20 hover:text-emerald-500"
+                                                title="Marcar como Etapa de Conclusão"
+                                            >
+                                                <Check size={16} />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => deleteStage(stage.id)}
+                                            className="p-1.5 rounded text-muted-foreground hover:bg-rose-500/20 hover:text-rose-500"
+                                            title="Excluir etapa"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 ) : (
-                                    <div className="w-7 h-7" /> // Spacer
+                                    <div className="w-14 h-7" /> // Spacer for fixed stages
                                 )}
                             </div>
                         ))}

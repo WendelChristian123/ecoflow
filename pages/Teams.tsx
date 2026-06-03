@@ -19,6 +19,7 @@ import { FilterSelect } from '../components/FilterSelect';
 import { TaskCard } from '../components/Tasks/TaskCard';
 import { Settings } from 'lucide-react';
 import { StageManagerModal } from '../components/Kanban/StageManagerModal';
+import { kanbanService } from '../services/kanbanService';
 
 const TeamKanbanWithContext: React.FC<{
   teams: Team[];
@@ -82,11 +83,40 @@ const TeamTasksKanban: React.FC<{
   const groupByStage = (entities: Task[], stageId: string) => {
     if (!currentKanban) return [];
     const stage = currentKanban.stages.find(s => s.id === stageId);
-    return entities.filter(t => {
+    const firstStageId = currentKanban.stages[0]?.id;
+    const filtered = entities.filter(t => {
       if (t.kanbanStageId === stageId) return true;
-      if (!t.kanbanStageId && stage?.systemStatus && t.status === stage.systemStatus) return true;
+      const isExternalStage = t.kanbanStageId && !currentKanban.stages.some(s => s.id === t.kanbanStageId);
+      if ((!t.kanbanStageId || isExternalStage) && stage?.systemStatus && t.status === stage.systemStatus) return true;
+      
+      // Fallback: Se a tarefa não tem kanbanStageId e nenhum systemStatus bate com ela, 
+      // coloque na etapa padrão de "A Fazer" ou na primeira etapa.
+      if ((!t.kanbanStageId || isExternalStage) && t.status !== 'done') {
+         const hasMatchingStage = currentKanban.stages.some(s => s.systemStatus === t.status);
+         if (!hasMatchingStage) {
+            let defaultStage = currentKanban.stages.find(s => s.systemStatus === 'todo');
+            if (!defaultStage) {
+                defaultStage = currentKanban.stages.find(s => s.name.trim().toLowerCase() === 'a fazer');
+            }
+            if (!defaultStage) {
+                defaultStage = currentKanban.stages[0];
+            }
+            if (stage?.id === defaultStage?.id) return true;
+         }
+      }
       return false;
     });
+
+    // Se for a etapa de conclusão, ordena dos mais recentes para os mais antigos (Data decrescente)
+    if (stage?.systemStatus === 'done') {
+      filtered.sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+      });
+    }
+
+    return filtered;
   };
 
   return (
@@ -136,6 +166,7 @@ export const TeamsPage: React.FC = () => {
   const [detailFilterStatus, setDetailFilterStatus] = useState<string>('all');
   const [detailSearch, setDetailSearch] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [boardStages, setBoardStages] = useState<{ id: string, name: string }[]>([]);
 
   // Team Details Filters
   const [detailDate, setDetailDate] = useState(new Date());
@@ -169,6 +200,18 @@ export const TeamsPage: React.FC = () => {
     };
     init();
   }, [currentCompany]);
+
+  useEffect(() => {
+    if (selectedTeam) {
+      kanbanService.listKanbans('tasks', selectedTeam.id).then(kbs => {
+        if (kbs && kbs.length > 0) {
+          setBoardStages(kbs[0].stages || []);
+        } else {
+          setBoardStages([]);
+        }
+      });
+    }
+  }, [selectedTeam]);
 
   const loadData = async (showLoading = true) => {
     if (!currentCompany) return;
@@ -333,13 +376,16 @@ export const TeamsPage: React.FC = () => {
               onChange={setDetailFilterStatus}
               options={[
                 { value: 'all', label: 'Todos Status' },
-                { value: 'todo', label: 'A Fazer' },
-                { value: 'in_progress', label: 'Em Progresso' },
-                { value: 'review', label: 'Revisão' },
-                { value: 'done', label: 'Concluído' },
+                ...(boardStages.length > 0 ? boardStages.map(s => ({ value: s.id, label: s.name })) : [
+                  { value: 'todo', label: 'A Fazer' },
+                  { value: 'in_progress', label: 'Em Progresso' },
+                  { value: 'review', label: 'Revisão' },
+                  { value: 'done', label: 'Concluído' },
+                ])
               ]}
               className="w-36"
               placeholder="Status"
+              disableSort
             />
 
             {/* 4. Priority */}
@@ -396,7 +442,10 @@ export const TeamsPage: React.FC = () => {
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
-            <KanbanProvider module="tasks" entityTable="tasks" referenceId={selectedTeam.id} singleBoardMode={true} onEntityMove={() => loadData(false)}>
+            <KanbanProvider module="tasks" entityTable="tasks" referenceId={selectedTeam.id} singleBoardMode={true} onEntityMove={(entityId, stageId) => {
+              setTasks(prev => prev.map(t => t.id === entityId ? { ...t, kanbanStageId: stageId } : t));
+              loadData(false);
+            }}>
               <TeamTasksKanban
                 tasks={teamTasks}
                 users={users}
@@ -417,6 +466,7 @@ export const TeamsPage: React.FC = () => {
                 onDelete={handleDeleteTask}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                boardStages={boardStages}
               />
             </div>
           )}
@@ -429,7 +479,8 @@ export const TeamsPage: React.FC = () => {
           projects={projects}
           teams={teams}
           users={users}
-          initialData={{ teamId: selectedTeam.id }}
+          initialData={selectedTask || { teamId: selectedTeam?.id }}
+          boardStages={boardStages}
         />
 
         <TaskDetailModal
@@ -440,6 +491,7 @@ export const TeamsPage: React.FC = () => {
           users={users}
           projects={projects}
           teams={teams}
+          boardStages={boardStages}
         />
 
         <TeamModal
@@ -455,7 +507,10 @@ export const TeamsPage: React.FC = () => {
 
   // --- Teams Grid View ---
   return (
-    <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true} onEntityMove={() => loadData(false)}>
+    <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true} onEntityMove={(entityId, stageId) => {
+      setTeams(prev => prev.map(t => t.id === entityId ? { ...t, kanbanStageId: stageId } : t));
+      loadData(false);
+    }}>
       <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-6 pr-2">
 
         {/* Header with Controls */}

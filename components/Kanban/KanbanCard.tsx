@@ -12,7 +12,7 @@ interface KanbanCardProps {
 export const KanbanCard: React.FC<KanbanCardProps> = ({ id, onClick, className, children, isDraggable = true }) => {
     const handleDragStart = (e: React.DragEvent) => {
         if (!isDraggable) return;
-        e.dataTransfer.setData('entityId', id);
+        e.dataTransfer.setData('text/plain', id);
         e.dataTransfer.effectAllowed = 'move';
     };
 

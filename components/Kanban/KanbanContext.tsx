@@ -20,7 +20,7 @@ interface KanbanContextType {
     moveEntity: (entityId: string, stageId: string) => Promise<void>;
 }
 
-const KanbanContext = createContext<KanbanContextType | undefined>(undefined);
+export const KanbanContext = createContext<KanbanContextType | undefined>(undefined);
 
 export const KanbanProvider: React.FC<{
     module: 'crm' | 'tasks' | 'projects' | 'teams';
