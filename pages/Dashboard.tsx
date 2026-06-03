@@ -19,7 +19,7 @@ import {
     AlertTriangle,
     CreditCard as CreditCardIcon
 } from 'lucide-react';
-import { Loader, cn, Button } from '../components/Shared';
+import { Loader, cn, Button, StatCard, Card } from '../components/Shared';
 import { DrilldownModal } from '../components/Modals';
 import { api, getErrorMessage } from '../services/api';
 import { DashboardMetrics, Task, CalendarEvent, FinancialTransaction, Quote, User, CreditCard } from '../types';
@@ -251,34 +251,24 @@ export const Dashboard: React.FC = () => {
 
 
     // --- Component Definitions ---
-    const ZoneCard = ({ title, count, icon, type, variant, onClick }: { title: string, count: number, icon: React.ReactNode, type: string, variant: 'danger' | 'warning' | 'info', onClick: () => void }) => {
+    const ZoneCard = ({ title, count, icon: IconComponent, type, variant, onClick }: { title: string, count: number, icon: any, type: string, variant: 'danger' | 'warning' | 'info', onClick: () => void }) => {
         if (count === 0) return null;
 
-        // Clean Pastel Colors for Icons
         const colorMap = {
-            danger: { text: "text-rose-500", bg: "bg-rose-500/10" },
-            warning: { text: "text-amber-500", bg: "bg-amber-500/10" },
-            info: { text: "text-emerald-500", bg: "bg-emerald-500/10" }
+            danger: "text-rose-500 bg-rose-500/10",
+            warning: "text-amber-500 bg-amber-500/10",
+            info: "text-emerald-500 bg-emerald-500/10"
         };
 
-        const theme = colorMap[variant];
-
         return (
-            <div
-                onClick={onClick}
-                className="bg-card shadow-card hover:shadow-premium rounded-2xl p-6 flex items-center gap-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1"
-            >
-                <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-300", theme.bg, theme.text)}>
-                    {icon}
-                </div>
-                <div className="flex flex-col justify-center">
-                    <div className="text-3xl font-bold text-foreground leading-none tracking-tight mb-1">
-                        {count}
-                    </div>
-                    <span className="text-sm font-medium text-muted-foreground">
-                        {title}
-                    </span>
-                </div>
+            <div onClick={onClick} className="cursor-pointer h-full">
+                <StatCard
+                    title={title}
+                    value={count}
+                    icon={IconComponent}
+                    iconColorClass={colorMap[variant]}
+                    className="h-full"
+                />
             </div>
         );
     };
@@ -298,38 +288,28 @@ export const Dashboard: React.FC = () => {
             (selectedModules.includes('finance') && availableModules.includes('finance') && items.finance.length > 0) || 
             (selectedModules.includes('quotes') && availableModules.includes('quotes') && items.quotes.length > 0);
 
-        // Semantic Accents
-        const accents = {
-            danger: "text-red-500 border-l-red-500",
-            warning: "text-amber-500 border-l-amber-500",
-            info: "text-emerald-500 border-l-emerald-500"
-        };
-
         const EmptyState = () => (
-            <div className="flex items-center gap-3 md:gap-4 text-muted-foreground p-4 md:p-6 border border-dashed border-border rounded-2xl bg-card shadow-sm opacity-80 hover:opacity-100 transition-opacity">
-                <div className={cn("p-1.5 md:p-2 rounded-full bg-secondary shrink-0")}>
-                    <CheckCircle2 size={18} className="text-primary md:w-5 md:h-5" />
+            <Card variant="solid" className="flex items-center gap-4 text-muted-foreground bg-card/50">
+                <div className="p-2 rounded-full bg-secondary shrink-0">
+                    <CheckCircle2 size={20} className="text-primary" />
                 </div>
-                <span className="text-[11px] md:text-xs font-medium uppercase tracking-wide">
+                <span className="text-sm font-medium">
                     {variant === 'danger' ? "Excelente! Nenhum item vencido sob sua responsabilidade." :
                         variant === 'warning' ? "Sem pendências críticas para hoje." :
                             "Tudo tranquilo para os próximos dias."}
                 </span>
-            </div>
+            </Card>
         );
 
         return (
-            <section className="mb-6 md:mb-8">
-                <div className="flex flex-col gap-1 mb-4 pl-1">
-                    <h2 className="text-lg font-bold text-foreground tracking-tight">{title}</h2>
-                </div>
-
+            <section className="mb-8">
+                <h2 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4 pl-1">{title}</h2>
                 {hasItems ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                        {selectedModules.includes('tasks') && availableModules.includes('tasks') && <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={24} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />}
-                        {selectedModules.includes('events') && availableModules.includes('events') && <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={24} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />}
-                        {selectedModules.includes('finance') && availableModules.includes('finance') && <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={24} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />}
-                        {selectedModules.includes('quotes') && availableModules.includes('quotes') && <ZoneCard title="Orçamentos" count={items.quotes.length} icon={<FileText size={24} />} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 shrink-0">
+                        {selectedModules.includes('tasks') && availableModules.includes('tasks') && <ZoneCard title="Tarefas" count={items.tasks.length} icon={List} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />}
+                        {selectedModules.includes('events') && availableModules.includes('events') && <ZoneCard title="Compromissos" count={items.events.length} icon={CalendarIcon} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />}
+                        {selectedModules.includes('finance') && availableModules.includes('finance') && <ZoneCard title="Financeiro" count={items.finance.length} icon={Wallet} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />}
+                        {selectedModules.includes('quotes') && availableModules.includes('quotes') && <ZoneCard title="Orçamentos" count={items.quotes.length} icon={FileText} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />}
                     </div>
                 ) : (
                     <EmptyState />
@@ -398,23 +378,28 @@ export const Dashboard: React.FC = () => {
         const moduleNames: Record<string, string> = { tasks: 'Tarefas', events: 'Agenda', finance: 'Financeiro', quotes: 'Orçamentos' };
 
         return (
-            <div className="sticky top-0 z-30 bg-background/98 backdrop-blur-lg py-3 md:py-4 -mx-4 px-4 md:-mx-6 md:px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
-                {/* Grupo 1: Filtros de Conteúdo */}
-                <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Painel Principal</h1>
+                    <p className="text-muted-foreground text-sm">Visão geral de rotinas e alertas.</p>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     {/* Modules Dropdown - Web only */}
                     {!isApp && (
                         <div className="relative flex-1 md:flex-none">
-                            <button
+                            <Button
+                                variant="secondary"
                                 onClick={() => setIsModulesOpen(!isModulesOpen)}
-                                className="flex items-center justify-between md:justify-start gap-2 bg-card hover:border-emerald-500/50 text-foreground px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm w-full"
+                                className="w-full gap-2 h-9 text-sm justify-between md:justify-start px-3"
                             >
                                 <div className="flex items-center gap-2">
-                                    <Layers size={16} className="text-emerald-600 dark:text-emerald-500" />
+                                    <Layers size={16} className="text-primary" />
                                     <span className="hidden sm:inline">Módulos ({selectedModules.length})</span>
                                     <span className="sm:hidden">({selectedModules.length})</span>
                                 </div>
                                 <ChevronDown size={14} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
-                            </button>
+                            </Button>
 
                             {isModulesOpen && (
                                 <>
@@ -446,18 +431,16 @@ export const Dashboard: React.FC = () => {
                         </div>
                     )}
 
-                    {!isApp && <div className="hidden md:block h-6 w-px bg-border" />}
-
-                    {/* Horizon Toggle - Premium */}
-                    <div className="flex bg-secondary/50 rounded-lg p-1 gap-0.5 md:gap-1 overflow-x-auto custom-scrollbar flex-1 md:flex-none">
+                    {/* Horizon Toggle */}
+                    <div className="flex bg-secondary/50 rounded-lg p-1 gap-0.5 overflow-x-auto custom-scrollbar flex-1 md:flex-none">
                         {[3, 7, 15, 30].map(d => (
                             <button
                                 key={d}
                                 onClick={() => setHorizon(d as any)}
                                 className={cn(
-                                    "px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-md transition-all font-semibold min-w-[40px] md:min-w-[50px] flex-1 md:flex-none",
+                                    "px-3 py-1 text-xs md:text-sm rounded-md transition-all font-semibold min-w-[40px] flex-1 md:flex-none",
                                     horizon === d
-                                        ? "bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
                                         : "text-muted-foreground hover:text-foreground hover:bg-background/80"
                                 )}
                             >
@@ -465,109 +448,98 @@ export const Dashboard: React.FC = () => {
                             </button>
                         ))}
                     </div>
-                </div>
 
-                {/* Grupo 2: Usuário e Ações - Web only */}
-                {!isApp && (<div className="flex items-center justify-between w-full md:w-auto gap-2 md:gap-4">
-                    {/* Assignee Dropdown - Premium Custom */}
-                    <div className="relative flex-1 md:flex-none">
-                        <button
-                            onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
-                            className="flex items-center justify-between md:justify-start gap-2 bg-card hover:border-emerald-500/30 rounded-lg px-3 py-2 h-9 shadow-sm transition-all md:min-w-[140px] w-full"
-                        >
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <UserCircle size={16} className="text-muted-foreground shrink-0" />
-                                <span className="text-xs md:text-sm font-medium text-foreground truncate">
-                                    {assigneeFilter === 'all'
-                                        ? 'Todos'
-                                        : assignees.find(u => u.id === assigneeFilter)?.name.split(' ')[0] || 'Todos'}
-                                </span>
-                            </div>
-                            <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${isAssigneeOpen ? 'rotate-180' : ''}`} />
-                        </button>
+                    {!isApp && (
+                        <div className="relative flex-1 md:flex-none">
+                            <Button
+                                variant="secondary"
+                                onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
+                                className="w-full gap-2 h-9 text-sm justify-between md:justify-start px-3 md:min-w-[140px]"
+                            >
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <UserCircle size={16} className="text-muted-foreground shrink-0" />
+                                    <span className="text-xs md:text-sm font-medium text-foreground truncate">
+                                        {assigneeFilter === 'all'
+                                            ? 'Todos'
+                                            : assignees.find(u => u.id === assigneeFilter)?.name.split(' ')[0] || 'Todos'}
+                                    </span>
+                                </div>
+                                <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${isAssigneeOpen ? 'rotate-180' : ''}`} />
+                            </Button>
 
-                        {isAssigneeOpen && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={() => setIsAssigneeOpen(false)} />
-                                <div className="absolute top-full left-0 md:left-auto md:right-0 mt-2 w-48 bg-popover rounded-xl shadow-xl z-50 p-2 transform origin-top md:origin-top-right animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Responsável</div>
-                                    <div className="space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                        <button
-                                            onClick={() => { setAssigneeFilter('all'); setIsAssigneeOpen(false); }}
-                                            className={cn(
-                                                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
-                                                assigneeFilter === 'all'
-                                                    ? "bg-emerald-600 dark:bg-emerald-500 text-white font-semibold shadow-sm"
-                                                    : "text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium"
-                                            )}
-                                        >
-                                            <span>Todos</span>
-                                            {assigneeFilter === 'all' && <CheckCircle2 size={16} />}
-                                        </button>
-                                        {assignees.map(u => (
+                            {isAssigneeOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setIsAssigneeOpen(false)} />
+                                    <div className="absolute top-full left-0 md:left-auto md:right-0 mt-2 w-48 bg-popover rounded-xl shadow-xl z-50 p-2 transform origin-top md:origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Responsável</div>
+                                        <div className="space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
                                             <button
-                                                key={u.id}
-                                                onClick={() => { setAssigneeFilter(u.id); setIsAssigneeOpen(false); }}
+                                                onClick={() => { setAssigneeFilter('all'); setIsAssigneeOpen(false); }}
                                                 className={cn(
                                                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
-                                                    assigneeFilter === u.id
-                                                        ? "bg-emerald-600 dark:bg-emerald-500 text-white font-semibold shadow-sm"
-                                                        : "text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium"
+                                                    assigneeFilter === 'all'
+                                                        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                                                        : "text-foreground hover:bg-secondary hover:text-primary font-medium"
                                                 )}
                                             >
-                                                <span className="truncate">{u.name.split(' ')[0]}</span>
-                                                {assigneeFilter === u.id && <CheckCircle2 size={16} className="shrink-0 ml-2" />}
+                                                <span>Todos</span>
+                                                {assigneeFilter === 'all' && <CheckCircle2 size={16} />}
                                             </button>
-                                        ))}
+                                            {assignees.map(u => (
+                                                <button
+                                                    key={u.id}
+                                                    onClick={() => { setAssigneeFilter(u.id); setIsAssigneeOpen(false); }}
+                                                    className={cn(
+                                                        "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
+                                                        assigneeFilter === u.id
+                                                            ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                                                            : "text-foreground hover:bg-secondary hover:text-primary font-medium"
+                                                    )}
+                                                >
+                                                    <span className="truncate">{u.name.split(' ')[0]}</span>
+                                                    {assigneeFilter === u.id && <CheckCircle2 size={16} className="shrink-0 ml-2" />}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
 
-                    <div className="hidden md:block h-6 w-px bg-border" />
-
-                    <div className="flex items-center gap-3 shrink-0">
-                        {/* Date Display - Premium */}
-                        <div className="flex flex-col items-end leading-none">
-                            <span className="text-sm md:text-base font-bold text-foreground tracking-tight">
+                    <div className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
+                        {/* Date Display */}
+                        <div className="flex flex-col items-end leading-none mr-2">
+                            <span className="text-sm font-bold text-foreground tracking-tight">
                                 {format(new Date(), 'dd/MM', { locale: ptBR })}
                             </span>
-                            <span className="text-[10px] md:text-xs font-bold uppercase text-emerald-600 dark:text-emerald-500 tracking-wider">
+                            <span className="text-[10px] font-bold uppercase text-primary tracking-wider">
                                 {format(new Date(), 'EEE', { locale: ptBR }).replace('.', '')}
                             </span>
                         </div>
 
-                        {/* Refresh Button - Premium */}
-                        <button
+                        {/* Refresh Button */}
+                        <Button
+                            variant="secondary"
                             onClick={loadDashboard}
-                            className="h-8 w-8 md:h-9 md:w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors group"
+                            className="h-9 w-9 p-0 flex items-center justify-center"
                         >
-                            <RefreshCw size={14} className={cn(
-                                "text-muted-foreground group-hover:text-foreground transition-colors",
-                                loading && "animate-spin"
-                            )} />
-                        </button>
+                            <RefreshCw size={14} className={cn(loading && "animate-spin text-primary")} />
+                        </Button>
                     </div>
-                </div>)}
+                </div>
             </div>
         );
     };
 
     return (
-        <div className="h-full w-full flex flex-col overflow-y-auto custom-scrollbar">
-            {/* Main Area */}
-            <div className="p-4 md:p-6 pt-0 w-full animate-in fade-in duration-500">
+        <div className="flex-1 flex flex-col gap-6 pt-6 animate-in fade-in duration-500">
+            {FilterBar()}
 
-                {/* Filters Row (Top) */}
-                {FilterBar()}
-
-                {/* Content - Compact & High Density */}
-                <div className="pt-6 pb-12">
-                    <ZoneSection title="VENCIDOS" items={overdueItems} variant="danger" />
-                    <ZoneSection title="VENCE HOJE" items={todayItems} variant="warning" />
-                    <ZoneSection title={`PRÓXIMOS ${horizon} DIAS`} items={upcomingItems} variant="info" />
-                </div>
+            <div className="flex-1 min-h-0 flex flex-col">
+                <ZoneSection title="Vencidos" items={overdueItems} variant="danger" />
+                <ZoneSection title="Vence Hoje" items={todayItems} variant="warning" />
+                <ZoneSection title={`Próximos ${horizon} dias`} items={upcomingItems} variant="info" />
             </div>
 
             <DrilldownModal
@@ -581,7 +553,6 @@ export const Dashboard: React.FC = () => {
                     navigate(`/finance/cards?payInvoice=${item.id}`);
                 }}
                 onStatusChange={(item, isPaid) => {
-                    // Atualiza a transação localmente para refletir na contagem (Remover do vencidos/hoje/próximos) sem full reload
                     setTransactions(prev => prev.map(t => t.id === item.id ? { ...t, isPaid } : t));
                 }}
             />
