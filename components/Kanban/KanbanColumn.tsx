@@ -35,7 +35,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, count, totalV
     return (
         <div
             className={cn(
-                "flex-1 min-w-[300px] flex flex-col rounded-xl border transition-colors h-full overflow-hidden",
+                "flex-1 min-w-[240px] flex flex-col rounded-xl border transition-colors h-full overflow-hidden",
                 isDragOver ? "border-emerald-500/50 bg-secondary/50" : "border-border bg-card"
             )}
             onDragOver={handleDragOver}
@@ -43,7 +43,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, count, totalV
             onDrop={handleDrop}
         >
             {/* Header */}
-            <div className="px-4 py-3 border-b border-border flex flex-col gap-1 sticky top-0 backdrop-blur z-10 bg-muted/20">
+            <div className="px-3 py-2 border-b border-border flex flex-col gap-0.5 sticky top-0 backdrop-blur z-10 bg-muted/20">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className={cn("w-2 h-2 rounded-full", stage.color)} />
@@ -52,16 +52,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, count, totalV
                     </div>
                 </div>
                 {totalValue !== undefined && (
-                    <div className="text-[10px] text-muted-foreground font-mono font-bold mt-1">
+                    <div className="text-[10px] text-muted-foreground font-mono font-bold">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
                     </div>
                 )}
             </div>
 
             {/* List */}
-            <div className="p-2 flex-1 overflow-y-auto custom-scrollbar space-y-2">
+            <div className="p-1.5 flex-1 overflow-y-auto custom-scrollbar space-y-1.5">
                 {count === 0 && (
-                    <div className="h-24 flex items-center justify-center text-muted-foreground border-2 border-dashed border-border/50 rounded-lg text-xs">
+                    <div className="h-16 flex items-center justify-center text-muted-foreground border-2 border-dashed border-border/50 rounded-lg text-xs">
                         Vazio
                     </div>
                 )}

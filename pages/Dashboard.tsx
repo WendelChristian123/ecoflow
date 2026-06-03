@@ -17,16 +17,19 @@ import {
     ChevronDown,
     X,
     AlertTriangle,
-    CreditCard as CreditCardIcon
+    CreditCard as CreditCardIcon,
+    TrendingUp,
+    TrendingDown,
+    DollarSign
 } from 'lucide-react';
 import { Loader, cn, Button, StatCard, Card } from '../components/Shared';
 import { DrilldownModal } from '../components/Modals';
 import { api, getErrorMessage } from '../services/api';
-import { DashboardMetrics, Task, CalendarEvent, FinancialTransaction, Quote, User, CreditCard } from '../types';
+import { DashboardMetrics, Task, CalendarEvent, FinancialTransaction, FinancialAccount, Quote, User, CreditCard } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { processTransactions, ProcessedTransaction } from '../services/financeLogic';
 import { parseDateLocal } from '../utils/formatters';
-import { isBefore, isSameDay, addDays, isWithinInterval, startOfDay, format, setDate, addMonths, isAfter, parseISO } from 'date-fns';
+import { isBefore, isSameDay, addDays, isWithinInterval, startOfDay, startOfMonth, endOfMonth, format, setDate, addMonths, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useCompany } from '../context/CompanyContext';
 import { useAppEnvironment } from '../context/AppEnvironmentContext';
@@ -45,7 +48,7 @@ const getUniqueAssignees = (tasks: Task[], users: User[]) => {
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const { currentCompany, loading: companyLoading } = useCompany();
-    const { isSuperAdmin } = useRBAC();
+    const { isSuperAdmin, isAdmin } = useRBAC();
     const { isApp } = useAppEnvironment();
 
     const [loading, setLoading] = useState(true);
@@ -57,6 +60,7 @@ export const Dashboard: React.FC = () => {
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
     const [cards, setCards] = useState<CreditCard[]>([]);
 
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -73,10 +77,14 @@ export const Dashboard: React.FC = () => {
         return mods;
     }, [can]);
 
-    const [selectedModules, setSelectedModules] = useState<string[]>(availableModules);
+    const [selectedModules, setSelectedModules] = useState<string[]>([]);
     const [assigneeFilter, setAssigneeFilter] = useState<'all' | string>('all');
     const [isModulesOpen, setIsModulesOpen] = useState(false);
     const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
+
+    useEffect(() => {
+        setSelectedModules(availableModules);
+    }, [availableModules]);
 
     // UI States
     const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, type: 'tasks' | 'events' | 'finance' | 'quotes', data: any[] }>({
@@ -121,18 +129,20 @@ export const Dashboard: React.FC = () => {
             const m = await api.getDashboardMetrics(currentCompany.id);
             setMetrics(m);
 
-            const [t, e, tr, q, c] = await Promise.all([
+            const [t, e, tr, q, c, acc] = await Promise.all([
                 api.getTasks(currentCompany.id).catch(() => []),
                 api.getEvents(currentCompany.id).catch(() => []),
                 api.getFinancialTransactions(currentCompany.id).catch(() => []),
                 api.getQuotes(currentCompany.id).catch(() => []),
-                api.getCreditCards(currentCompany.id).catch(() => [])
+                api.getCreditCards(currentCompany.id).catch(() => []),
+                api.getFinancialAccounts(currentCompany.id).catch(() => [])
             ]);
             setTasks(t);
             setEvents(e);
             setTransactions(tr);
             setQuotes(q);
             setCards(c);
+            setAccounts(acc);
         } catch (error: any) {
             console.error("Erro ao carregar dashboard:", error);
             setError(getErrorMessage(error));
@@ -253,16 +263,105 @@ export const Dashboard: React.FC = () => {
         }
     };
 
+    // --- Admin Financial KPIs ---
+    const financeKPIs = useMemo(() => {
+        if (!isAdmin || accounts.length === 0) return null;
 
-    // --- Component Definitions ---
+        const now = new Date();
+        const monthStart = startOfMonth(now);
+        const monthEnd = endOfMonth(now);
+
+        // Saldo Atual (same logic as Finance Overview)
+        const currentBalance = accounts.reduce((accBalance, account) => {
+            const accountIncome = transactions.filter(t => t.accountId === account.id && t.type === 'income' && t.isPaid).reduce((s, t) => s + t.amount, 0);
+            const accountExpense = transactions.filter(t => t.accountId === account.id && t.type === 'expense' && t.isPaid).reduce((s, t) => s + t.amount, 0);
+            const transfersOut = transactions.filter(t => t.accountId === account.id && t.type === 'transfer' && t.isPaid).reduce((s, t) => s + t.amount, 0);
+            const transfersIn = transactions.filter(t => t.toAccountId === account.id && t.type === 'transfer' && t.isPaid).reduce((s, t) => s + t.amount, 0);
+            return accBalance + account.initialBalance + accountIncome - accountExpense - transfersOut + transfersIn;
+        }, 0);
+
+        // Receita e Despesa do Mês (apenas realizados/pagos)
+        const monthTransactions = transactions.filter(t => {
+            if (!t.date || !t.isPaid) return false;
+            if (t.originType === 'technical') return false;
+            try {
+                const d = parseDateLocal(t.date);
+                return isWithinInterval(d, { start: monthStart, end: monthEnd });
+            } catch { return false; }
+        });
+
+        const monthIncome = monthTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const monthExpense = monthTransactions.filter(t => t.type === 'expense' && !t.description?.toLowerCase().includes('fatura')).reduce((s, t) => s + t.amount, 0);
+        const netResult = monthIncome - monthExpense;
+
+        return { currentBalance, monthIncome, monthExpense, netResult };
+    }, [isAdmin, accounts, transactions]);
+
+    const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    // --- Financial Panel (Admin Only) ---
+    const FinancialPanel = () => {
+        if (!financeKPIs) return null;
+        const { currentBalance, monthIncome, monthExpense, netResult } = financeKPIs;
+
+        return (
+            <div className="flex flex-col gap-3 h-full">
+                <h2 className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase pl-1 shrink-0">Resumo Financeiro</h2>
+
+                {/* Saldo — hero card */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card to-secondary/30 border border-border/50 p-4 flex flex-col justify-between group shadow-card transition-all duration-300 hover:shadow-premium hover:-translate-y-1 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest dark:text-slate-400">Saldo Atual</span>
+                            <div className="mt-1 text-xl font-black text-foreground tracking-tighter dark:text-white">
+                                {fmt(currentBalance)}
+                            </div>
+                        </div>
+                        <div className="w-8 h-8 bg-secondary/80 rounded-full border border-border flex items-center justify-center shrink-0 dark:bg-white/5 dark:border-white/10">
+                            <Wallet size={16} className="text-success" />
+                        </div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground dark:text-slate-300">
+                        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_6px_var(--success)]"></div>
+                        <span>Consolidado de todas as contas</span>
+                    </div>
+                </div>
+
+                {/* Receita do Mês */}
+                <StatCard
+                    title="Receita do Mês"
+                    value={fmt(monthIncome)}
+                    icon={TrendingUp}
+                    variant="success"
+                    size="md"
+                    className="flex-1"
+                />
+
+                {/* Despesa do Mês */}
+                <StatCard
+                    title="Despesa do Mês"
+                    value={fmt(monthExpense)}
+                    icon={TrendingDown}
+                    variant="danger"
+                    size="md"
+                    className="flex-1"
+                />
+
+                {/* Resultado Líquido */}
+                <StatCard
+                    title="Resultado Líquido"
+                    value={fmt(netResult)}
+                    icon={DollarSign}
+                    variant={netResult >= 0 ? 'success' : 'danger'}
+                    size="md"
+                    className="flex-1"
+                />
+            </div>
+        );
+    };
+
     const ZoneCard = ({ title, count, icon: IconComponent, type, variant, onClick }: { title: string, count: number, icon: any, type: string, variant: 'danger' | 'warning' | 'info', onClick: () => void }) => {
         if (count === 0) return null;
-
-        const colorMap = {
-            danger: "text-rose-500 bg-rose-500/10",
-            warning: "text-amber-500 bg-amber-500/10",
-            info: "text-emerald-500 bg-emerald-500/10"
-        };
 
         return (
             <div onClick={onClick} className="cursor-pointer h-full">
@@ -270,7 +369,8 @@ export const Dashboard: React.FC = () => {
                     title={title}
                     value={count}
                     icon={IconComponent}
-                    iconColorClass={colorMap[variant]}
+                    variant={variant}
+                    size="md"
                     className="h-full"
                 />
             </div>
@@ -293,9 +393,9 @@ export const Dashboard: React.FC = () => {
             (selectedModules.includes('quotes') && availableModules.includes('quotes') && items.quotes.length > 0);
 
         const EmptyState = () => (
-            <Card variant="solid" className="flex items-center gap-4 text-muted-foreground bg-card/50">
-                <div className="p-2 rounded-full bg-secondary shrink-0">
-                    <CheckCircle2 size={20} className="text-primary" />
+            <Card variant="solid" className="flex items-center gap-4 text-success bg-success/5 border-success/20">
+                <div className="p-2 rounded-full bg-success/20 shrink-0">
+                    <CheckCircle2 size={20} className="text-success" />
                 </div>
                 <span className="text-sm font-medium">
                     {variant === 'danger' ? "Excelente! Nenhum item vencido sob sua responsabilidade." :
@@ -306,10 +406,10 @@ export const Dashboard: React.FC = () => {
         );
 
         return (
-            <section className="mb-8">
-                <h2 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4 pl-1">{title}</h2>
+            <section className="flex-1 flex flex-col min-h-0 pb-2">
+                <h2 className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase mb-2 pl-1 shrink-0">{title}</h2>
                 {hasItems ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 shrink-0">
+                    <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-3" style={{ gridAutoRows: '1fr' }}>
                         {selectedModules.includes('tasks') && availableModules.includes('tasks') && <ZoneCard title="Tarefas" count={items.tasks.length} icon={List} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />}
                         {selectedModules.includes('events') && availableModules.includes('events') && <ZoneCard title="Compromissos" count={items.events.length} icon={CalendarIcon} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />}
                         {selectedModules.includes('finance') && availableModules.includes('finance') && <ZoneCard title="Financeiro" count={items.finance.length} icon={Wallet} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />}
@@ -382,20 +482,21 @@ export const Dashboard: React.FC = () => {
         const moduleNames: Record<string, string> = { tasks: 'Tarefas', events: 'Agenda', finance: 'Financeiro', quotes: 'Orçamentos' };
 
         return (
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Painel Principal</h1>
-                    <p className="text-muted-foreground text-sm">Visão geral de rotinas e alertas.</p>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    {/* Modules Dropdown - Web only */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center shrink-0 gap-4 mb-3">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 xl:gap-8">
+                    <div>
+                        <h1 className="text-base font-bold text-foreground tracking-tight">Painel Principal</h1>
+                        <p className="text-muted-foreground text-xs">Visão geral de rotinas e alertas.</p>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Modules Dropdown - Web only */}
                     {!isApp && (
                         <div className="relative flex-1 md:flex-none">
                             <Button
                                 variant="secondary"
                                 onClick={() => setIsModulesOpen(!isModulesOpen)}
-                                className="w-full gap-2 h-9 text-sm justify-between md:justify-start px-3"
+                                className="w-full gap-2 h-7 text-[10px] justify-between md:justify-start px-2"
                             >
                                 <div className="flex items-center gap-2">
                                     <Layers size={16} className="text-primary" />
@@ -442,7 +543,7 @@ export const Dashboard: React.FC = () => {
                                 key={d}
                                 onClick={() => setHorizon(d as any)}
                                 className={cn(
-                                    "px-3 py-1 text-xs md:text-sm rounded-md transition-all font-semibold min-w-[40px] flex-1 md:flex-none",
+                                    "px-2 py-0.5 text-[10px] rounded-md transition-all font-semibold min-w-[32px] flex-1 md:flex-none flex items-center justify-center",
                                     horizon === d
                                         ? "bg-primary text-primary-foreground shadow-sm"
                                         : "text-muted-foreground hover:text-foreground hover:bg-background/80"
@@ -458,7 +559,7 @@ export const Dashboard: React.FC = () => {
                             <Button
                                 variant="secondary"
                                 onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
-                                className="w-full gap-2 h-9 text-sm justify-between md:justify-start px-3 md:min-w-[140px]"
+                                className="w-full gap-2 h-7 text-[10px] justify-between md:justify-start px-2 md:min-w-[120px]"
                             >
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <UserCircle size={16} className="text-muted-foreground shrink-0" />
@@ -510,9 +611,11 @@ export const Dashboard: React.FC = () => {
                             )}
                         </div>
                     )}
+                    </div>
+                </div>
 
-                    <div className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
-                        {/* Date Display */}
+                <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
+                    {/* Date Display */}
                         <div className="flex flex-col items-end leading-none mr-2">
                             <span className="text-sm font-bold text-foreground tracking-tight">
                                 {format(new Date(), 'dd/MM', { locale: ptBR })}
@@ -526,24 +629,36 @@ export const Dashboard: React.FC = () => {
                         <Button
                             variant="secondary"
                             onClick={loadDashboard}
-                            className="h-9 w-9 p-0 flex items-center justify-center"
+                            className="h-7 w-7 p-0 flex items-center justify-center"
                         >
                             <RefreshCw size={14} className={cn(loading && "animate-spin text-primary")} />
                         </Button>
                     </div>
-                </div>
             </div>
         );
     };
 
     return (
-        <div className="flex-1 flex flex-col gap-6 pt-6 animate-in fade-in duration-500">
+        <div className="flex-1 flex flex-col pt-3 animate-in fade-in duration-500 pr-2 overflow-hidden">
             {FilterBar()}
 
-            <div className="flex-1 min-h-0 flex flex-col">
-                <ZoneSection title="Vencidos" items={overdueItems} variant="danger" />
-                <ZoneSection title="Vence Hoje" items={todayItems} variant="warning" />
-                <ZoneSection title={`Próximos ${horizon} dias`} items={upcomingItems} variant="info" />
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 overflow-hidden">
+                {/* Coluna Esquerda — Alertas */}
+                <div className={cn("flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar pr-2")}>
+                    <ZoneSection title="Vencidos" items={overdueItems} variant="danger" />
+                    <ZoneSection title="Vence Hoje" items={todayItems} variant="warning" />
+                    <ZoneSection title={`Próximos ${horizon} dias`} items={upcomingItems} variant="info" />
+                </div>
+
+                {/* Coluna Direita — Resumo Financeiro (Admin Only) */}
+                {isAdmin && financeKPIs && (
+                    <>
+                        <div className="hidden lg:block w-px bg-border my-4 shrink-0" />
+                        <div className="w-full lg:w-[300px] shrink-0 flex flex-col overflow-y-auto custom-scrollbar pr-2">
+                            <FinancialPanel />
+                        </div>
+                    </>
+                )}
             </div>
 
             <DrilldownModal

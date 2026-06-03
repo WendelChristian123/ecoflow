@@ -55,20 +55,20 @@ export const Loans = () => {
     const totalReceivable = loans.filter(l => l.type === 'receivable' && l.status === 'active').reduce((acc, curr) => acc + curr.totalAmount, 0);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2"><Landmark className="text-primary" /> Dívidas e Empréstimos</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Gerencie financiamentos, empréstimos e negociações parceladas.</p>
+                    <h1 className="text-xl font-bold flex items-center gap-2"><Landmark className="text-primary" size={20} /> Dívidas e Empréstimos</h1>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Gerencie financiamentos, empréstimos e negociações parceladas.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button onClick={() => setIsReportModalOpen(true)} variant="outline" className="whitespace-nowrap">
-                        <FileText size={20} className="mr-2" />
+                    <Button onClick={() => setIsReportModalOpen(true)} variant="outline" className="whitespace-nowrap h-7 px-3 text-[10px] gap-1.5">
+                        <FileText size={14} />
                         Relatório
                     </Button>
                     {can('finance.loans', 'create') && (
-                        <Button onClick={() => setIsModalOpen(true)} variant="primary" className="whitespace-nowrap">
-                            <Plus size={20} className="mr-2" />
+                        <Button onClick={() => setIsModalOpen(true)} variant="primary" className="whitespace-nowrap h-7 px-3 text-[10px] gap-1.5">
+                            <Plus size={14} />
                             Nova Dívida/Empréstimo
                         </Button>
                     )}

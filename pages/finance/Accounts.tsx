@@ -108,13 +108,13 @@ export const FinancialAccounts: React.FC = () => {
     const totalBalance = accounts.reduce((sum, acc) => sum + getAccountBalance(acc.id), 0);
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-foreground dark:text-white flex items-center gap-3">
-                    <Wallet className="text-emerald-500" /> Contas & Bancos
+                <h1 className="text-xl font-bold text-foreground dark:text-white flex items-center gap-2">
+                    <Wallet className="text-emerald-500" size={20} /> Contas & Bancos
                 </h1>
-                <Button className="gap-2" onClick={handleCreate}>
-                    <Plus size={16} /> Nova Conta
+                <Button className="gap-1.5 h-7 px-3 text-[10px]" onClick={handleCreate}>
+                    <Plus size={14} /> Nova Conta
                 </Button>
             </div>
 

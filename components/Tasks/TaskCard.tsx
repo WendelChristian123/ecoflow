@@ -56,12 +56,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
             <Card
                 noPadding
                 className={cn(
-                    "p-3 hover:border-border/80 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border",
+                    "p-2.5 hover:border-border/80 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border",
                     canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default",
                     getTaskStyles(task)
                 )}
             >
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-1.5">
                     <span className={cn(
                         "inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
                         getPriorityColor(task.priority)
@@ -73,10 +73,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
                     </button>
                 </div>
 
-                <h4 className={`text-sm font-semibold text-foreground mb-1 leading-tight ${task.status === 'done' ? 'line-through opacity-70' : ''}`}>{task.title}</h4>
-                {task.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{task.description}</p>}
+                <h4 className={`text-xs font-semibold text-foreground mb-0.5 leading-tight ${task.status === 'done' ? 'line-through opacity-70' : ''}`}>{task.title}</h4>
+                {task.description && <p className="text-[10px] text-muted-foreground line-clamp-2 mb-1.5">{task.description}</p>}
 
-                <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-border/50">
                     <div className="flex flex-col gap-1">
                         <div className={cn("flex items-center gap-1.5 text-xs", isOverdue ? "text-rose-600 font-bold" : "text-muted-foreground")}>
                             <Calendar size={12} />

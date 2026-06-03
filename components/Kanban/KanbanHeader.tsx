@@ -26,7 +26,7 @@ export const KanbanHeader: React.FC = () => {
     };
 
     return (
-        <div className="flex items-center gap-4 mb-4 bg-card p-2 rounded-lg border border-border shadow-sm">
+        <div className="flex items-center gap-2 mb-2 bg-card p-1.5 rounded-lg border border-border shadow-sm">
             {/* Create New Kanban & Selector (Multi Mode Only) */}
             {!singleBoardMode && (
                 <>

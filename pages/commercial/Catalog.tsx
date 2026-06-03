@@ -42,12 +42,12 @@ export const CatalogPage: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background text-foreground">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3"><ShoppingBag className="text-emerald-500" /> Produtos & Serviços</h1>
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2 bg-background text-foreground">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2"><ShoppingBag className="text-emerald-500" size={20} /> Produtos & Serviços</h1>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <Button variant="ghost" className="gap-2 flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
-                    <Button className="gap-2 flex-1 md:flex-none" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={16} /> Novo Item</Button>
+                    <Button variant="ghost" className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={14} /> Relatórios</Button>
+                    <Button className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={14} /> Novo Item</Button>
                 </div>
             </div>
 

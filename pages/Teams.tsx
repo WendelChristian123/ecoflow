@@ -276,12 +276,10 @@ export const TeamsPage: React.FC = () => {
     });
 
     return (
-      // Optimized height
-      <div className="h-full flex flex-col gap-4">
-        <div className="flex flex-col gap-4 shrink-0">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="flex-1 flex flex-col gap-4 pt-4 min-h-0 pr-2">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-3">
+              <div className="flex items-center gap-4">
               <Button variant="secondary" size="sm" onClick={() => setSelectedTeam(null)}>
                 <ArrowLeft size={16} />
               </Button>
@@ -289,9 +287,9 @@ export const TeamsPage: React.FC = () => {
                 <h2 className="text-xl font-bold text-white flex items-center gap-3">
                   {selectedTeam.name}
                   <Badge variant="neutral">{selectedTeam.memberIds.length} membros</Badge>
-                  <button onClick={handleEdit} className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                    <Edit2 size={16} />
-                  </button>
+                  <Button onClick={() => { setEditingTeam(undefined); setIsTeamModalOpen(true); }} className="h-7 text-[10px] px-3 gap-1.5 shadow-lg shadow-primary/20 transition-all hover:scale-105 w-full md:w-auto">
+                    <Plus size={14} /> Nova Equipe
+                  </Button>
                   {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
                     <button
                       onClick={(e) => handleDeleteTeam(e, selectedTeam.id)}
@@ -395,7 +393,6 @@ export const TeamsPage: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
@@ -459,13 +456,13 @@ export const TeamsPage: React.FC = () => {
   // --- Teams Grid View ---
   return (
     <KanbanProvider module="teams" entityTable="teams" singleBoardMode={true} onEntityMove={() => loadData(false)}>
-      <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
+      <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-6 pr-2">
 
         {/* Header with Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 shrink-0">
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Equipes</h1>
-            <p className="text-muted-foreground mt-1">Gerencie suas equipes e membros</p>
+            <h1 className="text-lg font-bold text-foreground tracking-tight">Equipes</h1>
+            <p className="text-muted-foreground text-[10px]">Gerencie seus times e membros.</p>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
@@ -479,14 +476,14 @@ export const TeamsPage: React.FC = () => {
                 placeholder="Buscar equipes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-card border border-input text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                className="bg-card border border-input text-foreground pl-9 pr-4 py-1 rounded-lg text-xs w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground h-7"
               />
             </div>
 
             {/* New Button */}
             {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
-              <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={handleCreate}>
-                <Plus size={16} /> Nova
+              <Button className="gap-1.5 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] h-7 px-3" onClick={handleCreate}>
+                <Plus size={14} /> Nova
               </Button>
             )}
 
@@ -526,12 +523,12 @@ export const TeamsPage: React.FC = () => {
                 {filteredTeams.map(team => (
                   <Card
                     key={team.id}
-                    className="p-5 flex flex-col gap-4 hover:bg-accent group cursor-pointer transition-all border border-border hover:border-border/80"
+                    className="p-4 flex flex-col gap-3 hover:bg-accent group cursor-pointer transition-all border border-border hover:border-border/80"
                     onClick={() => setSelectedTeam(team)}
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                        <h2 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
                           {team.name}
                         </h2>
                         <p className="text-muted-foreground text-sm line-clamp-2 mt-1">{team.description}</p>
@@ -560,7 +557,7 @@ export const TeamsPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="mt-auto pt-4 flex items-center justify-between border-t border-border">
+                    <div className="mt-auto pt-3 flex items-center justify-between border-t border-border">
                       <div className="flex -space-x-2 overflow-hidden py-1">
                         {team.memberIds.length === 0 ? (
                           <span className="text-xs text-muted-foreground italic">Sem membros</span>

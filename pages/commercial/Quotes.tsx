@@ -246,20 +246,20 @@ export const QuotesPage: React.FC = () => {
                         placeholder="Buscar..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                        className="bg-card border border-border text-foreground pl-9 pr-4 py-1 rounded-lg text-xs w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground h-7"
                     />
                 </div>
 
                 {/* 2. New Button - Before Month */}
-                <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
-                    <Plus size={16} /> Novo
+                <Button className="gap-1.5 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7 px-3" onClick={() => { setEditingQuote(undefined); setIsModalOpen(true); }}>
+                    <Plus size={14} /> Novo
                 </Button>
 
                 {/* 3. Month Nav */}
-                <div className="flex bg-card border border-border rounded-lg p-0.5 items-center">
-                    <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
-                    <span className="text-xs font-bold text-foreground uppercase px-2 w-24 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
-                    <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
+                <div className="flex bg-card border border-border rounded-lg p-0.5 items-center h-7">
+                    <button onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))} className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={14} /></button>
+                    <span className="text-[10px] font-bold text-foreground uppercase px-2 w-20 text-center select-none">{format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}</span>
+                    <button onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))} className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={14} /></button>
                 </div>
 
                 {/* 4. Status */}

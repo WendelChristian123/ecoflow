@@ -255,7 +255,7 @@ export const TasksPage: React.FC = () => {
 
   return (
     <KanbanProvider module="tasks" entityTable="tasks" singleBoardMode={true} onEntityMove={() => loadData(false)}>
-      <div className="h-full flex flex-col gap-4">
+      <div className="h-full flex flex-col gap-3">
         {/* Unified Controls Bar */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {/* 1. Search - Web only */}
@@ -269,15 +269,15 @@ export const TasksPage: React.FC = () => {
                 placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-full focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                className="bg-card border border-border text-foreground pl-9 pr-4 py-1 rounded-lg text-xs w-full focus:ring-1 focus:ring-primary placeholder:text-muted-foreground h-7"
               />
             </div>
           )}
 
           {/* 2. New Task Button */}
           {can('routines', 'create') && (
-            <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={() => setIsModalOpen(true)}>
-              <Plus size={16} /> <span className="hidden sm:inline">Nova</span>
+            <Button className="gap-1.5 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] h-7 px-3" onClick={() => setIsModalOpen(true)}>
+              <Plus size={14} /> <span className="hidden sm:inline">Nova</span>
             </Button>
           )}
 
@@ -374,9 +374,9 @@ export const TasksPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2 pb-4">
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-2 pb-4">
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Tarefas Ativas ({activeTasks.length})</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">Tarefas Ativas ({activeTasks.length})</h3>
               <TaskTableView
                 tasks={activeTasks}
                 users={users}

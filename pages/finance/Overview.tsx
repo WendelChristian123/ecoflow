@@ -330,25 +330,25 @@ export const FinancialOverview: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-3 mb-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                        <DollarSign className="text-primary" size={32} /> Visão Geral
-                        <span className="text-sm font-normal text-muted-foreground ml-2 hidden md:inline">| Financeiro</span>
+                    <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+                        <DollarSign className="text-primary" size={20} /> Visão Geral
+                        <span className="text-[10px] font-normal text-muted-foreground ml-2 hidden md:inline">| Financeiro</span>
                     </h1>
                 </div>
 
-                <div className="flex gap-2 md:gap-3">
+                <div className="flex gap-2">
                     {/* Relatórios: ícone apenas no mobile */}
                     <Button
                         variant="ghost"
                         onClick={() => setIsReportModalOpen(true)}
-                        className="bg-secondary/50 border border-border hover:bg-secondary text-foreground gap-2"
+                        className="bg-secondary/50 border border-border hover:bg-secondary text-foreground gap-1.5 h-7 text-[10px]"
                         title="Relatórios"
                     >
-                        <Printer size={18} className="text-primary" />
+                        <Printer size={14} className="text-primary" />
                         <span className="hidden sm:inline">Relatórios</span>
                     </Button>
 
@@ -356,18 +356,18 @@ export const FinancialOverview: React.FC = () => {
                     <Button
                         variant="ghost"
                         onClick={() => navigate('/finance/transactions')}
-                        className="sm:hidden bg-secondary/50 border border-border hover:bg-secondary text-foreground gap-2"
+                        className="sm:hidden bg-secondary/50 border border-border hover:bg-secondary text-foreground gap-1.5 h-7 text-[10px]"
                         title="Lançamentos"
                     >
-                        <LayoutList size={18} className="text-primary" />
+                        <LayoutList size={14} className="text-primary" />
                         <span>Lançamentos</span>
                     </Button>
 
                     <Button
-                        className="px-6 gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-105"
+                        className="px-3 gap-1.5 shadow-lg shadow-primary/20 transition-all hover:scale-105 h-7 text-[10px]"
                         onClick={() => setIsTransactionModalOpen(true)}
                     >
-                        <Plus size={18} /> Novo Lançamento
+                        <Plus size={14} /> Novo Lançamento
                     </Button>
                 </div>
             </div>
@@ -384,23 +384,23 @@ export const FinancialOverview: React.FC = () => {
                 return (
                     <>
                         {/* BLOCO 1 - RESUMO */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-6">
                             {/* SALDO - PROTAGONISTA (Mantido layout especial mas alinhado) */}
                             <div className="lg:col-span-4 bg-gradient-to-br from-card to-secondary/30 border border-border/50 p-0 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-card transition-all duration-300 hover:shadow-premium hover:-translate-y-1 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50">
-                                <div className="p-6 lg:p-8 flex justify-between items-start">
+                                <div className="p-4 lg:p-5 flex justify-between items-start">
                                     <div>
-                                        <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest dark:text-slate-400">Saldo Atual</span>
-                                        <div className="mt-2 text-4xl xl:text-5xl font-black text-foreground tracking-tighter dark:text-white">
+                                        <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest dark:text-slate-400">Saldo Atual</span>
+                                        <div className="mt-1 text-2xl xl:text-3xl font-black text-foreground tracking-tighter dark:text-white">
                                             {fmt(currentBalance)}
                                         </div>
                                     </div>
-                                    <div className="w-16 h-16 bg-secondary/80 rounded-full border border-border flex items-center justify-center shrink-0 dark:bg-white/5 dark:border-white/10">
-                                        <Wallet size={32} className="text-emerald-500 dark:text-emerald-400" />
+                                    <div className="w-10 h-10 bg-secondary/80 rounded-full border border-border flex items-center justify-center shrink-0 dark:bg-white/5 dark:border-white/10">
+                                        <Wallet size={20} className="text-success dark:text-success" />
                                     </div>
                                 </div>
-                                <div className="px-6 lg:px-8 py-5 bg-secondary/50 flex-1 flex items-center border-t border-border mt-auto dark:bg-black/20 dark:border-white/5">
-                                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-slate-300">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                <div className="px-4 lg:px-5 py-3 bg-secondary/50 flex-1 flex items-center border-t border-border mt-auto dark:bg-black/20 dark:border-white/5">
+                                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground dark:text-slate-300">
+                                        <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_8px_var(--success)]"></div>
                                         <span>Consolidado de todas as contas</span>
                                     </div>
                                 </div>
@@ -408,14 +408,15 @@ export const FinancialOverview: React.FC = () => {
 
 
                             {/* FLUXO - SECUNDÁRIO */}
-                            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)} className="cursor-pointer">
                                     <StatCard
                                         title="Receitas"
                                         value={fmt(realizedIncome)}
                                         icon={TrendingUp}
-                                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                                        variant="success"
                                         subtitle="Realizadas este mês"
+                                        size="sm"
                                     />
                                 </div>
 
@@ -424,8 +425,9 @@ export const FinancialOverview: React.FC = () => {
                                         title="Despesas"
                                         value={fmt(realizedExpense)}
                                         icon={TrendingDown}
-                                        iconColorClass="text-rose-500 bg-rose-500/10"
+                                        variant="danger"
                                         subtitle="Realizadas este mês"
+                                        size="sm"
                                     />
                                 </div>
 
@@ -433,31 +435,33 @@ export const FinancialOverview: React.FC = () => {
                                     title="Resultado"
                                     value={fmt(realizedIncome - realizedExpense)}
                                     icon={DollarSign}
-                                    iconColorClass={(realizedIncome - realizedExpense) >= 0 ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}
+                                    variant={(realizedIncome - realizedExpense) >= 0 ? 'success' : 'danger'}
                                     subtitle="Balanço do Período"
+                                    size="sm"
                                 />
                             </div>
                         </div>
 
                         {/* BLOCO 2 - RISCO (ATRASADOS vs FUTUROS) */}
-                        <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="flex items-center gap-3 mb-5 pl-1">
+                        <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-3 mb-4 pl-1">
                                 <div className="h-px bg-border flex-1"></div>
-                                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                <h2 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                                     <AlertCircle size={14} /> Fluxo de Caixa Previsto
                                 </h2>
                                 <div className="h-px bg-border flex-1"></div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                 {/* PAYABLES OVERDUE - ALARM */}
                                 <div onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
                                     <StatCard
                                         title="Contas Atrasadas"
                                         value={fmt(payablesOverdue)}
                                         icon={AlertCircle}
-                                        iconColorClass="text-rose-500 bg-rose-500/10"
+                                        variant="danger"
                                         subtitle="Pagamentos Vencidos"
+                                        size="sm"
                                     />
                                 </div>
 
@@ -467,8 +471,9 @@ export const FinancialOverview: React.FC = () => {
                                         title="A Vencer (7 dias)"
                                         value={fmt(payablesFuture)}
                                         icon={Clock}
-                                        iconColorClass="text-amber-500 bg-amber-500/10"
+                                        variant="warning"
                                         subtitle="Próximos Pagamentos"
+                                        size="sm"
                                     />
                                 </div>
 
@@ -478,8 +483,9 @@ export const FinancialOverview: React.FC = () => {
                                         title="Recebimentos Atrasados"
                                         value={fmt(receivablesOverdue)}
                                         icon={AlertCircle}
-                                        iconColorClass="text-rose-500 bg-rose-500/10"
+                                        variant="danger"
                                         subtitle="Clientes Inadimplentes"
+                                        size="sm"
                                     />
                                 </div>
 
@@ -489,8 +495,9 @@ export const FinancialOverview: React.FC = () => {
                                         title="A Receber (7 dias)"
                                         value={fmt(receivablesFuture)}
                                         icon={Clock}
-                                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                                        variant="success"
                                         subtitle="Próximas Entradas"
+                                        size="sm"
                                     />
                                 </div>
                             </div>
@@ -696,23 +703,23 @@ export const FinancialOverview: React.FC = () => {
 
                             return (
                                 <>
-                                    <div className="p-5 rounded-xl border border-dashed border-emerald-500/20 bg-emerald-500/5">
-                                        <span className="text-xs text-emerald-500/70 font-bold uppercase tracking-widest">Receitas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
-                                        <div className="mt-2 text-3xl font-bold text-emerald-400 tracking-tighter">{fmt(revenue.current)}</div>
+                                    <div className="p-5 rounded-xl border border-dashed border-success/20 bg-success/5">
+                                        <span className="text-xs text-success/70 font-bold uppercase tracking-widest">Receitas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
+                                        <div className="mt-2 text-3xl font-bold text-success tracking-tighter">{fmt(revenue.current)}</div>
                                         {comparisonMode !== 'custom' && (
                                             <div className="mt-1 flex items-center gap-1.5 opacity-60">
-                                                <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+                                                <span className="text-[10px] font-medium uppercase tracking-wide text-success">
                                                     Anterior: {fmt(revenue.previous)}
                                                 </span>
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-5 rounded-xl border border-dashed border-rose-500/20 bg-rose-500/5">
-                                        <span className="text-xs text-rose-500/70 font-bold uppercase tracking-widest">Despesas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
-                                        <div className="mt-2 text-3xl font-bold text-rose-400 tracking-tighter">{fmt(expense.current)}</div>
+                                    <div className="p-5 rounded-xl border border-dashed border-danger/20 bg-danger/5">
+                                        <span className="text-xs text-danger/70 font-bold uppercase tracking-widest">Despesas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
+                                        <div className="mt-2 text-3xl font-bold text-danger tracking-tighter">{fmt(expense.current)}</div>
                                         {comparisonMode !== 'custom' && (
                                             <div className="mt-1 flex items-center gap-1.5 opacity-60">
-                                                <span className="text-[10px] font-medium uppercase tracking-wide text-rose-300">
+                                                <span className="text-[10px] font-medium uppercase tracking-wide text-danger">
                                                     Anterior: {fmt(expense.previous)}
                                                 </span>
                                             </div>

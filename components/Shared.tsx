@@ -26,9 +26,9 @@ export const Button: React.FC<ButtonProps> = ({ className, variant = 'primary', 
     outline: 'bg-transparent border border-input hover:bg-accent text-foreground',
   };
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-5 py-2.5 text-sm',
-    lg: 'px-8 py-3.5 text-base',
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-6 py-2.5 text-sm',
   };
 
   return (
@@ -257,14 +257,16 @@ export const LinkInput: React.FC<{ links: string[], onChange: (links: string[]) 
 
 
 // --- Badge ---
-export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral' | 'outline' | 'info'; className?: string }> = ({ children, variant = 'default', className }) => {
+export const Badge: React.FC<{ children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'danger' | 'error' | 'neutral' | 'outline' | 'info'; className?: string }> = ({ children, variant = 'default', className }) => {
+  // 'error' is mapped to 'danger' for backwards compatibility
+  const v = variant === 'error' ? 'danger' : variant;
   const styles = {
     default: 'bg-primary/10 text-primary border-primary/20',
-    success: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-    warning: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20',
-    error: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/20',
-    neutral: 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
-    info: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/20',
+    success: 'bg-success/15 text-success border-success/20',
+    warning: 'bg-warning/15 text-warning border-warning/20',
+    danger: 'bg-danger/15 text-danger border-danger/20',
+    neutral: 'bg-slate-500/15 text-slate-400 border-slate-500/20',
+    info: 'bg-info/15 text-info border-info/20',
     outline: 'bg-transparent text-muted-foreground border-border',
   };
   return (
@@ -317,7 +319,7 @@ export const Card: React.FC<CardProps> = ({ children, className, variant = 'soli
       onClick={onClick}
       className={cn(
         "rounded-2xl transition-all duration-300 bg-card border border-border shadow-card",
-        !noPadding && "p-6 md:p-8",
+        !noPadding && "p-4 md:p-5",
         onClick && "cursor-pointer hover:shadow-premium hover:-translate-y-1",
         className
       )}
@@ -335,6 +337,8 @@ export interface StatCardProps {
   subtitle?: string;
   icon: React.ElementType;
   iconColorClass?: string;
+  variant?: 'success' | 'danger' | 'warning' | 'info' | 'default';
+  size?: 'sm' | 'md' | 'default';
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   className?: string;
@@ -345,20 +349,41 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   subtitle,
   icon: Icon,
-  iconColorClass = "text-primary bg-primary/10",
+  iconColorClass,
+  variant = 'default',
+  size = 'default',
   trend,
   trendValue,
   className
 }) => {
+  // Semantic mapping if variant is used
+  const semanticConfig = {
+    default: { text: "text-foreground", icon: "text-primary bg-primary/10", border: "border-border", glow: "bg-primary/5" },
+    success: { text: "text-success", icon: "text-success bg-success/10", border: "border-success/20", glow: "bg-success/5" },
+    danger: { text: "text-danger", icon: "text-danger bg-danger/10", border: "border-danger/20", glow: "bg-danger/5" },
+    warning: { text: "text-warning", icon: "text-warning bg-warning/10", border: "border-warning/20", glow: "bg-warning/5" },
+    info: { text: "text-info", icon: "text-info bg-info/10", border: "border-info/20", glow: "bg-info/5" },
+  };
+
+  const config = semanticConfig[variant];
+  const finalIconClass = iconColorClass || config.icon;
+
+  const sizeConfig = {
+    sm: { padding: 'p-3', titleSize: 'text-[9px]', valueSize: 'text-lg', iconPadding: 'p-1', iconSize: 12, gap: 'gap-1.5' },
+    md: { padding: 'p-3.5', titleSize: 'text-[10px]', valueSize: 'text-xl', iconPadding: 'p-1.5', iconSize: 14, gap: 'gap-2' },
+    default: { padding: 'p-4', titleSize: 'text-[10px]', valueSize: 'text-2xl', iconPadding: 'p-2', iconSize: 16, gap: 'gap-2' }
+  };
+  const sc = sizeConfig[size] ?? sizeConfig['default'];
+
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl bg-card border border-border shadow-card p-6 flex flex-col gap-3 group transition-all duration-300 hover:shadow-premium hover:-translate-y-1", className)}>
+    <div className={cn("relative overflow-hidden rounded-2xl bg-card border shadow-card flex flex-col justify-between group transition-all duration-300 hover:shadow-premium hover:-translate-y-1", config.border, sc.padding, sc.gap, className)}>
       <div className="flex justify-between items-start">
         <div className="space-y-1 z-10">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</p>
-          <h3 className="text-3xl font-bold text-foreground tracking-tight">{value}</h3>
+          <p className={cn("font-bold text-muted-foreground uppercase tracking-wider", sc.titleSize)}>{title}</p>
+          <h3 className={cn("font-bold tracking-tight", sc.valueSize, variant === 'default' ? "text-foreground" : config.text)}>{value}</h3>
         </div>
-        <div className={cn("p-2.5 rounded-lg shrink-0 z-10", iconColorClass)}>
-          <Icon size={18} strokeWidth={2.5} />
+        <div className={cn("rounded-lg shrink-0 z-10", sc.iconPadding, finalIconClass)}>
+          <Icon size={sc.iconSize} strokeWidth={2.5} />
         </div>
       </div>
       
@@ -367,8 +392,8 @@ export const StatCard: React.FC<StatCardProps> = ({
           {trendValue && (
             <span className={cn(
               "text-xs font-medium px-1.5 py-0.5 rounded-md",
-              trend === 'up' ? "bg-emerald-500/10 text-emerald-500" : 
-              trend === 'down' ? "bg-rose-500/10 text-rose-500" : 
+              trend === 'up' ? "bg-success/10 text-success" : 
+              trend === 'down' ? "bg-danger/10 text-danger" : 
               "bg-slate-500/10 text-slate-500"
             )}>
               {trend === 'up' ? '↑' : trend === 'down' ? '↓' : ''} {trendValue}
@@ -378,8 +403,8 @@ export const StatCard: React.FC<StatCardProps> = ({
         </div>
       )}
       
-      {/* Subtle background glow effect on hover based on icon color */}
-      <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      {/* Subtle background glow effect on hover based on variant */}
+      <div className={cn("absolute -right-10 -bottom-10 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none", config.glow)} />
     </div>
   );
 };
@@ -470,10 +495,10 @@ export const TaskTableView: React.FC<{
 
   const getPriorityColor = (p: Priority) => {
     switch (p) {
-      case 'urgent': return 'error'; // Red
-      case 'high': return 'warning'; // Orange
-      case 'medium': return 'info'; // Blue
-      case 'low': return 'success'; // Green
+      case 'urgent': return 'danger';
+      case 'high': return 'warning';
+      case 'medium': return 'info';
+      case 'low': return 'success';
       default: return 'neutral';
     }
   };
@@ -498,17 +523,17 @@ export const TaskTableView: React.FC<{
 
     // VENCIDO (Ontem ou antes e não feito)
     if (isPast(dueDate) && !isToday(dueDate)) {
-      return 'border-l-4 border-l-rose-500 bg-rose-500/10 dark:bg-rose-950/20 hover:bg-rose-500/20';
+      return 'border-l-4 border-l-danger bg-danger/10 hover:bg-danger/20';
     }
 
     const diff = differenceInDays(dueDate, now);
     // HOJE ou AMANHÃ
     if (diff <= 1 && diff >= 0) {
-      return 'border-l-4 border-l-amber-500 bg-amber-500/5 hover:bg-amber-500/10';
+      return 'border-l-4 border-l-warning bg-warning/5 hover:bg-warning/10';
     }
 
     // NO PRAZO
-    return 'border-l-4 border-l-emerald-500 bg-card hover:bg-emerald-500/5';
+    return 'border-l-4 border-l-success bg-card hover:bg-success/5';
   };
 
   return (
@@ -557,7 +582,7 @@ export const TaskTableView: React.FC<{
                   </Badge>
                   {/* Due date */}
                   {task.dueDate && (
-                    <span className={cn('text-[10px] font-medium flex-shrink-0', isOverdue ? 'text-rose-500' : 'text-muted-foreground')}>
+                    <span className={cn('text-[10px] font-medium flex-shrink-0', isOverdue ? 'text-danger' : 'text-muted-foreground')}>
                       {isOverdue && '⚠ '}{new Date(task.dueDate).toLocaleDateString('pt-BR')}
                     </span>
                   )}
@@ -580,11 +605,11 @@ export const TaskTableView: React.FC<{
         <table className="w-full min-w-[800px] text-left text-sm text-muted-foreground">
           <thead className="bg-muted/50 text-foreground uppercase text-xs font-bold tracking-wider">
             <tr>
-              <th className="px-6 py-4">Título</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Prioridade</th>
-              <th className="px-6 py-4">Responsável</th>
-              <th className="px-6 py-4">Prazo</th>
+              <th className="px-4 py-2.5">Título</th>
+              <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5">Prioridade</th>
+              <th className="px-4 py-2.5">Responsável</th>
+              <th className="px-4 py-2.5">Prazo</th>
               <th className="px-6 py-4 text-right">Ações</th>
             </tr>
           </thead>
@@ -608,11 +633,11 @@ export const TaskTableView: React.FC<{
                     )}
                     onClick={() => onTaskClick && onTaskClick(task)}
                   >
-                    <td className="px-6 py-4 font-medium text-foreground">
+                    <td className="px-4 py-2.5 font-medium text-foreground">
                       <div className={task.status === 'done' ? 'line-through opacity-60' : ''}>{task.title}</div>
                       {task.description && <div className="text-xs text-muted-foreground truncate max-w-[200px] mt-0.5">{task.description}</div>}
                     </td>
-                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <div className="w-36">
                         <FilterSelect
                           value={task.status}
@@ -628,10 +653,10 @@ export const TaskTableView: React.FC<{
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <Badge variant={getPriorityColor(task.priority)}>{translatePriority(task.priority)}</Badge>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       {assignee ? (
                         <div className="flex items-center gap-2" title={assignee.email}>
                           <Avatar size="sm" src={assignee.avatarUrl} name={assignee.name} />
@@ -639,18 +664,18 @@ export const TaskTableView: React.FC<{
                         </div>
                       ) : <span className="text-muted-foreground italic">--</span>}
                     </td>
-                    <td className="px-6 py-4 text-xs font-medium text-foreground">
+                    <td className="px-4 py-2.5 text-xs font-medium text-foreground">
                       <div className="flex flex-col">
                         <span>{new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
                         {isOverdue && (
-                          <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mt-0.5">Vencido</span>
+                          <span className="text-[10px] font-bold text-danger uppercase tracking-wider mt-0.5">Vencido</span>
                         )}
                         {!isOverdue && (
                           <span className="text-muted-foreground text-[10px]">{new Date(task.dueDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       <button
                         onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"

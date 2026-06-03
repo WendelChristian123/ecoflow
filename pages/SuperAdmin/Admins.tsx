@@ -29,13 +29,13 @@ export const SuperAdminAdmins: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background p-6">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2 bg-background p-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                    <ShieldCheck className="text-indigo-500" /> Gestão de Super Admins
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <ShieldCheck className="text-indigo-500" size={20} /> Gestão de Super Admins
                 </h1>
-                <Button className="gap-2">
-                    <UserPlus size={18} /> Promover Usuário
+                <Button className="gap-1.5 h-7 px-3 text-[10px]">
+                    <UserPlus size={14} /> Promover Usuário
                 </Button>
             </div>
 

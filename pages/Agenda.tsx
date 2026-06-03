@@ -413,7 +413,7 @@ export const AgendaPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-3">
+    <div className="h-full flex flex-col space-y-2">
 
       {/* APP MODE: Simplified list, no calendar */}
       {isApp ? (

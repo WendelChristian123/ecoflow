@@ -526,7 +526,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </header>
 
                 {/* Main Content Area - Optimized for 100% Height */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8 flex flex-col relative">
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pb-5 flex flex-col relative main-content-area">
                     {children}
                 </div>
             </main>

@@ -321,23 +321,22 @@ export const ProjectsPage: React.FC = () => {
     });
 
     return (
-      // Optimized height
-      <div className="h-full flex flex-col gap-4">
-        <div className="flex flex-col gap-4 shrink-0">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+        <div className="flex-1 flex flex-col gap-4 pt-4 min-h-0 pr-2">
+            {/* Header Actions */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-3">
             <div className="flex items-center gap-4">
               <Button variant="secondary" size="sm" onClick={() => setSelectedProject(null)}>
                 <ArrowLeft size={16} />
               </Button>
               <div>
-                <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-3">
                   {selectedProject.name}
                   <Badge variant={selectedProject.status === 'active' ? 'success' : 'neutral'}>
                     {translateStatus(selectedProject.status)}
                   </Badge>
-                  <button onClick={handleEdit} className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Editar Projeto">
-                    <Edit2 size={16} />
-                  </button>
+                  <Button onClick={() => { setEditingProject(undefined); setIsModalOpen(true); }} className="h-7 text-[10px] px-3 gap-1.5 shadow-lg shadow-primary/20 transition-all hover:scale-105">
+                      <Plus size={14} /> Novo Projeto
+                  </Button>
                   {user?.role === 'admin' && (
                     <>
                       <button
@@ -376,7 +375,7 @@ export const ProjectsPage: React.FC = () => {
                 placeholder="Buscar tarefas..."
                 value={detailSearch}
                 onChange={(e) => setDetailSearch(e.target.value)}
-                className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-64 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                className="bg-card border border-border text-foreground pl-9 pr-4 py-1 rounded-lg text-xs w-64 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground h-7"
               />
             </div>
 
@@ -447,7 +446,7 @@ export const ProjectsPage: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
+
 
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 bg-transparent rounded-xl">
           {detailViewMode === 'board' ? (
@@ -503,13 +502,13 @@ export const ProjectsPage: React.FC = () => {
   // --- Projects View ---
   return (
     <KanbanProvider module="projects" entityTable="projects" singleBoardMode={true} onEntityMove={() => loadData(false)}>
-      <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
+      <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-6 pr-2">
 
         {/* Header with Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 shrink-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 shrink-0">
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Projetos</h1>
-            <p className="text-muted-foreground mt-1">Gerencie seus projetos e entregas</p>
+            <h1 className="text-lg font-bold text-foreground tracking-tight">Projetos</h1>
+            <p className="text-muted-foreground mt-0.5 text-[10px]">Gerencie seus projetos e entregas</p>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
@@ -523,7 +522,7 @@ export const ProjectsPage: React.FC = () => {
                 placeholder="Buscar projetos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-card border border-border text-foreground pl-9 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                className="bg-card border border-border text-foreground pl-9 pr-4 py-1 rounded-lg text-xs w-48 focus:ring-1 focus:ring-primary placeholder:text-muted-foreground h-7"
               />
             </div>
 
@@ -544,8 +543,8 @@ export const ProjectsPage: React.FC = () => {
 
             {/* New Button */}
             {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
-              <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
-                <Plus size={16} /> Novo
+              <Button className="gap-1.5 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7 px-3" onClick={handleCreate}>
+                <Plus size={14} /> Novo
               </Button>
             )}
 
@@ -570,11 +569,11 @@ export const ProjectsPage: React.FC = () => {
           </div>
         ) : viewMode === 'grid' ? (
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-4">
             {filteredProjects.map(project => (
               <Card key={project.id} onClick={() => setSelectedProject(project)} className="flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-lg">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-base">
                     {project.name.charAt(0)}
                   </div>
                   {user?.role === 'admin' && (
@@ -608,17 +607,17 @@ export const ProjectsPage: React.FC = () => {
                   )}
                 </div>
 
-                <h3 className="text-lg font-semibold text-foreground mb-2">{project.name}</h3>
-                <p className="text-sm text-muted-foreground mb-6 line-clamp-2 flex-1">{project.description}</p>
+                <h3 className="text-base font-semibold text-foreground mb-1.5">{project.name}</h3>
+                <p className="text-xs text-muted-foreground mb-4 line-clamp-2 flex-1">{project.description}</p>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-muted-foreground">Progresso</span>
                     <span className="text-foreground font-medium">{calculateProgress(project.id)}%</span>
                   </div>
                   <ProgressBar progress={calculateProgress(project.id)} />
 
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div className="flex items-center justify-between pt-3 border-t border-border">
                     <div className="flex -space-x-2">
                       {project.members.slice(0, 3).map(memberId => {
                         const u = users.find(user => user.id === memberId);
@@ -643,8 +642,8 @@ export const ProjectsPage: React.FC = () => {
             ))}
 
             {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
-              <button onClick={handleCreate} className="border border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all h-full min-h-[250px] gap-3 group">
-                <div className="h-12 w-12 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+              <button onClick={handleCreate} className="border border-dashed border-border rounded-xl p-4 flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all h-full min-h-[200px] gap-2 group">
+                <div className="h-10 w-10 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
                   <Plus size={24} />
                 </div>
                 <span className="font-medium">Criar Novo Projeto</span>

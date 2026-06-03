@@ -389,17 +389,17 @@ export const FinancialTransactions: React.FC = () => {
             <style>{scrollbarStyles}</style>
 
             {/* Page Header Area */}
-            <div className="flex-none px-4 md:px-8 pt-6 pb-4 flex flex-col gap-6 z-20">
+            <div className="flex-none px-4 md:px-8 pt-4 pb-3 flex flex-col gap-4 z-20">
 
                 {/* Title Row */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Lançamentos</h1>
+                <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-bold text-foreground tracking-tight">Lançamentos</h1>
                         <button
                             onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-                            className="w-10 h-10 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-105"
+                            className="w-8 h-8 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-105"
                         >
-                            <Plus size={20} />
+                            <Plus size={16} />
                         </button>
                         {/* Dropdown Menu */}
                         {isAddMenuOpen && (
@@ -525,7 +525,7 @@ export const FinancialTransactions: React.FC = () => {
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"></div>
                                         Receitas
                                     </div>
-                                    <div className="text-emerald-600 dark:text-emerald-400 font-bold text-2xl tracking-tight">
+                                    <div className="text-emerald-600 dark:text-emerald-400 font-bold text-xl tracking-tight">
                                         {fmt(filteredData.filter(t => t.type === 'income' && t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
@@ -544,7 +544,7 @@ export const FinancialTransactions: React.FC = () => {
                                         <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]"></div>
                                         Despesas
                                     </div>
-                                    <div className="text-rose-600 dark:text-rose-500 font-bold text-2xl tracking-tight">
+                                    <div className="text-rose-600 dark:text-rose-500 font-bold text-xl tracking-tight">
                                         {fmt(filteredData.filter(t => t.type === 'expense' && (t.isPaid || t.creditCardId) && !t.description.toLowerCase().includes('fatura')).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
@@ -563,7 +563,7 @@ export const FinancialTransactions: React.FC = () => {
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]"></div>
                                         Transferências
                                     </div>
-                                    <div className="text-blue-600 dark:text-blue-400 font-bold text-2xl tracking-tight">
+                                    <div className="text-blue-600 dark:text-blue-400 font-bold text-xl tracking-tight">
                                         {fmt(filteredData.filter(t => t.type === 'transfer').reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>
@@ -576,7 +576,7 @@ export const FinancialTransactions: React.FC = () => {
                                         <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.6)]"></div>
                                         Pgto. Cartão
                                     </div>
-                                    <div className="text-yellow-600 dark:text-yellow-400 font-bold text-2xl tracking-tight">
+                                    <div className="text-yellow-600 dark:text-yellow-400 font-bold text-xl tracking-tight">
                                         {fmt(filteredData.filter(t => t.type === 'expense' && t.description.toLowerCase().includes('fatura') && t.isPaid).reduce((acc, t) => acc + t.amount, 0))}
                                     </div>
                                 </div>

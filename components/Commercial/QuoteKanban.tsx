@@ -73,11 +73,11 @@ const QuoteCard: React.FC<{ quote: Quote; onClick: () => void }> = ({ quote, onC
     return (
         <KanbanCard id={quote.id} onClick={onClick}>
             <div className="bg-card border border-border rounded-lg shadow-sm hover:border-emerald-500/50 hover:shadow-md transition-all group overflow-hidden">
-                <div className="p-3">
-                    <div className="flex justify-between items-start mb-2">
+                <div className="p-2.5">
+                    <div className="flex justify-between items-start mb-1.5">
                         <div className="flex flex-col">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold">#{quote.id.substring(0, 4)}</span>
-                            <h4 className="text-sm font-semibold text-foreground line-clamp-1" title={quote.contact?.name || quote.customerName}>
+                            <h4 className="text-xs font-semibold text-foreground line-clamp-1" title={quote.contact?.name || quote.customerName}>
                                 {quote.contact?.name || quote.customerName || 'Cliente Desconhecido'}
                             </h4>
                         </div>
@@ -89,7 +89,7 @@ const QuoteCard: React.FC<{ quote: Quote; onClick: () => void }> = ({ quote, onC
 
                 {/* Barra de Vencimento com Data Integrada */}
                 <div className={cn(
-                    "px-3 py-2 flex items-center gap-1.5 text-sm font-medium transition-colors",
+                    "px-2.5 py-1.5 flex items-center gap-1.5 text-xs font-medium transition-colors",
                     isExpired
                         ? "bg-rose-500 text-white"
                         : "bg-emerald-500 text-white"

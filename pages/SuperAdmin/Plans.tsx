@@ -228,13 +228,13 @@ export const SuperAdminPlans: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 bg-background p-6">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2 bg-background p-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                    <CreditCard className="text-indigo-500" /> Planos & Preços
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <CreditCard className="text-indigo-500" size={20} /> Planos & Preços
                 </h1>
-                <Button className="gap-2" onClick={handleOpenCreate}>
-                    <Plus size={18} /> Novo Plano
+                <Button className="gap-1.5 h-7 px-3 text-[10px]" onClick={handleOpenCreate}>
+                    <Plus size={14} /> Novo Plano
                 </Button>
             </div>
 

@@ -311,13 +311,13 @@ export const FinancialCards: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                    <CardIcon className="text-emerald-500" /> Cartões de Crédito
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <CardIcon className="text-emerald-500" size={20} /> Cartões de Crédito
                 </h1>
-                <Button className="gap-2" onClick={handleCreate}>
-                    <Plus size={16} /> Novo Cartão
+                <Button className="gap-1.5 h-7 px-3 text-[10px]" onClick={handleCreate}>
+                    <Plus size={14} /> Novo Cartão
                 </Button>
             </div>
 

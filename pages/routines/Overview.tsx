@@ -176,9 +176,9 @@ export const RoutinesOverview: React.FC = () => {
     ];
 
     const statusData = [
-        { name: 'A Vencer', value: totalDueSoon, color: '#f97316' }, // Orange
-        { name: 'Vencidos', value: totalOverdue, color: '#ef4444' }, // Red
-        { name: 'Concluídos', value: totalDone, color: '#10b981' }, // Emerald
+        { name: 'A Vencer', value: totalDueSoon, color: 'hsl(var(--warning))' },
+        { name: 'Vencidos', value: totalOverdue, color: 'hsl(var(--danger))' },
+        { name: 'Concluídos', value: totalDone, color: 'hsl(var(--success))' },
     ].filter(d => d.value > 0);
 
     const upcomingTasks = visibleTasks
@@ -191,13 +191,13 @@ export const RoutinesOverview: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2 text-foreground">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-2 pb-4 pr-2 text-foreground">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                        <CheckSquare className="text-emerald-500" /> Dashboard de Rotinas
+                    <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+                        <CheckSquare className="text-success" size={20} /> Dashboard de Rotinas
                     </h1>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-muted-foreground text-[10px] mt-0.5">
                         {isAdmin ? 'Visão global administrativa' : 'Acompanhamento de tarefas e projetos'}
                     </p>
                 </div>
@@ -206,23 +206,25 @@ export const RoutinesOverview: React.FC = () => {
                     {/* Report Button */}
                     <Button
                         variant="ghost"
+                        size="sm"
                         onClick={() => setIsReportModalOpen(true)}
-                        className="bg-card border border-border hover:bg-secondary text-foreground"
+                        className="bg-card border border-border hover:bg-secondary text-foreground h-7 text-[10px]"
                     >
-                        <FileText size={16} className="mr-2 text-indigo-500" /> Relatórios
+                        <FileText size={14} className="mr-1.5 text-info" /> Relatórios
                     </Button>
 
                     {/* User Filter */}
                     <FilterSelect
                         inlineLabel="Resp:"
-                        icon={<UserIcon size={14} />}
+                        icon={<UserIcon size={12} />}
                         value={selectedAssignee}
                         onChange={setSelectedAssignee}
                         options={[
                             { value: 'all', label: 'Todos' },
                             ...availableUsers.map(u => ({ value: u.id, label: u.name || u.email || 'Usuário', avatarUrl: u.avatarUrl }))
                         ]}
-                        className="min-w-[180px]"
+                        className="min-w-[150px]"
+                        triggerClassName="!h-7 text-[10px]"
                     />
 
                     {/* Period Filter */}
@@ -235,19 +237,21 @@ export const RoutinesOverview: React.FC = () => {
                             { value: 'month', label: 'Mensal' },
                             { value: 'year', label: 'Anual' }
                         ]}
-                        className="min-w-[160px]"
+                        className="min-w-[140px]"
+                        triggerClassName="!h-7 text-[10px]"
                     />
                 </div>
             </div>
 
             {/* KPI CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div onClick={() => navigate('/projects')} className="cursor-pointer">
                     <StatCard
                         title="Projetos Ativos"
                         value={activeProjectsCount}
                         icon={Briefcase}
-                        iconColorClass="text-indigo-500 bg-indigo-500/10"
+                        variant="info"
+                        size="sm"
                         subtitle="Em andamento"
                     />
                 </div>
@@ -256,7 +260,8 @@ export const RoutinesOverview: React.FC = () => {
                         title="A Vencer"
                         value={totalDueSoon}
                         icon={Clock}
-                        iconColorClass="text-orange-500 bg-orange-500/10"
+                        variant="warning"
+                        size="sm"
                         subtitle="Dentro do prazo"
                     />
                 </div>
@@ -265,7 +270,8 @@ export const RoutinesOverview: React.FC = () => {
                         title="Vencidos"
                         value={totalOverdue}
                         icon={AlertCircle}
-                        iconColorClass="text-red-500 bg-red-500/10"
+                        variant="danger"
+                        size="sm"
                         subtitle="Prazo expirado"
                     />
                 </div>
@@ -274,29 +280,30 @@ export const RoutinesOverview: React.FC = () => {
                         title="Concluídos"
                         value={totalDone}
                         icon={CheckCircle2}
-                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                        variant="success"
+                        size="sm"
                         subtitle={period === 'all' ? 'Total histórico' : 'Neste período'}
                     />
                 </div>
             </div>
 
             {/* CHARTS ROW */}
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-4">
                 {/* Status Distribution */}
-                <Card className="min-h-[350px] flex flex-col" variant="solid">
-                    <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
-                        <BarChart2 size={18} className="text-indigo-500" /> Distribuição por Status
+                <Card className="min-h-[200px] p-4 flex flex-col" variant="solid">
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <BarChart2 size={16} className="text-info" /> Distribuição por Status
                     </h3>
-                    <div className="flex-1 w-full min-h-0 flex flex-col xl:flex-row gap-8">
-                        <div className="w-full xl:w-1/3 min-h-[250px]">
+                    <div className="flex-1 w-full min-h-0 flex flex-col xl:flex-row gap-4">
+                        <div className="w-full xl:w-1/3 min-h-[200px]">
                             <ResponsiveContainer width="99%" height="100%">
                                 <PieChart>
                                     <Pie
                                         data={statusData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={100}
+                                        innerRadius={35}
+                                        outerRadius={65}
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
@@ -313,14 +320,14 @@ export const RoutinesOverview: React.FC = () => {
                         </div>
                         
                         {/* Tasks Columns */}
-                        <div className="w-full xl:w-2/3 flex flex-col md:flex-row gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                        <div className="w-full xl:w-2/3 flex flex-col md:flex-row gap-3 overflow-x-auto pb-2 custom-scrollbar">
                             {/* Vencidos Column */}
                             {totalOverdue > 0 && (
-                                <div className="flex-1 min-w-[220px] flex flex-col gap-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ef4444' }} />
+                                <div className="flex-1 min-w-[180px] flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <div className="w-3 h-3 rounded-full bg-danger" />
                                         <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Vencidos</h4>
-                                        <span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full font-bold">{totalOverdue}</span>
+                                        <span className="text-[10px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-bold">{totalOverdue}</span>
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {visibleTasks.filter(t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))
@@ -330,10 +337,10 @@ export const RoutinesOverview: React.FC = () => {
                                                 const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
                                                 const team = task.teamId ? teams.find(tm => tm.id === task.teamId) : undefined;
                                                 return (
-                                                <div key={task.id} className="p-3 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-1.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>
-                                                    <div className="font-semibold text-sm truncate pl-2">{task.title}</div>
-                                                    <div className="flex flex-col gap-1 pl-2">
+                                                <div key={task.id} className="p-1.5 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-0.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-danger"></div>
+                                                    <div className="font-semibold text-[11px] truncate pl-2">{task.title}</div>
+                                                    <div className="flex flex-col gap-0 pl-2">
                                                         {team && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users size={10} className="shrink-0" /> <span className="truncate">{team.name}</span></div>}
                                                         {project && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Briefcase size={10} className="shrink-0" /> <span className="truncate">{project.name}</span></div>}
                                                     </div>
@@ -342,7 +349,7 @@ export const RoutinesOverview: React.FC = () => {
                                                             <UserIcon size={12} className="shrink-0" />
                                                             <span className="truncate">{assignee?.name?.split(' ')[0] || 'Sem Resp.'}</span>
                                                         </div>
-                                                        <span className="text-rose-500 font-medium shrink-0 text-[10px]">Vencido: {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                                                        <span className="text-danger font-medium shrink-0 text-[10px]">Vencido: {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
                                                     </div>
                                                 </div>
                                             )})}
@@ -357,11 +364,11 @@ export const RoutinesOverview: React.FC = () => {
 
                             {/* A Vencer Column */}
                             {totalDueSoon > 0 && (
-                                <div className="flex-1 min-w-[220px] flex flex-col gap-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f97316' }} />
+                                <div className="flex-1 min-w-[180px] flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <div className="w-3 h-3 rounded-full bg-warning" />
                                         <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">A Vencer</h4>
-                                        <span className="text-[10px] bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full font-bold">{totalDueSoon}</span>
+                                        <span className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded-full font-bold">{totalDueSoon}</span>
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {visibleTasks.filter(t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))
@@ -371,10 +378,10 @@ export const RoutinesOverview: React.FC = () => {
                                                 const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
                                                 const team = task.teamId ? teams.find(tm => tm.id === task.teamId) : undefined;
                                                 return (
-                                                <div key={task.id} className="p-3 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-1.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500"></div>
-                                                    <div className="font-semibold text-sm truncate pl-2">{task.title}</div>
-                                                    <div className="flex flex-col gap-1 pl-2">
+                                                <div key={task.id} className="p-1.5 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-0.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-warning"></div>
+                                                    <div className="font-semibold text-[11px] truncate pl-2">{task.title}</div>
+                                                    <div className="flex flex-col gap-0 pl-2">
                                                         {team && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users size={10} className="shrink-0" /> <span className="truncate">{team.name}</span></div>}
                                                         {project && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Briefcase size={10} className="shrink-0" /> <span className="truncate">{project.name}</span></div>}
                                                     </div>
@@ -398,11 +405,11 @@ export const RoutinesOverview: React.FC = () => {
 
                             {/* Concluídos Column */}
                             {totalDone > 0 && (
-                                <div className="flex-1 min-w-[220px] flex flex-col gap-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }} />
+                                <div className="flex-1 min-w-[180px] flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <div className="w-3 h-3 rounded-full bg-success" />
                                         <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Concluídos</h4>
-                                        <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-bold">{totalDone}</span>
+                                        <span className="text-[10px] bg-success/10 text-success px-2 py-0.5 rounded-full font-bold">{totalDone}</span>
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {visibleTasks.filter(t => t.status === 'done')
@@ -412,10 +419,10 @@ export const RoutinesOverview: React.FC = () => {
                                                 const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
                                                 const team = task.teamId ? teams.find(tm => tm.id === task.teamId) : undefined;
                                                 return (
-                                                <div key={task.id} className="p-3 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-1.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
-                                                    <div className="font-semibold text-sm truncate line-through opacity-70 pl-2">{task.title}</div>
-                                                    <div className="flex flex-col gap-1 pl-2 opacity-70">
+                                                <div key={task.id} className="p-1.5 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-0.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-success"></div>
+                                                    <div className="font-semibold text-[11px] truncate line-through opacity-70 pl-2">{task.title}</div>
+                                                    <div className="flex flex-col gap-0 pl-2 opacity-70">
                                                         {team && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users size={10} className="shrink-0" /> <span className="truncate">{team.name}</span></div>}
                                                         {project && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Briefcase size={10} className="shrink-0" /> <span className="truncate">{project.name}</span></div>}
                                                     </div>
@@ -443,24 +450,24 @@ export const RoutinesOverview: React.FC = () => {
 
             {/* UPCOMING TASKS LIST */}
             <Card className="p-0 overflow-hidden" variant="solid">
-                <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/20">
-                    <h3 className="text-lg font-bold text-foreground">Próximas Entregas</h3>
-                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/tasks')}>Ver Tudo <ArrowRight size={14} className="ml-1" /></Button>
+                <div className="p-4 border-b border-border flex justify-between items-center bg-secondary/20">
+                    <h3 className="text-base font-bold text-foreground">Próximas Entregas</h3>
+                    <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2" onClick={() => navigate('/tasks')}>Ver Tudo <ArrowRight size={12} className="ml-1" /></Button>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-muted-foreground">
                         <thead className="bg-secondary/50 text-foreground uppercase text-xs font-semibold">
                             <tr>
-                                <th className="px-6 py-4">Tarefa</th>
-                                <th className="px-6 py-4">Responsável</th>
-                                <th className="px-6 py-4">Prazo</th>
-                                <th className="px-6 py-4 text-right">Prioridade</th>
+                                <th className="px-3 py-1.5">Tarefa</th>
+                                <th className="px-3 py-1.5">Responsável</th>
+                                <th className="px-3 py-1.5">Prazo</th>
+                                <th className="px-3 py-1.5 text-right">Prioridade</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/50">
                             {upcomingTasks.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground italic">
+                                    <td colSpan={4} className="px-3 py-6 text-center text-muted-foreground italic">
                                         Nenhuma tarefa pendente no período selecionado.
                                     </td>
                                 </tr>
@@ -475,16 +482,16 @@ export const RoutinesOverview: React.FC = () => {
                                             className={cn(
                                                 "transition-colors cursor-pointer border-l-4",
                                                 isOverdue
-                                                    ? "bg-rose-500/10 hover:bg-rose-500/20 border-l-rose-500"
+                                                    ? "bg-danger/10 hover:bg-danger/20 border-l-danger"
                                                     : "bg-transparent hover:bg-secondary/30 border-l-transparent"
                                             )}
                                             onClick={() => navigate('/tasks', { state: { taskId: task.id } })}
                                         >
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-foreground">{task.title}</div>
-                                                <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.description}</div>
+                                            <td className="px-3 py-1.5">
+                                                <div className="font-medium text-[11px] text-foreground">{task.title}</div>
+                                                <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">{task.description}</div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 py-1.5">
                                                 {assignee ? (
                                                     <div className="flex items-center gap-2">
                                                         <Avatar src={assignee.avatarUrl} name={assignee.name} size="sm" />
@@ -492,8 +499,8 @@ export const RoutinesOverview: React.FC = () => {
                                                     </div>
                                                 ) : <span className="text-xs italic">--</span>}
                                             </td>
-                                            <td className="px-6 py-4 font-mono text-xs">
-                                                <div className={isOverdue ? 'text-rose-500 font-bold flex flex-col' : 'text-foreground'}>
+                                            <td className="px-3 py-1.5 font-mono text-[10px]">
+                                                <div className={isOverdue ? 'text-danger font-bold flex flex-col' : 'text-foreground'}>
                                                     <div className="flex items-center gap-1">
                                                         {isOverdue && <AlertCircle size={12} />}
                                                         {new Date(task.dueDate).toLocaleDateString('pt-BR')}
@@ -501,7 +508,7 @@ export const RoutinesOverview: React.FC = () => {
                                                     {isOverdue && <span className="text-[9px] uppercase tracking-wider font-extrabold mt-0.5">Vencido</span>}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-3 py-1.5 text-right">
                                                 <Badge variant={
                                                     task.priority === 'urgent' ? 'error' :
                                                         task.priority === 'high' ? 'warning' :

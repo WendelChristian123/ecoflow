@@ -30,7 +30,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ renderCard, entities, 
     }
 
     return (
-        <div className="flex gap-4 overflow-x-auto pb-4 h-full">
+        <div className="flex gap-2.5 overflow-x-auto pb-4 h-full">
             {currentKanban.stages.map(stage => {
                 const stageEntities = groupByStage(entities, stage.id);
                 return (

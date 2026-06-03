@@ -92,10 +92,10 @@ export const FinancialReports: React.FC = () => {
     };
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2 print:p-0">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden">
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                    <PieChartIcon className="text-emerald-500" /> Relatórios
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2 print:p-0">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 print:hidden">
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <PieChartIcon className="text-emerald-500" size={20} /> Relatórios
                 </h1>
 
                 <div className="flex items-center gap-2">

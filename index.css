@@ -43,31 +43,19 @@
     --input: 210 40% 93%;
     --ring: 155 60% 50%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     --surface: 0 0% 100%;
 
-    /* 🎨 Cores Vibrantes para Status (Experimental) */
-    --status-overdue: 350 85% 60%;
-    /* Vermelho/Rosa - Vencido */
-    --status-today: 45 100% 60%;
-    /* Amarelo Vibrante - Hoje */
-    --status-tomorrow: 25 95% 60%;
-    /* Laranja - Amanhã */
-    --status-upcoming: 210 85% 55%;
-    /* Azul - A Vencer */
-    --status-done: 155 60% 50%;
-    /* Verde - Concluído */
-
-    /* 🎨 Prioridades Vibrantes */
-    --priority-urgent: 350 90% 55%;
-    /* Vermelho forte */
-    --priority-high: 25 90% 55%;
-    /* Laranja forte */
-    --priority-medium: 45 85% 50%;
-    /* Amarelo */
-    --priority-low: 155 50% 50%;
-    /* Verde suave */
+    /* 🎨 Semantic Colors */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --danger: 353 84% 49%;
+    --danger-foreground: 0 0% 100%;
+    --warning: 35 92% 50%; /* Laranja/Amarelo vibrante */
+    --warning-foreground: 0 0% 100%;
+    --info: 221 83% 53%; /* Azul */
+    --info-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -101,6 +89,16 @@
     --border: 210 40% 98% / 0.04; /* Borda extremamente sutil */
     --input: 217.2 32.6% 17.5%;
     --ring: 142 71% 45%;
+
+    /* 🎨 Semantic Colors */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --danger: 353 84% 49%;
+    --danger-foreground: 0 0% 100%;
+    --warning: 35 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 221 83% 53%;
+    --info-foreground: 0 0% 100%;
   }
 
   /* Select options adapted to theme */
@@ -211,3 +209,20 @@ body {
 .fade-in {
   animation: slideInFromBottom 0.15s ease-out forwards;
 }
+
+/* ============================================================
+   COMPACT DENSITY — Ajuste de densidade visual da área de conteúdo
+   Simula visualmente o efeito de zoom 80% sem usar zoom/scale.
+   Aplica-se ao conteúdo interno das páginas, não ao shell.
+   ============================================================ */
+
+/* Redução global de font-size base dentro das páginas internas.
+   O shell (sidebar/header) usa classes explícitas e não é afetado. */
+.main-content-area {
+  font-size: 0.875rem; /* 14px base em vez de 16px */
+}
+
+.main-content-area h1 { font-size: 1.125rem; line-height: 1.4; }
+.main-content-area h2 { font-size: 1rem;     line-height: 1.4; }
+.main-content-area h3 { font-size: 0.9rem;   line-height: 1.4; }
+.main-content-area h4 { font-size: 0.8rem;   line-height: 1.4; }

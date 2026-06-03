@@ -212,7 +212,7 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    "flex items-center gap-2 text-sm h-[34px] rounded-lg px-3 focus:ring-1 focus:ring-primary outline-none transition-colors min-w-[140px] justify-between w-full",
+                    "flex items-center gap-2 text-sm h-7 rounded-lg px-3 focus:ring-1 focus:ring-primary outline-none transition-colors min-w-[140px] justify-between w-full",
                     darkMode
                         ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
                         : "bg-card text-foreground hover:bg-muted/50",
@@ -248,7 +248,7 @@ const OptionItem: React.FC<{ option: FilterOption, isSelected: boolean, onClick:
     <button
         onClick={onClick}
         className={cn(
-            "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left",
+            "w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-all text-left",
             isSelected
                 ? "bg-emerald-500 text-white shadow-md font-medium"
                 : darkMode

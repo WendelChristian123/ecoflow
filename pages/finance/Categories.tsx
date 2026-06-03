@@ -81,13 +81,13 @@ export const FinancialCategories: React.FC = () => {
     const expenseCats = categories.filter(c => c.type === 'expense');
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                    <Tags className="text-emerald-500" /> Categorias
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <Tags className="text-emerald-500" size={20} /> Categorias
                 </h1>
-                <Button className="gap-2" onClick={handleCreate}>
-                    <Plus size={16} /> Nova Categoria
+                <Button className="gap-1.5 h-7 px-3 text-[10px]" onClick={handleCreate}>
+                    <Plus size={14} /> Nova Categoria
                 </Button>
             </div>
 

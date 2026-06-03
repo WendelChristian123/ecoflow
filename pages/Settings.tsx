@@ -192,11 +192,11 @@ export const SettingsPage: React.FC = () => {
     }, {} as Record<string, { user: User, delegations: Delegation[], isOwner: boolean }>);
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2 bg-background text-foreground">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-3 pb-6 pr-2 bg-background text-foreground">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Configurações & Acesso</h1>
-                    <p className="text-muted-foreground text-sm">Gerencie equipe, acessos e regras do sistema</p>
+                    <h1 className="text-base font-bold text-foreground">Configurações & Acesso</h1>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Gerencie equipe, acessos e regras do sistema</p>
                 </div>
             </div>
 
@@ -259,8 +259,8 @@ export const SettingsPage: React.FC = () => {
 
             {/* TAB: USERS */}
             {activeTab === 'users' && isAdmin && (
-                <Card className="p-6" variant="solid">
-                    <div className="flex items-center justify-between mb-6">
+                <Card className="p-4" variant="solid">
+                    <div className="flex items-center justify-between mb-4">
                         <div>
                             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                 <ShieldCheck size={20} className="text-emerald-500" />
@@ -378,8 +378,8 @@ export const SettingsPage: React.FC = () => {
 
             {/* TAB: FINANCE */}
             {activeTab === 'finance' && isAdmin && (
-                <Card className="p-6 max-w-2xl" variant="solid">
-                    <div className="mb-6">
+                <Card className="p-4 max-w-2xl" variant="solid">
+                    <div className="mb-4">
                         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                             <CreditCardIcon size={20} className="text-emerald-500" />
                             Regra de Cartão de Crédito

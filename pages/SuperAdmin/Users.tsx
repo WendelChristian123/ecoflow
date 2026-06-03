@@ -167,22 +167,22 @@ export const SuperAdminUsers: React.FC = () => {
     const selectClass = "w-full bg-card border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:border-primary outline-none cursor-pointer appearance-none";
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="p-6 max-w-7xl mx-auto space-y-4">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-xl">
-                        <UsersIcon className="w-6 h-6 text-primary" />
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-primary/10 rounded-lg">
+                        <UsersIcon className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">Usuários Globais</h1>
-                        <p className="text-sm text-muted-foreground">
+                        <h1 className="text-xl font-bold text-foreground">Usuários Globais</h1>
+                        <p className="text-[11px] text-muted-foreground">
                             {users.length} usuário{users.length !== 1 ? 's' : ''} cadastrados
                         </p>
                     </div>
                 </div>
-                <Button onClick={() => setIsModalOpen(true)} className="shrink-0">
-                    <Plus className="w-4 h-4 mr-2" /> Novo Usuário
+                <Button onClick={() => setIsModalOpen(true)} className="shrink-0 gap-1.5 h-7 px-3 text-[10px]">
+                    <Plus size={14} /> Novo Usuário
                 </Button>
             </div>
 

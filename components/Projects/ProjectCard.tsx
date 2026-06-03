@@ -43,7 +43,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, users, onClic
             <Card
                 noPadding
                 className={cn(
-                    "p-4 hover:border-primary/30 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border flex flex-col gap-3",
+                    "p-2.5 hover:border-primary/30 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border flex flex-col gap-2",
                     canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default"
                 )}
             >
@@ -70,7 +70,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, users, onClic
                     <ProgressBar progress={progress} />
                 </div>
 
-                <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-border/50">
                     <div className="flex items-center gap-2">
                         <span className={cn("px-2 py-0.5 rounded text-[10px] font-medium border", getStatusColor(project.status))}>
                             {translateStatus(project.status)}

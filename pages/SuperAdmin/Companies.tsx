@@ -199,14 +199,14 @@ export const SuperAdminCompanies: React.FC = () => {
 
     // --- RENDER ---
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 bg-background min-h-screen">
+        <div className="p-6 max-w-7xl mx-auto space-y-4 bg-background min-h-screen">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Gerenciamento de Empresas</h1>
-                    <p className="text-muted-foreground mt-1">Controle detalhado de clientes, planos e módulos</p>
+                    <h1 className="text-xl font-bold text-foreground tracking-tight">Gerenciamento de Empresas</h1>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Controle detalhado de clientes, planos e módulos</p>
                 </div>
-                <Button onClick={openCreateModal}>
-                    <Plus className="w-4 h-4 mr-2" /> Nova Empresa
+                <Button className="gap-1.5 h-7 px-3 text-[10px]" onClick={openCreateModal}>
+                    <Plus size={14} /> Nova Empresa
                 </Button>
             </div>
 

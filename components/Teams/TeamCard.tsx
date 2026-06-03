@@ -23,7 +23,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, users, onClick, onDele
             <Card
                 noPadding
                 className={cn(
-                    "p-4 hover:border-primary/30 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border flex flex-col gap-3",
+                    "p-2.5 hover:border-primary/30 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border flex flex-col gap-2",
                     canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default"
                 )}
             >
@@ -48,7 +48,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, users, onClick, onDele
                     <p className="text-xs text-muted-foreground line-clamp-2">{team.description}</p>
                 )}
 
-                <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-border/50">
                     <div className="flex items-center gap-2">
                         {lead ? (
                             <div className="flex items-center gap-1.5" title={`Líder: ${lead.name}`}>

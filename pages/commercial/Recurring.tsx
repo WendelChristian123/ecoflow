@@ -74,12 +74,12 @@ export const RecurringPage: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-10 pr-2">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h1 className="text-2xl font-bold text-foreground dark:text-white flex items-center gap-3"><RefreshCw className="text-emerald-500" /> Contratos Recorrentes</h1>
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <h1 className="text-xl font-bold text-foreground dark:text-white flex items-center gap-2"><RefreshCw className="text-emerald-500" size={20} /> Contratos Recorrentes</h1>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <Button variant="ghost" className="gap-2 flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={16} /> Relatórios</Button>
-                    <Button className="gap-2 flex-1 md:flex-none" onClick={() => handleOpenModal()}><Plus size={16} /> Novo Contrato</Button>
+                    <Button variant="ghost" className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={14} /> Relatórios</Button>
+                    <Button className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => handleOpenModal()}><Plus size={14} /> Novo Contrato</Button>
                 </div>
             </div>
 

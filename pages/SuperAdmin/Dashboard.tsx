@@ -245,24 +245,24 @@ export const SuperAdminDashboard: React.FC = () => {
 
     return (
         <div className="p-4 md:p-8 w-full max-w-7xl mx-auto space-y-6 md:space-y-8 bg-background min-h-full">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Super Admin</h1>
-                    <p className="text-sm md:text-base text-muted-foreground mt-1">Gerenciamento global de empresas e sistema</p>
+                    <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">Super Admin</h1>
+                    <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Gerenciamento global de empresas e sistema</p>
                 </div>
                 <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
-                    <Button variant="outline" onClick={() => navigate('/super-admin/users')} className="flex-1 md:flex-none text-xs md:text-sm">
-                        <UserCog className="w-4 h-4 mr-1.5 md:mr-2" />
+                    <Button variant="outline" onClick={() => navigate('/super-admin/users')} className="flex-1 md:flex-none h-7 px-3 text-[10px] gap-1.5">
+                        <UserCog size={14} />
                         <span className="hidden sm:inline">Usuários Globais</span>
                         <span className="sm:hidden">Usuários</span>
                     </Button>
-                    <Button variant="outline" onClick={() => navigate('/super-admin/companies')} className="flex-1 md:flex-none text-xs md:text-sm">
-                        <Building2 className="w-4 h-4 mr-1.5 md:mr-2" />
+                    <Button variant="outline" onClick={() => navigate('/super-admin/companies')} className="flex-1 md:flex-none h-7 px-3 text-[10px] gap-1.5">
+                        <Building2 size={14} />
                         <span className="hidden sm:inline">Gerenciar Detalhado</span>
                         <span className="sm:hidden">Detalhes</span>
                     </Button>
-                    <Button onClick={handleOpenCreate} className="flex-1 md:flex-none text-xs md:text-sm">
-                        <Plus className="w-4 h-4 mr-1.5 md:mr-2" />
+                    <Button onClick={handleOpenCreate} className="flex-1 md:flex-none h-7 px-3 text-[10px] gap-1.5">
+                        <Plus size={14} />
                         <span className="hidden sm:inline">Nova Empresa</span>
                         <span className="sm:hidden">Nova</span>
                     </Button>

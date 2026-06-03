@@ -327,20 +327,20 @@ export const CommercialOverview: React.FC = () => {
     const drilldownInfo = getDrilldownData();
 
     return (
-        <div className="flex-1 flex flex-col gap-6 pt-6">
+        <div className="flex-1 flex flex-col gap-3 pt-3 pr-2 overflow-y-auto custom-scrollbar">
 
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard Comercial</h1>
-                    <p className="text-muted-foreground text-sm">Visão geral de performance.</p>
+                    <h1 className="text-lg font-bold text-foreground tracking-tight">Dashboard Comercial</h1>
+                    <p className="text-muted-foreground text-[10px]">Visão geral de performance.</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <Button variant="secondary" className="gap-2 h-9 text-sm" onClick={() => setIsReportModalOpen(true)}>
-                        <FileText size={16} className="text-primary" /> Relatórios
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <Button variant="secondary" className="gap-1.5 h-7 text-[10px]" onClick={() => setIsReportModalOpen(true)}>
+                        <FileText size={14} className="text-primary" /> Relatórios
                     </Button>
-                    <Button className="h-9 text-sm gap-2 shadow-lg shadow-emerald-500/20" onClick={() => { setEditingQuote(undefined); setIsQuoteModalOpen(true); }}>
-                        <Plus size={16} /> Novo Orçamento
+                    <Button className="h-7 text-[10px] gap-1.5 shadow-lg shadow-success/20" onClick={() => { setEditingQuote(undefined); setIsQuoteModalOpen(true); }}>
+                        <Plus size={14} /> Novo Orçamento
                     </Button>
                 </div>
             </div>
@@ -352,8 +352,9 @@ export const CommercialOverview: React.FC = () => {
                         title="Em Negociação"
                         value={kpiData.openCount}
                         icon={TrendingUp}
-                        iconColorClass="text-amber-500 bg-amber-500/10"
+                        variant="warning"
                         subtitle="Abertos"
+                        size="sm"
                         className="h-full"
                     />
                 </div>
@@ -362,8 +363,9 @@ export const CommercialOverview: React.FC = () => {
                         title="Negócio Fechado"
                         value={kpiData.approvedCount}
                         icon={CheckCircle}
-                        iconColorClass="text-emerald-500 bg-emerald-500/10"
+                        variant="success"
                         subtitle="Aprovados"
+                        size="sm"
                         className="h-full"
                     />
                 </div>
@@ -372,8 +374,9 @@ export const CommercialOverview: React.FC = () => {
                         title="Negócio Perdido"
                         value={kpiData.lostCount}
                         icon={XCircle}
-                        iconColorClass="text-rose-500 bg-rose-500/10"
+                        variant="danger"
                         subtitle="Rejeitados"
+                        size="sm"
                         className="h-full"
                     />
                 </div>
@@ -382,8 +385,9 @@ export const CommercialOverview: React.FC = () => {
                         title="Vencidos"
                         value={kpiData.overdueCount}
                         icon={XCircle}
-                        iconColorClass="text-slate-500 bg-slate-500/10"
+                        variant="danger"
                         subtitle="Expirados"
+                        size="sm"
                         className="h-full"
                     />
                 </div>
@@ -391,8 +395,9 @@ export const CommercialOverview: React.FC = () => {
                     title="Taxa de Conversão"
                     value={`${kpiData.conversionRate.toFixed(1)}%`}
                     icon={BarChart2}
-                    iconColorClass="text-indigo-500 bg-indigo-500/10"
+                    variant={kpiData.conversionRate >= 50 ? 'success' : kpiData.conversionRate >= 20 ? 'warning' : 'danger'}
                     subtitle="Aprov / Total"
+                    size="sm"
                     className="h-full"
                 />
             </div>
@@ -400,11 +405,11 @@ export const CommercialOverview: React.FC = () => {
             {/* Main Content Area (Chart) */}
             <div className="flex-1 min-h-0">
                 {/* Chart Section */}
-                <Card variant="solid" className="flex flex-col h-full overflow-hidden">
-                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2 shrink-0">
-                        <PieChart size={18} className="text-primary" /> Distribuição por Status
+                <Card variant="solid" className="flex flex-col h-full overflow-hidden p-4">
+                    <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2 shrink-0">
+                        <PieChart size={16} className="text-primary" /> Distribuição por Status
                     </h3>
-                    <div className="flex-1 w-full min-h-0 relative flex flex-col md:flex-row items-stretch gap-4 overflow-y-auto md:overflow-hidden pb-4 md:pb-0">
+                    <div className="flex-1 w-full min-h-0 relative flex flex-col md:flex-row items-stretch gap-3 overflow-y-auto md:overflow-hidden pb-3 md:pb-0">
                         {/* Chart Area */}
                         <div className="h-64 md:h-full min-h-[250px] w-full md:w-1/2 relative shrink-0">
                             <ResponsiveContainer width="100%" height="100%">
@@ -432,7 +437,7 @@ export const CommercialOverview: React.FC = () => {
                             {/* Center Label */}
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                 <div className="text-center">
-                                    <span className="text-3xl font-black text-foreground">{kpiData.totalQuotes}</span>
+                                    <span className="text-2xl font-black text-foreground">{kpiData.totalQuotes}</span>
                                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Total</div>
                                 </div>
                             </div>
@@ -445,14 +450,14 @@ export const CommercialOverview: React.FC = () => {
                                 return (
                                     <div key={idx} className="group p-2.5 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50">
                                         {/* Top Row: Icon, Name, Count, Percentage */}
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-3 h-3 rounded-full shrink-0 shadow-md" style={{ backgroundColor: item.color }} />
-                                                <span className="text-sm font-semibold text-foreground">{item.name}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-sm font-bold text-foreground tabular-nums">{item.value}</span>
-                                                <span className="text-xs font-bold text-muted-foreground w-9 text-right tabular-nums">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
+                                                    <span className="text-[11px] font-semibold text-foreground">{item.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[11px] font-bold text-foreground tabular-nums">{item.value}</span>
+                                                    <span className="text-[10px] font-bold text-muted-foreground w-8 text-right tabular-nums">
                                                     {percentage}%
                                                 </span>
                                             </div>
