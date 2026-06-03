@@ -434,7 +434,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
         <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Editar Orçamento" : "Novo Orçamento"} className="max-w-4xl w-full">
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Header Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/30 p-4 rounded-xl border border-border">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/30 p-4 rounded-xl">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <label className="text-xs text-muted-foreground block ml-1">Cliente</label>
@@ -515,7 +515,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
                         </div>
                     </div>
 
-                    <div className="border border-border rounded-lg overflow-x-auto">
+                    <div className="rounded-lg overflow-x-auto">
                         <table className="w-full text-left text-xs">
                             <thead className="bg-secondary text-muted-foreground">
                                 <tr>

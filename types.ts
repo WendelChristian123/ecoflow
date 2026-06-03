@@ -218,7 +218,10 @@ export interface Task {
   createdBy?: string;
   kanbanId?: string;
   kanbanStageId?: string;
-  // logs property removed from interface as it's fetched separately now
+  // RBAC/ABAC Context
+  ownerId?: string;
+  contextType?: 'personal' | 'team' | 'project';
+  contextId?: string;
 }
 
 export interface Project {
@@ -269,6 +272,17 @@ export interface CalendarEvent {
   // Context Fields
   projectId?: string; // Links to a specific project
   teamId?: string;    // Links to a specific team
+  ownerId?: string;
+  contextType?: 'personal' | 'team' | 'project';
+  contextId?: string;
+}
+
+export interface TaskShare {
+  id: string;
+  taskId: string;
+  sharedWithUserId: string;
+  permissionLevel: 'view' | 'edit' | 'complete';
+  companyId: string;
 }
 
 export interface UnifiedEvent extends CalendarEvent {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { Task, Project, Delegation, User } from '../../types';
+import { Task, Project, User, Team } from '../../types';
 import { Loader, Card, cn, Button, Select, Avatar, Badge, StatCard } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal } from '../../components/Modals';
@@ -55,7 +55,8 @@ export const RoutinesOverview: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
-    const [delegations, setDelegations] = useState<Delegation[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [delegatorIds, setDelegatorIds] = useState<string[]>([]);
     const [usersList, setUsersList] = useState<User[]>([]);
 
     // Filter State
@@ -76,16 +77,18 @@ export const RoutinesOverview: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [t, p, d, u] = await Promise.all([
+            const [t, p, dIds, u, tm] = await Promise.all([
                 api.getTasks(),
                 api.getProjects(),
-                api.getMyDelegations(),
-                api.getUsers()
+                api.getDelegators('tasks'),
+                api.getUsers(),
+                api.getTeams()
             ]);
             setTasks(t);
             setProjects(p);
-            setDelegations(d);
+            setDelegatorIds(dIds);
             setUsersList(u);
+            setTeams(tm);
         } catch (error) {
             console.error(error);
         } finally {
@@ -98,12 +101,7 @@ export const RoutinesOverview: React.FC = () => {
         if (isAdmin) return usersList;
         if (!user) return [];
 
-        const allowedIds = [user.id];
-        delegations.forEach(d => {
-            if (d.module === 'tasks' && d.permissions.view) {
-                allowedIds.push(d.ownerId);
-            }
-        });
+        const allowedIds = [user.id, ...delegatorIds];
 
         // Return unique users
         return usersList.filter(u => allowedIds.includes(u.id));
@@ -120,12 +118,7 @@ export const RoutinesOverview: React.FC = () => {
 
         // 1. RBAC & Delegation Scope
         if (!isAdmin) {
-            const allowedUserIds = [user.id];
-            delegations.forEach(del => {
-                if (del.module === 'tasks' && del.permissions.view) {
-                    allowedUserIds.push(del.ownerId);
-                }
-            });
+            const allowedUserIds = [user.id, ...delegatorIds];
             scopedTasks = tasks.filter(t => allowedUserIds.includes(t.assigneeId));
             visibleProjects = projects.filter(p => p.members.includes(user.id));
         }
@@ -198,7 +191,7 @@ export const RoutinesOverview: React.FC = () => {
     if (loading) return <Loader />;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2 bg-background text-foreground">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-8 pb-10 pr-2 text-foreground">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
@@ -229,7 +222,6 @@ export const RoutinesOverview: React.FC = () => {
                             { value: 'all', label: 'Todos' },
                             ...availableUsers.map(u => ({ value: u.id, label: u.name || u.email || 'Usuário', avatarUrl: u.avatarUrl }))
                         ]}
-                        darkMode={true}
                         className="min-w-[180px]"
                     />
 
@@ -243,7 +235,6 @@ export const RoutinesOverview: React.FC = () => {
                             { value: 'month', label: 'Mensal' },
                             { value: 'year', label: 'Anual' }
                         ]}
-                        darkMode={true}
                         className="min-w-[160px]"
                     />
                 </div>
@@ -296,29 +287,156 @@ export const RoutinesOverview: React.FC = () => {
                     <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
                         <BarChart2 size={18} className="text-indigo-500" /> Distribuição por Status
                     </h3>
-                    <div className="flex-1 w-full min-h-0">
-                        <ResponsiveContainer width="99%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={statusData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {statusData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip
-                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
-                                    itemStyle={{ color: 'hsl(var(--foreground))' }}
-                                />
-                                <Legend verticalAlign="bottom" height={36} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                    <div className="flex-1 w-full min-h-0 flex flex-col xl:flex-row gap-8">
+                        <div className="w-full xl:w-1/3 min-h-[250px]">
+                            <ResponsiveContainer width="99%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={statusData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={100}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {statusData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
+                                        itemStyle={{ color: 'hsl(var(--foreground))' }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        
+                        {/* Tasks Columns */}
+                        <div className="w-full xl:w-2/3 flex flex-col md:flex-row gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                            {/* Vencidos Column */}
+                            {totalOverdue > 0 && (
+                                <div className="flex-1 min-w-[220px] flex flex-col gap-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ef4444' }} />
+                                        <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Vencidos</h4>
+                                        <span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full font-bold">{totalOverdue}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {visibleTasks.filter(t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))
+                                            .sort((a,b) => parseISO(a.dueDate).getTime() - parseISO(b.dueDate).getTime())
+                                            .slice(0, 5).map(task => {
+                                                const assignee = getUser(task.assigneeId);
+                                                const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
+                                                const team = task.teamId ? teams.find(tm => tm.id === task.teamId) : undefined;
+                                                return (
+                                                <div key={task.id} className="p-3 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-1.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>
+                                                    <div className="font-semibold text-sm truncate pl-2">{task.title}</div>
+                                                    <div className="flex flex-col gap-1 pl-2">
+                                                        {team && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users size={10} className="shrink-0" /> <span className="truncate">{team.name}</span></div>}
+                                                        {project && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Briefcase size={10} className="shrink-0" /> <span className="truncate">{project.name}</span></div>}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-between pl-2">
+                                                        <div className="flex items-center gap-1.5 truncate pr-2">
+                                                            <UserIcon size={12} className="shrink-0" />
+                                                            <span className="truncate">{assignee?.name?.split(' ')[0] || 'Sem Resp.'}</span>
+                                                        </div>
+                                                        <span className="text-rose-500 font-medium shrink-0 text-[10px]">Vencido: {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                                                    </div>
+                                                </div>
+                                            )})}
+                                        {totalOverdue > 5 && (
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldown('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))}>
+                                                Ver todas ({totalOverdue})
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* A Vencer Column */}
+                            {totalDueSoon > 0 && (
+                                <div className="flex-1 min-w-[220px] flex flex-col gap-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f97316' }} />
+                                        <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">A Vencer</h4>
+                                        <span className="text-[10px] bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full font-bold">{totalDueSoon}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {visibleTasks.filter(t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))
+                                            .sort((a,b) => parseISO(a.dueDate).getTime() - parseISO(b.dueDate).getTime())
+                                            .slice(0, 5).map(task => {
+                                                const assignee = getUser(task.assigneeId);
+                                                const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
+                                                const team = task.teamId ? teams.find(tm => tm.id === task.teamId) : undefined;
+                                                return (
+                                                <div key={task.id} className="p-3 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-1.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500"></div>
+                                                    <div className="font-semibold text-sm truncate pl-2">{task.title}</div>
+                                                    <div className="flex flex-col gap-1 pl-2">
+                                                        {team && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users size={10} className="shrink-0" /> <span className="truncate">{team.name}</span></div>}
+                                                        {project && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Briefcase size={10} className="shrink-0" /> <span className="truncate">{project.name}</span></div>}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-between pl-2">
+                                                        <div className="flex items-center gap-1.5 truncate pr-2">
+                                                            <UserIcon size={12} className="shrink-0" />
+                                                            <span className="truncate">{assignee?.name?.split(' ')[0] || 'Sem Resp.'}</span>
+                                                        </div>
+                                                        <span className="shrink-0 text-[10px]">Prazo: {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                                                    </div>
+                                                </div>
+                                            )})}
+                                        {totalDueSoon > 5 && (
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldown('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))}>
+                                                Ver todas ({totalDueSoon})
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Concluídos Column */}
+                            {totalDone > 0 && (
+                                <div className="flex-1 min-w-[220px] flex flex-col gap-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }} />
+                                        <h4 className="font-bold text-foreground text-sm uppercase tracking-wider">Concluídos</h4>
+                                        <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-bold">{totalDone}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {visibleTasks.filter(t => t.status === 'done')
+                                            .sort((a,b) => parseISO(b.dueDate).getTime() - parseISO(a.dueDate).getTime())
+                                            .slice(0, 5).map(task => {
+                                                const assignee = getUser(task.assigneeId);
+                                                const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
+                                                const team = task.teamId ? teams.find(tm => tm.id === task.teamId) : undefined;
+                                                return (
+                                                <div key={task.id} className="p-3 bg-card border border-border/50 shadow-sm rounded-xl hover:shadow-md cursor-pointer transition-all relative overflow-hidden group flex flex-col gap-1.5 dark:bg-secondary/30 dark:border-transparent dark:shadow-none dark:hover:bg-secondary/50" onClick={() => navigate('/tasks', { state: { taskId: task.id } })}>
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+                                                    <div className="font-semibold text-sm truncate line-through opacity-70 pl-2">{task.title}</div>
+                                                    <div className="flex flex-col gap-1 pl-2 opacity-70">
+                                                        {team && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users size={10} className="shrink-0" /> <span className="truncate">{team.name}</span></div>}
+                                                        {project && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Briefcase size={10} className="shrink-0" /> <span className="truncate">{project.name}</span></div>}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-between pl-2">
+                                                        <div className="flex items-center gap-1.5 truncate pr-2">
+                                                            <UserIcon size={12} className="shrink-0" />
+                                                            <span className="truncate">{assignee?.name?.split(' ')[0] || 'Sem Resp.'}</span>
+                                                        </div>
+                                                        <span className="shrink-0 text-[10px]">Data: {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                                                    </div>
+                                                </div>
+                                            )})}
+                                        {totalDone > 5 && (
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldown('Tarefas Concluídas', t => t.status === 'done')}>
+                                                Ver todas ({totalDone})
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </Card>
             </div>
@@ -419,7 +537,7 @@ export const RoutinesOverview: React.FC = () => {
                 onClose={() => setIsReportModalOpen(false)}
                 tasks={scopedTasks} // Pass SCOPED tasks (ignoring dashboard period) so the Report can do its own date filtering
                 projects={projects}
-                users={usersList}
+                users={availableUsers}
             />
         </div>
     );

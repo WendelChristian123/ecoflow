@@ -179,6 +179,8 @@ export const TeamsPage: React.FC = () => {
       setTeams(t);
     } catch (e) {
       console.error(e);
+    } finally {
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -482,9 +484,11 @@ export const TeamsPage: React.FC = () => {
             </div>
 
             {/* New Button */}
-            <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={handleCreate}>
-              <Plus size={16} /> Nova
-            </Button>
+            {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
+              <Button className="gap-2 whitespace-nowrap bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-[34px]" onClick={handleCreate}>
+                <Plus size={16} /> Nova
+              </Button>
+            )}
 
 
 

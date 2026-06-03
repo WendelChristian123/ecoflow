@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -81,6 +81,73 @@ serve(async (req) => {
             await supabaseAdmin.auth.admin.updateUserById(userId, {
                 user_metadata: { name: updates.name }
             });
+        }
+
+        const targetCompanyId = adminProfile.role !== 'super_admin' ? adminProfile.company_id : (updates.companyId || adminProfile.company_id);
+
+        // 7. Update Granular Permissions
+        if (updates.granular_permissions !== undefined) {
+            // Delete old permissions
+            await supabaseAdmin.from('user_permissions')
+                .delete()
+                .eq('user_id', userId)
+                .eq('company_id', targetCompanyId);
+
+            // Insert new ones
+            if (Array.isArray(updates.granular_permissions) && updates.granular_permissions.length > 0) {
+                const toInsert = updates.granular_permissions.map((p: any) => ({
+                    ...p,
+                    id: crypto.randomUUID(),
+                    user_id: userId,
+                    company_id: targetCompanyId
+                }));
+                const { error: permError } = await supabaseAdmin.from('user_permissions').insert(toInsert);
+                if (permError) console.error("Granular Permissions Error:", permError);
+            }
+        }
+
+        // 8. Assign Teams
+        if (updates.teams !== undefined && Array.isArray(updates.teams)) {
+            // Because this is an update, we might want to replace entirely or just add.
+            // For simplicity, we just add missing. If we wanted full sync, we'd need to remove from teams not in array.
+            // Let's do full sync: remove user from teams they are not in, add to teams they are in.
+            // Fetch all teams for this company
+            const { data: allTeams } = await supabaseAdmin.from('teams').select('id, member_ids').eq('company_id', targetCompanyId);
+            if (allTeams) {
+                for (const team of allTeams) {
+                    let members = team.member_ids || [];
+                    const shouldBeInTeam = updates.teams.includes(team.id);
+                    const isInTeam = members.includes(userId);
+
+                    if (shouldBeInTeam && !isInTeam) {
+                        members.push(userId);
+                        await supabaseAdmin.from('teams').update({ member_ids: members }).eq('id', team.id);
+                    } else if (!shouldBeInTeam && isInTeam) {
+                        members = members.filter((m: string) => m !== userId);
+                        await supabaseAdmin.from('teams').update({ member_ids: members }).eq('id', team.id);
+                    }
+                }
+            }
+        }
+
+        // 9. Assign Projects
+        if (updates.projects !== undefined && Array.isArray(updates.projects)) {
+            const { data: allProjects } = await supabaseAdmin.from('projects').select('id, member_ids').eq('company_id', targetCompanyId);
+            if (allProjects) {
+                for (const proj of allProjects) {
+                    let members = proj.member_ids || [];
+                    const shouldBeInProj = updates.projects.includes(proj.id);
+                    const isInProj = members.includes(userId);
+
+                    if (shouldBeInProj && !isInProj) {
+                        members.push(userId);
+                        await supabaseAdmin.from('projects').update({ member_ids: members }).eq('id', proj.id);
+                    } else if (!shouldBeInProj && isInProj) {
+                        members = members.filter((m: string) => m !== userId);
+                        await supabaseAdmin.from('projects').update({ member_ids: members }).eq('id', proj.id);
+                    }
+                }
+            }
         }
 
         return new Response(

@@ -372,7 +372,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2 truncate">
@@ -380,7 +380,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
                                         <div className="flex items-center gap-3 mt-1.5">
-                                            <div className="flex items-center gap-1.5 bg-secondary/50 px-2 py-0.5 rounded border border-border">
+                                            <div className="flex items-center gap-1.5 bg-secondary/50 px-2 py-0.5 rounded">
                                                 <Calendar size={10} className="text-muted-foreground" />
                                                 <span className="text-xs text-muted-foreground font-mono">{formatDate(item.dueDate)}</span>
                                             </div>
@@ -410,7 +410,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2 truncate">
@@ -418,7 +418,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                             <ExternalLink size={12} className="opacity-0 group-hover:opacity-50 shrink-0" />
                                         </div>
                                         <div className="flex items-center gap-3 mt-1.5">
-                                            <div className="flex items-center gap-1.5 bg-secondary/50 px-2 py-0.5 rounded border border-border">
+                                            <div className="flex items-center gap-1.5 bg-secondary/50 px-2 py-0.5 rounded">
                                                 <Calendar size={10} className="text-muted-foreground" />
                                                 <span className="text-xs text-muted-foreground font-mono">{formatDate(item.startDate)}</span>
                                             </div>
@@ -450,7 +450,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
                                 >
                                     <div>
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2">
@@ -507,7 +507,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg border border-border flex justify-between items-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
                                 >
                                     <div>
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2">
@@ -1123,8 +1123,9 @@ interface TaskModalProps {
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess, projects, teams, users, initialData }) => {
+    const { user: currentUser } = useAuth();
     const [formData, setFormData] = useState<Partial<Task>>({
-        title: '', description: '', status: 'todo', priority: 'medium', assigneeId: '', projectId: '', teamId: '', dueDate: '', links: []
+        title: '', description: '', status: 'todo', priority: 'medium', assigneeId: '', projectId: '', teamId: '', dueDate: '', links: [], contextType: 'personal'
     });
     const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'weekly', repeatCount: 12 });
     const [isIndefinite, setIsIndefinite] = useState(false);
@@ -1132,13 +1133,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
     useEffect(() => {
         if (isOpen) {
-            // Helper to format Date for datetime-local input (YYYY-MM-DDTHH:mm)
             const toLocalInputValue = (isoStr?: string) => {
                 const d = isoStr ? new Date(isoStr) : new Date();
-                // Adjust for timezone offset to get "local" YYYY-MM-DDTHH:mm part
                 const offset = d.getTimezoneOffset() * 60000;
                 const localDate = new Date(d.getTime() - offset);
-                // Return YYYY-MM-DDTHH:mm (slice first 16 chars)
                 return localDate.toISOString().slice(0, 16);
             };
 
@@ -1149,33 +1147,101 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                 priority: 'medium',
                 dueDate: toLocalInputValue(new Date().toISOString()),
                 tags: [],
-                links: []
+                links: [],
+                contextType: 'personal',
+                assigneeId: currentUser?.id
             });
 
-            // If editing, convert existing ISO date to local datetime-local format
             if (initialData?.dueDate) {
-                setFormData(prev => ({
-                    ...prev,
-                    dueDate: toLocalInputValue(initialData.dueDate)
-                }));
+                setFormData(prev => ({ ...prev, dueDate: toLocalInputValue(initialData.dueDate) }));
             }
 
             setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 12 });
             setIsIndefinite(false);
         }
-    }, [isOpen, initialData]);
+    }, [isOpen, initialData, currentUser?.id]);
+
+    const [sharedTaskOwners, setSharedTaskOwners] = React.useState<string[]>([]);
+
+    React.useEffect(() => {
+        if (isOpen && currentUser?.companyId) {
+            api.getSharedAccess(currentUser.companyId).then(accesses => {
+                const owners = accesses
+                    .filter((a: any) => a.target_id === currentUser.id && 
+                           ['mod_tasks', 'routines', 'tasks_overview', 'tasks', 'routines.tasks'].includes(a.feature_id))
+                    .map((a: any) => a.owner_id)
+                    .filter(Boolean);
+                setSharedTaskOwners(Array.from(new Set(owners)));
+            }).catch(console.error);
+        }
+    }, [isOpen, currentUser]);
+
+    const availableAssignees = React.useMemo(() => {
+        if (formData.teamId && formData.teamId !== 'none') {
+            const team = teams.find(t => t.id === formData.teamId);
+            return users.filter(u => team?.memberIds?.includes(u.id));
+        } else if (formData.projectId && formData.projectId !== 'none') {
+            const project = projects.find(p => p.id === formData.projectId);
+            return users.filter(u => project?.members?.includes(u.id));
+        } else {
+            return users.filter(u => u.id === currentUser?.id || sharedTaskOwners.includes(u.id));
+        }
+    }, [formData.teamId, formData.projectId, teams, projects, users, currentUser?.id, sharedTaskOwners]);
+
+    const handleContextChange = (type: 'team' | 'project', id: string) => {
+        if (id === 'none') {
+            setFormData(prev => ({ 
+                ...prev, 
+                [type === 'team' ? 'teamId' : 'projectId']: undefined, 
+                contextType: 'personal', 
+                contextId: undefined, 
+                assigneeId: prev.assigneeId || currentUser?.id 
+            }));
+        } else {
+            const currentAssignee = formData.assigneeId;
+            let isValidAssignee = true;
+
+            if (currentAssignee) {
+                if (type === 'team') {
+                    const team = teams.find(t => t.id === id);
+                    if (!team?.memberIds?.includes(currentAssignee)) isValidAssignee = false;
+                } else if (type === 'project') {
+                    const project = projects.find(p => p.id === id);
+                    if (!project?.members?.includes(currentAssignee)) isValidAssignee = false;
+                }
+            }
+
+            if (currentAssignee && !isValidAssignee) {
+                alert(`Este responsável não faz parte dest${type === 'team' ? 'a equipe' : 'e projeto'}.`);
+                setFormData(prev => ({
+                    ...prev,
+                    projectId: type === 'project' ? id : undefined,
+                    teamId: type === 'team' ? id : undefined,
+                    contextType: type,
+                    contextId: id,
+                    assigneeId: '' // clear assignee since it's invalid
+                }));
+                return;
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                projectId: type === 'project' ? id : undefined,
+                teamId: type === 'team' ? id : undefined,
+                contextType: type,
+                contextId: id,
+                assigneeId: prev.assigneeId // Preserve valid assignee instead of defaulting to self
+            }));
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Ensure we send a valid ISO string with timezone (UTC) to backend
             const finalFormData = { ...formData };
             if (formData.dueDate) {
-                // formData.dueDate is "YYYY-MM-DDTHH:mm" (Local)
-                // We construct a Date object from it, which interprets it as Local time
                 const d = new Date(formData.dueDate);
-                // Convert to ISO (UTC) for storage
                 finalFormData.dueDate = d.toISOString();
             }
 
@@ -1186,7 +1252,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                 const recurrenceConfig = recurrence.isRecurring ? {
                     ...recurrence,
                     occurrences: isIndefinite ? undefined : recurrence.repeatCount
-                    // endDate handles indefinite if needed, simplified here
                 } : undefined;
 
                 const newTask = await api.addTask(finalFormData, recurrenceConfig);
@@ -1227,23 +1292,25 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     <FilterSelect
                         inlineLabel="Projeto:"
                         value={formData.projectId || 'none'}
-                        onChange={(val) => setFormData({ ...formData, projectId: val === 'none' ? undefined : val })}
+                        onChange={(val) => handleContextChange('project', val)}
                         options={[
                             { value: 'none', label: 'Nenhum' },
                             ...projects.map(p => ({ value: p.id, label: p.name }))
                         ]}
                         darkMode={false}
+                        disabled={!!initialData?.id && formData.contextType !== 'project' && currentUser?.role !== 'admin'}
                     />
 
                     <FilterSelect
                         inlineLabel="Equipe:"
                         value={formData.teamId || 'none'}
-                        onChange={(val) => setFormData({ ...formData, teamId: val === 'none' ? undefined : val })}
+                        onChange={(val) => handleContextChange('team', val)}
                         options={[
                             { value: 'none', label: 'Nenhuma' },
                             ...teams.map(t => ({ value: t.id, label: t.name }))
                         ]}
                         darkMode={false}
+                        disabled={!!initialData?.id && formData.contextType !== 'team' && currentUser?.role !== 'admin'}
                     />
                 </div>
 
@@ -1282,7 +1349,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                         onChange={(val) => setFormData({ ...formData, assigneeId: val === 'none' ? undefined : val })}
                         options={[
                             { value: 'none', label: 'Sem responsável' },
-                            ...users.map(u => ({ value: u.id, label: u.name }))
+                            ...availableAssignees.map(u => ({ value: u.id, label: u.name }))
                         ]}
                         darkMode={false}
                     />

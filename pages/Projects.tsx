@@ -422,7 +422,7 @@ export const ProjectsPage: React.FC = () => {
               onChange={setDetailFilterAssignee}
               options={[
                 { value: 'all', label: 'Todos' },
-                ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+                ...users.filter(u => selectedProject.members.includes(u.id)).map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
               ]}
               className="w-40"
               placeholder="Responsável"
@@ -535,7 +535,7 @@ export const ProjectsPage: React.FC = () => {
               onChange={setMemberFilter}
               options={[
                 { value: 'all', label: 'Todos Membros' },
-                ...users.map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
+                ...users.filter(u => projects.some(p => p.members.includes(u.id))).map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))
               ]}
               className="w-48"
               placeholder="Membros"
@@ -543,9 +543,11 @@ export const ProjectsPage: React.FC = () => {
 
 
             {/* New Button */}
-            <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
-              <Plus size={16} /> Novo
-            </Button>
+            {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
+              <Button className="gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-[34px]" onClick={handleCreate}>
+                <Plus size={16} /> Novo
+              </Button>
+            )}
 
 
           </div >
@@ -640,12 +642,14 @@ export const ProjectsPage: React.FC = () => {
               </Card>
             ))}
 
-            <button onClick={handleCreate} className="border border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all h-full min-h-[250px] gap-3 group">
-              <div className="h-12 w-12 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                <Plus size={24} />
-              </div>
-              <span className="font-medium">Criar Novo Projeto</span>
-            </button>
+            {['admin', 'owner', 'super_admin'].includes(user?.role || '') && (
+              <button onClick={handleCreate} className="border border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all h-full min-h-[250px] gap-3 group">
+                <div className="h-12 w-12 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                  <Plus size={24} />
+                </div>
+                <span className="font-medium">Criar Novo Projeto</span>
+              </button>
+            )}
           </div>
         ) : null}
 

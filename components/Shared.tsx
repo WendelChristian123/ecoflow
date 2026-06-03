@@ -71,7 +71,7 @@ export const Input: React.FC<InputProps> = ({ className, label, leftIcon, rightI
       )}
       <input
         className={cn(
-          "w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-card border border-border/50 text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium shadow-none focus:shadow-sm",
+          "w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-card text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium shadow-none focus:shadow-sm",
           leftIcon && "pl-10",
           rightIcon && "pr-10", // Add padding for right icon
           inlineLabel && (leftIcon ? "pl-24" : "pl-16"), // Adjust padding for inline label
@@ -129,7 +129,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onValueChan
             onValueChange(values?.float ?? undefined);
           }}
           className={cn(
-            "w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-card border border-border/50 text-foreground rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium shadow-none focus:shadow-sm",
+            "w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-card text-foreground rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-muted-foreground disabled:opacity-50 transition-all font-medium shadow-none focus:shadow-sm",
             className
           )}
           disabled={disabled}
@@ -153,7 +153,7 @@ export const Select: React.FC<SelectProps> = ({ className, noArrow, label, optio
     {label && <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1 uppercase tracking-wider">{label}</label>}
     <select
       className={cn(
-        "w-full appearance-none bg-secondary/30 hover:bg-secondary/50 focus:bg-card border border-border/50 text-foreground rounded-xl px-4 py-2.5 pr-8 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50 transition-all cursor-pointer shadow-none focus:shadow-sm font-medium",
+        "w-full appearance-none bg-secondary/30 hover:bg-secondary/50 focus:bg-card text-foreground rounded-xl px-4 py-2.5 pr-8 focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-50 transition-all cursor-pointer shadow-none focus:shadow-sm font-medium",
         className
       )}
       {...props}
@@ -179,7 +179,7 @@ export const Select: React.FC<SelectProps> = ({ className, noArrow, label, optio
 export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = ({ className, ...props }) => (
   <textarea
     className={cn(
-      "w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-card border border-border/50 text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none placeholder:text-muted-foreground disabled:opacity-50 min-h-[100px] transition-all resize-none shadow-none focus:shadow-sm font-medium",
+      "w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-card text-foreground rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-muted-foreground disabled:opacity-50 min-h-[100px] transition-all resize-none shadow-none focus:shadow-sm font-medium",
       className
     )}
     {...props}
@@ -316,7 +316,7 @@ export const Card: React.FC<CardProps> = ({ children, className, variant = 'soli
     <div
       onClick={onClick}
       className={cn(
-        "rounded-2xl transition-all duration-300 bg-card border border-border/50 shadow-card",
+        "rounded-2xl transition-all duration-300 bg-card border border-border shadow-card",
         !noPadding && "p-6 md:p-8",
         onClick && "cursor-pointer hover:shadow-premium hover:-translate-y-1",
         className
@@ -351,7 +351,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   className
 }) => {
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-card p-6 flex flex-col gap-3 group transition-all duration-300 hover:shadow-premium hover:-translate-y-1", className)}>
+    <div className={cn("relative overflow-hidden rounded-2xl bg-card border border-border shadow-card p-6 flex flex-col gap-3 group transition-all duration-300 hover:shadow-premium hover:-translate-y-1", className)}>
       <div className="flex justify-between items-start">
         <div className="space-y-1 z-10">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</p>
@@ -401,10 +401,10 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
       <div className={cn(
-        "relative z-10 w-full bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col max-h-[95dvh] animate-in fade-in zoom-in-95 duration-200",
+        "relative z-10 w-full bg-card rounded-2xl shadow-2xl flex flex-col max-h-[95dvh] animate-in fade-in zoom-in-95 duration-200",
         className || "max-w-lg"
       )}>
-        <div className="flex items-center justify-between p-4 md:p-5 border-b border-border/40 shrink-0 bg-muted/20 rounded-t-2xl">
+        <div className="flex items-center justify-between p-4 md:p-5 shrink-0 bg-muted/20 rounded-t-2xl">
           <h3 className="text-lg font-bold text-foreground tracking-tight">{title}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
             <X size={18} />

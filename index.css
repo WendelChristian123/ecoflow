@@ -45,6 +45,8 @@
 
     --radius: 1rem;
 
+    --surface: 0 0% 100%;
+
     /* 🎨 Cores Vibrantes para Status (Experimental) */
     --status-overdue: 350 85% 60%;
     /* Vermelho/Rosa - Vencido */
@@ -69,21 +71,20 @@
   }
 
   .dark {
-    /* --- Dark Mode (Premium "Glass" Feel) --- */
-    --background: 224 71% 4%;
-    /* Slate 950 (Deep Blue/Black) */
+    /* --- Dark Mode (Flat Premium) --- */
+    --background: 222 20% 7%; /* Fundo escuro azulado/acinzentado, igual ao print */
     --foreground: 210 40% 98%;
+    
+    --surface: 222 20% 7%; /* Igual ao fundo */
 
-    --card: 224 71% 4%;
-    /* Matches background for glass effect base */
+    --card: 222 20% 11%; /* Ligeiramente mais claro para os cards */
     --card-foreground: 210 40% 98%;
 
-    --popover: 224 71% 4%;
+    --popover: 222 20% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 155 60% 50%;
-    /* Emerald 500 - Same primary color */
-    --primary-foreground: 144.9 80.4% 10%;
+    --primary: 142 71% 45%; /* Verde vibrante da marca */
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -97,9 +98,9 @@
     --destructive: 353 84% 49%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
+    --border: 210 40% 98% / 0.04; /* Borda extremamente sutil */
     --input: 217.2 32.6% 17.5%;
-    --ring: 155 60% 50%;
+    --ring: 142 71% 45%;
   }
 
   /* Select options adapted to theme */

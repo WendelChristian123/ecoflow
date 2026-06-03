@@ -92,6 +92,9 @@ export const api = {
             teamId: t.team_id,
             companyId: t.company_id,
             dueDate: t.due_date,
+            ownerId: t.owner_id,
+            contextType: t.context_type,
+            contextId: t.context_id
         })).sort((a: any, b: any) => (a.title || '').trim().toLowerCase().localeCompare((b.title || '').trim().toLowerCase())) as Task[];
     },
 
@@ -153,6 +156,9 @@ export const api = {
         // Note: logs are now handled by DB Trigger (trg_log_task_creation)
         // Note: created_by is handled by DB Default/Trigger
 
+        const { data: userData } = await supabase.auth.getUser();
+        const currentUserId = userData.user?.id;
+
         const createDbTask = (t: Partial<Task>, date: string, recId: string | null) => {
             return {
                 title: t.title,
@@ -167,6 +173,9 @@ export const api = {
                 links: t.links || [],
                 company_id: companyId,
                 recurrence_id: recId,
+                owner_id: uuidOrNull(t.ownerId) || uuidOrNull(t.assigneeId) || currentUserId,
+                context_type: t.contextType || 'personal',
+                context_id: uuidOrNull(t.contextId),
                 // logs: REMOVED
             };
         };
@@ -210,6 +219,9 @@ export const api = {
             teamId: firstData.team_id,
             companyId: firstData.company_id,
             dueDate: firstData.due_date,
+            ownerId: firstData.owner_id,
+            contextType: firstData.context_type,
+            contextId: firstData.context_id,
             links: firstData.links,
             // Logs are not returned inline anymore, specifically requested to fetch separate or just rely on IDs
         } as Task;
@@ -226,6 +238,9 @@ export const api = {
             due_date: task.dueDate,
             tags: task.tags,
             links: task.links,
+            owner_id: uuidOrNull(task.ownerId),
+            context_type: task.contextType || 'personal',
+            context_id: uuidOrNull(task.contextId),
             // logs: REMOVED field
         };
 
@@ -497,61 +512,66 @@ export const api = {
         const { error } = await Promise.race([updatePromise, timeoutPromise]) as any;
         if (error) throw error;
     },
-    adminUpdateUser: async (id: string, data: { name?: string, phone?: string, status?: string, permissions?: LegacyUserPermissions, granular_permissions?: UserPermission[], role?: string }) => {
+    adminUpdateUser: async (id: string, data: { name?: string, phone?: string, status?: string, permissions?: LegacyUserPermissions, granular_permissions?: UserPermission[], role?: string, teams?: string[], projects?: string[], companyId?: string }) => {
         // Clean undefined keys
         const updates: any = {};
         if (data.name !== undefined) updates.name = data.name;
         if (data.phone !== undefined) updates.phone = data.phone;
         if (data.status !== undefined) updates.status = data.status;
         if (data.permissions !== undefined) updates.permissions = data.permissions;
-        // Handle granular permissions via RPC or direct insert/upsert if table is available (frontend direct or edge function)
-        // Since we are using standard update, we might need a separate call for 5-table schema or assume 'profiles' has a json col.
-        // BUT user strict rules say 5 tables. 'adminUpdateUser' usually updates 'profiles'.
-        // So we should probably handle granular permissions separately or via edge function.
-        // FOR NOW, we will let the edge function handle it if we pass it, OR separate the calls.
-        // Let's assume the edge function `admin-update-user` (if it exists) or we do manual upsert here.
+        if (data.granular_permissions !== undefined) updates.granular_permissions = data.granular_permissions;
+        if (data.role !== undefined) updates.role = data.role;
+        if (data.teams !== undefined) updates.teams = data.teams;
+        if (data.projects !== undefined) updates.projects = data.projects;
+        if (data.companyId !== undefined) updates.companyId = data.companyId;
 
-        // Since 'granular_permissions' is a new relation, we can't update it via 'profiles' update.
-        // We must use strict table upsert.
-        if (data.granular_permissions !== undefined) {
-            const companyId = getCurrentCompanyId(); // Helper context
-            // Delete old? No, upsert is better. But we need to handle removed ones?
-            // Simplest: Delete all for user and insert new.
-            if (companyId) {
-                // 1. Delete all for this user/company
-                await supabase.from('user_permissions')
-                    .delete()
-                    .eq('user_id', id)
-                    .eq('company_id', companyId);
+        const { error } = await supabase.rpc('admin_update_user_rpc', {
+            _target_user_id: id,
+            _updates: updates
+        });
 
-                // 2. Insert new
-                if (data.granular_permissions.length > 0) {
-                    const toInsert = data.granular_permissions.map(p => {
-                        // Strip existing permission ID (if any) to ensure we create new records with new IDs
-                        // We rename it to 'permId' to avoid shadowing the outer 'id' (which is the User ID)
-                        const { id: permId, ...rest } = p as any;
+        if (error) {
+            console.error('RPC Error:', error);
+            throw new Error(error.message || 'Falha ao atualizar usuário via RPC');
+        }
 
-                        return {
-                            ...rest,
-                            id: self.crypto.randomUUID(),  // Generate new Permission UUID
-                            user_id: id,                   // Use the outer function argument 'id' (Target User UUID)
-                            company_id: companyId
-                        };
-                    });
+        // Manually sync teams and projects since RPC might not handle them
+        const adminCompanyId = getCurrentCompanyId();
+        if (adminCompanyId) {
+            if (data.teams !== undefined) {
+                const { data: allTeams } = await supabase.from('teams').select('id, member_ids').eq('company_id', adminCompanyId);
+                if (allTeams) {
+                    for (const team of allTeams) {
+                        const members = team.member_ids || [];
+                        const shouldBeInTeam = data.teams.includes(team.id);
+                        const isInTeam = members.includes(id);
 
-                    const { error: permError } = await supabase.from('user_permissions').insert(toInsert);
-                    if (permError) {
-                        console.error("Failed to update granular permissions", permError);
-                        throw permError;
+                        if (shouldBeInTeam && !isInTeam) {
+                            await supabase.from('teams').update({ member_ids: [...members, id] }).eq('id', team.id);
+                        } else if (!shouldBeInTeam && isInTeam) {
+                            await supabase.from('teams').update({ member_ids: members.filter((m: string) => m !== id) }).eq('id', team.id);
+                        }
+                    }
+                }
+            }
+            
+            if (data.projects !== undefined) {
+                const { data: allProjects } = await supabase.from('projects').select('id, member_ids').eq('company_id', adminCompanyId);
+                if (allProjects) {
+                    for (const project of allProjects) {
+                        const members = project.member_ids || [];
+                        const shouldBeInProject = data.projects.includes(project.id);
+                        const isInProject = members.includes(id);
+
+                        if (shouldBeInProject && !isInProject) {
+                            await supabase.from('projects').update({ member_ids: [...members, id] }).eq('id', project.id);
+                        } else if (!shouldBeInProject && isInProject) {
+                            await supabase.from('projects').update({ member_ids: members.filter((m: string) => m !== id) }).eq('id', project.id);
+                        }
                     }
                 }
             }
         }
-
-        if (data.role !== undefined) updates.role = data.role;
-
-        const { error } = await supabase.from('profiles').update(updates).eq('id', id);
-        if (error) throw error;
     },
 
     // Deprecated but kept for compatibility (wraps new method)
@@ -781,7 +801,10 @@ export const api = {
             isTeamEvent: e.is_team_event,
             companyId: e.company_id,
             projectId: e.project_id,
-            teamId: e.team_id
+            teamId: e.team_id,
+            ownerId: e.owner_id,
+            contextType: e.context_type,
+            contextId: e.context_id
         })).sort((a: any, b: any) => (a.title || '').trim().toLowerCase().localeCompare((b.title || '').trim().toLowerCase())) as CalendarEvent[];
     },
     addEvent: async (evt: Partial<CalendarEvent>, recurrence?: RecurrenceConfig) => {
@@ -802,7 +825,10 @@ export const api = {
             company_id: companyId,
             project_id: uuidOrNull(e.projectId),
             team_id: uuidOrNull(e.teamId),
-            recurrence_id: recId
+            recurrence_id: recId,
+            owner_id: uuidOrNull(e.ownerId),
+            context_type: e.contextType || 'personal',
+            context_id: uuidOrNull(e.contextId)
         });
 
         if (recurrence) {
@@ -847,8 +873,11 @@ export const api = {
             is_team_event: evt.isTeamEvent,
             participants: evt.participants,
             links: evt.links,
-            project_id: evt.projectId,
-            team_id: evt.teamId
+            project_id: uuidOrNull(evt.projectId),
+            team_id: uuidOrNull(evt.teamId),
+            owner_id: uuidOrNull(evt.ownerId),
+            context_type: evt.contextType || 'personal',
+            context_id: uuidOrNull(evt.contextId)
         };
         const { error } = await supabase.from('calendar_events').update(dbEvt).eq('id', evt.id);
         if (error) throw error;
@@ -1647,31 +1676,19 @@ export const api = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return [];
 
-        const { data, error } = await supabase.from('delegations')
-            .select('owner_id, permissions')
-            .eq('delegate_id', user.id)
-            .eq('module', module);
+        // SharedAccessPanel saves feature_ids as 'routines.tasks' and 'routines.agenda'
+        const validFeatures = module === 'tasks' 
+            ? ['mod_tasks', 'routines', 'tasks_overview', 'tasks', 'routines.tasks'] 
+            : ['agenda', 'calendar_events', 'routines', 'mod_tasks', 'routines.agenda', 'routines.tasks'];
+
+        const { data, error } = await supabase.from('shared_access')
+            .select('owner_id')
+            .eq('target_id', user.id)
+            .in('feature_id', validFeatures);
 
         if (error) throw error;
 
-        // Filter those who gave at least 'create' or 'edit' or 'view' permission?
-        // User says: "Usuários que concederam acesso direto ...". Usually implies View/Create.
-        // If I can assign a task to them, I need at least some access.
-        // Let's assume ANY delegation record for the module implies "Access Granted" for this context, 
-        // OR strictly check permissions?
-        // The Prompt says: "Usuários que não concederam acesso... NÃO devem aparecer".
-        // It doesn't specify which permission bit. But usually if I delegate 'agenda', I expect you to manage it.
-        // Let's filter for where 'create' or 'edit' is true, OR just simple existence if we assume granular permissions are for specific actions.
-        // Actually, for "Assigning", I am creating a task FOR them.
-        // If they granted me "View" only, can I create a task for them? Probably not?
-        // But usually delegation is "Manage my stuff".
-        // Let's just return all owners found for the module effectively.
-        // Or better, let's filter for explicit permissions if needed.
-        // For 'tasks', usually I need 'create' permission on their behalf? 
-        // OR 'edit'?
-        // Let's stick to existence of delegation record for now, as that's the "Access" concept.
-
-        return data.map((d: any) => d.owner_id);
+        return Array.from(new Set(data.map((d: any) => d.owner_id)));
     },
     deleteDelegation: async (id: string) => {
         await supabase.from('delegations').delete().eq('id', id);
@@ -1844,9 +1861,13 @@ export const api = {
 
         if (errMod || errFeat) throw errMod || errFeat;
 
+        // Filter out any legacy modules (e.g. 'routines', 'finance') that might be stuck in the DB
+        // We only want the modernized ones (e.g. 'mod_tasks', 'mod_finance')
+        const cleanModules = modules?.filter(m => m.id.startsWith('mod_')) || [];
+
         // Sort Modules by standard menu order
-        const moduleOrder = ['routines', 'finance', 'commercial'];
-        const sortedModules = modules?.sort((a, b) => {
+        const moduleOrder = ['mod_tasks', 'mod_finance', 'mod_commercial', 'mod_reports', 'mod_api'];
+        const sortedModules = cleanModules.sort((a, b) => {
             const idxA = moduleOrder.indexOf(a.id);
             const idxB = moduleOrder.indexOf(b.id);
             // Keep unknowns at the end
@@ -1865,10 +1886,10 @@ export const api = {
         });
 
         // INJECT LOANS IF MISSING
-        if (sortedFeatures && !sortedFeatures.some(f => f.id === 'finance.loans')) {
+        if (sortedFeatures && !sortedFeatures.some(f => f.id === 'finance_loans')) {
             sortedFeatures.push({
-                id: 'finance.loans',
-                module_id: 'finance',
+                id: 'finance_loans',
+                module_id: 'mod_finance',
                 name: 'Dívidas e Empréstimos',
                 status: 'active'
             });
@@ -1895,10 +1916,10 @@ export const api = {
         });
 
         // INJECT LOANS IF MISSING
-        if (features && !features.some(f => f.id === 'finance.loans')) {
+        if (features && !features.some(f => f.id === 'finance_loans')) {
             features.push({
-                id: 'finance.loans',
-                module_id: 'finance',
+                id: 'finance_loans',
+                module_id: 'mod_finance',
                 name: 'Dívidas e Empréstimos',
                 description: 'Gestão completa de dívidas e empréstimos'
             });

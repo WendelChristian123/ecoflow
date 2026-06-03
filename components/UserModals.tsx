@@ -36,6 +36,12 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
     const [systemModules, setSystemModules] = useState<AppModule[]>([]);
     const [systemFeatures, setSystemFeatures] = useState<AppFeature[]>([]);
     const [tenantModuleStatus, setTenantModuleStatus] = useState<Record<string, any>>({});
+    
+    // Teams & Projects
+    const [teamsList, setTeamsList] = useState<any[]>([]);
+    const [projectsList, setProjectsList] = useState<any[]>([]);
+    const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+    const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
 
     // We need currentCompany to know the PLAN limits
     const { currentCompany } = useCompany();
@@ -44,75 +50,28 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
         if (isOpen) {
             setFormData({ name: '', email: '', phone: '', password: '', role: 'user' as UserRole });
             setGranularPermissions({});
+            setSelectedTeams([]);
+            setSelectedProjects([]);
             // Only load if company is ready, otherwise the effect will re-run when it is
             if (currentCompany) loadCatalog();
         }
     }, [isOpen, currentCompany]);
 
     const loadCatalog = async () => {
-        if (!currentCompany?.contractedModules) return;
-
         try {
             const { modules, features } = await api.getSystemCatalog();
-            const planModules = currentCompany.contractedModules;
-
-            // 1. Filter Modules: Only allow modules present in the Plan
-            const allowedModules = modules.filter(m => {
-                const sysMap = MODULE_MAP[m.id];
-                const sysId = sysMap ? sysMap.sysId : m.id;
-                // Allow if exact ID matches OR if implicit extra/legacy check passes (though Plan usually has system IDs)
-                return planModules.includes(sysId) || planModules.includes(`${sysId}:extra`);
-            });
-
-            // 2. Filter Features
-            const allowedFeatures = features.filter(f => {
-                const sysMap = MODULE_MAP[f.module_id];
-                const sysModId = sysMap ? sysMap.sysId : f.module_id;
-
-                // Feature must belong to an allowed module (Base Check)
-                if (!planModules.includes(sysModId) && !planModules.includes(`${sysModId}:extra`)) return false;
-
-                // --- Granular Check Logic (Matches RBACContext checkPlanAccess) ---
-
-                // Construct the "Plan Feature ID"
-                // 1. Split ID by dot to get the subFeature (e.g. 'finance.dashboard' -> 'dashboard')
-                // System features in DB are often 'module.subfeature'
-                const parts = f.id.split('.');
-                const subFeature = parts.length > 1 ? parts[1] : parts[0];
-
-                // 2. Base Prefix + SubFeature
-                let expectedFeatId = sysMap ? `${sysMap.featPrefix}${subFeature}` : f.id;
-
-                // 3. Exception Map (e.g. routines.dashboard -> tasks_overview)
-                // Use the FULL f.id (e.g. 'finance.dashboard') as the key
-                if (FEATURE_EXCEPTION_MAP[f.id]) {
-                    expectedFeatId = FEATURE_EXCEPTION_MAP[f.id];
-                } else if (f.module_id === 'commercial' && subFeature === 'contracts') {
-                    expectedFeatId = 'crm_contracts';
-                }
-
-                // 4. Final Granular Key in Plan (e.g. mod_tasks:tasks_overview)
-                const granularKey = `${sysModId}:${expectedFeatId}`;
-
-                // Does the plan contain ANY granular storage for this module?
-                // (Check for any string starting with "mod_id:" BUT NOT "mod_id:extra")
-                const hasGranularForModule = planModules.some(p => p.startsWith(`${sysModId}:`) && !p.endsWith(':extra'));
-
-                if (hasGranularForModule) {
-                    // Strict Mode: Only allow if explicitly included in the plan
-                    return planModules.includes(granularKey);
-                }
-
-                // Legacy/Default Mode: If no granular features are listed for this module, allow ALL features.
-                return true;
-            });
-
-            setSystemModules(allowedModules);
-            setSystemFeatures(allowedFeatures);
+            setSystemModules(modules.filter(m => m.id !== 'mod_reports' && m.id !== 'mod_api'));
+            setSystemFeatures(features.filter(f => f.id !== 'tasks_projects' && f.id !== 'tasks_teams'));
 
             if (currentUser?.companyId) {
                 const tm = await api.getCompanyModules(currentUser.companyId);
                 setTenantModuleStatus(tm);
+                const [fetchedTeams, fetchedProjects] = await Promise.all([
+                    api.getTeams(currentUser.companyId),
+                    api.getProjects(currentUser.companyId)
+                ]);
+                setTeamsList(fetchedTeams);
+                setProjectsList(fetchedProjects);
             }
         } catch (error) {
             console.error("Failed to load catalog", error);
@@ -155,7 +114,9 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
             await api.createUser({
                 ...formData,
                 permissions: undefined,
-                granular_permissions: formData.role === 'user' ? granularArray : undefined
+                granular_permissions: formData.role === 'user' ? granularArray : undefined,
+                teams: selectedTeams,
+                projects: selectedProjects
             });
             onSuccess();
             onClose();
@@ -229,6 +190,53 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                     </div>
                 )}
 
+                {/* Teams & Projects Selection */}
+                <div className="space-y-4 pt-4 border-t border-border">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Atribuição de Equipes e Projetos</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-2 block">Equipes</label>
+                            <div className="bg-secondary/30 rounded-lg border border-border p-2 max-h-40 overflow-y-auto custom-scrollbar space-y-1">
+                                {teamsList.map(t => (
+                                    <label key={t.id} className="flex items-center gap-2 text-sm text-foreground p-1 hover:bg-secondary/50 rounded cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="rounded border-border"
+                                            checked={selectedTeams.includes(t.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedTeams([...selectedTeams, t.id]);
+                                                else setSelectedTeams(selectedTeams.filter(id => id !== t.id));
+                                            }}
+                                        />
+                                        <span className="truncate">{t.name}</span>
+                                    </label>
+                                ))}
+                                {teamsList.length === 0 && <span className="text-xs text-muted-foreground italic">Nenhuma equipe encontrada</span>}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-2 block">Projetos</label>
+                            <div className="bg-secondary/30 rounded-lg border border-border p-2 max-h-40 overflow-y-auto custom-scrollbar space-y-1">
+                                {projectsList.map(p => (
+                                    <label key={p.id} className="flex items-center gap-2 text-sm text-foreground p-1 hover:bg-secondary/50 rounded cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="rounded border-border"
+                                            checked={selectedProjects.includes(p.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedProjects([...selectedProjects, p.id]);
+                                                else setSelectedProjects(selectedProjects.filter(id => id !== p.id));
+                                            }}
+                                        />
+                                        <span className="truncate">{p.name}</span>
+                                    </label>
+                                ))}
+                                {projectsList.length === 0 && <span className="text-xs text-muted-foreground italic">Nenhum projeto encontrado</span>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {formData.role === 'admin' && (
                     <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex items-start gap-3">
                         <AlertTriangle className="text-amber-500 shrink-0" size={18} />
@@ -265,6 +273,12 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
     const [systemModules, setSystemModules] = useState<AppModule[]>([]);
     const [systemFeatures, setSystemFeatures] = useState<AppFeature[]>([]);
     const [tenantModuleStatus, setTenantModuleStatus] = useState<Record<string, any>>({});
+    
+    // Teams & Projects
+    const [teamsList, setTeamsList] = useState<any[]>([]);
+    const [projectsList, setProjectsList] = useState<any[]>([]);
+    const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+    const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
 
     useEffect(() => {
         if (isOpen && user) {
@@ -287,18 +301,34 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
             setStatus('active');
             setRole('user');
             setGranularPermissions({});
+            setSelectedTeams([]);
+            setSelectedProjects([]);
         }
     }, [user, isOpen]);
 
     const loadCatalog = async () => {
         try {
             const { modules, features } = await api.getSystemCatalog();
-            setSystemModules(modules);
-            setSystemFeatures(features);
+            setSystemModules(modules.filter(m => m.id !== 'mod_reports' && m.id !== 'mod_api'));
+            setSystemFeatures(features.filter(f => f.id !== 'tasks_projects' && f.id !== 'tasks_teams'));
 
             if (currentUser?.companyId) {
                 const tm = await api.getCompanyModules(currentUser.companyId);
                 setTenantModuleStatus(tm);
+                const [fetchedTeams, fetchedProjects] = await Promise.all([
+                    api.getTeams(currentUser.companyId),
+                    api.getProjects(currentUser.companyId)
+                ]);
+                setTeamsList(fetchedTeams);
+                setProjectsList(fetchedProjects);
+                
+                // Hydrate teams and projects for this user
+                if (user) {
+                    const userTeams = fetchedTeams.filter(t => (t as any).memberIds?.includes(user.id) || (t as any).member_ids?.includes(user.id)).map(t => t.id);
+                    const userProjects = fetchedProjects.filter(p => (p as any).memberIds?.includes(user.id) || (p as any).members?.includes(user.id) || (p as any).member_ids?.includes(user.id)).map(p => p.id);
+                    setSelectedTeams(userTeams);
+                    setSelectedProjects(userProjects);
+                }
             }
         } catch (error) {
             console.error("Failed to load catalog", error);
@@ -344,7 +374,9 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                 status,
                 role,
                 permissions: undefined,
-                granular_permissions: role === 'user' ? Object.values(granularPermissions) : undefined
+                granular_permissions: role === 'user' ? Object.values(granularPermissions) : undefined,
+                teams: selectedTeams,
+                projects: selectedProjects
             });
             onSuccess();
             onClose();
@@ -427,7 +459,54 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, o
                     </div>
                 )}
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                {/* Teams & Projects Selection */}
+                <div className="space-y-4 pt-4 border-t border-border mt-4">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Atribuição de Equipes e Projetos</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-2 block">Equipes</label>
+                            <div className="bg-secondary/30 rounded-lg border border-border p-2 max-h-40 overflow-y-auto custom-scrollbar space-y-1">
+                                {teamsList.map(t => (
+                                    <label key={t.id} className="flex items-center gap-2 text-sm text-foreground p-1 hover:bg-secondary/50 rounded cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="rounded border-border"
+                                            checked={selectedTeams.includes(t.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedTeams([...selectedTeams, t.id]);
+                                                else setSelectedTeams(selectedTeams.filter(id => id !== t.id));
+                                            }}
+                                        />
+                                        <span className="truncate">{t.name}</span>
+                                    </label>
+                                ))}
+                                {teamsList.length === 0 && <span className="text-xs text-muted-foreground italic">Nenhuma equipe encontrada</span>}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-2 block">Projetos</label>
+                            <div className="bg-secondary/30 rounded-lg border border-border p-2 max-h-40 overflow-y-auto custom-scrollbar space-y-1">
+                                {projectsList.map(p => (
+                                    <label key={p.id} className="flex items-center gap-2 text-sm text-foreground p-1 hover:bg-secondary/50 rounded cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="rounded border-border"
+                                            checked={selectedProjects.includes(p.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedProjects([...selectedProjects, p.id]);
+                                                else setSelectedProjects(selectedProjects.filter(id => id !== p.id));
+                                            }}
+                                        />
+                                        <span className="truncate">{p.name}</span>
+                                    </label>
+                                ))}
+                                {projectsList.length === 0 && <span className="text-xs text-muted-foreground italic">Nenhum projeto encontrado</span>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-border mt-4">
                     <Button variant="ghost" onClick={onClose}>Cancelar</Button>
                     <Button onClick={handleSubmit} disabled={loading}>Salvar Alterações</Button>
                 </div>

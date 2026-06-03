@@ -37,8 +37,8 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-            <div className="bg-card border border-border rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-5 border-b border-border flex justify-between items-center bg-muted/20 rounded-t-xl">
+            <div className="bg-card rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="p-5 flex justify-between items-center bg-muted/20 rounded-t-xl">
                     <h3 className="text-lg font-bold text-foreground">{title}</h3>
                     <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"><X size={20} /></button>
                 </div>
@@ -53,10 +53,10 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                             {quotes.map(q => (
                                 <div key={q.id}
                                     onClick={() => onQuoteClick(q)}
-                                    className="bg-card border border-border p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 hover:border-primary/30 hover:shadow-sm cursor-pointer transition-all group"
+                                    className="bg-card p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 hover:shadow-sm cursor-pointer transition-all group hover:bg-accent/50"
                                 >
                                     <div className="flex items-center gap-4 w-full sm:w-auto">
-                                        <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center border border-border font-mono text-xs text-muted-foreground group-hover:text-foreground group-hover:border-primary/20 transition-colors">
+                                        <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center font-mono text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                                             #{q.id.substring(0, 4)}
                                         </div>
                                         <div>
@@ -327,7 +327,7 @@ export const CommercialOverview: React.FC = () => {
     const drilldownInfo = getDrilldownData();
 
     return (
-        <div className="h-[calc(100vh-64px)] bg-background text-foreground p-6 overflow-hidden flex flex-col gap-6 custom-scrollbar">
+        <div className="flex-1 flex flex-col gap-6 pt-6">
 
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-3">
@@ -346,41 +346,45 @@ export const CommercialOverview: React.FC = () => {
             </div>
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 shrink-0">
-                <div onClick={() => setDrilldownType('negotiation')} className="cursor-pointer">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 shrink-0">
+                <div onClick={() => setDrilldownType('negotiation')} className="cursor-pointer h-full">
                     <StatCard
                         title="Em Negociação"
                         value={kpiData.openCount}
                         icon={TrendingUp}
                         iconColorClass="text-amber-500 bg-amber-500/10"
                         subtitle="Abertos"
+                        className="h-full"
                     />
                 </div>
-                <div onClick={() => setDrilldownType('approved')} className="cursor-pointer">
+                <div onClick={() => setDrilldownType('approved')} className="cursor-pointer h-full">
                     <StatCard
                         title="Negócio Fechado"
                         value={kpiData.approvedCount}
                         icon={CheckCircle}
                         iconColorClass="text-emerald-500 bg-emerald-500/10"
                         subtitle="Aprovados"
+                        className="h-full"
                     />
                 </div>
-                <div onClick={() => setDrilldownType('lost')} className="cursor-pointer">
+                <div onClick={() => setDrilldownType('lost')} className="cursor-pointer h-full">
                     <StatCard
                         title="Negócio Perdido"
                         value={kpiData.lostCount}
                         icon={XCircle}
                         iconColorClass="text-rose-500 bg-rose-500/10"
                         subtitle="Rejeitados"
+                        className="h-full"
                     />
                 </div>
-                <div onClick={() => setDrilldownType('overdue')} className="cursor-pointer">
+                <div onClick={() => setDrilldownType('overdue')} className="cursor-pointer h-full">
                     <StatCard
                         title="Vencidos"
                         value={kpiData.overdueCount}
                         icon={XCircle}
                         iconColorClass="text-slate-500 bg-slate-500/10"
                         subtitle="Expirados"
+                        className="h-full"
                     />
                 </div>
                 <StatCard
@@ -389,6 +393,7 @@ export const CommercialOverview: React.FC = () => {
                     icon={BarChart2}
                     iconColorClass="text-indigo-500 bg-indigo-500/10"
                     subtitle="Aprov / Total"
+                    className="h-full"
                 />
             </div>
 
@@ -399,9 +404,9 @@ export const CommercialOverview: React.FC = () => {
                     <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2 shrink-0">
                         <PieChart size={18} className="text-primary" /> Distribuição por Status
                     </h3>
-                    <div className="flex-1 w-full min-h-0 relative flex flex-col md:flex-row items-center gap-4 overflow-y-auto md:overflow-hidden pb-4 md:pb-0">
+                    <div className="flex-1 w-full min-h-0 relative flex flex-col md:flex-row items-stretch gap-4 overflow-y-auto md:overflow-hidden pb-4 md:pb-0">
                         {/* Chart Area */}
-                        <div className="h-48 md:h-full w-full md:w-1/2 relative shrink-0">
+                        <div className="h-64 md:h-full min-h-[250px] w-full md:w-1/2 relative shrink-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <RechartsPieChart>
                                     <Pie

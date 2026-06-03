@@ -136,8 +136,15 @@ export const AgendaPage: React.FC = () => {
       // 3. Tasks (Level 2)
       if (calSettings.tasks !== false) {
         promises.push(api.getTasks(currentCompany.id).then(data => {
+          // STRICT: Only show tasks from users who shared TASKS access (not agenda-only)
+          const isAdminRole = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'super_admin';
+          const taskAllowedIds = isAdminRole ? null : [user?.id, ...taskDelegators];
+          
           data.forEach(t => {
             if (!t.dueDate) return;
+            // If not admin, only show tasks assigned to allowed users
+            if (taskAllowedIds && t.assigneeId && !taskAllowedIds.includes(t.assigneeId)) return;
+            
             newEvents.push({
               id: `task-${t.id}`,
               title: t.title,
@@ -158,12 +165,15 @@ export const AgendaPage: React.FC = () => {
         }));
       }
 
+      const hasFinanceAccess = user?.role === 'super_admin' || user?.role === 'admin' || user?.permissions?.financial?.view;
+      const hasCommercialAccess = user?.role === 'super_admin' || user?.role === 'admin' || user?.permissions?.commercial?.view;
+
       // 4. Finance (Level 3)
       if (calSettings.financial?.enabled !== false) {
         const fin = calSettings.financial;
 
         // Budgets/Quotes
-        if (fin?.budgets !== false) {
+        if (fin?.budgets !== false && hasCommercialAccess) {
           promises.push(api.getQuotes(currentCompany.id).then(data => {
             data.forEach(q => {
               if (!q.validUntil || q.status === 'approved' || q.status === 'rejected') return;
@@ -189,7 +199,7 @@ export const AgendaPage: React.FC = () => {
 
         // Unified Finance Data Fetching & Processing
         // We fetch everything if ANY finance module is active to ensure correct calculations (linked transactions etc)
-        if (fin?.receivable !== false || fin?.payable !== false || fin?.credit_card !== false) {
+        if (hasFinanceAccess && (fin?.receivable !== false || fin?.payable !== false || fin?.credit_card !== false)) {
           const [transactions, cards] = await Promise.all([
             api.getFinancialTransactions(currentCompany.id),
             api.getCreditCards(currentCompany.id)

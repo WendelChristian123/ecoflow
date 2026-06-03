@@ -323,7 +323,7 @@ export const TasksPage: React.FC = () => {
             onChange={setFilterAssignee}
             options={[
               { value: 'all', label: 'Todos' },
-              ...users.map(u => ({
+              ...assignableUsers.map(u => ({
                 value: u.id,
                 label: u.name,
                 avatarUrl: u.avatarUrl

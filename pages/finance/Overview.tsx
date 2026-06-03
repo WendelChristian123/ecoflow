@@ -386,20 +386,20 @@ export const FinancialOverview: React.FC = () => {
                         {/* BLOCO 1 - RESUMO */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
                             {/* SALDO - PROTAGONISTA (Mantido layout especial mas alinhado) */}
-                            <div className="lg:col-span-4 bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 p-0 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-card transition-all duration-300 hover:shadow-premium hover:-translate-y-1">
+                            <div className="lg:col-span-4 bg-gradient-to-br from-card to-secondary/30 border border-border/50 p-0 rounded-2xl flex flex-col justify-between relative overflow-hidden group shadow-card transition-all duration-300 hover:shadow-premium hover:-translate-y-1 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50">
                                 <div className="p-6 lg:p-8 flex justify-between items-start">
                                     <div>
-                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Saldo Atual</span>
-                                        <div className="mt-2 text-4xl xl:text-5xl font-black text-white tracking-tighter">
+                                        <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest dark:text-slate-400">Saldo Atual</span>
+                                        <div className="mt-2 text-4xl xl:text-5xl font-black text-foreground tracking-tighter dark:text-white">
                                             {fmt(currentBalance)}
                                         </div>
                                     </div>
-                                    <div className="w-16 h-16 bg-white/5 rounded-full border border-white/10 flex items-center justify-center shrink-0">
-                                        <Wallet size={32} className="text-emerald-400" />
+                                    <div className="w-16 h-16 bg-secondary/80 rounded-full border border-border flex items-center justify-center shrink-0 dark:bg-white/5 dark:border-white/10">
+                                        <Wallet size={32} className="text-emerald-500 dark:text-emerald-400" />
                                     </div>
                                 </div>
-                                <div className="px-6 lg:px-8 py-5 bg-black/20 flex-1 flex items-center border-t border-white/5 mt-auto">
-                                    <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                                <div className="px-6 lg:px-8 py-5 bg-secondary/50 flex-1 flex items-center border-t border-border mt-auto dark:bg-black/20 dark:border-white/5">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-slate-300">
                                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                                         <span>Consolidado de todas as contas</span>
                                     </div>

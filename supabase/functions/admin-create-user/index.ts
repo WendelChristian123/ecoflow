@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -65,7 +65,7 @@ serve(async (req) => {
         let companyId = adminProfile.company_id; // Changed from tenantId
 
         // 5. Parse Request Body
-        const { email, password, name, phone, role, permissions, companyId: reqCompanyId } = await req.json();
+        const { email, password, name, phone, role, permissions, granular_permissions, teams, projects, companyId: reqCompanyId } = await req.json();
 
         // Super Admin override company
         if (adminProfile.role === 'super_admin' && reqCompanyId) {
@@ -151,6 +151,46 @@ serve(async (req) => {
             // await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
             console.error("Profile Creation Failed:", profileError);
             return new Response(JSON.stringify({ error: `User created but profile failed: ${profileError.message}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // 8. Insert Granular Permissions
+        if (granular_permissions && Array.isArray(granular_permissions) && granular_permissions.length > 0) {
+            const toInsert = granular_permissions.map((p: any) => ({
+                ...p,
+                id: crypto.randomUUID(),
+                user_id: newUser.user.id,
+                company_id: companyId
+            }));
+            const { error: permError } = await supabaseAdmin.from('user_permissions').insert(toInsert);
+            if (permError) console.error("Granular Permissions Error:", permError);
+        }
+
+        // 9. Assign Teams
+        if (teams && Array.isArray(teams) && teams.length > 0) {
+            for (const teamId of teams) {
+                const { data: teamData } = await supabaseAdmin.from('teams').select('member_ids').eq('id', teamId).single();
+                if (teamData) {
+                    const members = teamData.member_ids || [];
+                    if (!members.includes(newUser.user.id)) {
+                        members.push(newUser.user.id);
+                        await supabaseAdmin.from('teams').update({ member_ids: members }).eq('id', teamId);
+                    }
+                }
+            }
+        }
+
+        // 10. Assign Projects
+        if (projects && Array.isArray(projects) && projects.length > 0) {
+            for (const projectId of projects) {
+                const { data: projData } = await supabaseAdmin.from('projects').select('member_ids').eq('id', projectId).single();
+                if (projData) {
+                    const members = projData.member_ids || [];
+                    if (!members.includes(newUser.user.id)) {
+                        members.push(newUser.user.id);
+                        await supabaseAdmin.from('projects').update({ member_ids: members }).eq('id', projectId);
+                    }
+                }
+            }
         }
 
         // Success

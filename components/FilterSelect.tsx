@@ -138,8 +138,8 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
                 position: 'fixed'
             }}
             className={cn(
-                "w-64 border rounded-xl shadow-2xl z-[9999] animate-in fade-in zoom-in-95 duration-100 p-2",
-                darkMode ? "bg-slate-900 border-slate-700" : "bg-card border-border"
+                "w-64 shadow-2xl z-[9999] animate-in fade-in zoom-in-95 duration-100 p-2 rounded-xl",
+                darkMode ? "bg-slate-900" : "bg-card"
             )}
         >
             {label && (
@@ -214,8 +214,8 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
                 className={cn(
                     "flex items-center gap-2 text-sm h-[34px] rounded-lg px-3 focus:ring-1 focus:ring-primary outline-none transition-colors min-w-[140px] justify-between w-full",
                     darkMode
-                        ? "bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700"
-                        : "bg-card border border-border text-foreground hover:bg-muted/50",
+                        ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                        : "bg-card text-foreground hover:bg-muted/50",
                     triggerClassName
                 )}
             >

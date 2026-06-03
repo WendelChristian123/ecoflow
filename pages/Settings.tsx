@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { User, Delegation } from '../types';
-import { Loader, Button, Avatar, Badge, Card, Input } from '../components/Shared';
+import { User, Delegation, Task } from '../types';
+import { Loader, Button, Avatar, Badge, Card, Input, Modal } from '../components/Shared';
+import { FilterSelect } from '../components/FilterSelect';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
@@ -34,6 +35,13 @@ export const SettingsPage: React.FC = () => {
     const [isDelegationOpen, setIsDelegationOpen] = useState(false);
     const [editingDelegations, setEditingDelegations] = useState<Delegation[]>([]); // Changed to Array
     const [editingPermissionsUser, setEditingPermissionsUser] = useState<User | null>(null);
+
+    // Deletion / Transfer State
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [tasksToTransfer, setTasksToTransfer] = useState<Task[]>([]);
+    const [transferTargetId, setTransferTargetId] = useState<string>('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (authUser) loadData();
@@ -77,9 +85,64 @@ export const SettingsPage: React.FC = () => {
 
     const handleDeleteUser = async (id: string) => {
         if (!canDelete()) return;
-        if (window.confirm("Tem certeza que deseja excluir este usuário?")) {
-            await api.deleteUser(id);
+        const userObj = users.find(u => u.id === id);
+        if (!userObj) return;
+
+        try {
+            // Check for pending tasks
+            const allTasks = await api.getTasks(authUser?.companyId);
+            const pendingTasks = allTasks.filter(t => t.assigneeId === id && t.status !== 'done');
+
+            if (pendingTasks.length > 0) {
+                setUserToDelete(userObj);
+                setTasksToTransfer(pendingTasks);
+                setTransferTargetId('');
+                setIsTransferModalOpen(true);
+            } else {
+                if (window.confirm(`Tem certeza que deseja excluir o usuário ${userObj.name}?`)) {
+                    await api.deleteUser(id);
+                    loadData();
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao verificar tarefas pendentes.");
+        }
+    };
+
+    const confirmTransferAndDelete = async () => {
+        if (!userToDelete || !transferTargetId) return;
+        setIsDeleting(true);
+        try {
+            const targetUser = users.find(u => u.id === transferTargetId);
+            
+            // 1. Transfer all pending tasks
+            for (const task of tasksToTransfer) {
+                await api.updateTask({ ...task, assigneeId: transferTargetId });
+                // Add activity log
+                await api.addActivityLog({
+                    entityId: task.id,
+                    entityType: 'task',
+                    action: 'transfer',
+                    details: `Transferiu para ${targetUser?.name} devido à exclusão da conta de ${userToDelete.name}`,
+                    metadata: {
+                        from: userToDelete.id,
+                        to: transferTargetId,
+                        reason: 'user_deletion'
+                    }
+                });
+            }
+
+            // 2. Delete user
+            await api.deleteUser(userToDelete.id);
+            setIsTransferModalOpen(false);
             loadData();
+            alert(`Usuário excluído e ${tasksToTransfer.length} tarefas transferidas com sucesso.`);
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao transferir tarefas e excluir usuário.");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -176,12 +239,14 @@ export const SettingsPage: React.FC = () => {
                         Auditoria
                     </button>
                 )}
-                <button
-                    onClick={() => setActiveTab('plan')}
-                    className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'plan' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
-                >
-                    Meu Plano
-                </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => setActiveTab('plan')}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'plan' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                    >
+                        Meu Plano
+                    </button>
+                )}
             </div>
 
             {/* TAB: DELEGATION (SHARED ACCESS) */}
@@ -396,7 +461,7 @@ export const SettingsPage: React.FC = () => {
             )}
 
             {/* TAB: MEU PLANO */}
-            {activeTab === 'plan' && (
+            {activeTab === 'plan' && isAdmin && (
                 <MyPlanTab />
             )}
 
@@ -411,8 +476,45 @@ export const SettingsPage: React.FC = () => {
                 isOpen={!!editingPermissionsUser}
                 onClose={() => setEditingPermissionsUser(null)}
                 onSuccess={loadData}
-                user={editingPermissionsUser}
+                user={editingPermissionsUser || undefined}
             />
+
+            <Modal isOpen={isTransferModalOpen} onClose={() => !isDeleting && setIsTransferModalOpen(false)} title="Transferência de Tarefas">
+                <div className="space-y-4">
+                    <div className="bg-warning/10 text-warning p-4 rounded-lg text-sm border border-warning/20">
+                        O usuário <strong>{userToDelete?.name}</strong> possui <strong>{tasksToTransfer.length}</strong> tarefa(s) pendente(s). 
+                        Para prosseguir com a exclusão, você deve transferir essas tarefas para outro responsável.
+                    </div>
+                    
+                    <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Transferir tarefas para:</label>
+                        <FilterSelect
+                            label=""
+                            value={transferTargetId}
+                            onChange={setTransferTargetId}
+                            options={users
+                                .filter(u => u.id !== userToDelete?.id)
+                                .map(u => ({ value: u.id, label: u.name, avatarUrl: u.avatarUrl }))}
+                            className="w-full"
+                            placeholder="Selecione um usuário"
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button variant="ghost" onClick={() => setIsTransferModalOpen(false)} disabled={isDeleting}>
+                            Cancelar
+                        </Button>
+                        <Button 
+                            variant="primary" 
+                            className="bg-rose-600 hover:bg-rose-700 text-white" 
+                            disabled={!transferTargetId || isDeleting}
+                            onClick={confirmTransferAndDelete}
+                        >
+                            {isDeleting ? 'Transferindo e Excluindo...' : 'Transferir e Excluir Usuário'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             <DelegationModal
                 isOpen={isDelegationOpen}

@@ -32,12 +32,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, onClick, dep
             to={to}
             onClick={onClick}
             className={({ isActive }) => cn(
-                "flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 mb-1 group relative overflow-hidden",
-                isCollapsed ? "justify-center px-2" : "px-4",
+                "flex items-center gap-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1 group relative overflow-hidden",
+                isCollapsed ? "justify-center px-2 rounded-lg border border-transparent" : "px-4 rounded-lg border border-transparent",
                 (!isCollapsed && depth > 0) && "pl-11",
                 isActive
-                    ? "bg-primary/10 text-primary font-bold shadow-none"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent"
+                    ? (isCollapsed ? "border-primary/50 text-primary font-bold bg-primary/10" : "text-primary font-bold bg-primary/10 border-l-[3px] border-l-primary")
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             )}
         >
             {/* Glow Effect on Hover removed for cleaner look */}
@@ -368,7 +368,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
         if (currentCompany?.contractedModules) {
             const mods = currentCompany.contractedModules;
-            return mods.includes(moduleKey);
+            return mods.includes(moduleKey) || mods.includes(`mod_${moduleKey}`);
         }
 
         return true;
@@ -385,9 +385,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             )}
 
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-[100] bg-card transition-all duration-300 flex flex-col h-full shadow-soft",
+                "fixed inset-y-0 left-0 z-[100] transition-all duration-300 flex flex-col h-full",
+                "bg-card dark:bg-background",
                 "lg:static",
-                isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
+                isMobileMenuOpen ? "translate-x-0 w-64 shadow-2xl" : "-translate-x-full lg:translate-x-0",
                 (!isMobileMenuOpen && isCollapsed) ? "lg:w-20" : "lg:w-64"
             )}>
                 <div className="h-full flex flex-col">
@@ -503,8 +504,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-secondary/5">
+            <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-background">
                 <TrialBanner />
+                
                 <header className="h-20 bg-background/80 backdrop-blur-md px-8 flex items-center justify-between shrink-0 z-[60] sticky top-0 relative">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>

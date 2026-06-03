@@ -63,7 +63,17 @@ export const Dashboard: React.FC = () => {
 
     // Filters State
     const [horizon, setHorizon] = useState<3 | 7 | 15 | 30>(3); // Days
-    const [selectedModules, setSelectedModules] = useState<string[]>(['tasks', 'events', 'finance', 'quotes']);
+    
+    // Derived available modules based on permissions
+    const { can } = useRBAC();
+    const availableModules = useMemo(() => {
+        const mods = ['tasks', 'events'];
+        if (can('finance', 'view')) mods.push('finance');
+        if (can('commercial', 'view')) mods.push('quotes');
+        return mods;
+    }, [can]);
+
+    const [selectedModules, setSelectedModules] = useState<string[]>(availableModules);
     const [assigneeFilter, setAssigneeFilter] = useState<'all' | string>('all');
     const [isModulesOpen, setIsModulesOpen] = useState(false);
     const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
@@ -256,7 +266,7 @@ export const Dashboard: React.FC = () => {
         return (
             <div
                 onClick={onClick}
-                className="bg-card border border-border/50 shadow-card hover:shadow-premium rounded-2xl p-6 flex items-center gap-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1"
+                className="bg-card shadow-card hover:shadow-premium rounded-2xl p-6 flex items-center gap-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1"
             >
                 <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-300", theme.bg, theme.text)}>
                     {icon}
@@ -282,7 +292,11 @@ export const Dashboard: React.FC = () => {
         items: ReturnType<typeof filterItems>,
         variant: 'danger' | 'warning' | 'info'
     }) => {
-        const hasItems = items.tasks.length > 0 || items.events.length > 0 || items.finance.length > 0 || items.quotes.length > 0;
+        const hasItems = 
+            (selectedModules.includes('tasks') && availableModules.includes('tasks') && items.tasks.length > 0) || 
+            (selectedModules.includes('events') && availableModules.includes('events') && items.events.length > 0) || 
+            (selectedModules.includes('finance') && availableModules.includes('finance') && items.finance.length > 0) || 
+            (selectedModules.includes('quotes') && availableModules.includes('quotes') && items.quotes.length > 0);
 
         // Semantic Accents
         const accents = {
@@ -312,10 +326,10 @@ export const Dashboard: React.FC = () => {
 
                 {hasItems ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                        <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={24} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />
-                        <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={24} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />
-                        <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={24} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />
-                        <ZoneCard title="Orçamentos" count={items.quotes.length} icon={<FileText size={24} />} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />
+                        {selectedModules.includes('tasks') && availableModules.includes('tasks') && <ZoneCard title="Tarefas" count={items.tasks.length} icon={<List size={24} />} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />}
+                        {selectedModules.includes('events') && availableModules.includes('events') && <ZoneCard title="Compromissos" count={items.events.length} icon={<CalendarIcon size={24} />} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />}
+                        {selectedModules.includes('finance') && availableModules.includes('finance') && <ZoneCard title="Financeiro" count={items.finance.length} icon={<Wallet size={24} />} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />}
+                        {selectedModules.includes('quotes') && availableModules.includes('quotes') && <ZoneCard title="Orçamentos" count={items.quotes.length} icon={<FileText size={24} />} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />}
                     </div>
                 ) : (
                     <EmptyState />
@@ -384,7 +398,7 @@ export const Dashboard: React.FC = () => {
         const moduleNames: Record<string, string> = { tasks: 'Tarefas', events: 'Agenda', finance: 'Financeiro', quotes: 'Orçamentos' };
 
         return (
-            <div className="sticky top-0 z-30 bg-background/98 backdrop-blur-lg py-3 md:py-4 -mx-4 px-4 md:-mx-6 md:px-6 shadow-sm border-b border-border/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
+            <div className="sticky top-0 z-30 bg-background/98 backdrop-blur-lg py-3 md:py-4 -mx-4 px-4 md:-mx-6 md:px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                 {/* Grupo 1: Filtros de Conteúdo */}
                 <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
                     {/* Modules Dropdown - Web only */}
@@ -392,7 +406,7 @@ export const Dashboard: React.FC = () => {
                         <div className="relative flex-1 md:flex-none">
                             <button
                                 onClick={() => setIsModulesOpen(!isModulesOpen)}
-                                className="flex items-center justify-between md:justify-start gap-2 bg-card border border-border hover:border-emerald-500/50 text-foreground px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm w-full"
+                                className="flex items-center justify-between md:justify-start gap-2 bg-card hover:border-emerald-500/50 text-foreground px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all h-9 shadow-sm w-full"
                             >
                                 <div className="flex items-center gap-2">
                                     <Layers size={16} className="text-emerald-600 dark:text-emerald-500" />
@@ -405,10 +419,10 @@ export const Dashboard: React.FC = () => {
                             {isModulesOpen && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setIsModulesOpen(false)} />
-                                    <div className="absolute top-full left-0 mt-2 w-52 bg-popover border border-border rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="absolute top-full left-0 mt-2 w-52 bg-popover rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
                                         <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Exibir Módulos</div>
                                         <div className="space-y-1">
-                                            {['tasks', 'events', 'finance', 'quotes']
+                                            {availableModules
                                                 .sort((a, b) => moduleNames[a].localeCompare(moduleNames[b]))
                                                 .map(m => (
                                                 <button
@@ -435,7 +449,7 @@ export const Dashboard: React.FC = () => {
                     {!isApp && <div className="hidden md:block h-6 w-px bg-border" />}
 
                     {/* Horizon Toggle - Premium */}
-                    <div className="flex bg-secondary/50 rounded-lg p-1 border border-border gap-0.5 md:gap-1 overflow-x-auto custom-scrollbar flex-1 md:flex-none">
+                    <div className="flex bg-secondary/50 rounded-lg p-1 gap-0.5 md:gap-1 overflow-x-auto custom-scrollbar flex-1 md:flex-none">
                         {[3, 7, 15, 30].map(d => (
                             <button
                                 key={d}
@@ -459,7 +473,7 @@ export const Dashboard: React.FC = () => {
                     <div className="relative flex-1 md:flex-none">
                         <button
                             onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
-                            className="flex items-center justify-between md:justify-start gap-2 bg-card border border-border hover:border-emerald-500/30 rounded-lg px-3 py-2 h-9 shadow-sm transition-all md:min-w-[140px] w-full"
+                            className="flex items-center justify-between md:justify-start gap-2 bg-card hover:border-emerald-500/30 rounded-lg px-3 py-2 h-9 shadow-sm transition-all md:min-w-[140px] w-full"
                         >
                             <div className="flex items-center gap-2 overflow-hidden">
                                 <UserCircle size={16} className="text-muted-foreground shrink-0" />
@@ -475,7 +489,7 @@ export const Dashboard: React.FC = () => {
                         {isAssigneeOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsAssigneeOpen(false)} />
-                                <div className="absolute top-full left-0 md:left-auto md:right-0 mt-2 w-48 bg-popover border border-border rounded-xl shadow-xl z-50 p-2 transform origin-top md:origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                                <div className="absolute top-full left-0 md:left-auto md:right-0 mt-2 w-48 bg-popover rounded-xl shadow-xl z-50 p-2 transform origin-top md:origin-top-right animate-in fade-in zoom-in-95 duration-200">
                                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Responsável</div>
                                     <div className="space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
                                         <button
@@ -527,7 +541,7 @@ export const Dashboard: React.FC = () => {
                         {/* Refresh Button - Premium */}
                         <button
                             onClick={loadDashboard}
-                            className="h-8 w-8 md:h-9 md:w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors group border border-border md:border-transparent"
+                            className="h-8 w-8 md:h-9 md:w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors group"
                         >
                             <RefreshCw size={14} className={cn(
                                 "text-muted-foreground group-hover:text-foreground transition-colors",
@@ -541,7 +555,7 @@ export const Dashboard: React.FC = () => {
     };
 
     return (
-        <div className="h-full w-full bg-background flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="h-full w-full flex flex-col overflow-y-auto custom-scrollbar">
             {/* Main Area */}
             <div className="p-4 md:p-6 pt-0 w-full animate-in fade-in duration-500">
 

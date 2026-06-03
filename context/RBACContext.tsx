@@ -86,7 +86,9 @@ export const RBACProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 2. Check Base Module Presence
     // If the base module (e.g. mod_finance) is NOT present, access denied.
-    if (!modules.includes(map.sysId) && !modules.includes(`${map.sysId}:extra`)) {
+    if (!modules.includes(map.sysId) && 
+        !modules.includes(`${map.sysId}:extra`) && 
+        !modules.includes(`mod_${map.sysId}`)) {
       return false;
     }
 
@@ -132,14 +134,40 @@ export const RBACProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 2. Role Check (The Soft Limit within the Tenant)
     if (isAdmin) return true;
 
-    // ... Existing Role Logic ...
     // 1. New Granular Permission Check
     const granular = (user as any)?.granular_permissions as any[];
 
     if (granular && granular.length > 0) {
-      let featurePrefix = module as string;
+      const moduleKey = module as string;
+      const [baseKey, subFeature] = moduleKey.split('.');
+      const map = MODULE_MAP[baseKey];
+      
+      let expectedPrefix = moduleKey; // Fallback
+      let isBaseModuleCheck = !subFeature;
+
+      if (map) {
+        if (isBaseModuleCheck) {
+          expectedPrefix = map.featPrefix; // e.g., 'tasks_'
+        } else if (FEATURE_EXCEPTION_MAP[moduleKey]) {
+          expectedPrefix = FEATURE_EXCEPTION_MAP[moduleKey];
+        } else if (baseKey === 'commercial' && subFeature === 'contracts') {
+          expectedPrefix = 'crm_contracts';
+        } else {
+          expectedPrefix = `${map.featPrefix}${subFeature}`;
+        }
+      }
+
       const hasModuleAccess = granular.some(p => {
-        const isMatch = p.feature_id === featurePrefix || p.feature_id.startsWith(featurePrefix + '.');
+        let isMatch = false;
+        
+        if (isBaseModuleCheck && map) {
+           // For base module (e.g. 'routines'), match ANY feature that starts with 'tasks_'
+           isMatch = p.feature_id.startsWith(expectedPrefix);
+        } else {
+           // For exact subfeature (e.g. 'routines.dashboard'), match exactly 'tasks_overview'
+           isMatch = p.feature_id === expectedPrefix || p.feature_id.startsWith(expectedPrefix + '.');
+        }
+
         if (isMatch) {
           if (action === 'view') return p.actions.view;
           if (action === 'create') return p.actions.create;
