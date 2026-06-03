@@ -26,7 +26,7 @@ import { DashboardMetrics, Task, CalendarEvent, FinancialTransaction, Quote, Use
 import { useNavigate } from 'react-router-dom';
 import { processTransactions, ProcessedTransaction } from '../services/financeLogic';
 import { parseDateLocal } from '../utils/formatters';
-import { isBefore, isSameDay, addDays, isWithinInterval, startOfDay, format, setDate, addMonths, isAfter } from 'date-fns';
+import { isBefore, isSameDay, addDays, isWithinInterval, startOfDay, format, setDate, addMonths, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useCompany } from '../context/CompanyContext';
 import { useAppEnvironment } from '../context/AppEnvironmentContext';
@@ -151,7 +151,11 @@ export const Dashboard: React.FC = () => {
         let date: Date;
         try {
             if (typeof dateStr === 'string') {
-                date = parseDateLocal(dateStr);
+                if (dateStr.includes('T')) {
+                    date = parseISO(dateStr);
+                } else {
+                    date = parseDateLocal(dateStr);
+                }
             } else {
                 date = dateStr;
             }
