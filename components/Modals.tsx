@@ -1181,6 +1181,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     }, [isOpen, currentUser]);
 
     const availableAssignees = React.useMemo(() => {
+        if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'owner') return users;
+
         if (formData.teamId && formData.teamId !== 'none') {
             const team = teams.find(t => t.id === formData.teamId);
             return users.filter(u => team?.memberIds?.includes(u.id));
@@ -1190,57 +1192,72 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
         } else {
             return users.filter(u => u.id === currentUser?.id || sharedTaskOwners.includes(u.id));
         }
-    }, [formData.teamId, formData.projectId, teams, projects, users, currentUser?.id, sharedTaskOwners]);
+    }, [formData.teamId, formData.projectId, teams, projects, users, currentUser, sharedTaskOwners]);
 
     const handleContextChange = (type: 'team' | 'project', id: string) => {
-        if (id === 'none') {
-            setFormData(prev => ({ 
-                ...prev, 
-                [type === 'team' ? 'teamId' : 'projectId']: undefined, 
-                contextType: 'personal', 
-                contextId: undefined, 
-                assigneeId: prev.assigneeId || currentUser?.id 
-            }));
-        } else {
-            const currentAssignee = formData.assigneeId;
-            let isValidAssignee = true;
-
-            if (currentAssignee) {
-                if (type === 'team') {
-                    const team = teams.find(t => t.id === id);
-                    if (!team?.memberIds?.includes(currentAssignee)) isValidAssignee = false;
-                } else if (type === 'project') {
-                    const project = projects.find(p => p.id === id);
-                    if (!project?.members?.includes(currentAssignee)) isValidAssignee = false;
+        setFormData(prev => {
+            const updated = { ...prev };
+            
+            if (id === 'none') {
+                if (type === 'project') updated.projectId = 'none';
+                if (type === 'team') updated.teamId = 'none';
+            } else {
+                if (type === 'project') updated.projectId = id;
+                if (type === 'team') updated.teamId = id;
+                
+                // Validate assignee
+                const currentAssignee = prev.assigneeId;
+                let isValidAssignee = true;
+                if (currentAssignee) {
+                    if (type === 'team') {
+                        const team = teams.find(t => t.id === id);
+                        if (!team?.memberIds?.includes(currentAssignee)) isValidAssignee = false;
+                    } else if (type === 'project') {
+                        const project = projects.find(p => p.id === id);
+                        if (!project?.members?.includes(currentAssignee)) isValidAssignee = false;
+                    }
+                }
+                if (currentAssignee && !isValidAssignee) {
+                    alert(`Este responsável não faz parte dest${type === 'team' ? 'a equipe' : 'e projeto'}.`);
+                    updated.assigneeId = '';
                 }
             }
 
-            if (currentAssignee && !isValidAssignee) {
-                alert(`Este responsável não faz parte dest${type === 'team' ? 'a equipe' : 'e projeto'}.`);
-                setFormData(prev => ({
-                    ...prev,
-                    projectId: type === 'project' ? id : undefined,
-                    teamId: type === 'team' ? id : undefined,
-                    contextType: type,
-                    contextId: id,
-                    assigneeId: '' // clear assignee since it's invalid
-                }));
-                return;
+            // Determine context (Team takes precedence as requested)
+            const activeTeam = updated.teamId && updated.teamId !== 'none' ? updated.teamId : undefined;
+            const activeProject = updated.projectId && updated.projectId !== 'none' ? updated.projectId : undefined;
+
+            if (activeTeam) {
+                updated.contextType = 'team';
+                updated.contextId = activeTeam;
+            } else if (activeProject) {
+                updated.contextType = 'project';
+                updated.contextId = activeProject;
+            } else {
+                updated.contextType = 'personal';
+                updated.contextId = undefined;
             }
 
-            setFormData(prev => ({
-                ...prev,
-                projectId: type === 'project' ? id : undefined,
-                teamId: type === 'team' ? id : undefined,
-                contextType: type,
-                contextId: id,
-                assigneeId: prev.assigneeId // Preserve valid assignee instead of defaulting to self
-            }));
-        }
+            return updated;
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Front-end validation
+        const missingFields: string[] = [];
+        if (!formData.title || !formData.title.trim()) missingFields.push('Título');
+        if (!formData.kanbanStageId && !formData.status) missingFields.push('Fase');
+        if (!formData.priority) missingFields.push('Prioridade');
+        if (!formData.assigneeId || formData.assigneeId === 'none') missingFields.push('Responsável');
+        if (!formData.dueDate) missingFields.push('Data');
+
+        if (missingFields.length > 0) {
+            alert(`Para salvar a tarefa, preencha os seguintes campos obrigatórios:\n- ${missingFields.join('\n- ')}`);
+            return;
+        }
+
         setLoading(true);
         try {
             const finalFormData = { ...formData };
@@ -1342,7 +1359,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FilterSelect
-                        inlineLabel="Status:"
+                        inlineLabel="Fase:"
                         value={
                             stages.length > 0 
                                 ? (stages.some(s => s.id === formData.kanbanStageId) 
@@ -2332,6 +2349,34 @@ export const EventModal: React.FC<EventModalProps> = ({
             const toUTC = (localStr: string) => new Date(localStr).toISOString();
 
             if (mode === 'task') {
+                // Front-end validation
+                const missingFields: string[] = [];
+                if (!formData.title || !formData.title.trim()) missingFields.push('Título');
+                if (!formData.status) missingFields.push('Fase');
+                if (!formData.priority) missingFields.push('Prioridade');
+                if (!formData.assigneeId) missingFields.push('Responsável');
+                if (!formData.startDate) missingFields.push('Data');
+
+                if (missingFields.length > 0) {
+                    alert(`Para salvar a tarefa, preencha os seguintes campos obrigatórios:\n- ${missingFields.join('\n- ')}`);
+                    return;
+                }
+
+                // Determine context
+                const activeTeam = formData.teamId && formData.teamId !== 'none' ? formData.teamId : undefined;
+                const activeProject = formData.projectId && formData.projectId !== 'none' ? formData.projectId : undefined;
+                
+                let contextType: 'personal' | 'team' | 'project' = 'personal';
+                let contextId: string | undefined = undefined;
+
+                if (activeTeam) {
+                    contextType = 'team';
+                    contextId = activeTeam;
+                } else if (activeProject) {
+                    contextType = 'project';
+                    contextId = activeProject;
+                }
+
                 const taskData: Partial<Task> = {
                     title: formData.title,
                     description: formData.description,
@@ -2341,6 +2386,8 @@ export const EventModal: React.FC<EventModalProps> = ({
                     assigneeId: formData.assigneeId,
                     projectId: formData.projectId,
                     teamId: formData.teamId,
+                    contextType,
+                    contextId,
                     links: formData.links,
                 };
 
@@ -2493,7 +2540,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <FilterSelect
-                                            inlineLabel="Status:"
+                                            inlineLabel="Fase:"
                                             value={formData.status}
                                             onChange={(val) => setFormData({ ...formData, status: val })}
                                             options={[
@@ -2590,7 +2637,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                                         </div>
 
                                         {recurrence.isRecurring && (
-                                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-border">
                                                 <div>
                                                     <label className="text-xs text-muted-foreground mb-1 block">Frequência</label>
                                                     <Select
@@ -2601,18 +2648,34 @@ export const EventModal: React.FC<EventModalProps> = ({
                                                         <option value="daily">Diário</option>
                                                         <option value="weekly">Semanal</option>
                                                         <option value="monthly">Mensal</option>
+                                                        <option value="yearly">Anual</option>
                                                     </Select>
                                                 </div>
-                                                <div>
-                                                    <label className="text-xs text-muted-foreground mb-1 block">Qtd</label>
-                                                    <Input
-                                                        type="number"
-                                                        min="2"
-                                                        max="50"
-                                                        className="h-8"
-                                                        value={recurrence.repeatCount || 0}
-                                                        onChange={e => setRecurrence({ ...recurrence, repeatCount: parseInt(e.target.value) })}
-                                                    />
+                                                <div className="flex items-end gap-2">
+                                                    <div className="flex-1">
+                                                        <label className="text-xs text-muted-foreground mb-1 block">Fim</label>
+                                                        <Select
+                                                            value={isIndefinite ? 'indefinite' : 'count'}
+                                                            onChange={e => setIsIndefinite(e.target.value === 'indefinite')}
+                                                            className="h-8 py-1 text-xs"
+                                                        >
+                                                            <option value="count">Após ocorrências</option>
+                                                            <option value="indefinite">Indefinido (Máx 12)</option>
+                                                        </Select>
+                                                    </div>
+                                                    {!isIndefinite && (
+                                                        <div className="w-16">
+                                                            <label className="text-xs text-muted-foreground mb-1 block">Qtd</label>
+                                                            <Input
+                                                                type="number"
+                                                                min="2"
+                                                                max="50"
+                                                                className="h-8"
+                                                                value={recurrence.repeatCount || 0}
+                                                                onChange={e => setRecurrence({ ...recurrence, repeatCount: parseInt(e.target.value) })}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
