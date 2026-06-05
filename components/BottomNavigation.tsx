@@ -15,7 +15,7 @@ const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> 
 const TAB_ROUTE_PREFIXES: Record<string, string[]> = {
     dashboard: ['/dashboard'],
     commercial: ['/commercial'],
-    routines: ['/tasks', '/agenda'],
+    routines: ['/routines', '/tasks', '/agenda', '/projects', '/teams'],
     finance: ['/finance'],
     settings: ['/settings'],
 };

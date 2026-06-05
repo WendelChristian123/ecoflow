@@ -420,6 +420,7 @@ export const AgendaPage: React.FC = () => {
         <>
           {/* App Filter Bar: Status + Assignee only */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button onClick={() => navigate(-1)} className="p-1.5 mr-1 rounded-xl bg-card border border-border text-foreground active:scale-[0.95] transition-all"><ChevronLeft size={20} /></button>
             <FilterSelect
               inlineLabel="Status:"
               value={statusFilter}

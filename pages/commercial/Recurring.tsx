@@ -11,6 +11,9 @@ import { RefreshCw, Plus, Trash2, Calendar, Edit2, User, Eye, FileText, MoreHori
 import { format, parseISO, addMonths, addDays } from 'date-fns';
 import { formatDate } from '../../utils/formatters';
 import { translateFrequency } from '../../utils/i18n';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 
 export const RecurringPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -26,6 +29,8 @@ export const RecurringPage: React.FC = () => {
     const [detailService, setDetailService] = useState<RecurringService | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const { isApp } = useAppEnvironment();
+    const navigate = useNavigate();
 
     useEffect(() => { loadData(); }, []);
 
@@ -76,7 +81,12 @@ export const RecurringPage: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <h1 className="text-xl font-bold text-foreground dark:text-white flex items-center gap-2"><RefreshCw className="text-emerald-500" size={20} /> Contratos Recorrentes</h1>
+                <h1 className="text-xl font-bold text-foreground dark:text-white flex items-center gap-2">
+                    {isApp && (
+                        <button onClick={() => navigate(-1)} className="p-1.5 mr-1 rounded-xl bg-card border border-border text-foreground active:scale-[0.95] transition-all"><ChevronLeft size={20} /></button>
+                    )}
+                    <RefreshCw className="text-emerald-500" size={20} /> Contratos Recorrentes
+                </h1>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     <Button variant="ghost" className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={14} /> Relatórios</Button>
                     <Button className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => handleOpenModal()}><Plus size={14} /> Novo Contrato</Button>

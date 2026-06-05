@@ -193,12 +193,11 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
                             <p className="text-xs sm:text-sm text-muted-foreground">Gerencie quem tem acesso aos seus recursos.</p>
                         </div>
                     </div>
-                    <Button onClick={() => setIsSharing(!isSharing)} className="gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                    <Button onClick={() => setIsSharing(!isSharing)} className="gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                         {isSharing ? 'Cancelar' : (
                             <>
                                 <UserPlus size={16} /> 
-                                <span className="hidden sm:inline">Novo Compartilhamento</span>
-                                <span className="sm:hidden">Novo</span>
+                                <span>Novo Compartilhamento</span>
                             </>
                         )}
                     </Button>
@@ -292,11 +291,11 @@ export const SharedAccessPanel: React.FC<SharedAccessPanelProps> = ({ preloadedU
                                                                 </span>
                                                             )}
                                                             <button
-                                                                className="text-muted-foreground hover:text-destructive transition-colors"
+                                                                className="text-muted-foreground hover:text-destructive transition-colors p-2 flex items-center justify-center"
                                                                 onClick={() => handleRevoke(access.id)}
                                                                 title="Revogar acesso"
                                                             >
-                                                                <Trash2 size={12} />
+                                                                <Trash2 size={14} />
                                                             </button>
                                                         </div>
                                                     ))}

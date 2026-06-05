@@ -173,7 +173,7 @@ export const CalendarSettingsTab: React.FC<CalendarSettingsTabProps> = ({ initia
             </div>
 
             <div className="flex justify-end pt-6 border-t border-border dark:border-slate-800 mt-6">
-                <Button onClick={handleSave} className="px-8">
+                <Button onClick={handleSave} className="px-8 w-full sm:w-auto">
                     Salvar Alterações
                 </Button>
             </div>

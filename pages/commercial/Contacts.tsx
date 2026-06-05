@@ -9,6 +9,9 @@ import { translateContactScope, translatePersonType } from '../../utils/i18n';
 import { ConfirmationModal } from '../../components/Modals';
 import { Users, Search, Plus, Phone, Mail, MapPin, Building, User as UserIcon, Trash2, Edit2, FileText } from 'lucide-react';
 import { cn } from '../../components/Shared';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 
 export const ContactsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -18,6 +21,8 @@ export const ContactsPage: React.FC = () => {
     const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const { isApp } = useAppEnvironment();
+    const navigate = useNavigate();
 
     useEffect(() => { loadData(); }, []);
 
@@ -118,7 +123,12 @@ export const ContactsPage: React.FC = () => {
         <div className="h-full flex flex-col overflow-hidden p-4 pt-1 bg-background select-none">
             {/* COMPACT HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3 shrink-0 h-auto">
-                <h1 className="text-xl font-bold text-foreground flex items-center gap-2"><Users size={20} className="text-emerald-500" /> Contatos</h1>
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    {isApp && (
+                        <button onClick={() => navigate(-1)} className="p-1.5 mr-1 rounded-xl bg-card border border-border text-foreground active:scale-[0.95] transition-all"><ChevronLeft size={20} /></button>
+                    )}
+                    <Users size={20} className="text-emerald-500" /> Contatos
+                </h1>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     <div className="relative flex-1 min-w-[140px] md:w-64 md:flex-none group">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" size={14} />

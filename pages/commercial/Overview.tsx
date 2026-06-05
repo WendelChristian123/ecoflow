@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, Button, Loader, Badge, StatCard } from '../../components/Shared';
 import { TrendingUp, DollarSign, FileText, Plus, BarChart2, PieChart, X, CheckCircle, XCircle, Users, Package, FileSignature, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO, startOfDay } from 'date-fns';
+import { format, parseISO, startOfDay, isSameDay, isSameWeek, isSameMonth, isSameYear, startOfYear, endOfYear, subMonths, isWithinInterval } from 'date-fns';
 import { formatDate, parseDateLocal } from '../../utils/formatters';
 import { Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart as RechartsPieChart, Pie } from 'recharts';
 import { CommercialReportModal } from '../../components/Reports/CommercialReportModal';
@@ -17,6 +17,7 @@ import { commercialLogic } from '../../services/commercialLogic';
 import { kanbanService } from '../../services/kanbanService';
 import { KanbanStage, FinancialCategory, FinancialAccount, RecurringService } from '../../types';
 import { useAppEnvironment } from '../../context/AppEnvironmentContext';
+import { FilterSelect } from '../../components/FilterSelect';
 
 
 
@@ -104,6 +105,7 @@ export const CommercialOverview: React.FC = () => {
 
     // UI State
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [period, setPeriod] = useState<'day'|'week'|'month'|'semester'|'year'>('month');
 
     // Drilldown State
     const [drilldownType, setDrilldownType] = useState<string | null>(null);
@@ -215,18 +217,33 @@ export const CommercialOverview: React.FC = () => {
 
     // --- KPI CALCULATIONS ---
     const kpiData = useMemo(() => {
-        const totalQuotes = quotes.length;
         const now = new Date();
         
-        const approved = quotes.filter(q => q.status === 'approved' || kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus === 'approved');
-        const rejected = quotes.filter(q => q.status === 'rejected' || kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus === 'rejected');
+        // 1. Filter quotes by period based on their created date (or validUntil? CreatedAt is safer for performance)
+        const filteredQuotes = quotes.filter(q => {
+            const date = q.createdAt ? parseISO(q.createdAt) : (q.date ? parseDateLocal(q.date) : new Date());
+            if (period === 'day') return isSameDay(date, now);
+            if (period === 'week') return isSameWeek(date, now, { weekStartsOn: 0 });
+            if (period === 'month') return isSameMonth(date, now);
+            if (period === 'year') return isSameYear(date, now);
+            if (period === 'semester') {
+                const sixMonthsAgo = subMonths(now, 6);
+                return isWithinInterval(date, { start: sixMonthsAgo, end: now });
+            }
+            return true;
+        });
+
+        const totalQuotes = filteredQuotes.length;
         
-        const overdue = quotes.filter(q => {
+        const approved = filteredQuotes.filter(q => q.status === 'approved' || kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus === 'approved');
+        const rejected = filteredQuotes.filter(q => q.status === 'rejected' || kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus === 'rejected');
+        
+        const overdue = filteredQuotes.filter(q => {
             const st = kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus || q.status;
             return st === 'expired' || (st !== 'approved' && st !== 'rejected' && q.validUntil && new Date(q.validUntil) < now);
         });
 
-        const open = quotes.filter(q => {
+        const open = filteredQuotes.filter(q => {
             const st = kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus || q.status;
             return ['draft', 'sent'].includes(st) && !(q.validUntil && new Date(q.validUntil) < now);
         });
@@ -244,9 +261,9 @@ export const CommercialOverview: React.FC = () => {
             listLost: rejected,
             listOverdue: overdue,
             listOpen: open,
-            listTotal: quotes
+            listTotal: filteredQuotes
         };
-    }, [quotes, kanbanStages]);
+    }, [quotes, kanbanStages, period]);
 
     // --- CHARTS DATA ---
     const STATUS_COLORS: Record<string, string> = {
@@ -345,6 +362,23 @@ export const CommercialOverview: React.FC = () => {
 
         return (
             <div className="flex-1 flex flex-col gap-5 px-4 pt-3 pb-6 overflow-y-auto custom-scrollbar">
+
+                {/* === Header App === */}
+                <div className="flex justify-end shrink-0 -mb-2">
+                    <FilterSelect
+                        value={period}
+                        onChange={(v) => setPeriod(v as any)}
+                        options={[
+                            { value: 'day', label: 'Diário' },
+                            { value: 'week', label: 'Semanal' },
+                            { value: 'month', label: 'Mensal' },
+                            { value: 'semester', label: 'Semestral' },
+                            { value: 'year', label: 'Anual' }
+                        ]}
+                        className="w-[140px]"
+                        disableSort
+                    />
+                </div>
 
                 {/* === CAMADA 1: Ações Rápidas === */}
                 <section>
@@ -492,6 +526,19 @@ export const CommercialOverview: React.FC = () => {
                     <p className="text-muted-foreground text-[10px]">Visão geral de performance.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <FilterSelect
+                        value={period}
+                        onChange={(v) => setPeriod(v as any)}
+                        options={[
+                            { value: 'day', label: 'Diário' },
+                            { value: 'week', label: 'Semanal' },
+                            { value: 'month', label: 'Mensal' },
+                            { value: 'semester', label: 'Semestral' },
+                            { value: 'year', label: 'Anual' }
+                        ]}
+                        className="min-w-[140px]"
+                        disableSort
+                    />
                     <Button variant="secondary" className="gap-1.5 h-7 text-[10px]" onClick={() => setIsReportModalOpen(true)}>
                         <FileText size={14} className="text-primary" /> Relatórios
                     </Button>

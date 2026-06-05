@@ -33,7 +33,11 @@ import {
     endOfMonth,
     isToday,
     isBefore,
-    startOfDay
+    startOfDay,
+    startOfYear,
+    endOfYear,
+    subMonths,
+    isSameDay
 } from 'date-fns';
 import {
     BarChart,
@@ -73,7 +77,7 @@ export const RoutinesOverview: React.FC = () => {
     const [selectedEventDetail, setSelectedEventDetail] = useState<CalendarEvent | null>(null);
 
     // Filter State
-    const [period, setPeriod] = useState<'all' | 'today' | 'week' | 'month'>('month');
+    const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'semester' | 'year'>('month');
     const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
     // Modal State
@@ -151,12 +155,16 @@ export const RoutinesOverview: React.FC = () => {
         // 3. Apply Time Period Filter (For Dashboard Display Only)
         let visibleTasks = scopedTasks;
         const now = new Date();
-        if (period === 'today') {
-            visibleTasks = scopedTasks.filter(t => isToday(parseISO(t.dueDate)));
+        if (period === 'day') {
+            visibleTasks = scopedTasks.filter(t => isSameDay(parseISO(t.dueDate), now));
         } else if (period === 'week') {
-            visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfWeek(now), end: endOfWeek(now) }));
+            visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfWeek(now, { weekStartsOn: 0 }), end: endOfWeek(now, { weekStartsOn: 0 }) }));
         } else if (period === 'month') {
             visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfMonth(now), end: endOfMonth(now) }));
+        } else if (period === 'semester') {
+            visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: subMonths(now, 6), end: now }));
+        } else if (period === 'year') {
+            visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfYear(now), end: endOfYear(now) }));
         }
 
         return { scopedTasks, visibleTasks, visibleProjects, visibleEvents };
@@ -225,6 +233,23 @@ export const RoutinesOverview: React.FC = () => {
         return (
             <div className="flex-1 flex flex-col gap-5 px-4 pt-3 pb-6 overflow-y-auto custom-scrollbar">
                 
+                {/* === Header App === */}
+                <div className="flex justify-end shrink-0 -mb-2">
+                    <FilterSelect
+                        value={period}
+                        onChange={(v) => setPeriod(v as any)}
+                        options={[
+                            { value: 'day', label: 'Diário' },
+                            { value: 'week', label: 'Semanal' },
+                            { value: 'month', label: 'Mensal' },
+                            { value: 'semester', label: 'Semestral' },
+                            { value: 'year', label: 'Anual' }
+                        ]}
+                        className="w-[140px]"
+                        disableSort
+                    />
+                </div>
+
                 {/* === CAMADA 1: Ações Rápidas === */}
                 <section>
                     <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Ações rápidas</h2>
@@ -437,7 +462,20 @@ export const RoutinesOverview: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-center">
+                    <FilterSelect
+                        value={period}
+                        onChange={(v) => setPeriod(v as any)}
+                        options={[
+                            { value: 'day', label: 'Diário' },
+                            { value: 'week', label: 'Semanal' },
+                            { value: 'month', label: 'Mensal' },
+                            { value: 'semester', label: 'Semestral' },
+                            { value: 'year', label: 'Anual' }
+                        ]}
+                        className="min-w-[140px]"
+                        disableSort
+                    />
                     {/* Report Button */}
                     <Button
                         variant="ghost"

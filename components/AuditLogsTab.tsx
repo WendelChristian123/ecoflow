@@ -6,8 +6,10 @@ import { FilterSelect } from './FilterSelect';
 import { Search, Filter, ShieldAlert, Clock, User as UserIcon, Calendar, X, ExternalLink, ChevronRight, History, FileText } from 'lucide-react';
 import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
 
 export const AuditLogsTab: React.FC = () => {
+    const { isApp } = useAppEnvironment();
     const navigate = useNavigate();
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -19,6 +21,7 @@ export const AuditLogsTab: React.FC = () => {
     const [dateTo, setDateTo] = useState('');
     const [selectedUser, setSelectedUser] = useState('ALL');
     const [selectedModule, setSelectedModule] = useState('ALL');
+    const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
     // Audit Detail Modal State
     const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
@@ -183,8 +186,19 @@ export const AuditLogsTab: React.FC = () => {
                     </p>
                 </div>
 
+                {/* Mobile Filter Toggle */}
+                {isApp && (
+                    <button 
+                        onClick={() => setShowFiltersMobile(!showFiltersMobile)}
+                        className="w-full bg-secondary/50 border border-border p-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                    >
+                        <Filter size={16} /> {showFiltersMobile ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+                    </button>
+                )}
+
                 {/* Filters Bar */}
-                <div className="bg-secondary/30 dark:bg-slate-800/50 p-4 rounded-xl border border-border dark:border-slate-700/50 flex flex-col lg:flex-row gap-4 items-center justify-between">
+                {(!isApp || showFiltersMobile) && (
+                    <div className="bg-secondary/30 dark:bg-slate-800/50 p-4 rounded-xl border border-border dark:border-slate-700/50 flex flex-col lg:flex-row gap-4 items-center justify-between">
 
                     {/* Search */}
                     <div className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 flex items-center gap-2 focus-within:ring-1 focus-within:ring-indigo-500 w-full lg:w-64">
@@ -288,9 +302,11 @@ export const AuditLogsTab: React.FC = () => {
                             </button>
                         )}
                     </div>
-                </div>
+                        </div>
+                )}
             </div>
 
+            {!isApp ? (
             <div className="bg-secondary/30 dark:bg-slate-800/50 rounded-xl border border-border dark:border-slate-700/50 overflow-hidden shadow-lg">
                 <div className="overflow-x-auto min-h-[400px]">
                     <table className="w-full text-left text-sm text-muted-foreground dark:text-slate-400">
@@ -385,6 +401,51 @@ export const AuditLogsTab: React.FC = () => {
                     )}
                 </div>
             </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-4">
+                    {filteredLogs.map(log => (
+                        <div 
+                            key={log.id} 
+                            onClick={() => {
+                                if (log.recordId) {
+                                    setSelectedRecordId(log.recordId);
+                                    setSelectedRecordModule(log.tableName);
+                                }
+                            }}
+                            className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3 cursor-pointer hover:border-indigo-500/50 transition-colors"
+                        >
+                            <div className="flex items-center justify-between">
+                                <Badge variant={getActionColor(log.action)} className="text-[10px] px-2 py-0.5">
+                                    {getActionLabel(log.action)}
+                                </Badge>
+                                <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                    {getModule(log.tableName)}
+                                </span>
+                            </div>
+                            
+                            <div className="text-sm text-foreground leading-relaxed break-words">
+                                {log.description || '-'}
+                            </div>
+
+                            <div className="flex items-center justify-between mt-2 pt-3 border-t border-border">
+                                <div className="flex items-center gap-2">
+                                    <Avatar src={log.user?.avatarUrl} name={log.user?.name || '?'} size="sm" />
+                                    <div className="text-xs font-bold">{log.user?.name || 'Sistema'}</div>
+                                </div>
+                                <div className="text-[10px] text-muted-foreground font-mono">
+                                    {format(new Date(log.createdAt), 'dd/MM HH:mm')}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {filteredLogs.length === 0 && (
+                        <div className="text-center py-10 text-muted-foreground italic flex flex-col items-center gap-3">
+                            <Search size={24} className="opacity-50" />
+                            <p className="text-sm">Nenhum registro encontrado.</p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="text-center text-[10px] text-muted-foreground dark:text-slate-600">
                 Exibindo últimos {logs.length} registros. Para auditoria profunda, exporte os dados.

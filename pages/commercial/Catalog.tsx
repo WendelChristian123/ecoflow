@@ -6,8 +6,10 @@ import { Loader, Card, Button, Input, Badge } from '../../components/Shared';
 import { CatalogModal } from '../../components/CommercialModals';
 import { CatalogReportModal } from '../../components/Reports/CatalogReportModal';
 import { ConfirmationModal } from '../../components/Modals';
-import { ShoppingBag, Search, Plus, Trash2, Edit2, Tag, FileText } from 'lucide-react';
+import { ShoppingBag, Search, Plus, Trash2, Edit2, Tag, FileText, ChevronLeft } from 'lucide-react';
 import { translateCatalogType } from '../../utils/i18n';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
+import { useNavigate } from 'react-router-dom';
 
 export const CatalogPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -17,6 +19,8 @@ export const CatalogPage: React.FC = () => {
     const [editingItem, setEditingItem] = useState<CatalogItem | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const { isApp } = useAppEnvironment();
+    const navigate = useNavigate();
 
     useEffect(() => { loadData(); }, []);
 
@@ -44,7 +48,12 @@ export const CatalogPage: React.FC = () => {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2 bg-background text-foreground">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <h1 className="text-xl font-bold text-foreground flex items-center gap-2"><ShoppingBag className="text-emerald-500" size={20} /> Produtos & Serviços</h1>
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    {isApp && (
+                        <button onClick={() => navigate(-1)} className="p-1.5 mr-1 rounded-xl bg-card border border-border text-foreground active:scale-[0.95] transition-all"><ChevronLeft size={20} /></button>
+                    )}
+                    <ShoppingBag className="text-emerald-500" size={20} /> Produtos & Serviços
+                </h1>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     <Button variant="ghost" className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => setIsReportOpen(true)}><FileText size={14} /> Relatórios</Button>
                     <Button className="gap-1.5 h-7 px-3 text-[10px] flex-1 md:flex-none" onClick={() => { setEditingItem(undefined); setIsModalOpen(true); }}><Plus size={14} /> Novo Item</Button>

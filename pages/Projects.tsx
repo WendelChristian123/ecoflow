@@ -8,7 +8,8 @@ import { ptBR } from 'date-fns/locale';
 import { TaskModal, ProjectModal, TaskDetailModal } from '../components/Modals';
 import { api } from '../services/api';
 import { Project, User, Team, Task, Status } from '../types';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
 
 
 import { useCompany } from '../context/CompanyContext';
@@ -145,6 +146,8 @@ export const ProjectsPage: React.FC = () => {
   const { currentCompany } = useCompany();
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isApp } = useAppEnvironment();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -566,7 +569,12 @@ export const ProjectsPage: React.FC = () => {
         {/* Header with Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 shrink-0">
           <div>
-            <h1 className="text-lg font-bold text-foreground tracking-tight">Projetos</h1>
+            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+                {isApp && (
+                    <button onClick={() => navigate(-1)} className="p-1.5 rounded-xl bg-card border border-border text-foreground active:scale-[0.95] transition-all"><ChevronLeft size={20} /></button>
+                )}
+                Projetos
+            </h1>
             <p className="text-muted-foreground mt-0.5 text-[10px]">Gerencie seus projetos e entregas</p>
           </div>
 

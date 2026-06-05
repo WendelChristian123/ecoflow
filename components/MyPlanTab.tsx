@@ -90,7 +90,7 @@ export const MyPlanTab: React.FC = () => {
                 <div className="text-muted-foreground space-y-4">
                     <Crown size={40} className="mx-auto opacity-40" />
                     <p>Nenhuma assinatura encontrada.</p>
-                    <Button onClick={() => navigate('/checkout')}>
+                    <Button onClick={() => navigate('/checkout')} className="w-full sm:w-auto">
                         Escolher um Plano
                     </Button>
                 </div>
@@ -184,7 +184,7 @@ export const MyPlanTab: React.FC = () => {
             {/* Actions */}
             {isTrialing && (
                 <Card className="p-6 border-emerald-500/20 bg-emerald-500/5" variant="solid">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h3 className="text-foreground font-semibold">Pronto para assinar?</h3>
                             <p className="text-sm text-muted-foreground mt-1">
@@ -193,7 +193,7 @@ export const MyPlanTab: React.FC = () => {
                         </div>
                         <Button
                             onClick={() => navigate(`/checkout?plan=${currentCompany?.planId}&cycle=${subscription.cycle}`)}
-                            className="gap-2"
+                            className="gap-2 w-full sm:w-auto"
                         >
                             Assinar Agora <ArrowRight size={16} />
                         </Button>

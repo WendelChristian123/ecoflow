@@ -566,7 +566,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
                 {/* Header */}
-                <div className="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-900 rounded-t-2xl">
+                <div className="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-900 rounded-t-2xl shrink-0">
                     <div>
                         <h2 className="text-3xl font-bold text-white flex items-center gap-3">
                             <FileText className="text-emerald-500" size={32} /> Relatório Financeiro
@@ -578,8 +578,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                     </Button>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-col border-b border-slate-800 bg-slate-950 shadow-inner">
+                <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                    {/* Filters */}
+                    <div className="flex flex-col border-b border-slate-800 bg-slate-950 shadow-inner shrink-0">
                     <div className="p-5">
                         <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
                             <div className="flex flex-col gap-2">
@@ -981,7 +982,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-auto p-6 space-y-8">
+                <div className="flex-1 p-6 space-y-8">
 
                     {/* TABLE */}
                     <div>
@@ -1097,9 +1098,10 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                         </div>
                     </div>
                 </div>
+                </div>
 
                 {/* Footer Buttons */}
-                <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-end gap-3 rounded-b-2xl">
+                <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-end gap-3 rounded-b-2xl shrink-0">
                     <Button variant="ghost" onClick={onClose}>Fechar</Button>
                     <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2" onClick={handlePrint}>
                         <Printer size={18} /> Imprimir / PDF

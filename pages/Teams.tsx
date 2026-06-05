@@ -10,6 +10,8 @@ import { api } from '../services/api';
 import { Team, User, Task, Project, Status } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
+import { useNavigate } from 'react-router-dom';
 
 import { KanbanProvider, useKanban } from '../components/Kanban/KanbanContext';
 import { KanbanBoard as GenericKanbanBoard } from '../components/Kanban/KanbanBoard';
@@ -145,6 +147,8 @@ const TeamTasksKanban: React.FC<{
 export const TeamsPage: React.FC = () => {
   const { user } = useAuth();
   const { currentCompany } = useCompany();
+  const { isApp } = useAppEnvironment();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -516,7 +520,12 @@ export const TeamsPage: React.FC = () => {
         {/* Header with Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 shrink-0">
           <div>
-            <h1 className="text-lg font-bold text-foreground tracking-tight">Equipes</h1>
+            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+                {isApp && (
+                    <button onClick={() => navigate(-1)} className="p-1.5 rounded-xl bg-card border border-border text-foreground active:scale-[0.95] transition-all"><ChevronLeft size={20} /></button>
+                )}
+                Equipes
+            </h1>
             <p className="text-muted-foreground text-[10px]">Gerencie seus times e membros.</p>
           </div>
 

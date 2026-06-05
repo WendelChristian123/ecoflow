@@ -9,7 +9,7 @@ import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
 import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText, Printer, LayoutList, ArrowUpRight, ArrowDownRight, ArrowRightLeft, HandCoins, Settings, X, MoreHorizontal } from 'lucide-react';
 import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
-import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth, isSameDay, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { useCompany } from '../../context/CompanyContext';
@@ -38,7 +38,7 @@ export const FinancialOverview: React.FC = () => {
 
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
     const [chartCustomRange, setChartCustomRange] = useState({ start: '', end: '' });
-    const [comparisonMode, setComparisonMode] = useState<'month' | 'semester' | 'year'>('month');
+
 
     const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, data: any[] }>({
         isOpen: false, title: '', data: []
@@ -108,15 +108,18 @@ export const FinancialOverview: React.FC = () => {
 
         const applyDynamicFilters = (data: typeof processedData) => {
             let res = data;
-            if (filters.period === 'today') {
-                res = res.filter(t => t.date === now.toISOString().split('T')[0]);
-            } else if (filters.period === 'last7') {
-                const last7 = addDays(now, -7);
-                res = res.filter(t => isWithinInterval(parseDateLocal(t.date), { start: last7, end: now }));
+            if (filters.period === 'day' || filters.period === 'today') {
+                res = res.filter(t => isSameDay(parseDateLocal(t.date), now));
+            } else if (filters.period === 'week' || filters.period === 'last7') {
+                res = res.filter(t => isWithinInterval(parseDateLocal(t.date), { start: startOfWeek(now, { weekStartsOn: 0 }), end: endOfWeek(now, { weekStartsOn: 0 }) }));
             } else if (filters.period === 'month') {
                 const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                 const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                 res = res.filter(t => isWithinInterval(parseDateLocal(t.date), { start: firstDay, end: lastDay }));
+            } else if (filters.period === 'semester') {
+                res = res.filter(t => isWithinInterval(parseDateLocal(t.date), { start: subMonths(now, 6), end: now }));
+            } else if (filters.period === 'year') {
+                res = res.filter(t => isWithinInterval(parseDateLocal(t.date), { start: startOfYear(now), end: endOfYear(now) }));
             } else if (filters.period === 'custom' && customDateRange.start && customDateRange.end) {
                 res = res.filter(t => isWithinInterval(parseDateLocal(t.date), {
                     start: parseDateLocal(customDateRange.start),
@@ -229,7 +232,7 @@ export const FinancialOverview: React.FC = () => {
         const data = [];
         const mode = financeSettings.credit_card_expense_mode || 'competence';
 
-        if (comparisonMode === 'month') {
+        if (filters.period === 'day' || filters.period === 'week' || filters.period === 'month') {
             const thisMonthStart = startOfMonth(now);
             const thisMonthEnd = endOfMonth(now);
             const lastMonthStart = subMonths(now, 1);
@@ -257,7 +260,7 @@ export const FinancialOverview: React.FC = () => {
             data.push({ name: 'Mês Anterior', Receitas: calc(lastMonthStartMonth, lastMonthEnd, 'income'), Despesas: calc(lastMonthStartMonth, lastMonthEnd, 'expense') });
             data.push({ name: 'Mês Atual', Receitas: calc(thisMonthStart, thisMonthEnd, 'income'), Despesas: calc(thisMonthStart, thisMonthEnd, 'expense') });
 
-        } else if (comparisonMode === 'semester') {
+        } else if (filters.period === 'semester') {
             for (let i = 5; i >= 0; i--) {
                 const date = subMonths(now, i);
                 const start = startOfMonth(date);
@@ -279,7 +282,7 @@ export const FinancialOverview: React.FC = () => {
                 const label = `${date.getMonth() + 1}/${date.getFullYear().toString().substr(2)}`;
                 data.push({ name: label, Receitas: calc('income'), Despesas: calc('expense') });
             }
-        } else if (comparisonMode === 'year') {
+        } else if (filters.period === 'year') {
             for (let i = 11; i >= 0; i--) {
                 const date = subMonths(now, i);
                 const start = startOfMonth(date);
@@ -301,7 +304,7 @@ export const FinancialOverview: React.FC = () => {
                 const label = `${date.getMonth() + 1}/${date.getFullYear().toString().substr(2)}`;
                 data.push({ name: label, Receitas: calc('income'), Despesas: calc('expense') });
             }
-        } else if (comparisonMode === 'custom' && chartCustomRange.start && chartCustomRange.end) {
+        } else if (filters.period === 'custom' && chartCustomRange.start && chartCustomRange.end) {
             const start = startOfMonth(parseDateLocal(chartCustomRange.start));
             const end = endOfMonth(parseDateLocal(chartCustomRange.end));
             // Iterate months from start to end
@@ -342,8 +345,26 @@ export const FinancialOverview: React.FC = () => {
         return (
             <div className="flex-1 flex flex-col gap-5 px-4 pt-3 pb-24 overflow-y-auto custom-scrollbar relative">
                 
+                {/* === Header App === */}
+                <div className="flex justify-end shrink-0 -mb-2">
+                    <FilterSelect
+                        value={filters.period}
+                        onChange={(v) => setFilters({ ...filters, period: v as any })}
+                        options={[
+                            { value: 'day', label: 'Diário' },
+                            { value: 'week', label: 'Semanal' },
+                            { value: 'month', label: 'Mensal' },
+                            { value: 'semester', label: 'Semestral' },
+                            { value: 'year', label: 'Anual' }
+                        ]}
+                        className="w-[140px]"
+                        disableSort
+                    />
+                </div>
+
                 {/* CAMADA 1: Ações Principais */}
                 <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Ações Rápidas</h2>
                     <div className="grid grid-cols-2 gap-2.5">
                         <button
                             onClick={() => setIsQuickAddOpen(true)}
@@ -523,6 +544,9 @@ export const FinancialOverview: React.FC = () => {
                     transactions={filteredData}
                     accounts={accounts}
                     categories={categories}
+                    cards={cards}
+                    contacts={contacts}
+                    financeSettings={financeSettings}
                 />
 
             </div>
@@ -540,7 +564,20 @@ export const FinancialOverview: React.FC = () => {
                     </h1>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <FilterSelect
+                        value={filters.period}
+                        onChange={(v) => setFilters({ ...filters, period: v as any })}
+                        options={[
+                            { value: 'day', label: 'Diário' },
+                            { value: 'week', label: 'Semanal' },
+                            { value: 'month', label: 'Mensal' },
+                            { value: 'semester', label: 'Semestral' },
+                            { value: 'year', label: 'Anual' }
+                        ]}
+                        className="min-w-[140px]"
+                        disableSort
+                    />
                     {/* Relatórios: ícone apenas no mobile */}
                     <Button
                         variant="ghost"
@@ -818,18 +855,7 @@ export const FinancialOverview: React.FC = () => {
                         <BarChart2 size={20} className="text-primary" /> Evolução Financeira
                     </h3>
                     <div className="flex items-center gap-2">
-                        <FilterSelect
-                            value={comparisonMode}
-                            onChange={(val) => setComparisonMode(val as any)}
-                            options={[
-                                { value: 'month', label: 'Mês Atual vs Anterior' },
-                                { value: 'semester', label: 'Últimos 6 Meses' },
-                                { value: 'year', label: 'Anual' },
-                                { value: 'custom', label: 'Personalizado' }
-                            ]}
-                            className="w-[200px]"
-                        />
-                        {comparisonMode === 'custom' && (
+                        {filters.period === 'custom' && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 ml-2">
                                 <input
                                     type="date"
@@ -855,8 +881,7 @@ export const FinancialOverview: React.FC = () => {
                             const getData = (type: 'Receitas' | 'Despesas') => {
                                 let current = 0;
                                 let previous = 0;
-
-                                if (comparisonMode === 'month') {
+                                if (filters.period === 'day' || filters.period === 'week' || filters.period === 'month') {
                                     // Main: Current Month, Previous: Last Month
                                     current = currentComparisonData.find(d => d.name === 'Mês Atual')?.[type] || 0;
                                     previous = currentComparisonData.find(d => d.name === 'Mês Anterior')?.[type] || 0;
@@ -865,12 +890,12 @@ export const FinancialOverview: React.FC = () => {
                                     current = currentComparisonData.reduce((acc, d) => acc + d[type], 0);
 
                                     // Previous: Calculated based on period ranges
-                                    if (comparisonMode !== 'custom') {
+                                    if (filters.period !== 'custom') {
                                         const now = new Date();
                                         const mode = financeSettings.credit_card_expense_mode || 'competence';
                                         let rangeStart: Date, rangeEnd: Date;
 
-                                        if (comparisonMode === 'semester') {
+                                        if (filters.period === 'semester') {
                                             rangeStart = startOfMonth(subMonths(now, 11));
                                             rangeEnd = endOfMonth(subMonths(now, 6));
                                         } else { // year
@@ -904,9 +929,9 @@ export const FinancialOverview: React.FC = () => {
                             return (
                                 <>
                                     <div className="p-5 rounded-xl border border-dashed border-success/20 bg-success/5">
-                                        <span className="text-xs text-success/70 font-bold uppercase tracking-widest">Receitas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
+                                        <span className="text-xs text-success/70 font-bold uppercase tracking-widest">Receitas {(filters.period === 'day' || filters.period === 'week' || filters.period === 'month') ? '(Mês Atual)' : '(Totais)'}</span>
                                         <div className="mt-2 text-3xl font-bold text-success tracking-tighter">{fmt(revenue.current)}</div>
-                                        {comparisonMode !== 'custom' && (
+                                        {filters.period !== 'custom' && (
                                             <div className="mt-1 flex items-center gap-1.5 opacity-60">
                                                 <span className="text-[10px] font-medium uppercase tracking-wide text-success">
                                                     Anterior: {fmt(revenue.previous)}
@@ -915,9 +940,9 @@ export const FinancialOverview: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="p-5 rounded-xl border border-dashed border-danger/20 bg-danger/5">
-                                        <span className="text-xs text-danger/70 font-bold uppercase tracking-widest">Despesas {comparisonMode === 'month' ? '(Mês Atual)' : '(Totais)'}</span>
+                                        <span className="text-xs text-danger/70 font-bold uppercase tracking-widest">Despesas {(filters.period === 'day' || filters.period === 'week' || filters.period === 'month') ? '(Mês Atual)' : '(Totais)'}</span>
                                         <div className="mt-2 text-3xl font-bold text-danger tracking-tighter">{fmt(expense.current)}</div>
-                                        {comparisonMode !== 'custom' && (
+                                        {filters.period !== 'custom' && (
                                             <div className="mt-1 flex items-center gap-1.5 opacity-60">
                                                 <span className="text-[10px] font-medium uppercase tracking-wide text-danger">
                                                     Anterior: {fmt(expense.previous)}

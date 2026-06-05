@@ -6,15 +6,17 @@ import { Loader, Button, Avatar, Badge, Card, Input, Modal } from '../components
 import { FilterSelect } from '../components/FilterSelect';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
+import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil, Calendar, FileText, Share2 } from 'lucide-react';
 import { CreateUserModal, EditUserModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
 import { SharedAccessPanel } from '../components/Permissions/SharedAccessPanel';
 import { MyPlanTab } from '../components/MyPlanTab';
 import { checkUserLimit, UserLimitStatus } from '../services/limits';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
 
 export const SettingsPage: React.FC = () => {
+    const { isApp } = useAppEnvironment();
     const { user: authUser } = useAuth();
     const { isAdmin, canDelete } = useRBAC();
 
@@ -198,56 +200,116 @@ export const SettingsPage: React.FC = () => {
                     <h1 className="text-base font-bold text-foreground">Configurações & Acesso</h1>
                     <p className="text-[11px] text-muted-foreground mt-0.5">Gerencie equipe, acessos e regras do sistema</p>
                 </div>
-            </div>
+            {isApp ? (
+                <div className="mb-6 animate-in fade-in slide-in-from-top-2">
+                    <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-3 ml-1">Acessos</h2>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                        <button
+                            onClick={() => setActiveTab('delegation')}
+                            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${activeTab === 'delegation' ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'}`}
+                        >
+                            <Share2 size={20} />
+                            <span className="text-[10px] font-bold text-center leading-tight">Compartilhar</span>
+                        </button>
+                        
+                        {isAdmin && (
+                            <button
+                                onClick={() => setActiveTab('users')}
+                                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${activeTab === 'users' ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'}`}
+                            >
+                                <UsersIcon size={20} />
+                                <span className="text-[10px] font-bold text-center leading-tight">Usuários</span>
+                            </button>
+                        )}
+                        
+                        {isAdmin && (
+                            <button
+                                onClick={() => setActiveTab('finance')}
+                                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${activeTab === 'finance' ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'}`}
+                            >
+                                <CreditCardIcon size={20} />
+                                <span className="text-[10px] font-bold text-center leading-tight">Financeiro</span>
+                            </button>
+                        )}
 
-            {/* TABS HEADER ... (keeping same) */}
-            <div className="flex items-center gap-6 border-b border-border pb-1 overflow-x-auto custom-scrollbar">
-                <button
-                    onClick={() => setActiveTab('delegation')}
-                    className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'delegation' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
-                >
-                    Acessos Compartilhados
-                </button>
-                {isAdmin && (
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'users' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
-                    >
-                        Usuários do Sistema
-                    </button>
-                )}
-                {isAdmin && (
-                    <button
-                        onClick={() => setActiveTab('finance')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'finance' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
-                    >
-                        Financeiro
-                    </button>
-                )}
-                <button
-                    onClick={() => setActiveTab('calendar')}
-                    className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'calendar' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
-                >
-                    Calendário
-                </button>
+                        <button
+                            onClick={() => setActiveTab('calendar')}
+                            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${activeTab === 'calendar' ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'}`}
+                        >
+                            <Calendar size={20} />
+                            <span className="text-[10px] font-bold text-center leading-tight">Calendário</span>
+                        </button>
 
-                {isAdmin && (
+                        {isAdmin && (
+                            <button
+                                onClick={() => setActiveTab('audit')}
+                                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${activeTab === 'audit' ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'}`}
+                            >
+                                <ShieldCheck size={20} />
+                                <span className="text-[10px] font-bold text-center leading-tight">Auditoria</span>
+                            </button>
+                        )}
+
+                        {isAdmin && (
+                            <button
+                                onClick={() => setActiveTab('plan')}
+                                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${activeTab === 'plan' ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'}`}
+                            >
+                                <FileText size={20} />
+                                <span className="text-[10px] font-bold text-center leading-tight">Meu Plano</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="flex items-center gap-6 border-b border-border pb-1 overflow-x-auto custom-scrollbar">
                     <button
-                        onClick={() => setActiveTab('audit')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'audit' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        onClick={() => setActiveTab('delegation')}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'delegation' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                     >
-                        Auditoria
+                        Acessos Compartilhados
                     </button>
-                )}
-                {isAdmin && (
+                    {isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'users' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        >
+                            Usuários do Sistema
+                        </button>
+                    )}
+                    {isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('finance')}
+                            className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'finance' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        >
+                            Financeiro
+                        </button>
+                    )}
                     <button
-                        onClick={() => setActiveTab('plan')}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'plan' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        onClick={() => setActiveTab('calendar')}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'calendar' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                     >
-                        Meu Plano
+                        Calendário
                     </button>
-                )}
-            </div>
+
+                    {isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('audit')}
+                            className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'audit' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        >
+                            Auditoria
+                        </button>
+                    )}
+                    {isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('plan')}
+                            className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'plan' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                        >
+                            Meu Plano
+                        </button>
+                    )}
+                </div>
+            )}            </div>
 
             {/* TAB: DELEGATION (SHARED ACCESS) */}
             {activeTab === 'delegation' && (
@@ -260,7 +322,7 @@ export const SettingsPage: React.FC = () => {
             {/* TAB: USERS */}
             {activeTab === 'users' && isAdmin && (
                 <Card className="p-4" variant="solid">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
                         <div>
                             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                 <ShieldCheck size={20} className="text-emerald-500" />
@@ -269,18 +331,18 @@ export const SettingsPage: React.FC = () => {
                             <p className="text-xs text-muted-foreground mt-1">Visão geral de todos os usuários do sistema.</p>
                         </div>
                         {isAdmin && (
-                            <div className="flex gap-4">
-                                <div className="relative w-48 hidden sm:block">
+                            <div className="flex gap-4 w-full sm:w-auto">
+                                <div className="relative w-full sm:w-48">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                                     <Input
                                         placeholder="Buscar..."
                                         value={search}
                                         onChange={e => setSearch(e.target.value)}
-                                        className="pl-9 py-1.5 text-sm"
+                                        className="pl-9 py-1.5 text-sm w-full"
                                     />
                                 </div>
-                                <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
-                                    <Plus size={18} /> Criar
+                                <Button className="gap-2 shrink-0" onClick={() => setIsCreateOpen(true)}>
+                                    <Plus size={18} /> <span className={isApp ? 'hidden' : ''}>Criar Usuário</span><span className={!isApp ? 'hidden' : ''}>Novo</span>
                                 </Button>
                             </div>
                         )}
@@ -313,66 +375,107 @@ export const SettingsPage: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-muted-foreground">
-                            <thead className="bg-secondary/50 text-foreground uppercase text-xs font-semibold">
-                                <tr>
-                                    <th className="px-4 py-3">Usuário</th>
-                                    <th className="px-4 py-3">Contato</th>
-                                    <th className="px-4 py-3">Função</th>
-                                    <th className="px-4 py-3 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/50">
-                                {filteredUsers.map(user => (
-                                    <tr key={user.id} className="hover:bg-secondary/20 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-3">
-                                                <Avatar src={user.avatarUrl} name={user.name} />
-                                                <div>
-                                                    <div className="font-medium text-foreground">{user.name}</div>
-                                                    <div className="text-xs text-muted-foreground">ID: {user.id.substring(0, 8)}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div>{user.email}</div>
-                                            <div className="text-xs text-muted-foreground">{user.phone}</div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Badge variant={user.role === 'admin' ? 'success' : 'neutral'}>
-                                                {user.role === 'admin' ? 'Administrador' : 'Usuário'}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            {isAdmin && user.role !== 'admin' && (
-                                                <div className="flex justify-end items-center gap-2">
-                                                    <button
-                                                        onClick={() => { setEditingPermissionsUser(user); }}
-                                                        className="p-1.5 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
-                                                        title="Editar Permissões"
-                                                    >
-                                                        <Shield size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteUser(user.id)}
-                                                        className="p-1.5 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
-                                                        title="Excluir Usuário"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {(!isAdmin || user.role === 'admin') && (
-                                                <span className="text-xs text-muted-foreground italic">Sem ações</span>
-                                            )}
-                                        </td>
+                    {!isApp ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-muted-foreground">
+                                <thead className="bg-secondary/50 text-foreground uppercase text-xs font-semibold">
+                                    <tr>
+                                        <th className="px-4 py-3">Usuário</th>
+                                        <th className="px-4 py-3">Contato</th>
+                                        <th className="px-4 py-3">Função</th>
+                                        <th className="px-4 py-3 text-right">Ações</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {filteredUsers.length === 0 && <p className="text-center py-6 text-muted-foreground italic">Nenhum usuário encontrado.</p>}
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-border/50">
+                                    {filteredUsers.map(user => (
+                                        <tr key={user.id} className="hover:bg-secondary/20 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar src={user.avatarUrl} name={user.name} />
+                                                    <div>
+                                                        <div className="font-medium text-foreground">{user.name}</div>
+                                                        <div className="text-xs text-muted-foreground">ID: {user.id.substring(0, 8)}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div>{user.email}</div>
+                                                <div className="text-xs text-muted-foreground">{user.phone}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Badge variant={user.role === 'admin' ? 'success' : 'neutral'}>
+                                                    {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                {isAdmin && user.role !== 'admin' && (
+                                                    <div className="flex justify-end items-center gap-2">
+                                                        <button
+                                                            onClick={() => { setEditingPermissionsUser(user); }}
+                                                            className="p-1.5 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
+                                                            title="Editar Permissões"
+                                                        >
+                                                            <Shield size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user.id)}
+                                                            className="p-1.5 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                                                            title="Excluir Usuário"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {(!isAdmin || user.role === 'admin') && (
+                                                    <span className="text-xs text-muted-foreground italic">Sem ações</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {filteredUsers.length === 0 && <p className="text-center py-6 text-muted-foreground italic">Nenhum usuário encontrado.</p>}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                            {filteredUsers.map(user => (
+                                <div key={user.id} className="p-4 bg-card border border-border rounded-xl shadow-sm flex flex-col gap-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar src={user.avatarUrl} name={user.name} />
+                                            <div>
+                                                <div className="font-bold text-foreground text-sm">{user.name}</div>
+                                                <div className="text-xs text-muted-foreground">{user.email}</div>
+                                            </div>
+                                        </div>
+                                        <Badge variant={user.role === 'admin' ? 'success' : 'neutral'} className="text-[10px]">
+                                            {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2 pt-3 border-t border-border">
+                                        <div className="text-[10px] text-muted-foreground font-mono bg-secondary/50 px-2 py-1 rounded">ID: {user.id.substring(0,8)}</div>
+                                        {isAdmin && user.role !== 'admin' && (
+                                            <div className="flex justify-end items-center gap-3">
+                                                <button
+                                                    onClick={() => setEditingPermissionsUser(user)}
+                                                    className="p-2 text-indigo-500 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                                                >
+                                                    <Shield size={14} /> Permissões
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteUser(user.id)}
+                                                    className="p-2 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                                                >
+                                                    <Trash2 size={14} /> Excluir
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {filteredUsers.length === 0 && <p className="text-center py-6 text-muted-foreground italic text-sm">Nenhum usuário encontrado.</p>}
+                        </div>
+                    )}
                 </Card>
             )}
 
@@ -436,7 +539,7 @@ export const SettingsPage: React.FC = () => {
                             <hr className="border-border mb-4" />
 
                             <div className="flex justify-end">
-                                <Button onClick={handleSaveFinanceSettings} className="px-6">
+                                <Button onClick={handleSaveFinanceSettings} className="px-6 w-full sm:w-auto">
                                     Salvar Alterações
                                 </Button>
                             </div>

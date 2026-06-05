@@ -9,7 +9,7 @@ import { ptBR } from 'date-fns/locale';
 import { TaskModal, TaskDetailModal, ConfirmationModal } from '../components/Modals';
 import { api } from '../services/api';
 import { Task, User, Status, Project, Team } from '../types';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppEnvironment } from '../context/AppEnvironmentContext';
 import { useCompany } from '../context/CompanyContext';
 import { useRBAC } from '../context/RBACContext';
@@ -99,6 +99,7 @@ export const TasksPage: React.FC = () => {
   const { currentCompany } = useCompany();
   const { can, canDelete } = useRBAC();
   const { isApp } = useAppEnvironment();
+  const navigate = useNavigate();
   const [view, setView] = useState<'list' | 'board'>('board');
 
   // Force list view in App mode
@@ -297,6 +298,9 @@ export const TasksPage: React.FC = () => {
       <div className="h-full flex flex-col gap-3">
         {/* Unified Controls Bar */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          {isApp && (
+              <button onClick={() => navigate(-1)} className="p-1.5 rounded-xl bg-card border border-border text-foreground active:scale-[0.95] transition-all"><ChevronLeft size={20} /></button>
+          )}
           {/* 1. Search - Web only */}
           {!isApp && (
             <div className="relative flex-1 min-w-[120px] max-w-[200px]">
