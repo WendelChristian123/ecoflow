@@ -134,7 +134,7 @@ const FeatureTabs: React.FC = () => {
             {/* Tab Content */}
             <div className="grid lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 items-start" key={activeTab}>
                 {/* Left: Description */}
-                <div className="lg:col-span-4 space-y-5 sticky top-24">
+                <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-24">
                     <div className={cn("inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-900/50 backdrop-blur-sm", features[activeTab].color, features[activeTab].borderColor.replace('border-', 'border-opacity-30 border-'))}>
                         {features[activeTab].icon}
                         <span className="font-bold text-xs tracking-wide">{features[activeTab].title}</span>
@@ -354,28 +354,32 @@ export const LandingPage: React.FC = () => {
                     </div>
 
                     <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="grid grid-cols-4 bg-slate-900/80 text-xs font-bold uppercase text-slate-500 p-4 border-b border-slate-800 tracking-wider">
-                            <div className="col-span-1">Categoria</div>
-                            <div className="col-span-1">Mercado</div>
-                            <div className="col-span-1">Preço Médio</div>
-                            <div className="col-span-1 text-emerald-400">Contazze</div>
-                        </div>
-                        {[
-                            { cat: "Financeiro", tech: "Conta Azul / Omie", price: "R$ 129–179", status: "Incluso" },
-                            { cat: "Tarefas", tech: "Notion / ClickUp", price: "R$ 40–60", status: "Incluso" },
-                            { cat: "CRM", tech: "Pipedrive / RD", price: "R$ 79–149", status: "Incluso" },
-                            { cat: "Relatórios", tech: "Planilhas / BI", price: "Complexo", status: "Incluso" },
-                            { cat: "Integração", tech: "Gambiarras", price: "Caro", status: "Nativo" },
-                        ].map((row, i) => (
-                            <div key={i} className="grid grid-cols-4 p-5 items-center border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors text-sm">
-                                <div className="font-bold text-white">{row.cat}</div>
-                                <div className="text-slate-400">{row.tech}</div>
-                                <div className="text-slate-400">{row.price}</div>
-                                <div className="text-emerald-400 font-bold flex items-center gap-2">
-                                    <CheckCircle2 size={16} /> {row.status}
+                        <div className="overflow-x-auto">
+                            <div className="min-w-[600px]">
+                                <div className="grid grid-cols-4 bg-slate-900/80 text-xs font-bold uppercase text-slate-500 p-4 border-b border-slate-800 tracking-wider">
+                                    <div className="col-span-1">Categoria</div>
+                                    <div className="col-span-1">Mercado</div>
+                                    <div className="col-span-1">Preço Médio</div>
+                                    <div className="col-span-1 text-emerald-400">Contazze</div>
                                 </div>
+                                {[
+                                    { cat: "Financeiro", tech: "Conta Azul / Omie", price: "R$ 129–179", status: "Incluso" },
+                                    { cat: "Tarefas", tech: "Notion / ClickUp", price: "R$ 40–60", status: "Incluso" },
+                                    { cat: "CRM", tech: "Pipedrive / RD", price: "R$ 79–149", status: "Incluso" },
+                                    { cat: "Relatórios", tech: "Planilhas / BI", price: "Complexo", status: "Incluso" },
+                                    { cat: "Integração", tech: "Gambiarras", price: "Caro", status: "Nativo" },
+                                ].map((row, i) => (
+                                    <div key={i} className="grid grid-cols-4 p-5 items-center border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors text-sm">
+                                        <div className="font-bold text-white">{row.cat}</div>
+                                        <div className="text-slate-400">{row.tech}</div>
+                                        <div className="text-slate-400">{row.price}</div>
+                                        <div className="text-emerald-400 font-bold flex items-center gap-2">
+                                            <CheckCircle2 size={16} className="shrink-0" /> {row.status}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
             </section>
@@ -520,14 +524,20 @@ export const LandingPage: React.FC = () => {
                                 <tbody className="divide-y divide-slate-800/50">
                                     {[
                                         {
+                                            category: "GERAL",
+                                            items: [
+                                                { name: "Quantidade de usuários", type: "users" }
+                                            ]
+                                        },
+                                        {
                                             category: "FINANCEIRO",
                                             items: [
                                                 { name: "Financeiro (visão geral)", key: "finance_overview", mod: "mod_finance" },
                                                 { name: "Caixa e lançamentos", key: "finance_transactions", mod: "mod_finance" },
                                                 { name: "Contas, bancos e cartões", key: "finance_banking", mod: "mod_finance" },
                                                 { name: "Categorias financeiras", key: "finance_categories", mod: "mod_finance" },
-                                                { name: "Relatórios financeiros", key: "mod_finance", type: "text", falseVal: "-", trueVal: "Essenciais", customCheck: "reports_dre" },
-                                                // logic: if has 'reports_dre' -> 'Avançados', else if 'mod_finance' -> 'Essenciais'
+                                                { name: "Dívidas e empréstimos", key: "mod_finance" },
+                                                { name: "Relatórios financeiros", key: "mod_finance" },
                                             ]
                                         },
                                         {
@@ -538,6 +548,7 @@ export const LandingPage: React.FC = () => {
                                                 { name: "Projetos", key: "tasks_projects", mod: "mod_tasks" },
                                                 { name: "Equipes", key: "tasks_teams", mod: "mod_tasks" },
                                                 { name: "Agenda integrada", key: "tasks_calendar", mod: "mod_tasks" },
+                                                { name: "Relatórios", key: "mod_tasks" },
                                             ]
                                         },
                                         {
@@ -548,15 +559,7 @@ export const LandingPage: React.FC = () => {
                                                 { name: "Orçamentos", key: "crm_budgets", mod: "mod_commercial" },
                                                 { name: "Contratos", key: "crm_contracts", mod: "mod_commercial" },
                                                 { name: "Catálogo de produtos", key: "crm_catalogs", mod: "mod_commercial" },
-                                            ]
-                                        },
-                                        {
-                                            category: "GESTÃO & ESCALA",
-                                            items: [
-                                                { name: "Relatórios avançados", key: "mod_reports" },
-                                                { name: "Usuários inclusos", type: "users" },
-                                                { name: "Permissões por usuário", key: "tasks_teams", mod: "mod_tasks" },
-                                                { name: "Suporte", type: "support" },
+                                                { name: "Relatórios", key: "mod_commercial" },
                                             ]
                                         }
                                     ].map((section, sIdx) => (
@@ -578,12 +581,6 @@ export const LandingPage: React.FC = () => {
                                                             content = <span className="text-xs font-medium bg-slate-800/50 px-2 py-1 rounded text-slate-400">{getFeatureValue(plan, 'users')}</span>;
                                                         } else if (row.type === 'support') {
                                                             content = <span className="text-xs font-medium bg-slate-800/50 px-2 py-1 rounded text-slate-400">{getFeatureValue(plan, 'support')}</span>;
-                                                        } else if (row.name === "Relatórios financeiros") {
-                                                            // Custom logic
-                                                            const hasAdvanced = isFeatureEnabled(plan, 'mod_reports');
-                                                            const hasBasic = isFeatureEnabled(plan, 'mod_finance');
-                                                            const text = hasAdvanced ? "Avançados" : (hasBasic ? "Essenciais" : "-");
-                                                            content = <span className="text-xs font-medium bg-slate-800/50 px-2 py-1 rounded text-slate-400">{text}</span>;
                                                         } else {
                                                             const enabled = isFeatureEnabled(plan, row.key, row.mod);
                                                             content = enabled ? (
