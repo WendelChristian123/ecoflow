@@ -29,13 +29,31 @@ interface DrilldownModalProps {
     quotes: Quote[];
     users: User[];
     onQuoteClick: (q: Quote) => void;
+    indicatorColor?: 'success' | 'danger' | 'warning' | 'info' | 'default' | 'amber' | 'orange' | 'rose' | 'sky';
 }
 
-const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, quotes, users, onQuoteClick }) => {
+const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, quotes, users, onQuoteClick, indicatorColor }) => {
     if (!isOpen) return null;
 
     const getUserName = (id?: string) => users.find(u => u.id === id)?.name || 'N/A';
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    const semanticConfig: Record<string, { border: string, leftBorder: string, glow: string, text: string }> = {
+        default: { border: "border-border", leftBorder: "border-l-primary/50", glow: "hover:shadow-primary/5", text: "text-primary" },
+        success: { border: "border-success/20", leftBorder: "border-l-success", glow: "hover:shadow-success/10", text: "text-success" },
+        danger: { border: "border-danger/20", leftBorder: "border-l-danger", glow: "hover:shadow-danger/10", text: "text-danger" },
+        warning: { border: "border-warning/20", leftBorder: "border-l-warning", glow: "hover:shadow-warning/10", text: "text-warning" },
+        info: { border: "border-info/20", leftBorder: "border-l-info", glow: "hover:shadow-info/10", text: "text-info" },
+        amber: { border: "border-amber-500/20", leftBorder: "border-l-amber-500", glow: "hover:shadow-amber-500/10", text: "text-amber-500" },
+        orange: { border: "border-orange-500/20", leftBorder: "border-l-orange-500", glow: "hover:shadow-orange-500/10", text: "text-orange-500" },
+        rose: { border: "border-rose-500/20", leftBorder: "border-l-rose-500", glow: "hover:shadow-rose-500/10", text: "text-rose-500" },
+        sky: { border: "border-sky-400/20", leftBorder: "border-l-sky-400", glow: "hover:shadow-sky-400/10", text: "text-sky-400" },
+    };
+    const colorStyle = indicatorColor ? semanticConfig[indicatorColor] : semanticConfig.default;
+    const containerClass = cn(
+        "bg-card p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 cursor-pointer transition-all group border-l-4",
+        indicatorColor ? `${colorStyle.leftBorder} border border-y-border border-r-border ${colorStyle.glow} hover:bg-accent/30` : "border border-border hover:bg-accent/50 hover:shadow-sm"
+    );
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
@@ -55,7 +73,7 @@ const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title,
                             {quotes.map(q => (
                                 <div key={q.id}
                                     onClick={() => onQuoteClick(q)}
-                                    className="bg-card p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 hover:shadow-sm cursor-pointer transition-all group hover:bg-accent/50"
+                                    className={containerClass}
                                 >
                                     <div className="flex items-center gap-4 w-full sm:w-auto">
                                         <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center font-mono text-xs text-muted-foreground group-hover:text-foreground transition-colors">
@@ -346,13 +364,13 @@ export const CommercialOverview: React.FC = () => {
     // Drilldown Helper
     const getDrilldownData = () => {
         switch (drilldownType) {
-            case 'total': return { title: 'Todos os Orçamentos', list: kpiData.listTotal };
-            case 'negotiation': return { title: 'Em Negociação (Vigentes)', list: kpiData.listOpen };
-            case 'approved': return { title: 'Negócios Fechados', list: kpiData.listApproved };
-            case 'lost': return { title: 'Negócios Perdidos', list: kpiData.listLost };
-            case 'overdue': return { title: 'Orçamentos Vencidos', list: kpiData.listOverdue };
-            case 'expiring_soon': return { title: 'Vence em Breve (7 dias)', list: kpiData.listExpiringSoon };
-            default: return { title: '', list: [] };
+            case 'total': return { title: 'Todos os Orçamentos', list: kpiData.listTotal, color: 'sky' };
+            case 'negotiation': return { title: 'Em Negociação (Vigentes)', list: kpiData.listOpen, color: 'warning' };
+            case 'approved': return { title: 'Negócios Fechados', list: kpiData.listApproved, color: 'success' };
+            case 'lost': return { title: 'Negócios Perdidos', list: kpiData.listLost, color: 'danger' };
+            case 'overdue': return { title: 'Orçamentos Vencidos', list: kpiData.listOverdue, color: 'danger' };
+            case 'expiring_soon': return { title: 'Vence em Breve (7 dias)', list: kpiData.listExpiringSoon, color: 'orange' };
+            default: return { title: '', list: [], color: undefined };
         }
     };
 
@@ -426,7 +444,7 @@ export const CommercialOverview: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2.5">
                         {/* Linha 1: Operação ativa */}
                         <div onClick={() => setDrilldownType('negotiation')} className="cursor-pointer">
-                            <StatCard title="Em Negociação" value={kpiData.openCount} icon={TrendingUp} variant="amber" subtitle="Abertos" size="sm" />
+                            <StatCard title="Em Negociação" value={kpiData.openCount} icon={TrendingUp} variant="warning" subtitle="Abertos" size="sm" />
                         </div>
                         <div onClick={() => setDrilldownType('expiring_soon')} className="cursor-pointer">
                             <StatCard title="Vence em Breve" value={kpiData.expiringSoonCount} icon={Clock} variant="orange" subtitle="Próximos 7 dias" size="sm" />
@@ -437,7 +455,7 @@ export const CommercialOverview: React.FC = () => {
                             <StatCard title="Vencidos" value={kpiData.overdueCount} icon={Clock} variant="danger" subtitle="Expirados" size="sm" />
                         </div>
                         <div onClick={() => setDrilldownType('lost')} className="cursor-pointer">
-                            <StatCard title="Perdidos" value={kpiData.lostCount} icon={XCircle} variant="rose" subtitle="Rejeitados" size="sm" />
+                            <StatCard title="Perdidos" value={kpiData.lostCount} icon={XCircle} variant="danger" subtitle="Rejeitados" size="sm" />
                         </div>
 
                         {/* Linha 3: Resultado e performance */}
@@ -478,7 +496,7 @@ export const CommercialOverview: React.FC = () => {
 
                 {/* === Modais (reutilizados 100%) === */}
                 <CommercialReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} quotes={quotes} users={users} />
-                <DrilldownModal isOpen={!!drilldownType} onClose={() => setDrilldownType(null)} title={drilldownInfo.title} quotes={drilldownInfo.list} users={users} onQuoteClick={(q) => { setEditingQuote(q); setIsQuoteModalOpen(true); }} />
+                <DrilldownModal isOpen={!!drilldownType} onClose={() => setDrilldownType(null)} title={drilldownInfo.title} quotes={drilldownInfo.list} users={users} onQuoteClick={(q) => { setEditingQuote(q); setIsQuoteModalOpen(true); }} indicatorColor={drilldownInfo.color as any} />
                 <QuoteModal isOpen={isQuoteModalOpen} onClose={() => setIsQuoteModalOpen(false)} onSuccess={(savedQuote) => { loadData(); if (savedQuote && savedQuote.status === 'approved') { handleApprovalFlow(savedQuote); } }} contacts={contacts} catalog={catalog} initialData={editingQuote} />
                 <QuoteApprovalModal isOpen={isApprovalModalOpen} onClose={() => setIsApprovalModalOpen(false)} onOptionSelected={handleApprovalDecision} />
                 <TransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} onSuccess={() => { loadData(); }} contacts={contacts} categories={financialCategories} accounts={accounts} initialData={transactionInitialData} />
@@ -675,6 +693,7 @@ export const CommercialOverview: React.FC = () => {
                     setEditingQuote(q);
                     setIsQuoteModalOpen(true);
                 }}
+                indicatorColor={drilldownInfo.color as any}
             />
 
             {/* Note: QuoteModal is complex, assuming it adapts or has its own internal styles. 

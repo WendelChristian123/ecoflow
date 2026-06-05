@@ -81,7 +81,7 @@ export const RoutinesOverview: React.FC = () => {
     const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
     // Modal State
-    const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, type: 'tasks', data: any[] }>({
+    const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, type: 'tasks' | 'events', data: any[], indicatorColor?: string }>({
         isOpen: false, title: '', type: 'tasks', data: []
     });
 
@@ -194,13 +194,13 @@ export const RoutinesOverview: React.FC = () => {
     const totalUpcomingEvents = upcomingEvents.length;
 
     // --- Modal Handler ---
-    const openDrilldownTasks = (title: string, filterFn: (t: Task) => boolean) => {
+    const openDrilldownTasks = (title: string, filterFn: (t: Task) => boolean, indicatorColor?: string) => {
         const data = visibleTasks.filter(filterFn);
-        setModalState({ isOpen: true, title, type: 'tasks', data });
+        setModalState({ isOpen: true, title, type: 'tasks', data, indicatorColor });
     };
 
-    const openDrilldownEvents = (title: string, data: CalendarEvent[]) => {
-        setModalState({ isOpen: true, title, type: 'events', data });
+    const openDrilldownEvents = (title: string, data: CalendarEvent[], indicatorColor?: string) => {
+        setModalState({ isOpen: true, title, type: 'events', data, indicatorColor });
     };
 
     // --- Charts Data ---
@@ -290,16 +290,16 @@ export const RoutinesOverview: React.FC = () => {
                 <section>
                     <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Indicadores</h2>
                     <div className="grid grid-cols-2 gap-2.5">
-                        <div onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                        <div onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday), 'danger')} className="cursor-pointer">
                             <StatCard title="Vencido" value={totalOverdue} icon={AlertCircle} variant="danger" size="sm" subtitle="Tarefas atrasadas" />
                         </div>
-                        <div onClick={() => openDrilldownTasks('A Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                        <div onClick={() => openDrilldownTasks('A Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday), 'warning')} className="cursor-pointer">
                             <StatCard title="A vencer" value={totalDueSoon} icon={Clock} variant="warning" size="sm" subtitle="Tarefas no prazo" />
                         </div>
-                        <div onClick={() => openDrilldownTasks('Concluídos', t => t.status === 'done')} className="cursor-pointer">
+                        <div onClick={() => openDrilldownTasks('Concluídos', t => t.status === 'done', 'success')} className="cursor-pointer">
                             <StatCard title="Concluídos" value={totalDone} icon={CheckCircle2} variant="success" size="sm" subtitle="Total histórico" />
                         </div>
-                        <div onClick={() => openDrilldownEvents('Próximos compromissos', upcomingEvents)} className="cursor-pointer">
+                        <div onClick={() => openDrilldownEvents('Próximos compromissos', upcomingEvents, 'info')} className="cursor-pointer">
                             <StatCard title="Compromissos" value={totalUpcomingEvents} icon={CalendarIcon} variant="info" size="sm" subtitle="Próximos eventos" />
                         </div>
                     </div>
@@ -377,6 +377,7 @@ export const RoutinesOverview: React.FC = () => {
                         if (modalState.type === 'tasks') setSelectedTaskDetail(item as Task);
                         else setSelectedEventDetail(item as CalendarEvent);
                     }}
+                    indicatorColor={modalState.indicatorColor as any}
                 />
                 
                 {selectedTaskDetail && (
@@ -528,7 +529,7 @@ export const RoutinesOverview: React.FC = () => {
                         subtitle="Em andamento"
                     />
                 </div>
-                <div onClick={() => openDrilldownTasks('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                <div onClick={() => openDrilldownTasks('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday), 'warning')} className="cursor-pointer">
                     <StatCard
                         title="A Vencer"
                         value={totalDueSoon}
@@ -538,7 +539,7 @@ export const RoutinesOverview: React.FC = () => {
                         subtitle="Dentro do prazo"
                     />
                 </div>
-                <div onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                <div onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday), 'danger')} className="cursor-pointer">
                     <StatCard
                         title="Vencidos"
                         value={totalOverdue}
@@ -548,7 +549,7 @@ export const RoutinesOverview: React.FC = () => {
                         subtitle="Prazo expirado"
                     />
                 </div>
-                <div onClick={() => openDrilldownTasks('Tarefas Concluídas', t => t.status === 'done')} className="cursor-pointer">
+                <div onClick={() => openDrilldownTasks('Tarefas Concluídas', t => t.status === 'done', 'success')} className="cursor-pointer">
                     <StatCard
                         title="Concluídos"
                         value={totalDone}
@@ -627,7 +628,7 @@ export const RoutinesOverview: React.FC = () => {
                                                 </div>
                                             )})}
                                         {totalOverdue > 5 && (
-                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))}>
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday), 'danger')}>
                                                 Ver todas ({totalOverdue})
                                             </Button>
                                         )}
@@ -668,7 +669,7 @@ export const RoutinesOverview: React.FC = () => {
                                                 </div>
                                             )})}
                                         {totalDueSoon > 5 && (
-                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))}>
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday), 'warning')}>
                                                 Ver todas ({totalDueSoon})
                                             </Button>
                                         )}
@@ -709,7 +710,7 @@ export const RoutinesOverview: React.FC = () => {
                                                 </div>
                                             )})}
                                         {totalDone > 5 && (
-                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas Concluídas', t => t.status === 'done')}>
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas Concluídas', t => t.status === 'done', 'success')}>
                                                 Ver todas ({totalDone})
                                             </Button>
                                         )}
@@ -810,6 +811,11 @@ export const RoutinesOverview: React.FC = () => {
                 type={modalState.type as 'tasks' | 'events'}
                 data={modalState.data}
                 users={usersList}
+                onItemClick={(item) => {
+                    if (modalState.type === 'tasks') setSelectedTaskDetail(item as Task);
+                    else setSelectedEventDetail(item as CalendarEvent);
+                }}
+                indicatorColor={modalState.indicatorColor as any}
             />
 
             <RoutineReportModal

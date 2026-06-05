@@ -87,7 +87,7 @@ export const Dashboard: React.FC = () => {
     }, [availableModules]);
 
     // UI States
-    const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, type: 'tasks' | 'events' | 'finance' | 'quotes', data: any[] }>({
+    const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, type: 'tasks' | 'events' | 'finance' | 'quotes', data: any[], indicatorColor?: string }>({
         isOpen: false, title: '', type: 'tasks', data: []
     });
 
@@ -251,8 +251,8 @@ export const Dashboard: React.FC = () => {
     const todayItems = filterItems('today');
     const upcomingItems = filterItems('upcoming');
 
-    const openDrilldown = (title: string, type: 'tasks' | 'events' | 'finance' | 'quotes', data: any[]) => {
-        setModalState({ isOpen: true, title, type, data });
+    const openDrilldown = (title: string, type: 'tasks' | 'events' | 'finance' | 'quotes', data: any[], indicatorColor?: string) => {
+        setModalState({ isOpen: true, title, type, data, indicatorColor });
     };
 
     const toggleModule = (mod: string) => {
@@ -410,10 +410,10 @@ export const Dashboard: React.FC = () => {
                 <h2 className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase mb-2 pl-1 shrink-0">{title}</h2>
                 {hasItems ? (
                     <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-3" style={{ gridAutoRows: '1fr' }}>
-                        {selectedModules.includes('tasks') && availableModules.includes('tasks') && <ZoneCard title="Tarefas" count={items.tasks.length} icon={List} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks)} />}
-                        {selectedModules.includes('events') && availableModules.includes('events') && <ZoneCard title="Compromissos" count={items.events.length} icon={CalendarIcon} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events)} />}
-                        {selectedModules.includes('finance') && availableModules.includes('finance') && <ZoneCard title="Financeiro" count={items.finance.length} icon={Wallet} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance)} />}
-                        {selectedModules.includes('quotes') && availableModules.includes('quotes') && <ZoneCard title="Orçamentos" count={items.quotes.length} icon={FileText} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes)} />}
+                        {selectedModules.includes('tasks') && availableModules.includes('tasks') && <ZoneCard title="Tarefas" count={items.tasks.length} icon={List} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks, variant)} />}
+                        {selectedModules.includes('events') && availableModules.includes('events') && <ZoneCard title="Compromissos" count={items.events.length} icon={CalendarIcon} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events, variant)} />}
+                        {selectedModules.includes('finance') && availableModules.includes('finance') && <ZoneCard title="Financeiro" count={items.finance.length} icon={Wallet} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance, variant)} />}
+                        {selectedModules.includes('quotes') && availableModules.includes('quotes') && <ZoneCard title="Orçamentos" count={items.quotes.length} icon={FileText} type="quote" variant={variant} onClick={() => openDrilldown('Orçamentos', 'quotes', items.quotes, variant)} />}
                     </div>
                 ) : (
                     <EmptyState />
@@ -483,67 +483,125 @@ export const Dashboard: React.FC = () => {
 
         return (
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center shrink-0 gap-4 mb-3">
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 xl:gap-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 xl:gap-8 w-full lg:w-auto">
                     <div>
                         <h1 className="text-base font-bold text-foreground tracking-tight">Painel Principal</h1>
                         <p className="text-muted-foreground text-xs">Visão geral de rotinas e alertas.</p>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* Modules Dropdown - Web only */}
                     {!isApp && (
-                        <div className="relative flex-1 md:flex-none">
-                            <Button
-                                variant="secondary"
-                                onClick={() => setIsModulesOpen(!isModulesOpen)}
-                                className="w-full gap-2 h-7 text-[10px] justify-between md:justify-start px-2"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <Layers size={16} className="text-primary" />
-                                    <span className="hidden sm:inline">Módulos ({selectedModules.length})</span>
-                                    <span className="sm:hidden">({selectedModules.length})</span>
-                                </div>
-                                <ChevronDown size={14} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
-                            </Button>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="relative flex-1 md:flex-none">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setIsModulesOpen(!isModulesOpen)}
+                                    className="w-full gap-2 h-7 text-[10px] justify-between md:justify-start px-2"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Layers size={16} className="text-primary" />
+                                        <span className="hidden sm:inline">Módulos ({selectedModules.length})</span>
+                                        <span className="sm:hidden">({selectedModules.length})</span>
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform ${isModulesOpen ? 'rotate-180' : ''}`} />
+                                </Button>
 
-                            {isModulesOpen && (
-                                <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setIsModulesOpen(false)} />
-                                    <div className="absolute top-full left-0 mt-2 w-52 bg-popover rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Exibir Módulos</div>
-                                        <div className="space-y-1">
-                                            {availableModules
-                                                .sort((a, b) => moduleNames[a].localeCompare(moduleNames[b]))
-                                                .map(m => (
+                                {isModulesOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsModulesOpen(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-52 bg-popover rounded-xl shadow-xl z-50 p-3 transform origin-top-left animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Exibir Módulos</div>
+                                            <div className="space-y-1">
+                                                {availableModules
+                                                    .sort((a, b) => moduleNames[a].localeCompare(moduleNames[b]))
+                                                    .map(m => (
+                                                    <button
+                                                        key={m}
+                                                        onClick={() => toggleModule(m)}
+                                                        className={cn(
+                                                            "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
+                                                            selectedModules.includes(m)
+                                                                ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold"
+                                                                : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
+                                                        )}
+                                                    >
+                                                        <span>{moduleNames[m]}</span>
+                                                        {selectedModules.includes(m) && <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-500" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="relative flex-1 md:flex-none">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
+                                    className="w-full gap-2 h-7 text-[10px] justify-between md:justify-start px-2 md:min-w-[120px]"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <UserCircle size={16} className="text-muted-foreground shrink-0" />
+                                        <span className="text-xs md:text-sm font-medium text-foreground truncate">
+                                            {assigneeFilter === 'all'
+                                                ? 'Todos'
+                                                : assignees.find(u => u.id === assigneeFilter)?.name.split(' ')[0] || 'Todos'}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${isAssigneeOpen ? 'rotate-180' : ''}`} />
+                                </Button>
+
+                                {isAssigneeOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsAssigneeOpen(false)} />
+                                        <div className="absolute top-full left-0 md:left-auto md:right-0 mt-2 w-48 bg-popover rounded-xl shadow-xl z-50 p-2 transform origin-top md:origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Responsável</div>
+                                            <div className="space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
                                                 <button
-                                                    key={m}
-                                                    onClick={() => toggleModule(m)}
+                                                    onClick={() => { setAssigneeFilter('all'); setIsAssigneeOpen(false); }}
                                                     className={cn(
                                                         "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
-                                                        selectedModules.includes(m)
-                                                            ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold"
-                                                            : "text-muted-foreground hover:bg-secondary hover:text-foreground font-medium"
+                                                        assigneeFilter === 'all'
+                                                            ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                                                            : "text-foreground hover:bg-secondary hover:text-primary font-medium"
                                                     )}
                                                 >
-                                                    <span>{moduleNames[m]}</span>
-                                                    {selectedModules.includes(m) && <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-500" />}
+                                                    <span>Todos</span>
+                                                    {assigneeFilter === 'all' && <CheckCircle2 size={16} />}
                                                 </button>
-                                            ))}
+                                                {assignees.map(u => (
+                                                    <button
+                                                        key={u.id}
+                                                        onClick={() => { setAssigneeFilter(u.id); setIsAssigneeOpen(false); }}
+                                                        className={cn(
+                                                            "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
+                                                            assigneeFilter === u.id
+                                                                ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                                                                : "text-foreground hover:bg-secondary hover:text-primary font-medium"
+                                                        )}
+                                                    >
+                                                        <span className="truncate">{u.name.split(' ')[0]}</span>
+                                                        {assigneeFilter === u.id && <CheckCircle2 size={16} className="shrink-0 ml-2" />}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                </>
-                            )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     )}
+                </div>
 
+                <div className="flex items-center justify-between w-full lg:w-auto gap-4">
                     {/* Horizon Toggle */}
-                    <div className="flex bg-secondary/50 rounded-lg p-1 gap-0.5 overflow-x-auto custom-scrollbar flex-1 md:flex-none">
+                    <div className="flex bg-secondary/50 rounded-lg p-1 gap-1 overflow-x-auto custom-scrollbar">
                         {[3, 7, 15, 30].map(d => (
                             <button
                                 key={d}
                                 onClick={() => setHorizon(d as any)}
                                 className={cn(
-                                    "px-2 py-0.5 text-[10px] rounded-md transition-all font-semibold min-w-[32px] flex-1 md:flex-none flex items-center justify-center",
+                                    "px-3 py-1.5 text-[11px] md:text-xs rounded-md transition-all font-bold min-w-[36px] md:min-w-[40px] flex items-center justify-center",
                                     horizon === d
                                         ? "bg-primary text-primary-foreground shadow-sm"
                                         : "text-muted-foreground hover:text-foreground hover:bg-background/80"
@@ -554,68 +612,8 @@ export const Dashboard: React.FC = () => {
                         ))}
                     </div>
 
-                    {!isApp && (
-                        <div className="relative flex-1 md:flex-none">
-                            <Button
-                                variant="secondary"
-                                onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
-                                className="w-full gap-2 h-7 text-[10px] justify-between md:justify-start px-2 md:min-w-[120px]"
-                            >
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <UserCircle size={16} className="text-muted-foreground shrink-0" />
-                                    <span className="text-xs md:text-sm font-medium text-foreground truncate">
-                                        {assigneeFilter === 'all'
-                                            ? 'Todos'
-                                            : assignees.find(u => u.id === assigneeFilter)?.name.split(' ')[0] || 'Todos'}
-                                    </span>
-                                </div>
-                                <ChevronDown size={14} className={`text-muted-foreground shrink-0 transition-transform ${isAssigneeOpen ? 'rotate-180' : ''}`} />
-                            </Button>
-
-                            {isAssigneeOpen && (
-                                <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setIsAssigneeOpen(false)} />
-                                    <div className="absolute top-full left-0 md:left-auto md:right-0 mt-2 w-48 bg-popover rounded-xl shadow-xl z-50 p-2 transform origin-top md:origin-top-right animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Responsável</div>
-                                        <div className="space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                            <button
-                                                onClick={() => { setAssigneeFilter('all'); setIsAssigneeOpen(false); }}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
-                                                    assigneeFilter === 'all'
-                                                        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                                                        : "text-foreground hover:bg-secondary hover:text-primary font-medium"
-                                                )}
-                                            >
-                                                <span>Todos</span>
-                                                {assigneeFilter === 'all' && <CheckCircle2 size={16} />}
-                                            </button>
-                                            {assignees.map(u => (
-                                                <button
-                                                    key={u.id}
-                                                    onClick={() => { setAssigneeFilter(u.id); setIsAssigneeOpen(false); }}
-                                                    className={cn(
-                                                        "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
-                                                        assigneeFilter === u.id
-                                                            ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                                                            : "text-foreground hover:bg-secondary hover:text-primary font-medium"
-                                                    )}
-                                                >
-                                                    <span className="truncate">{u.name.split(' ')[0]}</span>
-                                                    {assigneeFilter === u.id && <CheckCircle2 size={16} className="shrink-0 ml-2" />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
-                    {/* Date Display */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Date Display */}
                         <div className="flex flex-col items-end leading-none mr-2">
                             <span className="text-sm font-bold text-foreground tracking-tight">
                                 {format(new Date(), 'dd/MM', { locale: ptBR })}
@@ -629,11 +627,12 @@ export const Dashboard: React.FC = () => {
                         <Button
                             variant="secondary"
                             onClick={loadDashboard}
-                            className="h-7 w-7 p-0 flex items-center justify-center"
+                            className="h-8 w-8 p-0 flex items-center justify-center shrink-0"
                         >
                             <RefreshCw size={14} className={cn(loading && "animate-spin text-primary")} />
                         </Button>
                     </div>
+                </div>
             </div>
         );
     };
@@ -674,6 +673,7 @@ export const Dashboard: React.FC = () => {
                 onStatusChange={(item, isPaid) => {
                     setTransactions(prev => prev.map(t => t.id === item.id ? { ...t, isPaid } : t));
                 }}
+                indicatorColor={modalState.indicatorColor as any}
             />
         </div>
     );

@@ -110,7 +110,7 @@ export const FinancialCards: React.FC = () => {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentModalData, setPaymentModalData] = useState<{ card: CreditCard, amount: number } | null>(null);
 
-    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
+    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[], indicatorColor?: string }>({ isOpen: false, title: '', data: [] });
     // Report State
     const [reportState, setReportState] = useState<{ isOpen: boolean, cardId?: string, stats?: { used: number, available: number, percent: number } }>({ isOpen: false });
 
@@ -485,7 +485,8 @@ export const FinancialCards: React.FC = () => {
                                                         onClick={() => setDrilldownState({
                                                             isOpen: true,
                                                             title: `Faturas em Atraso: ${card.name}`,
-                                                            data: overdue // Simplistic. Ideally drilldown accepts processed transactions.
+                                                            data: overdue, // Simplistic. Ideally drilldown accepts processed transactions.
+                                                            indicatorColor: 'danger'
                                                         })}
                                                     >
                                                         Ver Detalhes
@@ -636,6 +637,7 @@ export const FinancialCards: React.FC = () => {
                         setDrilldownState({ ...drilldownState, isOpen: false });
                     }
                 }}
+                indicatorColor={drilldownState.indicatorColor as any}
             />
 
             <CreditCardReportModal

@@ -29,6 +29,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
         if (path === '/commercial/overview') return 'Comercial';
         if (path === '/commercial/quotes') return 'Orçamentos';
         if (path.startsWith('/commercial')) return 'Comercial';
+        if (path.startsWith('/routines')) return 'Rotinas & Execuções';
         if (path === '/tasks') return 'Tarefas';
         if (path === '/agenda') return 'Compromissos';
         if (path.startsWith('/finance/overview')) return 'Financeiro';

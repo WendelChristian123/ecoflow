@@ -22,7 +22,8 @@ export const FinancialAccounts: React.FC = () => {
         isOpen: boolean,
         title: string,
         data: any[],
-        summary?: { initialBalance: number, totalIncome: number, totalExpense: number, finalBalance: number }
+        summary?: { initialBalance: number, totalIncome: number, totalExpense: number, finalBalance: number },
+        indicatorColor?: string
     }>({ isOpen: false, title: '', data: [] });
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<FinancialAccount | undefined>(undefined);
@@ -222,7 +223,8 @@ export const FinancialAccounts: React.FC = () => {
                                         totalIncome: income,
                                         totalExpense: expense,
                                         finalBalance: balance
-                                    }
+                                    },
+                                    indicatorColor: 'info'
                                 });
                             }}
                             className="flex flex-col justify-between cursor-pointer hover:border-emerald-500/30 transition-all min-h-[160px] group relative"
@@ -268,6 +270,7 @@ export const FinancialAccounts: React.FC = () => {
                 onPayAction={(item) => {
                     navigate(`/finance/cards?payInvoice=${item.id}`);
                 }}
+                indicatorColor={drilldownState.indicatorColor as any}
             />
 
             <AccountModal

@@ -9,7 +9,7 @@ import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
 import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText, Printer, LayoutList, ArrowUpRight, ArrowDownRight, ArrowRightLeft, HandCoins, Settings, X, MoreHorizontal } from 'lucide-react';
 import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
-import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth, isSameDay, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
+import { isBefore, isAfter, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth, isSameDay, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { useCompany } from '../../context/CompanyContext';
@@ -40,7 +40,7 @@ export const FinancialOverview: React.FC = () => {
     const [chartCustomRange, setChartCustomRange] = useState({ start: '', end: '' });
 
 
-    const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, data: any[] }>({
+    const [modalState, setModalState] = useState<{ isOpen: boolean, title: string, data: any[], indicatorColor?: string }>({
         isOpen: false, title: '', data: []
     });
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -219,10 +219,10 @@ export const FinancialOverview: React.FC = () => {
         return accBalance + account.initialBalance + accountIncome - accountExpense - transfersOut + transfersIn;
     }, 0);
 
-    const openDrilldown = (title: string, filterFn: (t: FinancialTransaction) => boolean, useCashData = false) => {
+    const openDrilldown = (title: string, filterFn: (t: FinancialTransaction) => boolean, useCashData = false, indicatorColor?: string) => {
         const sourceData = useCashData ? filteredCashData : filteredData;
         const data = sourceData.filter(filterFn);
-        setModalState({ isOpen: true, title, data });
+        setModalState({ isOpen: true, title, data, indicatorColor });
     };
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -400,10 +400,10 @@ export const FinancialOverview: React.FC = () => {
                             </div>
                         </div>
 
-                        <div onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)} className="cursor-pointer">
+                        <div onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid, false, 'success')} className="cursor-pointer">
                             <StatCard title="Receitas" value={fmt(realizedIncome)} icon={TrendingUp} variant="success" size="sm" />
                         </div>
-                        <div onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)} className="cursor-pointer">
+                        <div onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid, false, 'danger')} className="cursor-pointer">
                             <StatCard title="Despesas" value={fmt(realizedExpense)} icon={TrendingDown} variant="danger" size="sm" />
                         </div>
                         <div className="col-span-2">
@@ -416,16 +416,16 @@ export const FinancialOverview: React.FC = () => {
                 <section>
                     <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Atenção Financeira</h2>
                     <div className="grid grid-cols-2 gap-2.5">
-                        <div onClick={() => openDrilldown('Contas Atrasadas', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                        <div onClick={() => openDrilldown('Contas Atrasadas', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true, 'danger')} className="cursor-pointer">
                             <StatCard title="A Pagar" value={fmt(payablesOverdue)} icon={AlertCircle} variant="danger" subtitle="Atrasadas" size="sm" />
                         </div>
-                        <div onClick={() => openDrilldown('A Vencer (7 dias)', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                        <div onClick={() => openDrilldown('A Vencer (7 dias)', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart) && !isAfter(parseDateLocal(t.date), next7DaysEnd), true, 'warning')} className="cursor-pointer">
                             <StatCard title="A Pagar" value={fmt(payablesFuture)} icon={Clock} variant="warning" subtitle="Próx. 7 dias" size="sm" />
                         </div>
-                        <div onClick={() => openDrilldown('Recebimentos Atrasados', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                        <div onClick={() => openDrilldown('Recebimentos Atrasados', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart), false, 'danger')} className="cursor-pointer">
                             <StatCard title="A Receber" value={fmt(receivablesOverdue)} icon={AlertCircle} variant="danger" subtitle="Atrasadas" size="sm" />
                         </div>
-                        <div onClick={() => openDrilldown('A Receber (7 dias)', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                        <div onClick={() => openDrilldown('A Receber (7 dias)', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart) && !isAfter(parseDateLocal(t.date), next7DaysEnd), false, 'success')} className="cursor-pointer">
                             <StatCard title="A Receber" value={fmt(receivablesFuture)} icon={Clock} variant="success" subtitle="Próx. 7 dias" size="sm" />
                         </div>
                     </div>
@@ -490,6 +490,7 @@ export const FinancialOverview: React.FC = () => {
                     type="finance"
                     data={modalState.data}
                     users={[]}
+                    indicatorColor={modalState.indicatorColor as any}
                 />
 
                 <TransactionModal
@@ -611,7 +612,7 @@ export const FinancialOverview: React.FC = () => {
 
                             {/* FLUXO - SECUNDÁRIO */}
                             <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)} className="cursor-pointer">
+                                <div onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid, false, 'success')} className="cursor-pointer">
                                     <StatCard
                                         title="Receitas"
                                         value={fmt(realizedIncome)}
@@ -622,7 +623,7 @@ export const FinancialOverview: React.FC = () => {
                                     />
                                 </div>
 
-                                <div onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)} className="cursor-pointer">
+                                <div onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid, false, 'danger')} className="cursor-pointer">
                                     <StatCard
                                         title="Despesas"
                                         value={fmt(realizedExpense)}
@@ -656,7 +657,7 @@ export const FinancialOverview: React.FC = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                 {/* PAYABLES OVERDUE - ALARM */}
-                                <div onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                                <div onClick={() => openDrilldown('Pagamentos em Atraso', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true, 'danger')} className="cursor-pointer">
                                     <StatCard
                                         title="Contas Atrasadas"
                                         value={fmt(payablesOverdue)}
@@ -668,7 +669,7 @@ export const FinancialOverview: React.FC = () => {
                                 </div>
 
                                 {/* PAYABLES FUTURE */}
-                                <div onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                                <div onClick={() => openDrilldown('Pagamentos a Vencer', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart) && !isAfter(parseDateLocal(t.date), next7DaysEnd), true, 'warning')} className="cursor-pointer">
                                     <StatCard
                                         title="A Vencer (7 dias)"
                                         value={fmt(payablesFuture)}
@@ -680,7 +681,7 @@ export const FinancialOverview: React.FC = () => {
                                 </div>
 
                                 {/* RECEIVABLES OVERDUE - ALARM */}
-                                <div onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                                <div onClick={() => openDrilldown('Recebimentos em Atraso', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart), false, 'danger')} className="cursor-pointer">
                                     <StatCard
                                         title="Recebimentos Atrasados"
                                         value={fmt(receivablesOverdue)}
@@ -692,7 +693,7 @@ export const FinancialOverview: React.FC = () => {
                                 </div>
 
                                 {/* RECEIVABLES FUTURE */}
-                                <div onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                                <div onClick={() => openDrilldown('Recebimentos a Vencer', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart) && !isAfter(parseDateLocal(t.date), next7DaysEnd), false, 'success')} className="cursor-pointer">
                                     <StatCard
                                         title="A Receber (7 dias)"
                                         value={fmt(receivablesFuture)}
@@ -767,7 +768,7 @@ export const FinancialOverview: React.FC = () => {
 
                                 return (
                                     <div key={card.id}
-                                        onClick={() => openDrilldown(`Fatura: ${card.name}`, t => t.creditCardId === card.id && !t.isPaid)}
+                                        onClick={() => openDrilldown(`Fatura: ${card.name}`, t => t.creditCardId === card.id && !t.isPaid, false, isOverdue ? 'danger' : 'info')}
                                         className="bg-card border border-border shadow-sm p-5 rounded-xl cursor-pointer hover:shadow-md transition-all group"
                                     >
                                         <div className="flex items-center justify-between mb-4">
@@ -955,11 +956,12 @@ export const FinancialOverview: React.FC = () => {
 
             <DrilldownModal
                 isOpen={modalState.isOpen}
-                onClose={() => setModalState({ ...modalState, isOpen: false })}
+                onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
                 title={modalState.title}
                 type="finance"
                 data={modalState.data}
                 users={[]}
+                indicatorColor={modalState.indicatorColor as any}
                 onPayAction={(item) => {
                     navigate(`/finance/cards?payInvoice=${item.id}`);
                 }}

@@ -16,7 +16,7 @@ import {
 import { TransferModal, HistoryTimeline } from './DetailComponents';
 import { useAuth } from '../context/AuthContext';
 import { LogEntry } from '../types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isBefore, startOfToday } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ContactModal } from './CommercialModals';
 import { translateStatus, translatePriority, translateTaskStatus, translateContactScope } from '../utils/i18n';
@@ -229,6 +229,7 @@ interface DrilldownModalProps {
     onPayAction?: (item: any) => void;
     onStatusChange?: (item: any, newStatus: boolean) => void;
     onItemClick?: (item: any) => void;
+    indicatorColor?: 'success' | 'danger' | 'warning' | 'info' | 'default' | 'amber' | 'orange' | 'rose' | 'sky' | 'primary' | 'secondary';
 }
 
 // --- Refactored & Robust Drilldown Modal ---
@@ -253,7 +254,7 @@ interface DrilldownItem {
     metadata?: any;
 }
 
-export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary, onPayAction, onStatusChange, onItemClick }) => {
+export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary, onPayAction, onStatusChange, onItemClick, indicatorColor }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
     const navigate = useNavigate();
@@ -366,8 +367,38 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                     </div>
                 ) : (
                     localData.map((item: any, idx) => {
-                        // Guard Clause for Critical Falure
                         if (!item || !item.id) return null;
+
+                        const semanticConfig: Record<string, { border: string, leftBorder: string, glow: string, text: string }> = {
+                            default: { border: "border-border", leftBorder: "border-l-primary/50", glow: "hover:shadow-primary/5", text: "text-primary" },
+                            success: { border: "border-success/20", leftBorder: "border-l-success", glow: "hover:shadow-success/10", text: "text-success" },
+                            danger: { border: "border-danger/20", leftBorder: "border-l-danger", glow: "hover:shadow-danger/10", text: "text-danger" },
+                            warning: { border: "border-warning/20", leftBorder: "border-l-warning", glow: "hover:shadow-warning/10", text: "text-warning" },
+                            info: { border: "border-info/20", leftBorder: "border-l-info", glow: "hover:shadow-info/10", text: "text-info" },
+                            amber: { border: "border-amber-500/20", leftBorder: "border-l-amber-500", glow: "hover:shadow-amber-500/10", text: "text-amber-500" },
+                            orange: { border: "border-orange-500/20", leftBorder: "border-l-orange-500", glow: "hover:shadow-orange-500/10", text: "text-orange-500" },
+                            rose: { border: "border-rose-500/20", leftBorder: "border-l-rose-500", glow: "hover:shadow-rose-500/10", text: "text-rose-500" },
+                            sky: { border: "border-sky-400/20", leftBorder: "border-l-sky-400", glow: "hover:shadow-sky-400/10", text: "text-sky-400" },
+                            primary: { border: "border-primary/20", leftBorder: "border-l-primary", glow: "hover:shadow-primary/10", text: "text-primary" },
+                            secondary: { border: "border-border", leftBorder: "border-l-secondary-foreground/50", glow: "hover:shadow-secondary/10", text: "text-foreground" },
+                        };
+                        
+                        let rowColorKey = indicatorColor;
+                        if (type === 'tasks' && !indicatorColor) {
+                            if (item.status === 'done') {
+                                rowColorKey = 'success';
+                            } else if (item.dueDate && isBefore(parseISO(item.dueDate), startOfToday())) {
+                                rowColorKey = 'danger';
+                            } else {
+                                rowColorKey = 'warning';
+                            }
+                        }
+
+                        const colorStyle = rowColorKey ? semanticConfig[rowColorKey] : semanticConfig.default;
+                        const containerClass = cn(
+                            "p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer transition-all group border-l-4",
+                            rowColorKey ? `${colorStyle.leftBorder} border border-y-border border-r-border ${colorStyle.glow} hover:bg-accent/30` : "border border-border hover:bg-accent/50"
+                        );
 
                         // --- TASKS RENDERER ---
                         if (type === 'tasks') {
@@ -378,7 +409,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
+                                    className={containerClass}
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2 truncate">
@@ -416,7 +447,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
+                                    className={containerClass}
                                 >
                                     <div className="flex-1 min-w-0 pr-3">
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2 truncate">
@@ -456,7 +487,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
+                                    className={containerClass}
                                 >
                                     <div>
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2">
@@ -513,7 +544,7 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
                                 <div
                                     key={idx}
                                     onClick={() => handleItemClick(item)}
-                                    className="p-3 bg-card rounded-lg flex justify-between items-center cursor-pointer hover:bg-accent/50 transition-all group"
+                                    className={containerClass}
                                 >
                                     <div>
                                         <div className="font-medium text-foreground group-hover:text-primary flex items-center gap-2">

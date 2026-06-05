@@ -78,7 +78,7 @@ export const FinancialTransactions: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | undefined>(undefined);
     const [modalInitialType, setModalInitialType] = useState<'income' | 'expense' | 'transfer' | undefined>(undefined);
-    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
+    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[], indicatorColor?: string }>({ isOpen: false, title: '', data: [] });
     const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
 
     // Deletion
@@ -516,7 +516,7 @@ export const FinancialTransactions: React.FC = () => {
                 )}
 
                 <TransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} accounts={accounts} categories={categories} cards={cards} contacts={contacts} initialData={editingTransaction} initialType={modalInitialType} />
-                <DrilldownModal isOpen={drilldownState.isOpen} onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })} title={drilldownState.title} data={drilldownState.data} type="finance" users={[]} onPayAction={(item) => navigate(`/finance/cards?payInvoice=${item.id}`)} />
+                <DrilldownModal isOpen={drilldownState.isOpen} onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })} title={drilldownState.title} data={drilldownState.data} type="finance" users={[]} onPayAction={(item) => navigate(`/finance/cards?payInvoice=${item.id}`)} indicatorColor={drilldownState.indicatorColor as any} />
                 <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={deleteTransaction} title="Excluir" description="Excluir?" confirmText="Excluir" cancelText="Cancelar" variant="danger" />
                 <RecurrenceActionModal isOpen={!!recurrenceDeleteTarget} onClose={() => setRecurrenceDeleteTarget(null)} onConfirm={executeRecurrenceDelete} action="delete" />
                 {ConfirmationModalComponent}
@@ -754,6 +754,7 @@ export const FinancialTransactions: React.FC = () => {
                 onPayAction={(item) => {
                     navigate(`/finance/cards?payInvoice=${item.id}`);
                 }}
+                indicatorColor={drilldownState.indicatorColor as any}
             />
 
             <ConfirmationModal

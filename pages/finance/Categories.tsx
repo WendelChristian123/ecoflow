@@ -20,7 +20,7 @@ export const FinancialCategories: React.FC = () => {
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
 
     // Modals
-    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[] }>({ isOpen: false, title: '', data: [] });
+    const [drilldownState, setDrilldownState] = useState<{ isOpen: boolean, title: string, data: any[], indicatorColor?: string }>({ isOpen: false, title: '', data: [] });
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<FinancialCategory | undefined>(undefined);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -158,7 +158,7 @@ export const FinancialCategories: React.FC = () => {
                         {incomeCats.map(cat => (
                             <div
                                 key={cat.id}
-                                onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id) })}
+                                onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id), indicatorColor: 'success' })}
                                 className="flex items-center justify-between p-3 rounded-lg bg-card border border-border cursor-pointer hover:border-emerald-500/50 hover:bg-secondary/50 transition-all group shadow-sm"
                             >
                                 <div className="flex items-center gap-3">
@@ -187,7 +187,7 @@ export const FinancialCategories: React.FC = () => {
                         {expenseCats.map(cat => (
                             <div
                                 key={cat.id}
-                                onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id) })}
+                                onClick={() => setDrilldownState({ isOpen: true, title: cat.name, data: transactions.filter(t => t.categoryId === cat.id), indicatorColor: 'danger' })}
                                 className="flex items-center justify-between p-3 rounded-lg bg-card border border-border cursor-pointer hover:border-rose-500/50 hover:bg-secondary/50 transition-all group shadow-sm"
                             >
                                 <div className="flex items-center gap-3">
@@ -218,6 +218,7 @@ export const FinancialCategories: React.FC = () => {
                 onPayAction={(item) => {
                     navigate(`/finance/cards?payInvoice=${item.id}`);
                 }}
+                indicatorColor={drilldownState.indicatorColor as any}
             />
 
             <CategoryModal
