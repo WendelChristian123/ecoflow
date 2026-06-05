@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, Button, Loader, Badge, StatCard } from '../../components/Shared';
 import { TrendingUp, DollarSign, FileText, Plus, BarChart2, PieChart, X, CheckCircle, XCircle, Users, Package, FileSignature, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO, startOfDay, isSameDay, isSameWeek, isSameMonth, isSameYear, startOfYear, endOfYear, subMonths, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfDay, isSameDay, isSameWeek, isSameMonth, isSameYear, startOfYear, endOfYear, subMonths, isWithinInterval, addDays } from 'date-fns';
 import { formatDate, parseDateLocal } from '../../utils/formatters';
 import { Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart as RechartsPieChart, Pie } from 'recharts';
 import { CommercialReportModal } from '../../components/Reports/CommercialReportModal';
@@ -248,6 +248,16 @@ export const CommercialOverview: React.FC = () => {
             return ['draft', 'sent'].includes(st) && !(q.validUntil && new Date(q.validUntil) < now);
         });
 
+        const expiringSoon = filteredQuotes.filter(q => {
+            const st = kanbanStages.find(s => s.id === q.kanbanStageId)?.systemStatus || q.status;
+            if (['approved', 'rejected', 'expired'].includes(st)) return false;
+            if (!q.validUntil) return false;
+            
+            const validDate = new Date(q.validUntil);
+            const nextWeek = addDays(now, 7);
+            return validDate >= now && validDate <= nextWeek;
+        });
+
         const conversionRate = totalQuotes > 0 ? (approved.length / totalQuotes) * 100 : 0;
 
         return {
@@ -257,10 +267,12 @@ export const CommercialOverview: React.FC = () => {
             lostCount: rejected.length,
             overdueCount: overdue.length,
             openCount: open.length,
+            expiringSoonCount: expiringSoon.length,
             listApproved: approved,
             listLost: rejected,
             listOverdue: overdue,
             listOpen: open,
+            listExpiringSoon: expiringSoon,
             listTotal: filteredQuotes
         };
     }, [quotes, kanbanStages, period]);
@@ -339,6 +351,7 @@ export const CommercialOverview: React.FC = () => {
             case 'approved': return { title: 'Negócios Fechados', list: kpiData.listApproved };
             case 'lost': return { title: 'Negócios Perdidos', list: kpiData.listLost };
             case 'overdue': return { title: 'Orçamentos Vencidos', list: kpiData.listOverdue };
+            case 'expiring_soon': return { title: 'Vence em Breve (7 dias)', list: kpiData.listExpiringSoon };
             default: return { title: '', list: [] };
         }
     };
@@ -411,78 +424,37 @@ export const CommercialOverview: React.FC = () => {
                 <section>
                     <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Indicadores</h2>
                     <div className="grid grid-cols-2 gap-2.5">
+                        {/* Linha 1: Operação ativa */}
                         <div onClick={() => setDrilldownType('negotiation')} className="cursor-pointer">
-                            <StatCard title="Em Negociação" value={kpiData.openCount} icon={TrendingUp} variant="warning" subtitle="Abertos" size="sm" />
+                            <StatCard title="Em Negociação" value={kpiData.openCount} icon={TrendingUp} variant="amber" subtitle="Abertos" size="sm" />
                         </div>
-                        <div onClick={() => setDrilldownType('approved')} className="cursor-pointer">
-                            <StatCard title="Fechados" value={kpiData.approvedCount} icon={CheckCircle} variant="success" subtitle="Aprovados" size="sm" />
+                        <div onClick={() => setDrilldownType('expiring_soon')} className="cursor-pointer">
+                            <StatCard title="Vence em Breve" value={kpiData.expiringSoonCount} icon={Clock} variant="orange" subtitle="Próximos 7 dias" size="sm" />
                         </div>
-                        <div onClick={() => setDrilldownType('lost')} className="cursor-pointer">
-                            <StatCard title="Perdidos" value={kpiData.lostCount} icon={XCircle} variant="danger" subtitle="Rejeitados" size="sm" />
-                        </div>
+
+                        {/* Linha 2: Risco e problema */}
                         <div onClick={() => setDrilldownType('overdue')} className="cursor-pointer">
                             <StatCard title="Vencidos" value={kpiData.overdueCount} icon={Clock} variant="danger" subtitle="Expirados" size="sm" />
                         </div>
-                        <div className="col-span-2">
+                        <div onClick={() => setDrilldownType('lost')} className="cursor-pointer">
+                            <StatCard title="Perdidos" value={kpiData.lostCount} icon={XCircle} variant="rose" subtitle="Rejeitados" size="sm" />
+                        </div>
+
+                        {/* Linha 3: Resultado e performance */}
+                        <div onClick={() => setDrilldownType('approved')} className="cursor-pointer">
+                            <StatCard title="Fechados" value={kpiData.approvedCount} icon={CheckCircle} variant="success" subtitle="Aprovados" size="sm" />
+                        </div>
+                        <div>
                             <StatCard
                                 title="Taxa de Conversão"
                                 value={`${kpiData.conversionRate.toFixed(1)}%`}
                                 icon={BarChart2}
-                                variant={kpiData.conversionRate >= 50 ? 'success' : kpiData.conversionRate >= 20 ? 'warning' : 'danger'}
-                                subtitle={`${kpiData.approvedCount} de ${kpiData.totalQuotes} orçamentos`}
+                                variant="sky"
+                                subtitle={`${kpiData.approvedCount} de ${kpiData.totalQuotes} orç.`}
                                 size="sm"
                             />
                         </div>
                     </div>
-                </section>
-
-                {/* === CAMADA 3: Negociações Recentes === */}
-                <section>
-                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Negociações recentes</h2>
-                    {mobileRecent.length === 0 ? (
-                        <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-2 text-center">
-                            <FileText size={28} className="text-muted-foreground/30" />
-                            <p className="text-sm text-muted-foreground">Nenhuma negociação encontrada.</p>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            {mobileRecent.map((q) => {
-                                const statusLabel = q.status === 'approved' ? 'Fechado' : q.status === 'rejected' ? 'Perdido' : (q.validUntil && parseDateLocal(q.validUntil) < startOfDay(new Date())) ? 'Vencido' : (q.stage?.name || translateQuoteStatus(q.status));
-                                const badgeVariant = q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : (q.validUntil && parseDateLocal(q.validUntil) < startOfDay(new Date())) ? 'neutral' : 'warning';
-
-                                return (
-                                    <div
-                                        key={q.id}
-                                        onClick={() => { setEditingQuote(q); setIsQuoteModalOpen(true); }}
-                                        className="bg-card border border-border rounded-xl p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all duration-200 hover:bg-accent/30"
-                                    >
-                                        {/* Avatar circle */}
-                                        <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center font-mono text-[10px] text-muted-foreground shrink-0 font-bold">
-                                            #{q.id.substring(0, 4)}
-                                        </div>
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-bold text-foreground truncate">
-                                                {q.customerName || q.contact?.name || 'Cliente sem nome'}
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-xs font-bold text-primary tabular-nums">
-                                                    {formatCurrency(q.totalValue)}
-                                                </span>
-                                                <span className="text-[10px] text-muted-foreground">
-                                                    {formatDate(q.date || q.createdAt)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        {/* Badge */}
-                                        <Badge variant={badgeVariant}>
-                                            {statusLabel.toUpperCase()}
-                                        </Badge>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
                 </section>
 
                 {/* === CAMADA 4: Acessos === */}

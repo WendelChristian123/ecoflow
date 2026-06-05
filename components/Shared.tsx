@@ -338,7 +338,7 @@ export interface StatCardProps {
   subtitle?: string;
   icon: React.ElementType;
   iconColorClass?: string;
-  variant?: 'success' | 'danger' | 'warning' | 'info' | 'default';
+  variant?: 'success' | 'danger' | 'warning' | 'info' | 'default' | 'amber' | 'orange' | 'rose' | 'sky';
   size?: 'sm' | 'md' | 'default';
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
@@ -364,6 +364,10 @@ export const StatCard: React.FC<StatCardProps> = ({
     danger: { text: "text-danger", icon: "text-danger bg-danger/10", border: "border-danger/20", glow: "bg-danger/5" },
     warning: { text: "text-warning", icon: "text-warning bg-warning/10", border: "border-warning/20", glow: "bg-warning/5" },
     info: { text: "text-info", icon: "text-info bg-info/10", border: "border-info/20", glow: "bg-info/5" },
+    amber: { text: "text-amber-500", icon: "text-amber-500 bg-amber-500/10", border: "border-amber-500/20", glow: "bg-amber-500/5" },
+    orange: { text: "text-orange-500", icon: "text-orange-500 bg-orange-500/10", border: "border-orange-500/20", glow: "bg-orange-500/5" },
+    rose: { text: "text-rose-500", icon: "text-rose-500 bg-rose-500/10", border: "border-rose-500/20", glow: "bg-rose-500/5" },
+    sky: { text: "text-sky-400", icon: "text-sky-400 bg-sky-400/10", border: "border-sky-400/20", glow: "bg-sky-400/5" },
   };
 
   const config = semanticConfig[variant];

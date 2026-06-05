@@ -431,41 +431,6 @@ export const FinancialOverview: React.FC = () => {
                     </div>
                 </section>
 
-                {/* CAMADA 4: Lançamentos Recentes */}
-                <section>
-                    <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Lançamentos Recentes</h2>
-                        <button onClick={() => navigate('/finance/transactions')} className="text-[10px] text-primary font-bold uppercase tracking-wider flex items-center gap-1 p-2 bg-primary/10 rounded-lg">
-                            Ver todos <ArrowRight size={10} />
-                        </button>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        {recentActivity.length === 0 ? (
-                            <div className="text-xs text-muted-foreground p-4 border border-border rounded-xl bg-card/50 text-center">Nenhum lançamento recente</div>
-                        ) : (
-                            recentActivity.map(t => (
-                                <div key={t.id} onClick={() => { setTransactionType(t.type); setIsTransactionModalOpen(true); }} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98]">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", t.type === 'income' ? 'bg-success/10 text-success' : t.type === 'expense' ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary')}>
-                                            {t.type === 'income' ? <ArrowUpRight size={14} /> : t.type === 'expense' ? <ArrowDownRight size={14} /> : <ArrowRightLeft size={14} />}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <div className="text-sm font-bold truncate">{t.description}</div>
-                                            <div className="text-[10px] text-muted-foreground">{parseDateLocal(t.date).toLocaleDateString('pt-BR')} • {categories.find(c => c.id === t.categoryId)?.name || 'Sem Categoria'}</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <div className={cn("font-bold text-sm", t.type === 'income' ? 'text-success' : t.type === 'expense' ? 'text-danger' : 'text-foreground')}>
-                                            {t.type === 'expense' ? '-' : '+'}{fmt(t.amount)}
-                                        </div>
-                                        <Badge variant={t.isPaid ? 'success' : 'neutral'} className="text-[9px] py-0 mt-1">{t.isPaid ? 'Pago' : 'Pendente'}</Badge>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </section>
-
                 {/* CAMADA 5: Acessos Financeiros */}
                 <section>
                     <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Acessos</h2>
