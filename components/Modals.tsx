@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { ContactModal } from './CommercialModals';
 import { translateStatus, translatePriority, translateTaskStatus, translateContactScope } from '../utils/i18n';
 import { usePaymentConfirmation } from './PaymentConfirmation';
+import { useAppEnvironment } from '../context/AppEnvironmentContext';
 import { kanbanService } from '../services/kanbanService';
 import { KanbanStage } from '../types';
 import { KanbanContext } from './Kanban/KanbanContext';
@@ -2315,6 +2316,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 }) => {
     const isEditing = !!initialData?.id;
     const [mode, setMode] = useState<'event' | 'task'>('event');
+    const { isApp } = useAppEnvironment();
 
     // Determine strict user list based on mode
     const activeUsers = mode === 'task'
@@ -2476,7 +2478,7 @@ export const EventModal: React.FC<EventModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-6">
 
                 {/* Type Switcher */}
-                {!isEditing && (
+                {!isEditing && !isApp && (
                     <div className="flex bg-secondary p-1 rounded-lg w-full max-w-sm mx-auto mb-6">
                         <button
                             type="button"
