@@ -395,17 +395,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     <div className={cn("h-20 flex items-center transition-all px-6 shrink-0 bg-transparent", isCollapsed ? "justify-center px-4" : "justify-between")}>
                         {!isCollapsed ? (
                             <div className="flex items-center gap-2">
-                                <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg glow", isSuperAdminArea ? "bg-primary" : "bg-gradient-to-br from-primary to-primary")}>
-                                    {isSuperAdminArea ? <Globe className="h-5 w-5 text-white" /> : <LayoutDashboard className="h-5 w-5 text-white" />}
-                                </div>
-                                <span className="text-lg font-bold tracking-tight text-foreground whitespace-nowrap overflow-hidden drop-shadow-sm">
+                                <span className="text-xl font-black tracking-tight text-primary dark:text-white uppercase whitespace-nowrap overflow-hidden drop-shadow-sm">
                                     {isSuperAdminArea ? 'Contazze Admin' : 'Contazze'}
                                 </span>
                             </div>
                         ) : (
-                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg", isSuperAdminArea ? "bg-primary" : "bg-gradient-to-br from-primary to-primary")}>
-                                {isSuperAdminArea ? <Globe className="h-5 w-5 text-white" /> : <LayoutDashboard className="h-5 w-5 text-white" />}
-                            </div>
+                            <img src="/icon.svg" alt="Contazze" className="h-8 w-8 object-contain shrink-0" />
                         )}
                         <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-muted-foreground"><X size={20} /></button>
                         <button onClick={toggleSidebar} className="hidden lg:flex text-muted-foreground hover:text-foreground transition-colors">

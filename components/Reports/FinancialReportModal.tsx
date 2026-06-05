@@ -299,7 +299,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Relatório Financeiro - EcoFlow</title>
+                <title>Relatório Financeiro - Contazze</title>
                 <style>
                     body { font-family: 'Inter', system-ui, sans-serif; padding: 40px; color: #0f172a; max-width: 1200px; margin: 0 auto; }
                     h1 { color: #0f172a; font-size: 24px; margin-bottom: 5px; }
@@ -337,8 +337,9 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
             <body>
                 <div class="header">
                     <div>
+                        <img src="/logo-principal.svg" alt="Contazze" style="height: 40px; margin-bottom: 10px;" />
                         <h1>Relatório Financeiro</h1>
-                        <div class="meta"><strong>EcoFlow Systems</strong></div>
+                        <div class="meta"><strong style="color: #10b981;">Contazze</strong></div>
                     </div>
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>

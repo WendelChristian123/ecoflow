@@ -78,7 +78,7 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Relatório de Rotinas - EcoFlow</title>
+                <title>Relatório de Rotinas - Contazze</title>
                 <style>
                     body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
                     h1 { color: #0f172a; font-size: 24px; margin-bottom: 10px; }

@@ -79,7 +79,7 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Relatório de Contratos - EcoFlow</title>
+                <title>Relatório de Contratos - Contazze</title>
                 <style>
                     body { font-family: 'Inter', system-ui, sans-serif; padding: 40px; color: #0f172a; max-width: 1200px; margin: 0 auto; }
                     h1 { color: #0f172a; font-size: 24px; margin-bottom: 5px; }
@@ -96,7 +96,7 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
             </head>
             <body>
                  <div class="header">
-                    <div><h1>Relatório de Contratos</h1><div class="meta"><strong>EcoFlow Systems</strong></div></div>
+                    <div><h1>Relatório de Contratos</h1><div class="meta"><strong style="color: #10b981;">Contazze</strong></div></div>
                     <div class="meta" style="text-align: right;">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Filtro:</strong> ${statusFilter === 'all' ? 'Todos' : statusFilter === 'active' ? 'Ativos' : 'Inativos'}</div>

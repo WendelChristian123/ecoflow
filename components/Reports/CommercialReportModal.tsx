@@ -110,7 +110,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Relatório Comercial - EcoFlow</title>
+                <title>Relatório Comercial - Contazze</title>
                 <style>
                     body { font-family: 'Inter', system-ui, sans-serif; padding: 40px; color: #0f172a; max-width: 1200px; margin: 0 auto; }
                     h1 { color: #0f172a; font-size: 24px; margin-bottom: 5px; }
@@ -136,7 +136,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                 <div class="header">
                     <div>
                         <h1>Relatório Comercial</h1>
-                        <div class="meta"><strong>EcoFlow Systems</strong></div>
+                        <div class="meta"><strong style="color: #10b981;">Contazze</strong></div>
                     </div>
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateStr}</div>

@@ -43,7 +43,7 @@ export const CatalogReportModal: React.FC<CatalogReportModalProps> = ({ isOpen, 
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Relatório do Catálogo - EcoFlow</title>
+                <title>Relatório do Catálogo - Contazze</title>
                 <style>
                     body { font-family: 'Inter', system-ui, sans-serif; padding: 40px; color: #0f172a; max-width: 1200px; margin: 0 auto; }
                     h1 { color: #0f172a; font-size: 24px; margin-bottom: 5px; }
@@ -60,7 +60,7 @@ export const CatalogReportModal: React.FC<CatalogReportModalProps> = ({ isOpen, 
             </head>
             <body>
                  <div class="header">
-                    <div><h1>Relatório de Catálogo</h1><div class="meta"><strong>EcoFlow Systems</strong></div></div>
+                    <div><h1>Relatório de Catálogo</h1><div class="meta"><strong style="color: #10b981;">Contazze</strong></div></div>
                     <div class="meta" style="text-align: right;">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Filtro:</strong> ${typeFilter === 'all' ? 'Todos' : typeFilter === 'product' ? 'Produtos' : 'Serviços'}</div>

@@ -68,7 +68,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
                                 <h1 className="text-lg font-bold text-foreground truncate">{userName}</h1>
                             </>
                         ) : (
-                            <h1 className="text-lg font-bold text-foreground truncate">{getTitle()}</h1>
+                            getTitle() === 'Contazze' ? (
+                                <img src="/logo-negativa.svg" alt="Contazze" className="h-6 w-auto object-contain" />
+                            ) : (
+                                <h1 className="text-lg font-bold text-foreground truncate">{getTitle()}</h1>
+                            )
                         )}
                     </div>
                 </div>
