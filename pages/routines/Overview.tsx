@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { Task, Project, User, Team } from '../../types';
+import { Task, Project, User, Team, CalendarEvent } from '../../types';
 import { Loader, Card, cn, Button, Select, Avatar, Badge, StatCard } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
-import { DrilldownModal } from '../../components/Modals';
+import { DrilldownModal, TaskModal, EventModal, TaskDetailModal, EventDetailModal, ProjectModal, TeamModal } from '../../components/Modals';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
 import { useAuth } from '../../context/AuthContext';
 import { useRBAC } from '../../context/RBACContext';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +19,9 @@ import {
     ArrowRight,
     Users,
     FileText,
-    User as UserIcon
+    User as UserIcon,
+    Calendar as CalendarIcon,
+    Plus
 } from 'lucide-react';
 import { RoutineReportModal } from '../../components/Reports/RoutineReportModal';
 import {
@@ -52,12 +55,22 @@ export const RoutinesOverview: React.FC = () => {
     const { user } = useAuth();
     const { isAdmin } = useRBAC();
     const navigate = useNavigate();
+    const { isApp } = useAppEnvironment();
     const [loading, setLoading] = useState(true);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
     const [delegatorIds, setDelegatorIds] = useState<string[]>([]);
     const [usersList, setUsersList] = useState<User[]>([]);
+
+    // Modals
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+    const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+    const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+    const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
+    const [selectedEventDetail, setSelectedEventDetail] = useState<CalendarEvent | null>(null);
 
     // Filter State
     const [period, setPeriod] = useState<'all' | 'today' | 'week' | 'month'>('month');
@@ -77,14 +90,16 @@ export const RoutinesOverview: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [t, p, dIds, u, tm] = await Promise.all([
+            const [t, e, p, dIds, u, tm] = await Promise.all([
                 api.getTasks(),
+                api.getEvents(),
                 api.getProjects(),
                 api.getDelegators('tasks'),
                 api.getUsers(),
                 api.getTeams()
             ]);
             setTasks(t);
+            setEvents(e);
             setProjects(p);
             setDelegatorIds(dIds);
             setUsersList(u);
@@ -116,17 +131,21 @@ export const RoutinesOverview: React.FC = () => {
         let scopedTasks = tasks;
         let visibleProjects = projects;
 
+        let visibleEvents = events;
+
         // 1. RBAC & Delegation Scope
         if (!isAdmin) {
             const allowedUserIds = [user.id, ...delegatorIds];
             scopedTasks = tasks.filter(t => allowedUserIds.includes(t.assigneeId));
             visibleProjects = projects.filter(p => p.members.includes(user.id));
+            visibleEvents = events.filter(e => e.participants?.includes(user.id));
         }
 
         // 2. Assignee Filter
         if (selectedAssignee !== 'all') {
             scopedTasks = scopedTasks.filter(t => t.assigneeId === selectedAssignee);
             visibleProjects = visibleProjects.filter(p => p.members.includes(selectedAssignee));
+            visibleEvents = visibleEvents.filter(e => e.participants?.includes(selectedAssignee));
         }
 
         // 3. Apply Time Period Filter (For Dashboard Display Only)
@@ -140,10 +159,10 @@ export const RoutinesOverview: React.FC = () => {
             visibleTasks = scopedTasks.filter(t => isWithinInterval(parseISO(t.dueDate), { start: startOfMonth(now), end: endOfMonth(now) }));
         }
 
-        return { scopedTasks, visibleTasks, visibleProjects };
+        return { scopedTasks, visibleTasks, visibleProjects, visibleEvents };
     };
 
-    const { scopedTasks, visibleTasks, visibleProjects } = getVisibleData();
+    const { scopedTasks, visibleTasks, visibleProjects, visibleEvents } = getVisibleData();
 
     // --- Metrics Calculations ---
     const now = new Date();
@@ -161,10 +180,19 @@ export const RoutinesOverview: React.FC = () => {
         t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday)
     ).length;
 
+    const upcomingEvents = visibleEvents.filter(e =>
+        e.status !== 'completed' && e.status !== 'cancelled' && e.startDate && !isBefore(parseISO(e.startDate), startOfToday)
+    );
+    const totalUpcomingEvents = upcomingEvents.length;
+
     // --- Modal Handler ---
-    const openDrilldown = (title: string, filterFn: (t: Task) => boolean) => {
+    const openDrilldownTasks = (title: string, filterFn: (t: Task) => boolean) => {
         const data = visibleTasks.filter(filterFn);
         setModalState({ isOpen: true, title, type: 'tasks', data });
+    };
+
+    const openDrilldownEvents = (title: string, data: CalendarEvent[]) => {
+        setModalState({ isOpen: true, title, type: 'events', data });
     };
 
     // --- Charts Data ---
@@ -190,6 +218,213 @@ export const RoutinesOverview: React.FC = () => {
 
     if (loading) return <Loader />;
 
+    // === MOBILE LAYOUT ===
+    if (isApp) {
+        const userTeams = isAdmin ? teams : teams.filter(t => (t.memberIds || []).includes(user?.id || ''));
+
+        return (
+            <div className="flex-1 flex flex-col gap-5 px-4 pt-3 pb-6 overflow-y-auto custom-scrollbar">
+                
+                {/* === CAMADA 1: Ações Rápidas === */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Ações rápidas</h2>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                            onClick={() => setIsTaskModalOpen(true)}
+                            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary transition-all duration-200 active:scale-[0.97] hover:bg-primary/15"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                                <CheckSquare size={15} strokeWidth={2} />
+                            </div>
+                            <span className="text-xs font-semibold truncate">Tarefas</span>
+                        </button>
+                        
+                        <button
+                            onClick={() => setIsEventModalOpen(true)}
+                            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-card border border-border text-foreground transition-all duration-200 active:scale-[0.97] hover:bg-accent/50 hover:border-border/80"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center shrink-0">
+                                <CalendarIcon size={15} strokeWidth={2} />
+                            </div>
+                            <span className="text-xs font-semibold truncate">Compromissos</span>
+                        </button>
+                        
+                        <button
+                            onClick={() => setIsReportModalOpen(true)}
+                            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-card border border-border text-foreground transition-all duration-200 active:scale-[0.97] hover:bg-accent/50 hover:border-border/80 col-span-2 md:col-span-1"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center shrink-0">
+                                <FileText size={15} strokeWidth={2} />
+                            </div>
+                            <span className="text-xs font-semibold truncate">Relatórios</span>
+                        </button>
+                    </div>
+                </section>
+
+                {/* === CAMADA 2: KPIs / Cards da Dashboard === */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Indicadores</h2>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                            <StatCard title="Vencido" value={totalOverdue} icon={AlertCircle} variant="danger" size="sm" subtitle="Tarefas atrasadas" />
+                        </div>
+                        <div onClick={() => openDrilldownTasks('A Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                            <StatCard title="A vencer" value={totalDueSoon} icon={Clock} variant="warning" size="sm" subtitle="Tarefas no prazo" />
+                        </div>
+                        <div onClick={() => openDrilldownTasks('Concluídos', t => t.status === 'done')} className="cursor-pointer">
+                            <StatCard title="Concluídos" value={totalDone} icon={CheckCircle2} variant="success" size="sm" subtitle="Total histórico" />
+                        </div>
+                        <div onClick={() => openDrilldownEvents('Próximos compromissos', upcomingEvents)} className="cursor-pointer">
+                            <StatCard title="Compromissos" value={totalUpcomingEvents} icon={CalendarIcon} variant="info" size="sm" subtitle="Próximos eventos" />
+                        </div>
+                    </div>
+                </section>
+
+                {/* === CAMADA 3: Projetos e Equipes === */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Seus Projetos e Equipes</h2>
+                    <div className="flex flex-col gap-4">
+                        {/* Projetos */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <div className="text-[10px] font-bold text-muted-foreground uppercase">Projetos Ativos ({visibleProjects.length})</div>
+                                <button onClick={() => setIsProjectModalOpen(true)} className="p-1 rounded bg-secondary text-muted-foreground hover:text-foreground">
+                                    <Plus size={12} />
+                                </button>
+                            </div>
+                            {visibleProjects.length === 0 ? (
+                                <div className="text-xs text-muted-foreground p-3 border border-border rounded-xl bg-card/50 text-center">Nenhum projeto ativo</div>
+                            ) : (
+                                visibleProjects.map(p => (
+                                    <div key={p.id} onClick={() => openDrilldownTasks(`Tarefas do Projeto: ${p.name}`, t => t.projectId === p.id)} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                                <Briefcase size={14} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-bold truncate">{p.name}</div>
+                                                <div className="text-[10px] text-muted-foreground">{p.members.length} membros</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Equipes */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <div className="text-[10px] font-bold text-muted-foreground uppercase">Suas Equipes ({userTeams.length})</div>
+                                <button onClick={() => setIsTeamModalOpen(true)} className="p-1 rounded bg-secondary text-muted-foreground hover:text-foreground">
+                                    <Plus size={12} />
+                                </button>
+                            </div>
+                            {userTeams.length === 0 ? (
+                                <div className="text-xs text-muted-foreground p-3 border border-border rounded-xl bg-card/50 text-center">Nenhuma equipe vinculada</div>
+                            ) : (
+                                userTeams.map(tm => (
+                                    <div key={tm.id} onClick={() => openDrilldownTasks(`Tarefas da Equipe: ${tm.name}`, t => t.teamId === tm.id)} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-8 h-8 rounded-full bg-secondary text-muted-foreground flex items-center justify-center shrink-0">
+                                                <Users size={14} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-bold truncate">{tm.name}</div>
+                                                <div className="text-[10px] text-muted-foreground">{(tm.memberIds || []).length} membros</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Modals para o mobile */}
+                <DrilldownModal
+                    isOpen={modalState.isOpen}
+                    onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+                    title={modalState.title}
+                    type={modalState.type as 'tasks' | 'events'}
+                    data={modalState.data}
+                    users={usersList}
+                    onItemClick={(item) => {
+                        if (modalState.type === 'tasks') setSelectedTaskDetail(item as Task);
+                        else setSelectedEventDetail(item as CalendarEvent);
+                    }}
+                />
+                
+                {selectedTaskDetail && (
+                    <TaskDetailModal
+                        isOpen={!!selectedTaskDetail}
+                        onClose={() => setSelectedTaskDetail(null)}
+                        task={selectedTaskDetail}
+                        users={usersList}
+                        projects={projects}
+                        teams={teams}
+                        boardStages={[]}
+                        onSuccess={loadData}
+                    />
+                )}
+
+                {selectedEventDetail && (
+                    <EventDetailModal
+                        isOpen={!!selectedEventDetail}
+                        onClose={() => setSelectedEventDetail(null)}
+                        event={selectedEventDetail}
+                        users={usersList}
+                        projects={projects}
+                        teams={teams}
+                        onSuccess={loadData}
+                    />
+                )}
+
+                <ProjectModal
+                    isOpen={isProjectModalOpen}
+                    onClose={() => setIsProjectModalOpen(false)}
+                    onSuccess={loadData}
+                    users={usersList}
+                />
+
+                <TeamModal
+                    isOpen={isTeamModalOpen}
+                    onClose={() => setIsTeamModalOpen(false)}
+                    onSuccess={loadData}
+                    users={usersList}
+                />
+                
+                <TaskModal
+                    isOpen={isTaskModalOpen}
+                    onClose={() => setIsTaskModalOpen(false)}
+                    onSuccess={loadData}
+                    projects={projects}
+                    teams={teams}
+                    users={usersList}
+                />
+
+                <EventModal
+                    isOpen={isEventModalOpen}
+                    onClose={() => setIsEventModalOpen(false)}
+                    onSuccess={loadData}
+                    users={usersList}
+                    projects={projects}
+                    teams={teams}
+                    tasks={tasks}
+                    onEventAdded={loadData}
+                />
+
+                <RoutineReportModal
+                    isOpen={isReportModalOpen}
+                    onClose={() => setIsReportModalOpen(false)}
+                    tasks={scopedTasks}
+                    projects={projects}
+                    users={availableUsers}
+                />
+            </div>
+        );
+    }
+
+    // === DESKTOP LAYOUT (unchanged) ===
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-2 pb-4 pr-2 text-foreground">
             <div className="flex flex-col md:flex-row justify-between items-center gap-3">
@@ -255,7 +490,7 @@ export const RoutinesOverview: React.FC = () => {
                         subtitle="Em andamento"
                     />
                 </div>
-                <div onClick={() => openDrilldown('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                <div onClick={() => openDrilldownTasks('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
                     <StatCard
                         title="A Vencer"
                         value={totalDueSoon}
@@ -265,7 +500,7 @@ export const RoutinesOverview: React.FC = () => {
                         subtitle="Dentro do prazo"
                     />
                 </div>
-                <div onClick={() => openDrilldown('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
+                <div onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))} className="cursor-pointer">
                     <StatCard
                         title="Vencidos"
                         value={totalOverdue}
@@ -275,7 +510,7 @@ export const RoutinesOverview: React.FC = () => {
                         subtitle="Prazo expirado"
                     />
                 </div>
-                <div onClick={() => openDrilldown('Tarefas Concluídas', t => t.status === 'done')} className="cursor-pointer">
+                <div onClick={() => openDrilldownTasks('Tarefas Concluídas', t => t.status === 'done')} className="cursor-pointer">
                     <StatCard
                         title="Concluídos"
                         value={totalDone}
@@ -354,7 +589,7 @@ export const RoutinesOverview: React.FC = () => {
                                                 </div>
                                             )})}
                                         {totalOverdue > 5 && (
-                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldown('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))}>
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas Vencidas', t => t.status !== 'done' && isBefore(parseISO(t.dueDate), startOfToday))}>
                                                 Ver todas ({totalOverdue})
                                             </Button>
                                         )}
@@ -395,7 +630,7 @@ export const RoutinesOverview: React.FC = () => {
                                                 </div>
                                             )})}
                                         {totalDueSoon > 5 && (
-                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldown('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))}>
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas a Vencer', t => t.status !== 'done' && !isBefore(parseISO(t.dueDate), startOfToday))}>
                                                 Ver todas ({totalDueSoon})
                                             </Button>
                                         )}
@@ -436,7 +671,7 @@ export const RoutinesOverview: React.FC = () => {
                                                 </div>
                                             )})}
                                         {totalDone > 5 && (
-                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldown('Tarefas Concluídas', t => t.status === 'done')}>
+                                            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground mt-1" onClick={() => openDrilldownTasks('Tarefas Concluídas', t => t.status === 'done')}>
                                                 Ver todas ({totalDone})
                                             </Button>
                                         )}
@@ -534,7 +769,7 @@ export const RoutinesOverview: React.FC = () => {
                 isOpen={modalState.isOpen}
                 onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
                 title={modalState.title}
-                type="tasks"
+                type={modalState.type as 'tasks' | 'events'}
                 data={modalState.data}
                 users={usersList}
             />

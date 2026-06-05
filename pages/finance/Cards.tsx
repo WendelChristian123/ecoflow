@@ -9,9 +9,12 @@ import { CreditCardReportModal } from '../../components/Reports/CreditCardReport
 import { CreditCard as CardIcon, Calendar, Plus, FileText, AlertCircle, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import { processTransactions, ProcessedTransaction } from '../../services/financeLogic';
 import { format, parseISO, isBefore, isAfter, addMonths, startOfDay, addDays, endOfDay } from 'date-fns';
-import { parseDateLocal } from '../../utils/formatters';
 import { ptBR } from 'date-fns/locale';
+import { parseDateLocal } from '../../utils/formatters';
 import { useCompany } from '../../context/CompanyContext';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
+import { ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // --- Local Components ---
 
@@ -91,6 +94,8 @@ const InvoicePaymentModal: React.FC<InvoicePaymentModalProps> = ({ isOpen, onClo
 
 export const FinancialCards: React.FC = () => {
     const { currentCompany } = useCompany();
+    const { isApp } = useAppEnvironment();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [cards, setCards] = useState<CreditCard[]>([]);
@@ -309,6 +314,84 @@ export const FinancialCards: React.FC = () => {
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
     if (loading) return <Loader />;
+
+    // === MOBILE LAYOUT ===
+    if (isApp) {
+        return (
+            <div className="flex-1 flex flex-col bg-background text-foreground relative pb-20">
+                {/* Header Compacto */}
+                <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground"><ChevronLeft size={20} /></button>
+                    <h1 className="text-base font-bold text-foreground">Cartões de Crédito</h1>
+                    <button onClick={handleCreate} className="p-2 -mr-2 text-primary"><Plus size={20} /></button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    {cards.length === 0 ? (
+                        <div className="text-center py-10 text-muted-foreground">
+                            <CardIcon size={32} className="mx-auto mb-3 opacity-20" />
+                            <p className="text-sm">Nenhum cartão cadastrado</p>
+                        </div>
+                    ) : (
+                        cards.map(card => {
+                            const stats = getCardStats(card.id, card.limitAmount);
+                            const { current } = getCardInvoices(card);
+                            const invoice = current;
+
+                            return (
+                                <div key={card.id} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm relative group cursor-pointer" onClick={(e) => handleEdit(e, card)}>
+                                    <div className="p-4 bg-gradient-to-br from-indigo-500/10 to-transparent border-b border-border/50">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="font-black text-lg text-foreground tracking-tight">{card.name}</div>
+                                            <CardIcon size={20} className="text-primary" />
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                                            <span>Fechamento: dia {card.closingDay}</span>
+                                            <span>•</span>
+                                            <span>Vencimento: dia {card.dueDay}</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 space-y-4">
+                                        <div>
+                                            <div className="flex justify-between text-[11px] font-bold mb-1 uppercase tracking-wide">
+                                                <span className="text-muted-foreground">Limite</span>
+                                                <span className="text-foreground">{fmt(card.limitAmount)}</span>
+                                            </div>
+                                            <ProgressBar progress={stats.percent} className="h-1.5" colorClass={stats.percent > 90 ? 'bg-rose-500' : 'bg-emerald-500'} />
+                                            <div className="flex justify-between text-[10px] font-medium mt-1 text-muted-foreground">
+                                                <span>Disponível: {fmt(stats.available)}</span>
+                                                <span>Usado: {fmt(stats.used)}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-3 border-t border-border flex justify-between items-center">
+                                            <div>
+                                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Fatura Atual</div>
+                                                <div className="text-xl font-black text-foreground">{invoice ? fmt(invoice.amount) : 'R$ 0,00'}</div>
+                                                {invoice && (
+                                                    <div className={cn("text-[9px] font-bold uppercase mt-0.5", (invoice as any).status === 'open' ? "text-primary" : (invoice as any).status === 'closed' ? "text-yellow-500" : "text-rose-500")}>
+                                                        {(invoice as any).status === 'open' ? 'Aberta' : (invoice as any).status === 'closed' ? 'Fechada' : 'Vencida'} • {format(parseISO(invoice.date), 'dd/MM/yyyy')}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {invoice && (
+                                                <Button size="sm" onClick={(e) => { e.stopPropagation(); setPaymentModalData({ card, amount: invoice.amount }); setIsPaymentModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs">Pagar</Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })
+                    )}
+                </div>
+
+                <TransactionModal isOpen={isTransactionModalOpen} onClose={() => { setIsTransactionModalOpen(false); setSelectedCardForTx(null); }} onSuccess={loadData} accounts={accounts} categories={categories} cards={cards} contacts={contacts} initialData={{ type: 'expense', creditCardId: selectedCardForTx?.id, accountId: selectedCardForTx ? undefined : accounts[0]?.id }} />
+                <InvoicePaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} card={paymentModalData?.card || null} invoiceAmount={paymentModalData?.amount || 0} accounts={accounts} onConfirm={handlePaymentConfirm} />
+                <CardModal isOpen={isCardModalOpen} onClose={() => setIsCardModalOpen(false)} onSuccess={loadData} initialData={editingCard} />
+                <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={executeDelete} title="Excluir Cartão" />
+            </div>
+        );
+    }
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">

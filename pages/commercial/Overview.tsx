@@ -5,7 +5,7 @@ import { api } from '../../services/api';
 import { Quote, User, Contact, CatalogItem } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { Card, Button, Loader, Badge, StatCard } from '../../components/Shared';
-import { TrendingUp, DollarSign, FileText, Plus, BarChart2, PieChart, X, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingUp, DollarSign, FileText, Plus, BarChart2, PieChart, X, CheckCircle, XCircle, Users, Package, FileSignature, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO, startOfDay } from 'date-fns';
 import { formatDate, parseDateLocal } from '../../utils/formatters';
@@ -16,6 +16,7 @@ import { TransactionModal } from '../../components/Modals';
 import { commercialLogic } from '../../services/commercialLogic';
 import { kanbanService } from '../../services/kanbanService';
 import { KanbanStage, FinancialCategory, FinancialAccount, RecurringService } from '../../types';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
 
 
 
@@ -91,6 +92,7 @@ function cn(...classes: (string | undefined | null | false)[]) {
 export const CommercialOverview: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { isApp } = useAppEnvironment();
     const [loading, setLoading] = useState(true);
 
     // Data
@@ -326,6 +328,160 @@ export const CommercialOverview: React.FC = () => {
 
     const drilldownInfo = getDrilldownData();
 
+    // === MOBILE LAYOUT ===
+    if (isApp) {
+        const mobileRecent = recentActivity.slice(0, 6);
+
+        const quickActions = [
+            { label: 'Orçamentos', icon: Plus, action: () => { setEditingQuote(undefined); setIsQuoteModalOpen(true); }, accent: true },
+            { label: 'Relatórios', icon: FileText, action: () => setIsReportModalOpen(true) },
+        ];
+
+        const accessActions = [
+            { label: 'Contatos', icon: Users, action: () => navigate('/commercial/contacts') },
+            { label: 'Catálogo', icon: Package, action: () => navigate('/commercial/catalog') },
+            { label: 'Contratos', icon: FileSignature, action: () => navigate('/commercial/recurring') },
+        ];
+
+        return (
+            <div className="flex-1 flex flex-col gap-5 px-4 pt-3 pb-6 overflow-y-auto custom-scrollbar">
+
+                {/* === CAMADA 1: Ações Rápidas === */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Ações rápidas</h2>
+                    <div className="grid grid-cols-2 gap-2">
+                        {quickActions.map((qa) => (
+                            <button
+                                key={qa.label}
+                                onClick={qa.action}
+                                className={cn(
+                                    "flex items-center gap-2.5 p-2.5 rounded-xl border transition-all duration-200 active:scale-[0.97]",
+                                    qa.accent
+                                        ? "bg-primary/10 border-primary/20 text-primary hover:bg-primary/15"
+                                        : "bg-card border-border text-foreground hover:bg-accent/50 hover:border-border/80"
+                                )}
+                            >
+                                <div className={cn(
+                                    "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+                                    qa.accent ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
+                                )}>
+                                    <qa.icon size={15} strokeWidth={2} />
+                                </div>
+                                <span className="text-xs font-semibold truncate">{qa.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* === CAMADA 2: KPIs Comerciais === */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Indicadores</h2>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div onClick={() => setDrilldownType('negotiation')} className="cursor-pointer">
+                            <StatCard title="Em Negociação" value={kpiData.openCount} icon={TrendingUp} variant="warning" subtitle="Abertos" size="sm" />
+                        </div>
+                        <div onClick={() => setDrilldownType('approved')} className="cursor-pointer">
+                            <StatCard title="Fechados" value={kpiData.approvedCount} icon={CheckCircle} variant="success" subtitle="Aprovados" size="sm" />
+                        </div>
+                        <div onClick={() => setDrilldownType('lost')} className="cursor-pointer">
+                            <StatCard title="Perdidos" value={kpiData.lostCount} icon={XCircle} variant="danger" subtitle="Rejeitados" size="sm" />
+                        </div>
+                        <div onClick={() => setDrilldownType('overdue')} className="cursor-pointer">
+                            <StatCard title="Vencidos" value={kpiData.overdueCount} icon={Clock} variant="danger" subtitle="Expirados" size="sm" />
+                        </div>
+                        <div className="col-span-2">
+                            <StatCard
+                                title="Taxa de Conversão"
+                                value={`${kpiData.conversionRate.toFixed(1)}%`}
+                                icon={BarChart2}
+                                variant={kpiData.conversionRate >= 50 ? 'success' : kpiData.conversionRate >= 20 ? 'warning' : 'danger'}
+                                subtitle={`${kpiData.approvedCount} de ${kpiData.totalQuotes} orçamentos`}
+                                size="sm"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                {/* === CAMADA 3: Negociações Recentes === */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Negociações recentes</h2>
+                    {mobileRecent.length === 0 ? (
+                        <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-2 text-center">
+                            <FileText size={28} className="text-muted-foreground/30" />
+                            <p className="text-sm text-muted-foreground">Nenhuma negociação encontrada.</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            {mobileRecent.map((q) => {
+                                const statusLabel = q.status === 'approved' ? 'Fechado' : q.status === 'rejected' ? 'Perdido' : (q.validUntil && parseDateLocal(q.validUntil) < startOfDay(new Date())) ? 'Vencido' : (q.stage?.name || translateQuoteStatus(q.status));
+                                const badgeVariant = q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'error' : (q.validUntil && parseDateLocal(q.validUntil) < startOfDay(new Date())) ? 'neutral' : 'warning';
+
+                                return (
+                                    <div
+                                        key={q.id}
+                                        onClick={() => { setEditingQuote(q); setIsQuoteModalOpen(true); }}
+                                        className="bg-card border border-border rounded-xl p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all duration-200 hover:bg-accent/30"
+                                    >
+                                        {/* Avatar circle */}
+                                        <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center font-mono text-[10px] text-muted-foreground shrink-0 font-bold">
+                                            #{q.id.substring(0, 4)}
+                                        </div>
+                                        {/* Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-bold text-foreground truncate">
+                                                {q.customerName || q.contact?.name || 'Cliente sem nome'}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-xs font-bold text-primary tabular-nums">
+                                                    {formatCurrency(q.totalValue)}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground">
+                                                    {formatDate(q.date || q.createdAt)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {/* Badge */}
+                                        <Badge variant={badgeVariant}>
+                                            {statusLabel.toUpperCase()}
+                                        </Badge>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </section>
+
+                {/* === CAMADA 4: Acessos === */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Acessos</h2>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        {accessActions.map(item => (
+                            <button
+                                key={item.label}
+                                onClick={item.action}
+                                className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border text-foreground transition-all active:scale-[0.97]"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center shrink-0">
+                                    <item.icon size={16} />
+                                </div>
+                                <span className="text-xs font-semibold truncate">{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* === Modais (reutilizados 100%) === */}
+                <CommercialReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} quotes={quotes} users={users} />
+                <DrilldownModal isOpen={!!drilldownType} onClose={() => setDrilldownType(null)} title={drilldownInfo.title} quotes={drilldownInfo.list} users={users} onQuoteClick={(q) => { setEditingQuote(q); setIsQuoteModalOpen(true); }} />
+                <QuoteModal isOpen={isQuoteModalOpen} onClose={() => setIsQuoteModalOpen(false)} onSuccess={(savedQuote) => { loadData(); if (savedQuote && savedQuote.status === 'approved') { handleApprovalFlow(savedQuote); } }} contacts={contacts} catalog={catalog} initialData={editingQuote} />
+                <QuoteApprovalModal isOpen={isApprovalModalOpen} onClose={() => setIsApprovalModalOpen(false)} onOptionSelected={handleApprovalDecision} />
+                <TransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} onSuccess={() => { loadData(); }} contacts={contacts} categories={financialCategories} accounts={accounts} initialData={transactionInitialData} />
+                <RecurringModal isOpen={isRecurringModalOpen} onClose={() => setIsRecurringModalOpen(false)} onSave={loadData} contacts={contacts} catalog={catalog} financialCategories={financialCategories} bankAccounts={accounts} initialData={recurringInitialData} />
+            </div>
+        );
+    }
+
+    // === DESKTOP LAYOUT (unchanged) ===
     return (
         <div className="flex-1 flex flex-col gap-3 pt-3 pr-2 overflow-y-auto custom-scrollbar">
 

@@ -4,10 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useCompany } from '../../context/CompanyContext';
 import { useRBAC } from '../../context/RBACContext';
 import { api } from '../../services/api';
-import { Card, Select, Input, Button } from '../../components/Shared';
+import { Card, Select, Input, Button, Badge, cn } from '../../components/Shared';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDate } from '../../utils/formatters';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
+import { ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { FilterSelect } from '../../components/FilterSelect';
 import { LoanModal } from '../../components/finance/LoanModal';
@@ -17,6 +20,8 @@ import { LoansReportModal } from '../../components/Reports/LoansReportModal';
 export const Loans = () => {
     const { user } = useAuth();
     const { currentCompany } = useCompany();
+    const { isApp } = useAppEnvironment();
+    const navigate = useNavigate();
     const { can } = useRBAC();
     const [loans, setLoans] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +58,72 @@ export const Loans = () => {
 
     const totalPayable = loans.filter(l => l.type === 'payable' && l.status === 'active').reduce((acc, curr) => acc + curr.totalAmount, 0);
     const totalReceivable = loans.filter(l => l.type === 'receivable' && l.status === 'active').reduce((acc, curr) => acc + curr.totalAmount, 0);
+
+    // === MOBILE LAYOUT ===
+    if (isApp) {
+        return (
+            <div className="flex-1 flex flex-col bg-background text-foreground relative pb-20">
+                {/* Header Compacto */}
+                <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground"><ChevronLeft size={20} /></button>
+                    <h1 className="text-base font-bold text-foreground">Dívidas & Empréstimos</h1>
+                    {can('finance.loans', 'create') ? <button onClick={() => setIsModalOpen(true)} className="p-2 -mr-2 text-primary"><Plus size={20} /></button> : <div className="w-8" />}
+                </div>
+
+                {/* Resumo */}
+                <div className="p-4 flex gap-3 overflow-x-auto custom-scrollbar sticky top-[53px] z-10 bg-background border-b border-border">
+                    <div className="min-w-[150px] flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
+                        <div className="text-[10px] font-bold text-rose-500 uppercase mb-1">Total A Pagar</div>
+                        <div className="text-lg font-black text-rose-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPayable)}</div>
+                    </div>
+                    <div className="min-w-[150px] flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                        <div className="text-[10px] font-bold text-emerald-500 uppercase mb-1">Total A Receber</div>
+                        <div className="text-lg font-black text-emerald-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalReceivable)}</div>
+                    </div>
+                </div>
+
+                {/* Lista */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                    {filteredLoans.length === 0 ? (
+                        <div className="text-center py-10 text-muted-foreground text-sm border border-dashed border-border rounded-xl mx-2">Nenhuma dívida encontrada.</div>
+                    ) : (
+                        filteredLoans.map(loan => (
+                            <div key={loan.id} className="bg-card border border-border rounded-xl p-4 shadow-sm active:scale-[0.98] transition-transform cursor-pointer" onClick={() => { setSelectedLoan(loan); setIsDetailsOpen(true); }}>
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("p-2 rounded-xl border", loan.type === 'payable' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20")}>
+                                            {loan.type === 'payable' ? <ArrowDownCircle size={20} /> : <ArrowUpCircle size={20} />}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-sm text-foreground leading-tight">{loan.name}</div>
+                                            <div className="text-[10px] text-muted-foreground mt-0.5">{loan.contact?.name || 'Sem contato'}</div>
+                                        </div>
+                                    </div>
+                                    <Badge variant={loan.status === 'active' ? 'warning' : 'success'} className="text-[9px] py-0 shadow-sm">{loan.status === 'active' ? 'Em Aberto' : 'Pago'}</Badge>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-border/50">
+                                    <div>
+                                        <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Valor Total</div>
+                                        <div className="text-sm font-bold text-foreground">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.totalAmount)}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Resta Pagar</div>
+                                        <div className="text-sm font-bold text-amber-500">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.remainingAmount)}</div>
+                                    </div>
+                                </div>
+                                <div className="mt-3 text-[10px] text-foreground font-medium text-center bg-secondary/50 border border-border py-1.5 rounded-lg">
+                                    {loan.installmentsCount}x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.installmentAmount)}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <LoanModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingLoan(null); }} onSave={async () => { await loadData(); if (editingLoan) { const fresh = await api.getLoans(currentCompany?.id); const up = fresh.find((l:any) => l.id === editingLoan.id); if (up) { setSelectedLoan(up); setIsDetailsOpen(true); } } }} editingLoan={editingLoan} />
+                <LoanDetailsModal isOpen={isDetailsOpen} onClose={() => setIsDetailsOpen(false)} loan={selectedLoan} onUpdate={loadData} onEdit={(l) => { setEditingLoan(l); setIsModalOpen(true); }} />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">

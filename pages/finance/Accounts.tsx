@@ -4,12 +4,14 @@ import { api } from '../../services/api';
 import { FinancialAccount, FinancialTransaction } from '../../types';
 import { Loader, Card, Badge, cn, Button } from '../../components/Shared';
 import { DrilldownModal, AccountModal, ConfirmationModal } from '../../components/Modals';
-import { Wallet, Building2, Landmark, DollarSign, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Wallet, Building2, Landmark, DollarSign, Plus, Trash2, Edit2, ChevronLeft } from 'lucide-react';
 import { useCompany } from '../../context/CompanyContext';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
 import { useNavigate } from 'react-router-dom';
 
 export const FinancialAccounts: React.FC = () => {
     const { currentCompany } = useCompany();
+    const { isApp } = useAppEnvironment();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
@@ -106,6 +108,55 @@ export const FinancialAccounts: React.FC = () => {
 
     const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     const totalBalance = accounts.reduce((sum, acc) => sum + getAccountBalance(acc.id), 0);
+
+    // === MOBILE LAYOUT ===
+    if (isApp) {
+        return (
+            <div className="flex-1 flex flex-col bg-background text-foreground relative pb-20">
+                {/* Header Compacto */}
+                <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground"><ChevronLeft size={20} /></button>
+                    <h1 className="text-base font-bold text-foreground">Contas & Bancos</h1>
+                    <button onClick={handleCreate} className="p-2 -mr-2 text-primary"><Plus size={20} /></button>
+                </div>
+
+                {/* Resumo */}
+                <div className="p-4 bg-primary/5 border-b border-primary/10">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Saldo Consolidado</span>
+                        <span className="text-[10px] font-medium text-muted-foreground">{accounts.length} contas</span>
+                    </div>
+                    <div className="text-3xl font-black text-foreground tracking-tighter">{fmt(totalBalance)}</div>
+                </div>
+
+                {/* Lista de Contas */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                    {accounts.map(acc => {
+                        const balance = getAccountBalance(acc.id);
+                        return (
+                            <div key={acc.id} onClick={(e) => handleEdit(e, acc)} className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm active:scale-[0.98] transition-transform cursor-pointer">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                                        <Building2 size={20} />
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-foreground text-sm">{acc.name}</div>
+                                        <div className="text-[10px] text-muted-foreground capitalize">{acc.type === 'checking' ? 'Corrente' : acc.type === 'savings' ? 'Poupança' : acc.type === 'investment' ? 'Investimento' : 'Caixa'}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-bold text-foreground text-sm">{fmt(balance)}</div>
+                                    <Badge variant="success" className="text-[9px] py-0 mt-1">Ativa</Badge>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+
+                <AccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onSuccess={loadData} initialData={editingAccount} />
+            </div>
+        );
+    }
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">

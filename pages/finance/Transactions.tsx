@@ -72,6 +72,8 @@ export const FinancialTransactions: React.FC = () => {
     const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
     const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | undefined>(undefined);
@@ -383,6 +385,144 @@ export const FinancialTransactions: React.FC = () => {
     };
 
     if (loading) return <Loader />;
+
+    if (loading) return <Loader />;
+
+    // === MOBILE LAYOUT ===
+    if (isApp) {
+        return (
+            <div className="h-full flex flex-col bg-background text-foreground relative pb-20">
+                {/* Header Compacto */}
+                <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground"><ChevronLeft size={20} /></button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setSelectedMonth(prev => subMonths(prev, 1))} className="p-1 text-muted-foreground"><ChevronLeft size={16} /></button>
+                        <span className="text-sm font-bold capitalize w-28 text-center">{format(selectedMonth, 'MMM yyyy', { locale: ptBR })}</span>
+                        <button onClick={() => setSelectedMonth(prev => addMonths(prev, 1))} className="p-1 text-muted-foreground"><ChevronRight size={16} /></button>
+                    </div>
+                    <button onClick={() => setIsFiltersOpen(!isFiltersOpen)} className={cn("p-2 -mr-2 transition-colors", isFiltersOpen ? "text-primary" : "text-muted-foreground")}>
+                        <Filter size={18} />
+                    </button>
+                </div>
+
+                {/* Filtros Mobile (Colapsável) */}
+                {isFiltersOpen && (
+                    <div className="bg-card border-b border-border px-4 py-3 flex flex-col gap-3 animate-in slide-in-from-top-2">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                            <input
+                                type="text"
+                                placeholder="Buscar lançamento..."
+                                className="w-full pl-9 pr-4 py-2 bg-secondary border border-border rounded-lg text-sm"
+                                value={filters.search}
+                                onChange={e => setFilters({ ...filters, search: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <FilterSelect value={filters.type} onChange={(val) => setFilters({ ...filters, type: val as any })} options={[{ value: 'all', label: 'Todos' }, { value: 'income', label: 'Receitas' }, { value: 'expense', label: 'Despesas' }]} className="w-full" />
+                            <FilterSelect value={filters.status} onChange={(val) => setFilters({ ...filters, status: val })} options={[{ value: 'all', label: 'Qualquer Status' }, { value: 'paid', label: 'Pagos' }, { value: 'pending', label: 'Pendentes' }]} className="w-full" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Lista de Lançamentos */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+                    {groupedTransactions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-40 text-muted-foreground opacity-60">
+                            <FileText size={24} className="mb-2" />
+                            <span className="text-sm">Nenhum lançamento</span>
+                        </div>
+                    ) : (
+                        groupedTransactions.map(group => (
+                            <div key={group.date} className="space-y-2">
+                                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest pl-1">
+                                    {format(parseDateLocal(group.date), "dd/MM - EEEE", { locale: ptBR })}
+                                </div>
+                                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                                    {group.items.map((t, i) => (
+                                        <div key={t.id} className={cn("px-4 py-3 flex items-center justify-between gap-3 active:bg-secondary/50 transition-colors", i !== group.items.length - 1 && "border-b border-border")} onClick={() => { if ((t as ProcessedTransaction).isVirtual) { setDrilldownState({ isOpen: true, title: t.description, data: (t as ProcessedTransaction).virtualChildren || [] }); } else { handleEdit(t as FinancialTransaction); } }}>
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", t.type === 'income' ? 'bg-success/10 text-success' : t.type === 'expense' ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary')}>
+                                                    {getCategoryIcon(categories.find(c => c.id === t.categoryId)?.name)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-bold truncate">{t.description}</div>
+                                                    <div className="text-[10px] text-muted-foreground flex gap-1 truncate">
+                                                        <span>{t.creditCardId ? cards.find(c => c.id === t.creditCardId)?.name : accounts.find(a => a.id === t.accountId)?.name}</span>
+                                                        <span>•</span>
+                                                        <span>{categories.find(c => c.id === t.categoryId)?.name || 'Geral'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <div className={cn("font-bold text-sm", t.type === 'income' ? 'text-success' : t.type === 'expense' ? 'text-danger' : 'text-foreground')}>
+                                                    {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
+                                                </div>
+                                                <Badge variant={t.isPaid ? 'success' : 'neutral'} className="text-[9px] py-0 mt-1">{t.isPaid ? 'Pago' : 'Pendente'}</Badge>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Resumo Rodapé Mobile */}
+                <div className="bg-card border-t border-border px-4 py-3 grid grid-cols-2 gap-4 sticky bottom-0 z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
+                    <div>
+                        <div className="text-[10px] font-bold text-success uppercase">Entradas</div>
+                        <div className="text-sm font-bold text-foreground">{fmt(filteredData.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0))}</div>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-[10px] font-bold text-danger uppercase">Saídas</div>
+                        <div className="text-sm font-bold text-foreground">{fmt(filteredData.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0))}</div>
+                    </div>
+                </div>
+
+                {/* FAB (Floating Action Button) */}
+                <button
+                    onClick={() => setIsQuickAddOpen(true)}
+                    className="fixed bottom-24 right-4 w-14 h-14 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform z-30"
+                >
+                    <Plus size={24} strokeWidth={2.5} />
+                </button>
+
+                {/* MODALS MOBILE */}
+                {isQuickAddOpen && (
+                    <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsQuickAddOpen(false)}></div>
+                        <div className="bg-card w-full rounded-t-3xl p-6 relative z-10 animate-in slide-in-from-bottom-full duration-200 shadow-2xl border-t border-border">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="font-bold text-lg">Novo Lançamento</h3>
+                                <button onClick={() => setIsQuickAddOpen(false)} className="p-2 bg-secondary rounded-full"><Plus className="rotate-45" size={16} /></button>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <button onClick={() => { handleCreate('income'); setIsQuickAddOpen(false); }} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-success/10 border border-success/20 text-success font-bold active:scale-[0.98]">
+                                    <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center"><TrendingUp size={20} /></div>
+                                    <div className="text-left"><div className="text-base">Receita</div><div className="text-xs font-normal opacity-80">Nova entrada</div></div>
+                                </button>
+                                <button onClick={() => { handleCreate('expense'); setIsQuickAddOpen(false); }} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-danger/10 border border-danger/20 text-danger font-bold active:scale-[0.98]">
+                                    <div className="w-10 h-10 rounded-full bg-danger/20 flex items-center justify-center"><TrendingDown size={20} /></div>
+                                    <div className="text-left"><div className="text-base">Despesa</div><div className="text-xs font-normal opacity-80">Nova saída</div></div>
+                                </button>
+                                <button onClick={() => { handleCreate('transfer'); setIsQuickAddOpen(false); }} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-bold active:scale-[0.98]">
+                                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center"><ArrowRight size={20} /></div>
+                                    <div className="text-left"><div className="text-base">Transferência</div><div className="text-xs font-normal opacity-80">Mover saldo</div></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <TransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} accounts={accounts} categories={categories} cards={cards} contacts={contacts} initialData={editingTransaction} initialType={modalInitialType} />
+                <DrilldownModal isOpen={drilldownState.isOpen} onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })} title={drilldownState.title} data={drilldownState.data} type="finance" users={[]} onPayAction={(item) => navigate(`/finance/cards?payInvoice=${item.id}`)} />
+                <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={deleteTransaction} title="Excluir" description="Excluir?" confirmText="Excluir" cancelText="Cancelar" variant="danger" />
+                <RecurrenceActionModal isOpen={!!recurrenceDeleteTarget} onClose={() => setRecurrenceDeleteTarget(null)} onConfirm={executeRecurrenceDelete} action="delete" />
+                {ConfirmationModalComponent}
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col overflow-hidden relative bg-background text-foreground font-sans"> {/* Premium Semantic Background */}

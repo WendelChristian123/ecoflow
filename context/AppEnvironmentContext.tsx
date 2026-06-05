@@ -12,22 +12,15 @@ export interface AppTab {
 export const APP_TABS: AppTab[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', path: '/dashboard' },
     { id: 'commercial', label: 'Comercial', icon: 'Briefcase', path: '/commercial/overview' },
-    { id: 'routines', label: 'Rotinas', icon: 'CheckSquare', path: '/tasks' },
+    { id: 'routines', label: 'Rotinas', icon: 'CheckSquare', path: '/routines/overview' },
     { id: 'finance', label: 'Financeiro', icon: 'DollarSign', path: '/finance/overview' },
     { id: 'settings', label: 'Config', icon: 'Settings', path: '/settings' },
 ];
 
-// Routes blocked in App mode — redirect to /dashboard
 export const APP_BLOCKED_ROUTES: string[] = [
-    '/commercial/contacts',
-    '/commercial/catalog',
-    '/commercial/recurring',
-    '/finance/categories',
-    '/finance/cards',
     '/finance/reports',
     '/projects',
     '/teams',
-    '/routines/overview',
 ];
 
 interface AppEnvironmentContextType {

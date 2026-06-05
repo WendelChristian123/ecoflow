@@ -7,12 +7,13 @@ import { FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard, 
 import { Loader, Card, Badge, cn, Button, StatCard } from '../../components/Shared';
 import { FilterSelect } from '../../components/FilterSelect';
 import { DrilldownModal, TransactionModal } from '../../components/Modals';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText, Printer, LayoutList } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Clock, DollarSign, ArrowRight, Filter, Plus, CreditCard as CardIcon, Calendar, ThumbsUp, ThumbsDown, BarChart2, FileText, Printer, LayoutList, ArrowUpRight, ArrowDownRight, ArrowRightLeft, HandCoins, Settings, X, MoreHorizontal } from 'lucide-react';
 import { FinancialReportModal } from '../../components/Reports/FinancialReportModal';
 import { isBefore, startOfDay, endOfDay, addDays, isWithinInterval, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { parseDateLocal } from '../../utils/formatters';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { useCompany } from '../../context/CompanyContext';
+import { useAppEnvironment } from '../../context/AppEnvironmentContext';
 
 
 
@@ -44,6 +45,11 @@ export const FinancialOverview: React.FC = () => {
     });
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    
+    // Mobile States
+    const { isApp } = useAppEnvironment();
+    const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+    const [transactionType, setTransactionType] = useState<'income' | 'expense' | 'transfer'>('expense');
 
     useEffect(() => {
         if (currentCompany) {
@@ -328,6 +334,200 @@ export const FinancialOverview: React.FC = () => {
     const currentComparisonData = getComparisonData();
 
     if (loading) return <Loader />;
+
+    // === MOBILE LAYOUT ===
+    if (isApp) {
+        const recentActivity = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
+        return (
+            <div className="flex-1 flex flex-col gap-5 px-4 pt-3 pb-24 overflow-y-auto custom-scrollbar relative">
+                
+                {/* CAMADA 1: Ações Principais */}
+                <section>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                            onClick={() => setIsQuickAddOpen(true)}
+                            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary transition-all duration-200 active:scale-[0.97] hover:bg-primary/15"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                                <Plus size={15} strokeWidth={2} />
+                            </div>
+                            <span className="text-xs font-semibold truncate">+ Lançamentos</span>
+                        </button>
+                        
+                        <button
+                            onClick={() => setIsReportModalOpen(true)}
+                            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-card border border-border text-foreground transition-all duration-200 active:scale-[0.97] hover:bg-accent/50 hover:border-border/80"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center shrink-0">
+                                <FileText size={15} strokeWidth={2} />
+                            </div>
+                            <span className="text-xs font-semibold truncate">Relatórios</span>
+                        </button>
+                    </div>
+                </section>
+
+                {/* CAMADA 2: Resumo Financeiro */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Resumo (Mês Atual)</h2>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div onClick={() => openDrilldown('Saldo Consolidado', t => t.isPaid)} className="col-span-2 cursor-pointer bg-gradient-to-br from-card to-secondary/30 border border-border rounded-2xl p-4 shadow-sm active:scale-[0.98] transition-transform">
+                            <span className="text-xs font-bold text-muted-foreground uppercase">Saldo Atual</span>
+                            <div className="mt-1 text-3xl font-black text-foreground tracking-tighter">{fmt(currentBalance)}</div>
+                            <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_8px_var(--success)]"></div> Todas as contas
+                            </div>
+                        </div>
+
+                        <div onClick={() => openDrilldown('Receitas Realizadas', t => t.type === 'income' && t.isPaid)} className="cursor-pointer">
+                            <StatCard title="Receitas" value={fmt(realizedIncome)} icon={TrendingUp} variant="success" size="sm" />
+                        </div>
+                        <div onClick={() => openDrilldown('Despesas Realizadas', t => t.type === 'expense' && t.isPaid)} className="cursor-pointer">
+                            <StatCard title="Despesas" value={fmt(realizedExpense)} icon={TrendingDown} variant="danger" size="sm" />
+                        </div>
+                        <div className="col-span-2">
+                            <StatCard title="Resultado do Período" value={fmt(realizedIncome - realizedExpense)} icon={DollarSign} variant={(realizedIncome - realizedExpense) >= 0 ? 'success' : 'danger'} size="sm" />
+                        </div>
+                    </div>
+                </section>
+
+                {/* CAMADA 3: Atenção Financeira */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Atenção Financeira</h2>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div onClick={() => openDrilldown('Contas Atrasadas', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                            <StatCard title="A Pagar" value={fmt(payablesOverdue)} icon={AlertCircle} variant="danger" subtitle="Atrasadas" size="sm" />
+                        </div>
+                        <div onClick={() => openDrilldown('A Vencer (7 dias)', t => t.type === 'expense' && !t.isPaid && (!t.creditCardId || (t as ProcessedTransaction).isVirtual) && !isBefore(parseDateLocal(t.date), todayStart), true)} className="cursor-pointer">
+                            <StatCard title="A Pagar" value={fmt(payablesFuture)} icon={Clock} variant="warning" subtitle="Próx. 7 dias" size="sm" />
+                        </div>
+                        <div onClick={() => openDrilldown('Recebimentos Atrasados', t => t.type === 'income' && !t.isPaid && isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                            <StatCard title="A Receber" value={fmt(receivablesOverdue)} icon={AlertCircle} variant="danger" subtitle="Atrasadas" size="sm" />
+                        </div>
+                        <div onClick={() => openDrilldown('A Receber (7 dias)', t => t.type === 'income' && !t.isPaid && !isBefore(parseDateLocal(t.date), todayStart))} className="cursor-pointer">
+                            <StatCard title="A Receber" value={fmt(receivablesFuture)} icon={Clock} variant="success" subtitle="Próx. 7 dias" size="sm" />
+                        </div>
+                    </div>
+                </section>
+
+                {/* CAMADA 4: Lançamentos Recentes */}
+                <section>
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Lançamentos Recentes</h2>
+                        <button onClick={() => navigate('/finance/transactions')} className="text-[10px] text-primary font-bold uppercase tracking-wider flex items-center gap-1 p-2 bg-primary/10 rounded-lg">
+                            Ver todos <ArrowRight size={10} />
+                        </button>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        {recentActivity.length === 0 ? (
+                            <div className="text-xs text-muted-foreground p-4 border border-border rounded-xl bg-card/50 text-center">Nenhum lançamento recente</div>
+                        ) : (
+                            recentActivity.map(t => (
+                                <div key={t.id} onClick={() => { setTransactionType(t.type); setIsTransactionModalOpen(true); }} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98]">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", t.type === 'income' ? 'bg-success/10 text-success' : t.type === 'expense' ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary')}>
+                                            {t.type === 'income' ? <ArrowUpRight size={14} /> : t.type === 'expense' ? <ArrowDownRight size={14} /> : <ArrowRightLeft size={14} />}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-bold truncate">{t.description}</div>
+                                            <div className="text-[10px] text-muted-foreground">{parseDateLocal(t.date).toLocaleDateString('pt-BR')} • {categories.find(c => c.id === t.categoryId)?.name || 'Sem Categoria'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className={cn("font-bold text-sm", t.type === 'income' ? 'text-success' : t.type === 'expense' ? 'text-danger' : 'text-foreground')}>
+                                            {t.type === 'expense' ? '-' : '+'}{fmt(t.amount)}
+                                        </div>
+                                        <Badge variant={t.isPaid ? 'success' : 'neutral'} className="text-[9px] py-0 mt-1">{t.isPaid ? 'Pago' : 'Pendente'}</Badge>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </section>
+
+                {/* CAMADA 5: Acessos Financeiros */}
+                <section>
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Acessos</h2>
+                    <div className="grid grid-cols-2 gap-2.5">
+                        {[
+                            { label: 'Lançamentos', icon: LayoutList, path: '/finance/transactions' },
+                            { label: 'Contas & Bancos', icon: Wallet, path: '/finance/accounts' },
+                            { label: 'Cartões', icon: CardIcon, path: '/finance/cards' },
+                            { label: 'Dívidas', icon: HandCoins, path: '/finance/loans' },
+                            { label: 'Categorias', icon: Filter, path: '/finance/categories' },
+                        ].map(item => (
+                            <button
+                                key={item.label}
+                                onClick={() => navigate(item.path)}
+                                className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border text-foreground transition-all active:scale-[0.97]"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center shrink-0">
+                                    <item.icon size={16} />
+                                </div>
+                                <span className="text-xs font-semibold truncate">{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* MODALS MOBILE */}
+                {isQuickAddOpen && (
+                    <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsQuickAddOpen(false)}></div>
+                        <div className="bg-card w-full rounded-t-3xl p-6 relative z-10 animate-in slide-in-from-bottom-full duration-200 shadow-2xl border-t border-border">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="font-bold text-lg">Novo Lançamento</h3>
+                                <button onClick={() => setIsQuickAddOpen(false)} className="p-2 bg-secondary rounded-full"><X size={16} /></button>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <button onClick={() => { setTransactionType('income'); setIsQuickAddOpen(false); setIsTransactionModalOpen(true); }} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-success/10 border border-success/20 text-success font-bold active:scale-[0.98]">
+                                    <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center"><ArrowUpRight size={20} /></div>
+                                    <div className="text-left"><div className="text-base">Receita</div><div className="text-xs font-normal opacity-80">Nova entrada de dinheiro</div></div>
+                                </button>
+                                <button onClick={() => { setTransactionType('expense'); setIsQuickAddOpen(false); setIsTransactionModalOpen(true); }} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-danger/10 border border-danger/20 text-danger font-bold active:scale-[0.98]">
+                                    <div className="w-10 h-10 rounded-full bg-danger/20 flex items-center justify-center"><ArrowDownRight size={20} /></div>
+                                    <div className="text-left"><div className="text-base">Despesa</div><div className="text-xs font-normal opacity-80">Nova saída ou conta a pagar</div></div>
+                                </button>
+                                <button onClick={() => { setTransactionType('transfer'); setIsQuickAddOpen(false); setIsTransactionModalOpen(true); }} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 font-bold active:scale-[0.98]">
+                                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center"><ArrowRightLeft size={20} /></div>
+                                    <div className="text-left"><div className="text-base">Transferência</div><div className="text-xs font-normal opacity-80">Mover saldo entre contas</div></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <DrilldownModal
+                    isOpen={modalState.isOpen}
+                    onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+                    title={modalState.title}
+                    type="finance"
+                    data={modalState.data}
+                    users={[]}
+                />
+
+                <TransactionModal
+                    isOpen={isTransactionModalOpen}
+                    onClose={() => setIsTransactionModalOpen(false)}
+                    onSuccess={loadData}
+                    accounts={accounts}
+                    categories={categories}
+                    cards={cards}
+                    contacts={contacts}
+                    initialType={transactionType}
+                />
+
+                <FinancialReportModal
+                    isOpen={isReportModalOpen}
+                    onClose={() => setIsReportModalOpen(false)}
+                    transactions={filteredData}
+                    accounts={accounts}
+                    categories={categories}
+                />
+
+            </div>
+        );
+    }
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar space-y-4 pb-8 pr-2">

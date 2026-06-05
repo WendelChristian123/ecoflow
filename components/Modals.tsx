@@ -228,6 +228,7 @@ interface DrilldownModalProps {
     };
     onPayAction?: (item: any) => void;
     onStatusChange?: (item: any, newStatus: boolean) => void;
+    onItemClick?: (item: any) => void;
 }
 
 // --- Refactored & Robust Drilldown Modal ---
@@ -252,7 +253,7 @@ interface DrilldownItem {
     metadata?: any;
 }
 
-export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary, onPayAction, onStatusChange }) => {
+export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose, title, type, data, users = [], accountSummary, onPayAction, onStatusChange, onItemClick }) => {
     const [localData, setLocalData] = useState<any[]>(data);
     const { confirmPayment, ConfirmationModalComponent } = usePaymentConfirmation();
     const navigate = useNavigate();
@@ -319,6 +320,10 @@ export const DrilldownModal: React.FC<DrilldownModalProps> = ({ isOpen, onClose,
 
     const handleItemClick = (item: any) => {
         onClose();
+        if (onItemClick) {
+            onItemClick(item);
+            return;
+        }
         if (type === 'tasks') navigate(`/tasks?openModal=${item.id}`);
         else if (type === 'events') navigate(`/agenda?openModal=${item.id}`);
         else if (type === 'finance') {
