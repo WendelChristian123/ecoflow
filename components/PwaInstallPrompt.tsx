@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, Share } from 'lucide-react';
+import { Download, X, Share, MoreVertical } from 'lucide-react';
 
 export function PwaInstallPrompt() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -22,21 +22,15 @@ export function PwaInstallPrompt() {
             return; // only show on mobile
         }
 
-        // Only show once
-        const hasSeenPrompt = localStorage.getItem('contazze_pwa_prompt_seen');
-        if (hasSeenPrompt) {
-            return;
-        }
-
-        // iOS detection (No automatic install prompts exist for iOS)
         const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
         setIsIOS(isIOSDevice);
 
-        if (isIOSDevice && !isStandalone) {
+        let hasFired = false;
+
+        if (isIOSDevice) {
             // Show iOS prompt with a slight delay
             const timer = setTimeout(() => {
                 setShowPrompt(true);
-                localStorage.setItem('contazze_pwa_prompt_seen', 'true');
             }, 3000);
             return () => clearTimeout(timer);
         }
@@ -45,7 +39,7 @@ export function PwaInstallPrompt() {
         if ((window as any).__deferredPwaPrompt) {
             setDeferredPrompt((window as any).__deferredPwaPrompt);
             setShowPrompt(true);
-            localStorage.setItem('contazze_pwa_prompt_seen', 'true');
+            hasFired = true;
         }
 
         // Android / Chrome custom install trigger
@@ -56,13 +50,21 @@ export function PwaInstallPrompt() {
             setDeferredPrompt(e);
             // Update UI notify the user they can install the PWA
             setShowPrompt(true);
-            localStorage.setItem('contazze_pwa_prompt_seen', 'true');
+            hasFired = true;
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+        // Fallback for Android if beforeinstallprompt is not supported or takes too long
+        const fallbackTimer = setTimeout(() => {
+            if (!hasFired) {
+                setShowPrompt(true);
+            }
+        }, 3000);
+
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            clearTimeout(fallbackTimer);
         };
     }, [isStandalone]);
 
@@ -110,7 +112,7 @@ export function PwaInstallPrompt() {
                             <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-300 leading-snug">
                                 Para baixar no iPhone, toque em <Share className="inline w-3.5 h-3.5 mx-0.5 text-blue-500 mb-1" /> <b>Compartilhar</b> e depois escolha <b>"Adicionar à Tela de Início"</b>.
                             </p>
-                        ) : (
+                        ) : deferredPrompt ? (
                             <>
                                 <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-300 leading-snug mb-3 pr-2">
                                     Adicione o app à sua tela inicial para acesso offline e melhor experiência.
@@ -125,6 +127,10 @@ export function PwaInstallPrompt() {
                                     </button>
                                 </div>
                             </>
+                        ) : (
+                            <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-300 leading-snug">
+                                Para instalar no Android, toque no menu <MoreVertical className="inline w-4 h-4 mx-0.5 text-gray-500 mb-0.5" /> e escolha <b>"Adicionar à tela inicial"</b> ou <b>"Instalar aplicativo"</b>.
+                            </p>
                         )}
                     </div>
                 </div>
