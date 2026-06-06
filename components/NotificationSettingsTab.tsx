@@ -166,7 +166,6 @@ export const NotificationSettingsTab: React.FC<{ companySettings: any, onSaveCom
                                 <Badge variant="neutral">Comercial</Badge>
                             </div>
                             <div className="p-4 bg-card">
-                                {renderSelect('commercial', 'followup_time', 'Horário de Retorno (Follow-up)')}
                                 {renderSelect('commercial', 'quote_expiration', 'Vencimento de Orçamento')}
                             </div>
                         </div>
