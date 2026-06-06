@@ -223,12 +223,14 @@ export const api = {
                 // Puxamos a setting correta ou assumimos que o objeto JSON tem a flag
                 const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
                 
+                const creatorName = userData.user?.user_metadata?.name || 'Usuário';
+
                 if (isAckRequired) {
                     await supabase.from('system_notifications').insert({
                         company_id: companyId,
                         user_id: firstData.assignee_id,
-                        title: `Nova Tarefa: ${firstData.title}`,
-                        message: `Você foi designado(a) para executar esta tarefa.`,
+                        title: `Nova Tarefa ou compromisso de ${creatorName} para você!`,
+                        message: firstData.title,
                         reference_id: firstData.id,
                         reference_type: 'task',
                         requires_acknowledgment: true
@@ -1033,11 +1035,12 @@ export const api = {
                 if (isAckRequired) {
                     for (const participantId of firstData.participants) {
                         if (participantId !== currentUserId) {
+                            const creatorName = userData.user?.user_metadata?.name || 'Usuário';
                             await supabase.from('system_notifications').insert({
                                 company_id: companyId,
                                 user_id: participantId,
-                                title: `Novo Evento: ${firstData.title}`,
-                                message: `Você foi convidado(a) para este compromisso na agenda.`,
+                                title: `Nova tarefa ou compromisso de ${creatorName} para você!`,
+                                message: firstData.title,
                                 reference_id: firstData.id,
                                 reference_type: 'event',
                                 requires_acknowledgment: true
