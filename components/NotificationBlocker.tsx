@@ -32,10 +32,10 @@ export const NotificationBlocker: React.FC = () => {
         return () => clearInterval(interval);
     }, [user]);
 
-    const handleAcknowledge = async (id: string, refId?: string, refType?: string) => {
+    const handleAcknowledge = async (id: string, refId?: string, refType?: string, title?: string) => {
         setLoading(true);
         try {
-            await api.acknowledgeNotification(id, refId, refType);
+            await api.acknowledgeNotification(id, refId, refType, title);
             setNotifications(prev => prev.filter(n => n.id !== id));
         } catch (error) {
             console.error("Failed to acknowledge:", error);
@@ -79,7 +79,7 @@ export const NotificationBlocker: React.FC = () => {
                     variant="primary" 
                     className="w-full py-6 text-base gap-3"
                     disabled={loading}
-                    onClick={() => handleAcknowledge(currentNotification.id, currentNotification.reference_id, currentNotification.reference_type)}
+                    onClick={() => handleAcknowledge(currentNotification.id, currentNotification.reference_id, currentNotification.reference_type, currentNotification.title)}
                 >
                     <CheckCircle2 size={20} />
                     {loading ? 'Registrando...' : 'Estou Ciente e Aceito'}

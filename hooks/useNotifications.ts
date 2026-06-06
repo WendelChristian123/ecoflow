@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
 import { isToday, isPast, parseISO, isValid, startOfDay, addDays, isBefore, isSameDay, addMinutes } from 'date-fns';
 
-export type NotificationType = 'task' | 'finance' | 'agenda';
+export type NotificationType = 'task' | 'finance' | 'agenda' | 'system';
 
 export interface NotificationItem {
     id: string;
@@ -32,10 +32,11 @@ export const useNotifications = () => {
 
         try {
             // Fetch in parallel
-            const [tasks, events, transactions] = await Promise.all([
+            const [tasks, events, transactions, sysNotifsData] = await Promise.all([
                 api.getTasks(currentCompany?.id),
                 api.getEvents(currentCompany?.id),
-                api.getFinancialTransactions(currentCompany?.id)
+                api.getFinancialTransactions(currentCompany?.id),
+                api.getSystemBellNotifications()
             ]);
 
             const now = new Date();
@@ -86,8 +87,18 @@ export const useNotifications = () => {
                     originalStatus: e.status
                 }));
 
-            // 4. Combine, Calculate Status, Filter, and Sort
-            const processed = [...taskNotifs, ...financeNotifs, ...agendaNotifs]
+            // 4. Process System Notifications
+            const systemNotifs = sysNotifsData.map(n => ({
+                id: n.id,
+                type: 'system' as const,
+                title: n.message || n.title,
+                date: n.created_at,
+                status: 'today', // Always show as today/new
+                originalStatus: 'pending'
+            }));
+
+            // 5. Combine, Calculate Status, Filter, and Sort
+            const processed = [...taskNotifs, ...financeNotifs, ...agendaNotifs, ...systemNotifs]
                 .map((item): NotificationItem | null => {
                     let itemDate = parseISO(item.date);
                     if (!isValid(itemDate)) return null;
@@ -156,6 +167,8 @@ export const useNotifications = () => {
                 }
             } else if (type === 'finance') {
                 await api.toggleTransactionStatus(id, true);
+            } else if (type === 'system') {
+                await api.dismissSystemNotification(id);
             }
         } catch (e) {
             console.error("Failed to complete item", e);

@@ -61,6 +61,7 @@ export const NotificationPopover: React.FC = () => {
             case 'task': return <Briefcase size={14} />;
             case 'finance': return <DollarSign size={14} />;
             case 'agenda': return <Calendar size={14} />;
+            case 'system': return <Bell size={14} />;
             default: return <Bell size={14} />;
         }
     };
@@ -70,6 +71,7 @@ export const NotificationPopover: React.FC = () => {
             case 'task': return 'Tarefa';
             case 'finance': return 'Financeiro';
             case 'agenda': return 'Compromisso';
+            case 'system': return 'Sistema';
             default: return 'Notificação';
         }
     };
@@ -120,7 +122,7 @@ export const NotificationPopover: React.FC = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-popover border border-border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 origin-top-right !fixed sm:!absolute sm:translate-x-0 !left-1/2 !-translate-x-1/2 sm:!left-auto" style={{ top: '60px' }}>
+                <div className="absolute right-0 sm:right-0 top-full mt-4 w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-popover border border-border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 origin-top-right !fixed sm:!absolute sm:translate-x-0 !left-1/2 !-translate-x-1/2 sm:!left-auto" style={{ top: '68px' }}>
                     <div className="p-3 border-b border-border bg-secondary/30 space-y-3">
                         <div className="flex items-center justify-between">
                             <h4 className="font-semibold text-sm">Notificações</h4>
@@ -135,6 +137,7 @@ export const NotificationPopover: React.FC = () => {
                             <FilterTab label="Tarefas" type="task" />
                             <FilterTab label="Financeiro" type="finance" />
                             <FilterTab label="Compromissos" type="agenda" />
+                            <FilterTab label="Sistema" type="system" />
                         </div>
                     </div>
 

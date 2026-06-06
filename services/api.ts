@@ -840,7 +840,33 @@ export const api = {
         return data;
     },
 
-    acknowledgeNotification: async (id: string, referenceId?: string, referenceType?: string) => {
+    getSystemBellNotifications: async () => {
+        const { data, error } = await supabase
+            .from('system_notifications')
+            .select('*')
+            .eq('is_acknowledged', false)
+            .eq('requires_acknowledgment', false)
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Error fetching bell notifications:', error);
+            return [];
+        }
+        return data;
+    },
+
+    dismissSystemNotification: async (id: string) => {
+        const { error } = await supabase
+            .from('system_notifications')
+            .update({ 
+                is_acknowledged: true, 
+                acknowledged_at: new Date().toISOString() 
+            })
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    acknowledgeNotification: async (id: string, referenceId?: string, referenceType?: string, notificationTitle?: string) => {
         const { error } = await supabase
             .from('system_notifications')
             .update({ 
@@ -859,6 +885,35 @@ export const api = {
                 action: 'acknowledge',
                 details: 'Confirmou o recebimento e ciência da atribuição.'
             });
+
+            // Log to Global Audit Log
+            const taskName = notificationTitle ? notificationTitle.replace('Nova Tarefa: ', '').replace('Novo Evento: ', '') : referenceId;
+            await supabase.rpc('log_auth_event', {
+                p_action: 'ACEITE_ATRIBUICAO',
+                p_description: `Usuário aceitou a atribuição: ${taskName}`
+            });
+
+            // Notify the task/event owner
+            try {
+                const tableName = referenceType === 'task' ? 'tasks' : 'calendar_events';
+                const { data: itemData } = await supabase.from(tableName).select('owner_id').eq('id', referenceId).single();
+                const { data: userData } = await supabase.auth.getUser();
+                
+                if (itemData?.owner_id && itemData.owner_id !== userData.user?.id) {
+                    const userName = userData.user?.user_metadata?.name || 'O usuário';
+                    await supabase.from('system_notifications').insert({
+                        company_id: getCurrentCompanyId(),
+                        user_id: itemData.owner_id,
+                        title: `Atribuição Aceita`,
+                        message: `${userName} confirmou a ciência para: ${taskName}`,
+                        reference_id: referenceId,
+                        reference_type: referenceType,
+                        requires_acknowledgment: false
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to notify owner", err);
+            }
         }
     },
 
