@@ -225,7 +225,7 @@ export const api = {
                 
                 if (isAckRequired) {
                     await supabase.from('system_notifications').insert({
-                        tenant_id: companyId,
+                        company_id: companyId,
                         user_id: firstData.assignee_id,
                         title: `Nova Tarefa: ${firstData.title}`,
                         message: `Você foi designado(a) para executar esta tarefa.`,
@@ -882,12 +882,12 @@ export const api = {
         const { error } = await supabase
             .from('user_notification_preferences')
             .upsert({
-                tenant_id: tenantId,
+                company_id: tenantId,
                 user_id: userData.user.id,
                 module_id: pref.module_id,
                 event_type: pref.event_type,
                 notify_before_minutes: pref.notify_before_minutes
-            }, { onConflict: 'tenant_id, user_id, module_id, event_type' });
+            }, { onConflict: 'company_id, user_id, module_id, event_type' });
             
         if (error) throw error;
     },
@@ -979,7 +979,7 @@ export const api = {
                     for (const participantId of firstData.participants) {
                         if (participantId !== currentUserId) {
                             await supabase.from('system_notifications').insert({
-                                tenant_id: companyId,
+                                company_id: companyId,
                                 user_id: participantId,
                                 title: `Novo Evento: ${firstData.title}`,
                                 message: `Você foi convidado(a) para este compromisso na agenda.`,
