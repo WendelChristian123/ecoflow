@@ -215,6 +215,30 @@ export const api = {
 
         const firstData = data[0];
 
+        // Notificações de Atribuição de Tarefa
+        try {
+            if (firstData.assignee_id && firstData.assignee_id !== currentUserId) {
+                const { data: companyData } = await supabase.from('companies').select('settings').eq('id', companyId).single();
+                
+                // Puxamos a setting correta ou assumimos que o objeto JSON tem a flag
+                const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
+                
+                if (isAckRequired) {
+                    await supabase.from('system_notifications').insert({
+                        tenant_id: companyId,
+                        user_id: firstData.assignee_id,
+                        title: `Nova Tarefa: ${firstData.title}`,
+                        message: `Você foi designado(a) para executar esta tarefa.`,
+                        reference_id: firstData.id,
+                        reference_type: 'task',
+                        requires_acknowledgment: true
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('[API] Failed to create notification for new task', e);
+        }
+
         return {
             ...firstData,
             assigneeId: firstData.assignee_id,
@@ -800,6 +824,74 @@ export const api = {
         if (error) console.error("Failed to log auth event", error);
     },
 
+    // --- NOTIFICATIONS & PREFERENCES ---
+    getUnacknowledgedNotifications: async () => {
+        const { data, error } = await supabase
+            .from('system_notifications')
+            .select('*')
+            .eq('is_acknowledged', false)
+            .eq('requires_acknowledgment', true)
+            .order('created_at', { ascending: true });
+        
+        if (error) {
+            console.error('Error fetching notifications:', error);
+            return [];
+        }
+        return data;
+    },
+
+    acknowledgeNotification: async (id: string, referenceId?: string, referenceType?: string) => {
+        const { error } = await supabase
+            .from('system_notifications')
+            .update({ 
+                is_acknowledged: true, 
+                acknowledged_at: new Date().toISOString() 
+            })
+            .eq('id', id);
+            
+        if (error) throw error;
+
+        // Log to activity if reference is provided
+        if (referenceId && referenceType) {
+            await api.addActivityLog({
+                entityId: referenceId,
+                entityType: referenceType,
+                action: 'acknowledge',
+                details: 'Confirmou o recebimento e ciência da atribuição.'
+            });
+        }
+    },
+
+    getUserNotificationPreferences: async () => {
+        const { data, error } = await supabase
+            .from('user_notification_preferences')
+            .select('*');
+            
+        if (error) {
+            console.error('Error fetching preferences:', error);
+            return [];
+        }
+        return data;
+    },
+
+    updateUserNotificationPreference: async (pref: { module_id: string, event_type: string, notify_before_minutes: number }) => {
+        const tenantId = getCurrentCompanyId();
+        const { data: userData } = await supabase.auth.getUser();
+        if (!tenantId || !userData.user) throw new Error('Auth missing');
+
+        const { error } = await supabase
+            .from('user_notification_preferences')
+            .upsert({
+                tenant_id: tenantId,
+                user_id: userData.user.id,
+                module_id: pref.module_id,
+                event_type: pref.event_type,
+                notify_before_minutes: pref.notify_before_minutes
+            }, { onConflict: 'tenant_id, user_id, module_id, event_type' });
+            
+        if (error) throw error;
+    },
+
     getEvents: async (companyId?: string) => {
         let query = supabase.from('calendar_events').select('*').order('title', { ascending: true });
         if (companyId) query = query.eq('company_id', companyId);
@@ -870,8 +962,38 @@ export const api = {
             createdEvents.push(createDbEvt(evt, evt.startDate || '', evt.endDate || '', null));
         }
 
-        const { error } = await supabase.from('calendar_events').insert(createdEvents);
+        const { data, error } = await supabase.from('calendar_events').insert(createdEvents).select();
         if (error) throw error;
+
+        // Notificações de Convite de Evento
+        try {
+            const { data: userData } = await supabase.auth.getUser();
+            const currentUserId = userData.user?.id;
+            
+            const firstData = data[0];
+            if (firstData && firstData.participants && firstData.participants.length > 0) {
+                const { data: companyData } = await supabase.from('companies').select('settings').eq('id', companyId).single();
+                const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
+                
+                if (isAckRequired) {
+                    for (const participantId of firstData.participants) {
+                        if (participantId !== currentUserId) {
+                            await supabase.from('system_notifications').insert({
+                                tenant_id: companyId,
+                                user_id: participantId,
+                                title: `Novo Evento: ${firstData.title}`,
+                                message: `Você foi convidado(a) para este compromisso na agenda.`,
+                                reference_id: firstData.id,
+                                reference_type: 'event',
+                                requires_acknowledgment: true
+                            });
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[API] Failed to create notification for new event', e);
+        }
     },
     updateEvent: async (evt: CalendarEvent) => {
         const dbEvt = {

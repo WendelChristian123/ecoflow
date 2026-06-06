@@ -11,6 +11,7 @@ import { CreateUserModal, EditUserModal, DelegationModal } from '../components/U
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
 import { SharedAccessPanel } from '../components/Permissions/SharedAccessPanel';
+import { NotificationSettingsTab } from '../components/NotificationSettingsTab';
 import { MyPlanTab } from '../components/MyPlanTab';
 import { checkUserLimit, UserLimitStatus } from '../services/limits';
 import { useAppEnvironment } from '../context/AppEnvironmentContext';
@@ -29,7 +30,7 @@ export const SettingsPage: React.FC = () => {
     const [userLimits, setUserLimits] = useState<UserLimitStatus | null>(null);
 
     // UI State
-    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'audit' | 'plan'>('delegation');
+    const [activeTab, setActiveTab] = useState<'delegation' | 'users' | 'finance' | 'calendar' | 'notifications' | 'audit' | 'plan'>('delegation');
     const [pendingMode, setPendingMode] = useState<'competence' | 'cash'>('competence');
 
     // Modals State
@@ -240,6 +241,14 @@ export const SettingsPage: React.FC = () => {
                             <span className="text-[10px] font-bold text-center leading-tight">Calendário</span>
                         </button>
 
+                        <button
+                            onClick={() => setActiveTab('notifications')}
+                            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${activeTab === 'notifications' ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'}`}
+                        >
+                            <Bell size={20} />
+                            <span className="text-[10px] font-bold text-center leading-tight">Notificações</span>
+                        </button>
+
                         {isAdmin && (
                             <button
                                 onClick={() => setActiveTab('audit')}
@@ -290,6 +299,12 @@ export const SettingsPage: React.FC = () => {
                         className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'calendar' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
                     >
                         Calendário
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('notifications')}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'notifications' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
+                    >
+                        Notificações
                     </button>
 
                     {isAdmin && (
@@ -553,6 +568,17 @@ export const SettingsPage: React.FC = () => {
                 <CalendarSettingsTab
                     initialSettings={financeSettings?.calendar}
                     onSave={(newSettings) => setFinanceSettings({ ...financeSettings, calendar: newSettings })}
+                />
+            )}
+
+            {/* TAB: NOTIFICATIONS */}
+            {activeTab === 'notifications' && (
+                <NotificationSettingsTab 
+                    companySettings={financeSettings}
+                    onSaveCompanySettings={async (newSettings) => {
+                        await api.updateCompanySettings(newSettings);
+                        setFinanceSettings(newSettings);
+                    }}
                 />
             )}
 

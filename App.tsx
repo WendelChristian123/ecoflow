@@ -22,6 +22,7 @@ import { ReloadPrompt } from './components/ReloadPrompt';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { LayoutSwitch } from './components/LayoutSwitch';
 import { AppRoute } from './components/AppRoute';
+import { NotificationBlocker } from './components/NotificationBlocker';
 
 // Super Admin Pages
 import { SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
@@ -114,6 +115,7 @@ const App: React.FC = () => {
                 </Routes>
                 <ReloadPrompt />
                 <PwaInstallPrompt />
+                <NotificationBlocker />
               </Router>
             </AppEnvironmentProvider>
           </ThemeProvider>
