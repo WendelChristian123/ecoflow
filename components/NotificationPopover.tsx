@@ -122,7 +122,7 @@ export const NotificationPopover: React.FC = () => {
             </button>
 
             {isOpen && (
-                <div className="fixed left-1/2 -translate-x-1/2 top-[70px] sm:absolute sm:top-full sm:left-auto sm:translate-x-0 sm:right-0 sm:mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-popover border border-border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 origin-top sm:origin-top-right">
+                <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-popover border border-border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 origin-top-right">
                     <div className="p-3 border-b border-border bg-secondary/30 space-y-3">
                         <div className="flex items-center justify-between">
                             <h4 className="font-semibold text-sm">Notificações</h4>

@@ -175,7 +175,7 @@ export const api = {
                 links: t.links || [],
                 company_id: companyId,
                 recurrence_id: recId,
-                owner_id: uuidOrNull(t.ownerId) || uuidOrNull(t.assigneeId) || currentUserId,
+                owner_id: uuidOrNull(t.ownerId) || currentUserId,
                 context_type: t.contextType || 'personal',
                 context_id: uuidOrNull(t.contextId),
                 kanban_stage_id: uuidOrNull(t.kanbanStageId),
@@ -889,8 +889,8 @@ export const api = {
             // Log to Global Audit Log
             const taskName = notificationTitle ? notificationTitle.replace('Nova Tarefa: ', '').replace('Novo Evento: ', '') : referenceId;
             await supabase.rpc('log_auth_event', {
-                p_action: 'ACEITE_ATRIBUICAO',
-                p_description: `Usuário aceitou a atribuição: ${taskName}`
+                p_action: 'ACTION',
+                p_description: `[ACEITE ATRIBUIÇÃO] Usuário aceitou a tarefa/compromisso: ${taskName}`
             });
 
             // Notify the task/event owner
