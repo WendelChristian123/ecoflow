@@ -6,7 +6,7 @@ import { Loader, Button, Avatar, Badge, Card, Input, Modal } from '../components
 import { FilterSelect } from '../components/FilterSelect';
 import { useRBAC } from '../context/RBACContext';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil, Calendar, FileText, Share2 } from 'lucide-react';
+import { Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users as UsersIcon, XCircle, CheckCircle, CreditCard as CreditCardIcon, Pencil, Calendar, FileText, Share2, Bell } from 'lucide-react';
 import { CreateUserModal, EditUserModal, DelegationModal } from '../components/UserModals';
 import { CalendarSettingsTab } from '../components/CalendarSettingsTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
