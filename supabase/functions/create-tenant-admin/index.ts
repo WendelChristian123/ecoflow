@@ -138,15 +138,6 @@ Deno.serve(async (req: Request) => {
         try {
             if (planId) {
                 console.log(`[V10] Creating Subscription: Plan ${planId}`);
-                let maxUsers = customLimits?.maxUsers || 1;
-
-                if (planId !== 'custom' && !customLimits) {
-                    const { data: planData } = await supabaseAdmin.from('saas_plans').select('max_users').eq('id', planId).single();
-                    if (planData && planData.max_users) {
-                        maxUsers = planData.max_users;
-                    }
-                }
-
                 const { error: subError } = await supabaseAdmin
                     .from('subscriptions')
                     .insert({
@@ -156,8 +147,7 @@ Deno.serve(async (req: Request) => {
                         current_period_start: subscriptionStart || new Date(),
                         current_period_end: subscriptionEnd,
                         access_until: subscriptionEnd,
-                        cycle: 'monthly',
-                        max_users: maxUsers
+                        cycle: 'monthly'
                     });
 
                 if (subError) throw subError;

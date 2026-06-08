@@ -2243,15 +2243,6 @@ export const api = {
                 access_until: data.subscriptionEnd || undefined
             };
 
-            if (data.customLimits) {
-                subData.max_users = data.customLimits.maxUsers;
-            } else if (data.planId && data.planId !== 'custom') {
-                const { data: planData } = await supabase.from('saas_plans').select('max_users').eq('id', data.planId).single();
-                if (planData && planData.max_users) {
-                    subData.max_users = planData.max_users;
-                }
-            }
-
             Object.keys(subData).forEach(key => subData[key] === undefined && delete subData[key]);
 
             // Check if subscription exists for this company
