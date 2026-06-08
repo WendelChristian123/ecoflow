@@ -138,10 +138,12 @@ export async function registerPushSubscription(userId: string, companyId: string
 
     if (error) {
       console.error('[Push] Failed to save subscription:', error.message);
+      alert('Erro ao registrar celular no banco: ' + error.message);
       return false;
     }
 
     console.log('[Push] Subscription registered successfully');
+    // alert('Celular registrado com sucesso para notificações!'); // optional debug
     return true;
   } catch (err) {
     console.error('[Push] Registration failed:', err);
