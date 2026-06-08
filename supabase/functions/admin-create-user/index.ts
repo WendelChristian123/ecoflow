@@ -229,7 +229,7 @@ serve(async (req) => {
 
         // Success
         return new Response(
-            JSON.stringify({ user: newUser.user, message: 'User created successfully' }),
+            JSON.stringify({ user: { id: userId, email }, message: 'User created or linked successfully' }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
 
