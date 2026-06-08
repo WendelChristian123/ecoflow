@@ -14,8 +14,12 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    if (req.method === 'GET' && new URL(req.url).searchParams.get('debug') === '1') {
+      const { data } = await supabase.from('scheduled_notifications').select('*').order('created_at', { ascending: false }).limit(10);
+      return new Response(JSON.stringify(data, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+    }
 
     // 1. Dequeue batch safely using RPC (FOR UPDATE SKIP LOCKED)
     const { data: batch, error: dequeueError } = await supabase
