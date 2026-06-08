@@ -239,7 +239,7 @@ export const api = {
                 }
 
                 // Disparo imediato de Push Notification via Edge Function
-                await supabase.functions.invoke('push-notify', {
+                const { error: invokeError } = await supabase.functions.invoke('push-notify', {
                     body: {
                         user_id: firstData.assignee_id,
                         title: notificationTitle,
@@ -251,6 +251,10 @@ export const api = {
                         }
                     }
                 });
+                
+                if (invokeError) {
+                    console.error('[API] Erro ao invocar push-notify:', invokeError);
+                }
             }
         } catch (e) {
             console.error('[API] Failed to create notification for new task', e);
