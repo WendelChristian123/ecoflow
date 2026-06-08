@@ -88,22 +88,17 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Call push-notify
-        const pushRes = await fetch(`${supabaseUrl}/functions/v1/push-notify`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${serviceRoleKey}`,
-          },
-          body: JSON.stringify({
+        // Call push-notify via supabase client to avoid 401 Auth issues
+        const { error: pushError } = await supabase.functions.invoke('push-notify', {
+          body: {
             user_id: item.user_id,
             title,
             body,
             data: { type: item.notification_type, id: item.reference_id, url }
-          }),
+          }
         });
 
-        if (pushRes.ok) {
+        if (!pushError) {
           await supabase.from('scheduled_notifications').update({
             status: 'sent',
             sent_at: new Date().toISOString(),
@@ -111,7 +106,7 @@ Deno.serve(async (req: Request) => {
           }).eq('id', item.id);
           results.sent++;
         } else {
-          throw new Error(`Push API returned ${pushRes.status}`);
+          throw new Error(`Push API returned error: ${pushError.message || pushError}`);
         }
 
       } catch (err) {
