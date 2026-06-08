@@ -59,3 +59,12 @@ jobs:
       - name: Deploy ASAAS webhooks function
         run: supabase functions deploy webhooks-asaas --no-verify-jwt --project-ref $PROJECT_ID
         continue-on-error: true
+
+      - name: Deploy push-cron
+        run: supabase functions deploy push-cron --no-verify-jwt --project-ref $PROJECT_ID
+        continue-on-error: true
+
+      - name: Deploy push-notify
+        run: supabase functions deploy push-notify --project-ref $PROJECT_ID
+        continue-on-error: true
+
