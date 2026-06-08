@@ -112,12 +112,15 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
             if (company) {
                 setCurrentCompany(company);
-                // Não precisamos recarregar a página (SPA), o React atualizará os componentes dependentes
+                // Refresh forçado para garantir que todos os contextos (RBAC, Auth)
+                // e listagens busquem os dados corretos da nova empresa
+                window.location.reload();
+            } else {
+                setLoading(false);
             }
         } catch (error) {
             console.error("Erro ao trocar empresa:", error);
             alert("Não foi possível acessar esta empresa.");
-        } finally {
             setLoading(false);
         }
     };
