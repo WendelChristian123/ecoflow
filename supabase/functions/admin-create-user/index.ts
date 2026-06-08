@@ -185,7 +185,7 @@ serve(async (req) => {
              console.error("Company User Insert Error:", companyUserError);
              // Non-fatal if we managed to create the user, but bad.
         }
-        }
+
 
         // 8. Insert Granular Permissions
         if (granular_permissions && Array.isArray(granular_permissions) && granular_permissions.length > 0) {
