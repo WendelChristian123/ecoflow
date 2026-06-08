@@ -25,7 +25,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body || '',
     icon: '/pwa-192x192.png',
-    badge: '/badge.svg',
+    badge: '/icon.svg',
     tag: payload.data?.tag || 'contazze-notification',
     renotify: true,
     data: {
