@@ -6,7 +6,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_user_id uuid;
     v_user_name text;
-    v_tenant_id uuid;
+    v_company_id uuid;
     v_old_data jsonb;
     v_new_data jsonb;
     v_description text;
@@ -14,24 +14,32 @@ DECLARE
     v_ip_address text;
     v_assignee_name text;
 BEGIN
-    -- 1. Determine Tenant ID
-    IF TG_TABLE_NAME = 'tenants' THEN
+    -- 1. Determine Company ID
+    IF TG_TABLE_NAME = 'companies' THEN
         IF TG_OP = 'DELETE' THEN
-            v_tenant_id := OLD.id;
+            v_company_id := OLD.id;
         ELSE
-            v_tenant_id := NEW.id;
+            v_company_id := NEW.id;
         END IF;
     ELSIF TG_OP = 'DELETE' THEN
         BEGIN
-            v_tenant_id := OLD.tenant_id;
+            v_company_id := OLD.company_id;
         EXCEPTION WHEN OTHERS THEN
-            v_tenant_id := NULL;
+            BEGIN
+                v_company_id := OLD.tenant_id;
+            EXCEPTION WHEN OTHERS THEN
+                v_company_id := NULL;
+            END;
         END;
     ELSE
         BEGIN
-            v_tenant_id := NEW.tenant_id;
+            v_company_id := NEW.company_id;
         EXCEPTION WHEN OTHERS THEN
-            v_tenant_id := NULL;
+            BEGIN
+                v_company_id := NEW.tenant_id;
+            EXCEPTION WHEN OTHERS THEN
+                v_company_id := NULL;
+            END;
         END;
     END IF;
 
@@ -86,7 +94,7 @@ BEGIN
         old_data,
         new_data,
         user_id,
-        tenant_id,
+        company_id,
         description,
         ip_address
     ) VALUES (
@@ -96,7 +104,7 @@ BEGIN
         v_old_data,
         v_new_data,
         v_user_id,
-        v_tenant_id,
+        v_company_id,
         v_description,
         v_ip_address
     );

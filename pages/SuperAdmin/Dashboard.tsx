@@ -593,6 +593,23 @@ export const SuperAdminDashboard: React.FC = () => {
                                             onChange={e => {
                                                 const val = e.target.value;
                                                 setNewCompany({ ...newCompany, planId: val });
+                                                if (val && val !== 'custom') {
+                                                    const plan = availablePlans.find(p => p.id === val);
+                                                    if (plan) {
+                                                        const baseModules = new Set<string>();
+                                                        const feats = new Set<string>();
+                                                        plan.allowedModules?.forEach(m => {
+                                                            if (m.includes(':')) {
+                                                                feats.add(m);
+                                                                baseModules.add(m.split(':')[0]);
+                                                            } else {
+                                                                baseModules.add(m);
+                                                            }
+                                                        });
+                                                        setDraftModules(Array.from(baseModules));
+                                                        setSelectedFeatures(feats);
+                                                    }
+                                                }
                                             }}
                                             options={[
                                                 { value: '', label: 'Selecione um plano (Opcional)' },

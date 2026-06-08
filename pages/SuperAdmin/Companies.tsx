@@ -68,6 +68,21 @@ export const SuperAdminCompanies: React.FC = () => {
         }
     };
 
+    // Sync modules when plan is selected
+    useEffect(() => {
+        if (selectedPlanId && selectedPlanId !== 'custom') {
+            const plan = availablePlans.find(p => p.id === selectedPlanId);
+            if (plan) {
+                const newConfig: Record<string, 'included' | 'locked' | 'extra'> = {};
+                SYSTEM_MODULES.forEach(m => {
+                    const isAllowed = plan.allowedModules?.some(am => am === m.id || am.startsWith(m.id + ':'));
+                    newConfig[m.id] = isAllowed ? 'included' : 'locked';
+                });
+                setModuleConfig(newConfig);
+            }
+        }
+    }, [selectedPlanId, availablePlans]);
+
     const openCreateModal = () => {
         setEditingId(null);
         setCurrentStep(1);

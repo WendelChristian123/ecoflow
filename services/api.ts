@@ -2221,6 +2221,7 @@ export const api = {
             status: data.status,
             type: data.type,
             financial_status: data.financialStatus,
+            plan_id: data.planId !== undefined ? (data.planId === 'custom' ? null : data.planId) : undefined,
             calendar_settings: data.settings?.calendar
         };
         // Remove undefined

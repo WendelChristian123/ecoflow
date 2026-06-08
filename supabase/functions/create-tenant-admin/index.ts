@@ -111,7 +111,8 @@ Deno.serve(async (req) => {
                     status: 'active',
                     type: 'client',
                     financial_status: 'ok',
-                    settings: { calendar: {}, custom_limits: customLimits }
+                    settings: { calendar: {}, custom_limits: customLimits },
+                    plan_id: planId || null
                 })
                 .select()
                 .single();
