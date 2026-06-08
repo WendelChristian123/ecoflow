@@ -224,18 +224,33 @@ export const api = {
                 const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
                 
                 const creatorName = userData.user?.user_metadata?.name || 'Usuário';
+                const notificationTitle = `Nova Tarefa de ${creatorName}`;
 
                 if (isAckRequired) {
                     await supabase.from('system_notifications').insert({
                         company_id: companyId,
                         user_id: firstData.assignee_id,
-                        title: `Nova Tarefa ou compromisso de ${creatorName} para você!`,
+                        title: notificationTitle,
                         message: firstData.title,
                         reference_id: firstData.id,
                         reference_type: 'task',
                         requires_acknowledgment: true
                     });
                 }
+
+                // Disparo imediato de Push Notification via Edge Function
+                await supabase.functions.invoke('push-notify', {
+                    body: {
+                        user_id: firstData.assignee_id,
+                        title: notificationTitle,
+                        body: firstData.title,
+                        data: {
+                            type: 'task_created',
+                            id: firstData.id,
+                            url: `/#/tasks?open=${firstData.id}`
+                        }
+                    }
+                });
             }
         } catch (e) {
             console.error('[API] Failed to create notification for new task', e);
@@ -1052,20 +1067,36 @@ export const api = {
                 const { data: companyData } = await supabase.from('companies').select('settings').eq('id', companyId).single();
                 const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
                 
-                if (isAckRequired) {
-                    for (const participantId of firstData.participants) {
-                        if (participantId !== currentUserId) {
-                            const creatorName = userData.user?.user_metadata?.name || 'Usuário';
+                const creatorName = userData.user?.user_metadata?.name || 'Usuário';
+                const notificationTitle = `Novo Compromisso de ${creatorName}`;
+
+                for (const participantId of firstData.participants) {
+                    if (participantId !== currentUserId) {
+                        if (isAckRequired) {
                             await supabase.from('system_notifications').insert({
                                 company_id: companyId,
                                 user_id: participantId,
-                                title: `Nova tarefa ou compromisso de ${creatorName} para você!`,
+                                title: notificationTitle,
                                 message: firstData.title,
                                 reference_id: firstData.id,
                                 reference_type: 'event',
                                 requires_acknowledgment: true
                             });
                         }
+
+                        // Disparo imediato de Push Notification via Edge Function
+                        await supabase.functions.invoke('push-notify', {
+                            body: {
+                                user_id: participantId,
+                                title: notificationTitle,
+                                body: firstData.title,
+                                data: {
+                                    type: 'event_created',
+                                    id: firstData.id,
+                                    url: `/#/agenda?open=${firstData.id}`
+                                }
+                            }
+                        });
                     }
                 }
             }

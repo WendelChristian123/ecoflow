@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
 import { isToday, isPast, parseISO, isValid, startOfDay, addDays, isBefore, isSameDay, addMinutes } from 'date-fns';
@@ -87,8 +88,16 @@ export const useNotifications = () => {
                     originalStatus: e.status
                 }));
 
-            // 4. Process System Notifications
-            const systemNotifs = sysNotifsData.map(n => ({
+            // 4. Process System Notifications (Deduplicar avisos idênticos)
+            const uniqueSystemNotifs = new Map<string, any>();
+            for (const n of sysNotifsData) {
+                const key = `${n.title}-${n.message}-${n.reference_id || ''}`;
+                if (!uniqueSystemNotifs.has(key)) {
+                    uniqueSystemNotifs.set(key, n);
+                }
+            }
+            
+            const systemNotifs = Array.from(uniqueSystemNotifs.values()).map(n => ({
                 id: n.id,
                 type: 'system' as const,
                 title: n.message || n.title,
@@ -151,6 +160,31 @@ export const useNotifications = () => {
         const interval = setInterval(fetchNotifications, 60000);
         return () => clearInterval(interval);
     }, [fetchNotifications]);
+
+    // Realtime Listener para sincronização de notificações (ex: Ciência em múltiplos aparelhos)
+    useEffect(() => {
+        if (!user || !currentCompany) return;
+
+        const channel = supabase
+            .channel('system_notifications_changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'system_notifications',
+                    filter: `user_id=eq.${user.id}`
+                },
+                () => {
+                    fetchNotifications();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user, currentCompany, fetchNotifications]);
 
     const completeItem = async (id: string, type: NotificationType) => {
         // Optimistic Update

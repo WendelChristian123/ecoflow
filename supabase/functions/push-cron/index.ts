@@ -1,21 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-/**
- * push-cron Edge Function
- * 
- * Scheduled function that checks for items requiring notifications:
- * 1. Tasks due today (assigned to user)
- * 2. Tasks overdue (assigned to user) 
- * 3. Appointments/Events happening today (user is participant)
- * 4. Financial transactions due today (unpaid)
- * 
- * Idempotency: Uses push_notification_log with unique constraint to prevent duplicates.
- * 
- * Should be called via Supabase Cron (pg_cron) or external scheduler.
- * Uses service_role key — no user auth required.
- */
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -26,14 +11,10 @@ interface NotificationPayload {
   company_id: string;
   notification_type: string;
   reference_id: string;
+  reference_date: string;
   title: string;
   body: string;
-  data: {
-    type: string;
-    id: string;
-    url: string;
-    tag: string;
-  };
+  data: any;
 }
 
 Deno.serve(async (req: Request) => {
@@ -50,130 +31,124 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
-    const todayStart = `${todayStr}T00:00:00.000Z`;
-    const todayEnd = `${todayStr}T23:59:59.999Z`;
-
+    const now = new Date();
+    // Look up to 48 hours into the future for upcoming events
+    const maxFuture = new Date(now.getTime() + 48 * 60 * 60 * 1000);
     const notifications: NotificationPayload[] = [];
 
-    // ─── 1. Tasks due today ───
-    const { data: tasksDueToday } = await supabase
+    // --- Fetch Preferences ---
+    const { data: prefs } = await supabase
+      .from("user_notification_preferences")
+      .select("user_id, company_id, module_id, event_type, notify_before_minutes");
+
+    const getPref = (userId: string, companyId: string, modId: string, evType: string): number | null => {
+      const p = prefs?.find(x => x.user_id === userId && x.company_id === companyId && x.module_id === modId && x.event_type === evType);
+      if (!p) return null;
+      return p.notify_before_minutes;
+    };
+
+    // Helper to format unique date reference for a single notification instance
+    // We use YYYY-MM-DDTHH:mm to avoid duplicate sends in the same minute
+    const getRefDate = (targetDate: Date) => targetDate.toISOString().substring(0, 16);
+
+    // ─── 1. Tasks due ───
+    const { data: tasks } = await supabase
       .from("tasks")
-      .select("id, title, assignee_id, company_id")
-      .gte("due_date", todayStart)
-      .lte("due_date", todayEnd)
+      .select("id, title, assignee_id, company_id, due_date")
+      .lte("due_date", maxFuture.toISOString())
       .neq("status", "done");
 
-    if (tasksDueToday) {
-      for (const task of tasksDueToday) {
-        if (!task.assignee_id) continue;
-        notifications.push({
-          user_id: task.assignee_id,
-          company_id: task.company_id,
-          notification_type: "task_due_today",
-          reference_id: task.id,
-          title: "📋 Sua tarefa vence hoje",
-          body: task.title,
-          data: {
-            type: "task_due_today",
-            id: task.id,
-            url: `/#/tasks?open=${task.id}`,
-            tag: `task-due-${task.id}`,
-          },
-        });
-      }
-    }
+    if (tasks) {
+      for (const task of tasks) {
+        if (!task.assignee_id || !task.due_date) continue;
+        const minutesBefore = getPref(task.assignee_id, task.company_id, 'routines', 'task_deadline') ?? 0;
+        if (minutesBefore < 0) continue; // Disabled
 
-    // ─── 2. Tasks overdue ───
-    const { data: tasksOverdue } = await supabase
-      .from("tasks")
-      .select("id, title, assignee_id, company_id")
-      .lt("due_date", todayStart)
-      .neq("status", "done");
-
-    if (tasksOverdue) {
-      for (const task of tasksOverdue) {
-        if (!task.assignee_id) continue;
-        notifications.push({
-          user_id: task.assignee_id,
-          company_id: task.company_id,
-          notification_type: "task_overdue",
-          reference_id: task.id,
-          title: "⚠️ Você tem tarefa em atraso",
-          body: task.title,
-          data: {
-            type: "task_overdue",
-            id: task.id,
-            url: `/#/tasks?open=${task.id}`,
-            tag: `task-overdue-${task.id}`,
-          },
-        });
-      }
-    }
-
-    // ─── 3. Events today ───
-    const { data: eventsToday } = await supabase
-      .from("calendar_events")
-      .select("id, title, participants, company_id")
-      .gte("start_date", todayStart)
-      .lte("start_date", todayEnd)
-      .neq("status", "completed")
-      .neq("status", "cancelled");
-
-    if (eventsToday) {
-      for (const event of eventsToday) {
-        const participants = Array.isArray(event.participants) ? event.participants : [];
-        for (const userId of participants) {
+        const dueDate = new Date(task.due_date);
+        const targetTime = new Date(dueDate.getTime() - minutesBefore * 60 * 1000);
+        
+        // If target time has passed (or is right now) AND it's not super old (e.g., missed by a few hours)
+        if (now >= targetTime && (now.getTime() - targetTime.getTime()) < 12 * 60 * 60 * 1000) {
           notifications.push({
-            user_id: userId,
-            company_id: event.company_id,
-            notification_type: "event_today",
-            reference_id: event.id,
-            title: "📅 Você tem compromisso hoje",
-            body: event.title,
-            data: {
-              type: "event_today",
-              id: event.id,
-              url: `/#/agenda?open=${event.id}`,
-              tag: `event-today-${event.id}`,
-            },
+            user_id: task.assignee_id,
+            company_id: task.company_id,
+            notification_type: "task_deadline",
+            reference_id: task.id,
+            reference_date: getRefDate(targetTime),
+            title: "📋 Lembrete de Tarefa",
+            body: `A tarefa "${task.title}" vence ${minutesBefore > 0 ? 'em breve' : 'agora'}.`,
+            data: { type: "task_due", id: task.id, url: `/#/tasks?open=${task.id}` },
           });
         }
       }
     }
 
-    // ─── 4. Financial transactions due today (unpaid) ───
-    const { data: financeDueToday } = await supabase
+    // ─── 2. Events ───
+    const { data: events } = await supabase
+      .from("calendar_events")
+      .select("id, title, participants, company_id, start_date")
+      .lte("start_date", maxFuture.toISOString())
+      .neq("status", "completed")
+      .neq("status", "cancelled");
+
+    if (events) {
+      for (const event of events) {
+        if (!event.start_date || !Array.isArray(event.participants)) continue;
+        const eventDate = new Date(event.start_date);
+
+        for (const userId of event.participants) {
+          const minutesBefore = getPref(userId, event.company_id, 'routines', 'event_start') ?? 0;
+          if (minutesBefore < 0) continue;
+
+          const targetTime = new Date(eventDate.getTime() - minutesBefore * 60 * 1000);
+          if (now >= targetTime && (now.getTime() - targetTime.getTime()) < 12 * 60 * 60 * 1000) {
+            notifications.push({
+              user_id: userId,
+              company_id: event.company_id,
+              notification_type: "event_start",
+              reference_id: event.id,
+              reference_date: getRefDate(targetTime),
+              title: "📅 Compromisso Agendado",
+              body: `O evento "${event.title}" começa ${minutesBefore > 0 ? 'em breve' : 'agora'}.`,
+              data: { type: "event_today", id: event.id, url: `/#/agenda?open=${event.id}` },
+            });
+          }
+        }
+      }
+    }
+
+    // ─── 3. Finance Due ───
+    const { data: finance } = await supabase
       .from("financial_transactions")
-      .select("id, description, company_id")
-      .gte("date", todayStart)
-      .lte("date", todayEnd)
+      .select("id, description, company_id, date, type")
+      .lte("date", maxFuture.toISOString())
       .eq("is_paid", false);
 
-    if (financeDueToday) {
-      for (const txn of financeDueToday) {
-        // Get all users in this company to notify
-        const { data: companyUsers } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("company_id", txn.company_id);
+    if (finance) {
+      // For finance, we need to notify users who have the preference enabled
+      const { data: allProfiles } = await supabase.from("profiles").select("id, company_id");
 
-        if (companyUsers) {
-          for (const user of companyUsers) {
+      for (const txn of finance) {
+        if (!txn.date) continue;
+        const txnDate = new Date(txn.date);
+        const evType = txn.type === 'expense' ? 'payable_due' : 'receivable_due';
+        const profilesInCompany = allProfiles?.filter(p => p.company_id === txn.company_id) || [];
+
+        for (const user of profilesInCompany) {
+          const minutesBefore = getPref(user.id, txn.company_id, 'finance', evType) ?? 0;
+          if (minutesBefore < 0) continue;
+
+          const targetTime = new Date(txnDate.getTime() - minutesBefore * 60 * 1000);
+          if (now >= targetTime && (now.getTime() - targetTime.getTime()) < 12 * 60 * 60 * 1000) {
             notifications.push({
               user_id: user.id,
               company_id: txn.company_id,
-              notification_type: "finance_due_today",
+              notification_type: evType,
               reference_id: txn.id,
-              title: "💰 Seu lançamento vence hoje",
-              body: txn.description,
-              data: {
-                type: "finance_due_today",
-                id: txn.id,
-                url: `/#/finance/transactions?open=${txn.id}`,
-                tag: `finance-due-${txn.id}`,
-              },
+              reference_date: getRefDate(targetTime),
+              title: `💰 Lembrete Financeiro (${txn.type === 'expense' ? 'A Pagar' : 'A Receber'})`,
+              body: `Lançamento: ${txn.description}`,
+              data: { type: "finance_due_today", id: txn.id, url: `/#/finance/transactions?open=${txn.id}` },
             });
           }
         }
@@ -186,7 +161,8 @@ Deno.serve(async (req: Request) => {
     let failed = 0;
 
     for (const notif of notifications) {
-      // Check/insert into log (idempotency)
+      // Check idempotency. Log constraint should catch duplicates,
+      // but we use reference_date down to the minute to avoid duplicate sends for the SAME target time.
       const { error: logError } = await supabase
         .from("push_notification_log")
         .insert({
@@ -194,22 +170,19 @@ Deno.serve(async (req: Request) => {
           company_id: notif.company_id,
           notification_type: notif.notification_type,
           reference_id: notif.reference_id,
-          reference_date: todayStr,
+          reference_date: notif.reference_date, // unique constraint prevents duplicate
           status: "sent",
         });
 
       if (logError) {
-        // Unique constraint violation = already sent today
         if (logError.code === "23505") {
           skipped++;
           continue;
         }
-        console.error("Log insert error:", logError.message);
         failed++;
         continue;
       }
 
-      // Check if user has push subscriptions
       const { data: subs } = await supabase
         .from("push_subscriptions")
         .select("id")
@@ -221,7 +194,6 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Call push-notify function
       try {
         const pushRes = await fetch(`${supabaseUrl}/functions/v1/push-notify`, {
           method: "POST",
@@ -240,31 +212,17 @@ Deno.serve(async (req: Request) => {
         if (pushRes.ok) {
           sent++;
         } else {
-          const errText = await pushRes.text();
-          console.error(`push-notify failed: ${pushRes.status} ${errText}`);
           failed++;
         }
       } catch (err) {
-        console.error("push-notify call error:", err);
         failed++;
       }
     }
 
-    const result = {
-      total: notifications.length,
-      sent,
-      skipped,
-      failed,
-      date: todayStr,
-    };
-
-    console.log("push-cron result:", JSON.stringify(result));
-
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({ total: notifications.length, sent, skipped, failed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("push-cron error:", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
