@@ -149,6 +149,15 @@ export const SuperAdminDashboard: React.FC = () => {
         setActiveMenuId(null);
     };
 
+    const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+        if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            if (target.tagName !== 'TEXTAREA' && target.getAttribute('type') !== 'submit') {
+                e.preventDefault();
+            }
+        }
+    };
+
     const handleCreateOrUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setCreating(true);
@@ -515,7 +524,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 width="max-w-4xl"
             >
                 {/* Modal Content - Simplified for Brevity (Same fields as original but using newCompany state) */}
-                <form onSubmit={handleCreateOrUpdate} className="space-y-6">
+                <form onSubmit={handleCreateOrUpdate} onKeyDown={handleFormKeyDown} className="space-y-6">
                     {/* Tabs Header */}
                     <div className="flex border-b border-border mb-4 overflow-x-auto">
                         <button type="button" onClick={() => setCreateTab('data')} className={cn("px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap", createTab === 'data' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>Dados da Empresa</button>

@@ -2244,15 +2244,34 @@ export const api = {
             };
             Object.keys(subData).forEach(key => subData[key] === undefined && delete subData[key]);
 
-            // Update active subscription for this company
-            // Constraint: We update ALL active subs? Or the latest? 
-            // Best effort: Update where company_id = id
-            const { error: subError } = await supabase
+            // Check if subscription exists for this company
+            const { data: existingSubs, error: checkErr } = await supabase
                 .from('subscriptions')
-                .update(subData)
+                .select('id')
                 .eq('company_id', id);
 
-            if (subError) throw subError;
+            if (checkErr) throw checkErr;
+
+            if (existingSubs && existingSubs.length > 0) {
+                // Update active subscription for this company
+                const { error: subError } = await supabase
+                    .from('subscriptions')
+                    .update(subData)
+                    .eq('company_id', id);
+
+                if (subError) throw subError;
+            } else {
+                // Create a subscription row for this company since it doesn't have one
+                const { error: subError } = await supabase
+                    .from('subscriptions')
+                    .insert({
+                        company_id: id,
+                        status: 'active',
+                        ...subData
+                    });
+
+                if (subError) throw subError;
+            }
         }
 
         if (data.customModules && typeof data.customModules === 'object') {
