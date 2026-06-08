@@ -392,18 +392,38 @@ export const api = {
 
     // --- USERS ---
     getUsers: async (companyId?: string) => {
-        let query = supabase.from('profiles').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        let validProfiles: any[] = [];
 
-        const { data: profiles, error: errProfiles } = await query;
-        if (errProfiles) {
-            console.error('Error fetching users:', errProfiles);
-            throw errProfiles;
+        if (companyId) {
+            const { data: cuData, error: cuError } = await supabase
+                .from('company_users')
+                .select('user_id, role, status, profiles:profiles(*)')
+                .eq('company_id', companyId);
+
+            if (cuError) {
+                console.error('Error fetching company users:', cuError);
+                throw cuError;
+            }
+
+            validProfiles = (cuData || [])
+                .map((cu: any) => ({
+                    ...cu.profiles,
+                    role: cu.role,
+                    status: cu.status
+                }))
+                .filter(p => p && p.id && p.role !== 'super_admin')
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        } else {
+            const { data: profiles, error: errProfiles } = await supabase
+                .from('profiles').select('*').order('name', { ascending: true });
+
+            if (errProfiles) {
+                console.error('Error fetching global users:', errProfiles);
+                throw errProfiles;
+            }
+
+            validProfiles = (profiles || []).filter(p => p.role !== 'super_admin');
         }
-
-        if (!profiles) return [];
-
-        const validProfiles = profiles.filter((p: any) => p.role !== 'super_admin');
 
         const userIds = validProfiles.map(u => u.id);
         if (userIds.length === 0) return [];
