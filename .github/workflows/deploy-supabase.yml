@@ -65,6 +65,6 @@ jobs:
         continue-on-error: true
 
       - name: Deploy push-notify
-        run: supabase functions deploy push-notify --project-ref $PROJECT_ID
+        run: supabase functions deploy push-notify --no-verify-jwt --project-ref $PROJECT_ID
         continue-on-error: true
 
