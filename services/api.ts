@@ -2238,9 +2238,9 @@ export const api = {
             const subData: any = {
                 plan_id: data.planId,
                 cycle: data.billingCycle === 'yearly' ? 'annual' : data.billingCycle, // Map cycle if needed
-                current_period_start: data.subscriptionStart,
-                current_period_end: data.subscriptionEnd,
-                access_until: data.subscriptionEnd
+                current_period_start: data.subscriptionStart || undefined,
+                current_period_end: data.subscriptionEnd || undefined,
+                access_until: data.subscriptionEnd || undefined
             };
             Object.keys(subData).forEach(key => subData[key] === undefined && delete subData[key]);
 
