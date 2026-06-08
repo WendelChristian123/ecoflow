@@ -74,7 +74,7 @@ Deno.serve(async (req: Request) => {
             });
 
             if (authError) {
-                if (authError.message.includes("already registered")) {
+                if (authError.message.includes("already been registered") || authError.message.includes("already registered")) {
                     isNewUser = false;
                     const { data: existingProfile } = await supabaseAdmin
                         .from('profiles')

@@ -127,7 +127,7 @@ serve(async (req) => {
         });
 
         if (createError) {
-            if (createError.message.includes('already registered')) {
+            if (createError.message.includes('already been registered') || createError.message.includes('already registered')) {
                 isNewUser = false;
                 // Fetch existing user ID from profiles
                 const { data: existingProfile } = await supabaseAdmin
