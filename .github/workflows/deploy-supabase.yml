@@ -44,3 +44,9 @@ jobs:
 
       - name: Deploy ASAAS webhooks function
         run: supabase functions deploy webhooks-asaas --no-verify-jwt --project-ref $PROJECT_ID
+
+      - name: Deploy admin-create-user function
+        run: supabase functions deploy admin-create-user --project-ref $PROJECT_ID
+
+      - name: Deploy create-tenant-admin function
+        run: supabase functions deploy create-tenant-admin --project-ref $PROJECT_ID
