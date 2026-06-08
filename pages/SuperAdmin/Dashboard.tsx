@@ -158,8 +158,8 @@ export const SuperAdminDashboard: React.FC = () => {
         }
     };
 
-    const handleCreateOrUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreateOrUpdate = async (e?: React.FormEvent | React.MouseEvent) => {
+        if (e) e.preventDefault();
         setCreating(true);
         setUserCreationError(null);
 
@@ -524,7 +524,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 width="max-w-4xl"
             >
                 {/* Modal Content - Simplified for Brevity (Same fields as original but using newCompany state) */}
-                <form onSubmit={handleCreateOrUpdate} onKeyDown={handleFormKeyDown} className="space-y-6">
+                <div onKeyDown={handleFormKeyDown} className="space-y-6">
                     {/* Tabs Header */}
                     <div className="flex border-b border-border mb-4 overflow-x-auto">
                         <button type="button" onClick={() => setCreateTab('data')} className={cn("px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap", createTab === 'data' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>Dados da Empresa</button>
@@ -733,13 +733,13 @@ export const SuperAdminDashboard: React.FC = () => {
                             {createTab !== 'modules' ? (
                                 <Button type="button" onClick={() => setCreateTab(createTab === 'data' ? 'plans' : 'modules')}>Avançar</Button>
                             ) : (
-                                <Button type="submit" loading={creating}>
+                                <Button onClick={handleCreateOrUpdate} loading={creating}>
                                     {editingId ? 'Salvar Alterações' : 'Criar Empresa'}
                                 </Button>
                             )}
                         </div>
                     </div>
-                </form>
+                </div>
             </Modal>
         </div>
     );

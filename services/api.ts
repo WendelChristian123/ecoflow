@@ -2234,7 +2234,7 @@ export const api = {
 
         // 2. Update Subscription Details (Plan, Cycle, Dates)
         // Check if any sub fields are present
-        if (data.planId || data.billingCycle || data.subscriptionStart || data.subscriptionEnd) {
+        if (data.planId !== undefined || data.billingCycle || data.subscriptionStart || data.subscriptionEnd || data.customLimits) {
             const subData: any = {
                 plan_id: data.planId,
                 cycle: data.billingCycle === 'yearly' ? 'annual' : data.billingCycle, // Map cycle if needed
@@ -2242,6 +2242,16 @@ export const api = {
                 current_period_end: data.subscriptionEnd || undefined,
                 access_until: data.subscriptionEnd || undefined
             };
+
+            if (data.customLimits) {
+                subData.max_users = data.customLimits.maxUsers;
+            } else if (data.planId && data.planId !== 'custom') {
+                const { data: planData } = await supabase.from('saas_plans').select('max_users').eq('id', data.planId).single();
+                if (planData && planData.max_users) {
+                    subData.max_users = planData.max_users;
+                }
+            }
+
             Object.keys(subData).forEach(key => subData[key] === undefined && delete subData[key]);
 
             // Check if subscription exists for this company
