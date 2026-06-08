@@ -62,7 +62,6 @@ Deno.serve(async (req: Request) => {
         let authUser = null;
 
         // 2. CREATE AUTH USER
-        let createdUserId = null;
         let isNewUser = true;
 
         try {
