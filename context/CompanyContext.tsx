@@ -61,10 +61,8 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                 if (prev?.id === company.id && prev?.name === company.name) return prev;
                                 return company;
                             });
-                            // Para usuários normais, a lista disponível é apenas a própria empresa
-                            if (!isSuperAdmin) {
-                                setAvailableCompanies([company]);
-                            }
+                            // We'll load the full list asynchronously below
+                            // so we don't block the initial render.
                         }
                     } catch (e) {
                         console.warn("Company load failed", e);
@@ -74,6 +72,10 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 // Super Admin carrega TODAS as empresas em background
                 if (isSuperAdmin) {
                     api.adminListCompanies().then(all => {
+                        if (mounted.current) setAvailableCompanies(all);
+                    }).catch(console.warn);
+                } else {
+                    api.getMyCompanies().then(all => {
                         if (mounted.current) setAvailableCompanies(all);
                     }).catch(console.warn);
                 }
@@ -93,7 +95,7 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }, [user, authLoading, isSuperAdmin]);
 
     const switchCompany = async (companyId: string) => {
-        if (!isSuperAdmin) return;
+        // removed if (!isSuperAdmin) return;
 
         setLoading(true); // Exibe loading visual durante a troca
 
@@ -126,6 +128,11 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 const allCompanies = await api.adminListCompanies();
                 if (mounted.current) setAvailableCompanies(allCompanies);
             } catch (e) { console.error(e); }
+        } else {
+            try {
+                const allCompanies = await api.getMyCompanies();
+                if (mounted.current) setAvailableCompanies(allCompanies);
+            } catch (e) { console.error(e); }
         }
         if (currentCompany) {
             try {
@@ -141,7 +148,7 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         loading,
         switchCompany,
         refreshCompanies,
-        isMultiCompany: isSuperAdmin
+        isMultiCompany: isSuperAdmin || availableCompanies.length > 1
     }), [currentCompany, availableCompanies, loading, isSuperAdmin]);
 
     return (

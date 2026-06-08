@@ -2344,6 +2344,25 @@ export const api = {
             }
         }
     },
+    getMyCompanies: async () => {
+        // Fetch all companies the current user belongs to via company_users
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not logged in");
+
+        const { data, error } = await supabase
+            .from('company_users')
+            .select('company_id, role, companies:companies(*)')
+            .eq('user_id', user.id)
+            .eq('status', 'active');
+            
+        if (error) throw error;
+        
+        // Map companies and attach the role
+        return data.map((cu: any) => ({
+            ...cu.companies,
+            userRole: cu.role
+        }));
+    },
     deleteCompany: async (id: string) => {
         const { data, error } = await supabase.functions.invoke('admin-delete-tenant', {
             body: { companyId: id }

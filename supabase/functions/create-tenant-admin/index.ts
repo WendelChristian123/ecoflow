@@ -62,8 +62,11 @@ Deno.serve(async (req: Request) => {
         let authUser = null;
 
         // 2. CREATE AUTH USER
+        let createdUserId = null;
+        let isNewUser = true;
+
         try {
-            console.log(`[V10] Creating Auth User: ${ownerEmail}`);
+            console.log(`[V10] Creating Auth User for ${adminName} (${ownerEmail})`);
             const { data: createdData, error: authError } = await supabaseAdmin.auth.admin.createUser({
                 email: ownerEmail,
                 password: password,
@@ -72,21 +75,28 @@ Deno.serve(async (req: Request) => {
             });
 
             if (authError) {
-                console.error(`[V10][AUTH_FAIL] ${authError.message}`);
-                // Simple Orphan Logic
                 if (authError.message.includes("already registered")) {
-                    return new Response(JSON.stringify({
-                        success: false,
-                        type: "validation_error",
-                        message: "Este email já está cadastrado no sistema."
-                    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+                    isNewUser = false;
+                    const { data: existingProfile } = await supabaseAdmin
+                        .from('profiles')
+                        .select('id')
+                        .eq('email', ownerEmail)
+                        .single();
+                        
+                    if (existingProfile) {
+                        createdUserId = existingProfile.id;
+                        console.log(`[V10] Found existing user: ${createdUserId}`);
+                    } else {
+                        throw new Error("Usuário existe no Auth mas não no Profiles. Contate suporte.");
+                    }
+                } else {
+                    console.error(`[V10][AUTH_FAIL] ${authError.message}`);
+                    throw authError;
                 }
-                throw authError;
+            } else {
+                createdUserId = createdData.user.id;
+                console.log(`[V10] User created: ${createdUserId}`);
             }
-            authUser = createdData;
-            createdUserId = authUser.user.id;
-            console.log(`[V10] User created: ${createdUserId}`);
-
         } catch (error: any) {
             return new Response(JSON.stringify({
                 success: false,
@@ -126,7 +136,7 @@ Deno.serve(async (req: Request) => {
 
         } catch (error: any) {
             // ROLLBACK USER
-            if (createdUserId) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
+            if (createdUserId && isNewUser) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
             return new Response(JSON.stringify({
                 success: false,
                 type: "internal_error",
@@ -155,7 +165,7 @@ Deno.serve(async (req: Request) => {
         } catch (error: any) {
             console.error(`[V10][SUB_FAIL] ${error.message}`);
             // Non-fatal? Or Rollback? Let's treat as fatal for consistency
-            if (createdUserId) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
+            if (createdUserId && isNewUser) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
             if (createdTenantId) await supabaseAdmin.from('companies').delete().eq('id', createdTenantId);
             return new Response(JSON.stringify({
                 success: false,
@@ -219,7 +229,7 @@ Deno.serve(async (req: Request) => {
         } catch (error: any) {
             console.error(`[V10][MODULE_FAIL] ${error.message}`);
             // Rollback everything
-            if (createdUserId) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
+            if (createdUserId && isNewUser) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
             if (createdTenantId) await supabaseAdmin.from('companies').delete().eq('id', createdTenantId);
             return new Response(JSON.stringify({
                 success: false,
@@ -267,7 +277,7 @@ Deno.serve(async (req: Request) => {
             console.error(`[V10][PROFILE_FAIL] ${error.message}`);
             // Rollback? If profile fails, user is created but can't access. 
             // Better to rollback to avoid phantom users.
-            if (createdUserId) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
+            if (createdUserId && isNewUser) await supabaseAdmin.auth.admin.deleteUser(createdUserId);
             if (createdTenantId) await supabaseAdmin.from('companies').delete().eq('id', createdTenantId);
             return new Response(JSON.stringify({
                 success: false,

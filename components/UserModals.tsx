@@ -151,14 +151,19 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClos
                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     required
                 />
-                <Input
-                    type="password"
-                    placeholder="Senha Provisória"
-                    value={formData.password}
-                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={6}
-                />
+                <div className="space-y-1">
+                    <Input
+                        type="password"
+                        placeholder="Senha Provisória"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                        required
+                        minLength={6}
+                    />
+                    <p className="text-[10px] text-muted-foreground ml-1">
+                        * Se o e-mail já existir em outra empresa, o usuário usará a própria senha.
+                    </p>
+                </div>
 
                 <div>
                     <FilterSelect

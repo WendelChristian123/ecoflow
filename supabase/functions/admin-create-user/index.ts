@@ -116,41 +116,75 @@ serve(async (req) => {
         }
 
         // 6. Create User (Supabase Auth Admin)
+        let userId;
+        let isNewUser = true;
+
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
             email_confirm: true,
-            user_metadata: { name, companyId } // Changed tenant_id -> companyId
+            user_metadata: { name, companyId }
         });
 
         if (createError) {
-            return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            if (createError.message.includes('already registered')) {
+                isNewUser = false;
+                // Fetch existing user ID from profiles
+                const { data: existingProfile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id')
+                    .eq('email', email)
+                    .single();
+
+                if (!existingProfile) {
+                    return new Response(JSON.stringify({ error: 'User exists in Auth but not in Profiles. Please contact support.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                }
+                userId = existingProfile.id;
+            } else {
+                return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+        } else {
+            if (!newUser.user) {
+                return new Response(JSON.stringify({ error: 'Failed to create user object' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+            userId = newUser.user.id;
         }
 
-        if (!newUser.user) {
-            return new Response(JSON.stringify({ error: 'Failed to create user object' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        // 7. Profile Handling
+        if (isNewUser) {
+            const { error: profileError } = await supabaseAdmin
+                .from('profiles')
+                .upsert({
+                    id: userId,
+                    email,
+                    name,
+                    phone,
+                    role: role || 'user',
+                    company_id: companyId,
+                    permissions: permissions, // JSONB
+                    status: 'active'
+                });
+
+            if (profileError) {
+                await supabaseAdmin.auth.admin.deleteUser(userId);
+                return new Response(JSON.stringify({ error: profileError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
         }
 
-        // 7. Create Profile (Database)
-        // Use UPSERT to prevent race conditions if triggers exist, but explicit insert is cleaner for "Creating"
-        const { error: profileError } = await supabaseAdmin
-            .from('profiles')
+        // 8. Insert into company_users (The Junction Table for Multi-Workspace)
+        const { error: companyUserError } = await supabaseAdmin
+            .from('company_users')
             .upsert({
-                id: newUser.user.id,
-                email,
-                name,
-                phone,
+                company_id: companyId,
+                user_id: userId,
                 role: role || 'user',
-                company_id: companyId, // Changed from tenant_id
-                permissions: permissions, // JSONB
                 status: 'active'
-            });
+            }, { onConflict: 'company_id,user_id' });
 
-        if (profileError) {
-            // Optional: Rollback Auth User if profile creation fails?
-            // await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-            console.error("Profile Creation Failed:", profileError);
-            return new Response(JSON.stringify({ error: `User created but profile failed: ${profileError.message}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        if (companyUserError) {
+             console.error("Company User Insert Error:", companyUserError);
+             // Non-fatal if we managed to create the user, but bad.
+        }
         }
 
         // 8. Insert Granular Permissions
@@ -158,7 +192,7 @@ serve(async (req) => {
             const toInsert = granular_permissions.map((p: any) => ({
                 ...p,
                 id: crypto.randomUUID(),
-                user_id: newUser.user.id,
+                user_id: userId,
                 company_id: companyId
             }));
             const { error: permError } = await supabaseAdmin.from('user_permissions').insert(toInsert);
@@ -171,8 +205,8 @@ serve(async (req) => {
                 const { data: teamData } = await supabaseAdmin.from('teams').select('member_ids').eq('id', teamId).single();
                 if (teamData) {
                     const members = teamData.member_ids || [];
-                    if (!members.includes(newUser.user.id)) {
-                        members.push(newUser.user.id);
+                    if (!members.includes(userId)) {
+                        members.push(userId);
                         await supabaseAdmin.from('teams').update({ member_ids: members }).eq('id', teamId);
                     }
                 }
@@ -185,8 +219,8 @@ serve(async (req) => {
                 const { data: projData } = await supabaseAdmin.from('projects').select('member_ids').eq('id', projectId).single();
                 if (projData) {
                     const members = projData.member_ids || [];
-                    if (!members.includes(newUser.user.id)) {
-                        members.push(newUser.user.id);
+                    if (!members.includes(userId)) {
+                        members.push(userId);
                         await supabaseAdmin.from('projects').update({ member_ids: members }).eq('id', projectId);
                     }
                 }
