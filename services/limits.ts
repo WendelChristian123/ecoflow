@@ -48,10 +48,10 @@ export const checkUserLimit = async (companyId: string): Promise<UserLimitStatus
     // Note: Depending on logic, suspended users might count or not. 
     // Usually all users consume a seat.
     const { count, error: countError } = await supabase
-        .from('profiles')
+        .from('company_users')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .neq('role', 'super_admin');
+        .eq('status', 'active');
 
     if (countError) {
         console.error('Error counting users:', countError);

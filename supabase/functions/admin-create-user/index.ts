@@ -101,9 +101,10 @@ serve(async (req) => {
 
             // Count Current Users
             const { count: currentCount } = await supabaseAdmin
-                .from('profiles')
+                .from('company_users')
                 .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId);
+                .eq('company_id', companyId)
+                .eq('status', 'active');
 
             if ((currentCount || 0) >= maxUsers) {
                 return new Response(JSON.stringify({
