@@ -1513,7 +1513,7 @@ export const api = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("No user logged in");
 
-        const { error } = await supabase.rpc('switch_active_company', { new_company_id: companyId });
+        const { error } = await supabase.rpc('switch_workspace', { target_company_id: companyId });
         if (error) throw error;
     },
 
