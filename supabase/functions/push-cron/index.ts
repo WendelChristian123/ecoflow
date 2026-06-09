@@ -37,8 +37,26 @@ Deno.serve(async (req: Request) => {
 
     const results = { sent: 0, failed: 0, skipped: 0 };
 
-    function formatTimeRemaining(targetDateStr: string | null) {
+    function formatTimeRemaining(targetDateStr: string | null, isDateOnly: boolean = false) {
       if (!targetDateStr) return "em breve";
+      
+      if (isDateOnly) {
+        const now = new Date();
+        const target = new Date(targetDateStr);
+        // Normalize to ignore time components for date-only comparisons
+        now.setUTCHours(0, 0, 0, 0);
+        
+        // Sometimes date-only fields from DB come as YYYY-MM-DDT03:00:00Z (Brazil midnight).
+        // Setting UTC hours to 0 normalizes it to the same day.
+        target.setUTCHours(0, 0, 0, 0);
+        
+        const diffDays = Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) return "amanhã";
+        if (diffDays === 0) return "hoje";
+        if (diffDays < 0) return "agora";
+        return `em ${diffDays} dias`;
+      }
+
       const diffMs = new Date(targetDateStr).getTime() - new Date().getTime();
       if (diffMs <= 0) return "agora";
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
@@ -64,7 +82,7 @@ Deno.serve(async (req: Request) => {
           if (!task || task.status === 'done') { shouldSend = false; }
           else {
             title = "📋 Lembrete de Tarefa";
-            body = `A tarefa "${task.title}" vence ${formatTimeRemaining(task.due_date)}.`;
+            body = `A tarefa "${task.title}" vence ${formatTimeRemaining(task.due_date, false)}.`;
             url = `/#/tasks?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'event_start') {
@@ -72,7 +90,7 @@ Deno.serve(async (req: Request) => {
           if (!evt || evt.status === 'completed' || evt.status === 'cancelled') { shouldSend = false; }
           else {
             title = "📅 Lembrete de Agenda";
-            body = `O Compromisso "${evt.title}" começa ${formatTimeRemaining(evt.start_time)}.`;
+            body = `O Compromisso "${evt.title}" começa ${formatTimeRemaining(evt.start_time, false)}.`;
             url = `/#/agenda?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'payable_due' || item.notification_type === 'receivable_due') {
@@ -80,7 +98,7 @@ Deno.serve(async (req: Request) => {
           if (!fin || fin.is_paid) { shouldSend = false; }
           else {
             title = `💰 Lembrete Financeiro (${fin.type === 'expense' ? 'A Pagar' : 'A Receber'})`;
-            body = `A conta "${fin.description}" vence ${formatTimeRemaining(fin.due_date)}.`;
+            body = `A conta "${fin.description}" vence ${formatTimeRemaining(fin.due_date, true)}.`;
             url = `/#/finance/transactions?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'quote_expiration') {
@@ -88,7 +106,7 @@ Deno.serve(async (req: Request) => {
           if (!quote || quote.status === 'approved' || quote.status === 'rejected') { shouldSend = false; }
           else {
             title = "🤝 Vencimento de Orçamento";
-            body = `O Orçamento de "${quote.customer_name}" vence ${formatTimeRemaining(quote.valid_until)}.`;
+            body = `O Orçamento de "${quote.customer_name}" vence ${formatTimeRemaining(quote.valid_until, true)}.`;
             url = `/#/commercial/quotes?open=${item.reference_id}`;
           }
         }
