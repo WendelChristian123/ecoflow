@@ -37,37 +37,50 @@ Deno.serve(async (req: Request) => {
 
     const results = { sent: 0, failed: 0, skipped: 0 };
 
+    function formatTimeRemaining(targetDateStr: string | null) {
+      if (!targetDateStr) return "em breve";
+      const diffMs = new Date(targetDateStr).getTime() - new Date().getTime();
+      if (diffMs <= 0) return "agora";
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays >= 1) return `em ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+      const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+      if (diffHours >= 1) return `em ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+      const diffMinutes = Math.round(diffMs / (1000 * 60));
+      if (diffMinutes >= 1) return `em ${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''}`;
+      return "em breve";
+    }
+
     // 2. Process each notification
     for (const item of batch) {
-      let title = "Notificação";
-      let body = "";
-      let url = "/";
-      let shouldSend = true;
-
       try {
+        let shouldSend = true;
+        let title = "";
+        let body = "";
+        let url = "/";
+
         // Fetch fresh data based on notification type
         if (item.notification_type === 'task_deadline') {
-          const { data: task } = await supabase.from('tasks').select('title, status').eq('id', item.reference_id).single();
+          const { data: task } = await supabase.from('tasks').select('title, status, due_date').eq('id', item.reference_id).single();
           if (!task || task.status === 'done') { shouldSend = false; }
           else {
             title = "📋 Lembrete de Tarefa";
-            body = `A tarefa "${task.title}" vence em breve.`;
+            body = `A tarefa "${task.title}" vence ${formatTimeRemaining(task.due_date)}.`;
             url = `/#/tasks?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'event_start') {
-          const { data: evt } = await supabase.from('calendar_events').select('title, status').eq('id', item.reference_id).single();
+          const { data: evt } = await supabase.from('calendar_events').select('title, status, start_time').eq('id', item.reference_id).single();
           if (!evt || evt.status === 'completed' || evt.status === 'cancelled') { shouldSend = false; }
           else {
-            title = "📅 Compromisso Agendado";
-            body = `O evento "${evt.title}" começa em breve.`;
+            title = "📅 Lembrete de Agenda";
+            body = `O Compromisso "${evt.title}" começa ${formatTimeRemaining(evt.start_time)}.`;
             url = `/#/agenda?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'payable_due' || item.notification_type === 'receivable_due') {
-          const { data: fin } = await supabase.from('financial_transactions').select('description, is_paid, type').eq('id', item.reference_id).single();
+          const { data: fin } = await supabase.from('financial_transactions').select('description, is_paid, type, due_date').eq('id', item.reference_id).single();
           if (!fin || fin.is_paid) { shouldSend = false; }
           else {
             title = `💰 Lembrete Financeiro (${fin.type === 'expense' ? 'A Pagar' : 'A Receber'})`;
-            body = `Lançamento: ${fin.description}`;
+            body = `A conta "${fin.description}" vence ${formatTimeRemaining(fin.due_date)}.`;
             url = `/#/finance/transactions?open=${item.reference_id}`;
           }
         }
