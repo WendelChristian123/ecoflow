@@ -40,9 +40,9 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
             try {
                 let targetId = localStorage.getItem('ecoflow-mock-company-id');
 
-                // Se não tiver seleção salva OU não for super admin, usa a empresa real do usuário
+                // Se não tiver seleção salva OU não for super admin, usa a empresa salva no dispositivo, com fallback para o perfil
                 if (!targetId || !isSuperAdmin) {
-                    targetId = (user as any).companyId || localStorage.getItem('ecoflow-company-id');
+                    targetId = localStorage.getItem('ecoflow-company-id') || (user as any).companyId;
                 }
 
                 // Fallback para Super Admin se nada estiver selecionado
