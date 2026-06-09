@@ -123,3 +123,5 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
+
+// Trigger deploy for config.toml changes
