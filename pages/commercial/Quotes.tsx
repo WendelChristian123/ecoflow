@@ -76,6 +76,11 @@ export const QuotesPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     useEffect(() => {
         if (!loading) {
+            const targetCompanyId = searchParams.get('c');
+            if (targetCompanyId && currentCompany?.id !== targetCompanyId) {
+                return; // Let DeepLinkHandler switch the company first
+            }
+
             const targetId = searchParams.get('open') || searchParams.get('openModal');
             if (targetId) {
                 if (quotes.length > 0) {

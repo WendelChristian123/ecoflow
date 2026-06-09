@@ -23,6 +23,7 @@ import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { LayoutSwitch } from './components/LayoutSwitch';
 import { AppRoute } from './components/AppRoute';
 import { NotificationBlocker } from './components/NotificationBlocker';
+import { DeepLinkHandler } from './components/DeepLinkHandler';
 
 // Super Admin Pages
 import { SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
@@ -66,6 +67,7 @@ const App: React.FC = () => {
           <ThemeProvider>
             <AppEnvironmentProvider>
               <Router>
+                <DeepLinkHandler />
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<LandingOrLogin />} />

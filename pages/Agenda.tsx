@@ -64,6 +64,11 @@ export const AgendaPage: React.FC = () => {
 
   useEffect(() => {
     if (!loading) {
+      const targetCompanyId = searchParams.get('c');
+      if (targetCompanyId && currentCompany?.id !== targetCompanyId) {
+          return; // Let DeepLinkHandler switch the company first
+      }
+
       const eventId = searchParams.get('open') || searchParams.get('openModal');
       if (eventId) {
         if (events.length > 0) {

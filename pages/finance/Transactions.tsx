@@ -110,6 +110,11 @@ export const FinancialTransactions: React.FC = () => {
             setContacts(cont);
             setSettings(s || {});
 
+            const targetCompanyId = searchParams.get('c');
+            if (targetCompanyId && currentCompany?.id !== targetCompanyId) {
+                return; // Let DeepLinkHandler switch the company first
+            }
+
             const transactionId = searchParams.get('open') || searchParams.get('transactionId') || searchParams.get('openModal');
             if (transactionId) {
                 const target = t.find(tx => tx.id === transactionId);

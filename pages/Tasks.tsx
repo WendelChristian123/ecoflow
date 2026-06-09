@@ -143,6 +143,11 @@ export const TasksPage: React.FC = () => {
 
   useEffect(() => {
     if (!loading) {
+      const targetCompanyId = searchParams.get('c');
+      if (targetCompanyId && currentCompany?.id !== targetCompanyId) {
+          return; // Let DeepLinkHandler switch the company first
+      }
+
       const targetId = searchParams.get('open') || searchParams.get('openModal') || location.state?.taskId;
       if (targetId) {
         if (tasks.length > 0) {

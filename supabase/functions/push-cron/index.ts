@@ -76,38 +76,44 @@ Deno.serve(async (req: Request) => {
         let body = "";
         let url = "/";
 
+        let companyName = "Contazze";
+        if (item.company_id) {
+          const { data: comp } = await supabase.from('companies').select('name').eq('id', item.company_id).single();
+          if (comp) companyName = comp.name;
+        }
+
         // Fetch fresh data based on notification type
         if (item.notification_type === 'task_deadline') {
           const { data: task } = await supabase.from('tasks').select('title, status, due_date').eq('id', item.reference_id).single();
           if (!task || task.status === 'done') { shouldSend = false; }
           else {
-            title = "📋 Lembrete de Tarefa";
+            title = `${companyName} — 📋 Lembrete de Tarefa`;
             body = `A tarefa "${task.title}" vence ${formatTimeRemaining(task.due_date, false)}.`;
-            url = `/#/tasks?open=${item.reference_id}`;
+            url = `/#/tasks?open=${item.reference_id}&c=${item.company_id}`;
           }
         } else if (item.notification_type === 'event_start') {
           const { data: evt } = await supabase.from('calendar_events').select('title, status, start_date').eq('id', item.reference_id).single();
           if (!evt || evt.status === 'completed' || evt.status === 'cancelled') { shouldSend = false; }
           else {
-            title = "📅 Lembrete de Agenda";
+            title = `${companyName} — 📅 Lembrete de Agenda`;
             body = `O Compromisso "${evt.title}" começa ${formatTimeRemaining(evt.start_date, false)}.`;
-            url = `/#/agenda?open=${item.reference_id}`;
+            url = `/#/agenda?open=${item.reference_id}&c=${item.company_id}`;
           }
         } else if (item.notification_type === 'payable_due' || item.notification_type === 'receivable_due') {
           const { data: fin } = await supabase.from('financial_transactions').select('description, is_paid, type, date').eq('id', item.reference_id).single();
           if (!fin || fin.is_paid) { shouldSend = false; }
           else {
-            title = `💰 Lembrete Financeiro (${fin.type === 'expense' ? 'A Pagar' : 'A Receber'})`;
+            title = `${companyName} — 💰 Lembrete Financeiro (${fin.type === 'expense' ? 'A Pagar' : 'A Receber'})`;
             body = `A conta "${fin.description}" vence ${formatTimeRemaining(fin.date, true)}.`;
-            url = `/#/finance/transactions?open=${item.reference_id}`;
+            url = `/#/finance/transactions?open=${item.reference_id}&c=${item.company_id}`;
           }
         } else if (item.notification_type === 'quote_expiration') {
           const { data: quote } = await supabase.from('quotes').select('customer_name, status, valid_until').eq('id', item.reference_id).single();
           if (!quote || quote.status === 'approved' || quote.status === 'rejected') { shouldSend = false; }
           else {
-            title = "🤝 Vencimento de Orçamento";
+            title = `${companyName} — 🤝 Vencimento de Orçamento`;
             body = `O Orçamento de "${quote.customer_name}" vence ${formatTimeRemaining(quote.valid_until, true)}.`;
-            url = `/#/commercial/quotes?open=${item.reference_id}`;
+            url = `/#/commercial/quotes?open=${item.reference_id}&c=${item.company_id}`;
           }
         }
 
