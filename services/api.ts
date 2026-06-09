@@ -224,7 +224,7 @@ export const api = {
                 const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
                 
                 const creatorName = userData.user?.user_metadata?.name || 'Usuário';
-                const notificationTitle = `${companyData?.name || 'Contazze'} — 📋 Nova tarefa atribuída a você de ${creatorName}`;
+                const notificationTitle = `${companyData?.name || 'Contazze'} — 📋 Nova tarefa "${firstData.title}" atribuída a você de ${creatorName}`;
 
                 if (isAckRequired) {
                     await supabase.from('system_notifications').insert({
@@ -1072,7 +1072,7 @@ export const api = {
                 const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
                 
                 const creatorName = userData.user?.user_metadata?.name || 'Usuário';
-                const notificationTitle = `${companyData?.name || 'Contazze'} — Novo Compromisso de ${creatorName}`;
+                const notificationTitle = `${companyData?.name || 'Contazze'} — 📅 Novo compromisso "${firstData.title}" agendado por ${creatorName}`;
 
                 for (const participantId of firstData.participants) {
                     if (participantId !== currentUserId) {
