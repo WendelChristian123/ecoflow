@@ -26,7 +26,7 @@ self.addEventListener('push', (event) => {
     body: payload.body || '',
     icon: self.location.origin + '/pwa-192x192.png',
     // badge omitted to let Chrome automatically derive it from the icon
-    tag: payload.data?.tag || 'contazze-notification',
+    tag: payload.data?.id || 'contazze-notif-' + Date.now(),
     renotify: true,
     data: {
       url: payload.data?.url || '/',
