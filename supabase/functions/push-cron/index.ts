@@ -86,11 +86,11 @@ Deno.serve(async (req: Request) => {
             url = `/#/tasks?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'event_start') {
-          const { data: evt } = await supabase.from('calendar_events').select('title, status, start_time').eq('id', item.reference_id).single();
+          const { data: evt } = await supabase.from('calendar_events').select('title, status, start_date').eq('id', item.reference_id).single();
           if (!evt || evt.status === 'completed' || evt.status === 'cancelled') { shouldSend = false; }
           else {
             title = "📅 Lembrete de Agenda";
-            body = `O Compromisso "${evt.title}" começa ${formatTimeRemaining(evt.start_time, false)}.`;
+            body = `O Compromisso "${evt.title}" começa ${formatTimeRemaining(evt.start_date, false)}.`;
             url = `/#/agenda?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'payable_due' || item.notification_type === 'receivable_due') {
