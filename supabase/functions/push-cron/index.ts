@@ -83,6 +83,14 @@ Deno.serve(async (req: Request) => {
             body = `A conta "${fin.description}" vence ${formatTimeRemaining(fin.due_date)}.`;
             url = `/#/finance/transactions?open=${item.reference_id}`;
           }
+        } else if (item.notification_type === 'quote_expiration') {
+          const { data: quote } = await supabase.from('quotes').select('customer_name, status, valid_until').eq('id', item.reference_id).single();
+          if (!quote || quote.status === 'approved' || quote.status === 'rejected') { shouldSend = false; }
+          else {
+            title = "🤝 Vencimento de Orçamento";
+            body = `O Orçamento de "${quote.customer_name}" vence ${formatTimeRemaining(quote.valid_until)}.`;
+            url = `/#/commercial/quotes?open=${item.reference_id}`;
+          }
         }
 
         // If item became invalid between enqueue and dequeue
