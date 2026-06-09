@@ -55,13 +55,13 @@ BEGIN
         RETURN OLD;
     END IF;
 
-    IF NEW.due_date IS NOT NULL THEN
+    IF NEW.date IS NOT NULL THEN
         PERFORM public.fn_distribute_scheduled_notification(
             NEW.company_id, 
             NEW.id, 
             CASE WHEN NEW.type = 'expense' THEN 'payable_due' ELSE 'receivable_due' END, 
             'finance', 
-            NEW.due_date, 
+            NEW.date, 
             NOT NEW.is_paid
         );
     END IF;

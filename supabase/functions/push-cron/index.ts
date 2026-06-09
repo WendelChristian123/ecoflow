@@ -94,11 +94,11 @@ Deno.serve(async (req: Request) => {
             url = `/#/agenda?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'payable_due' || item.notification_type === 'receivable_due') {
-          const { data: fin } = await supabase.from('financial_transactions').select('description, is_paid, type, due_date').eq('id', item.reference_id).single();
+          const { data: fin } = await supabase.from('financial_transactions').select('description, is_paid, type, date').eq('id', item.reference_id).single();
           if (!fin || fin.is_paid) { shouldSend = false; }
           else {
             title = `💰 Lembrete Financeiro (${fin.type === 'expense' ? 'A Pagar' : 'A Receber'})`;
-            body = `A conta "${fin.description}" vence ${formatTimeRemaining(fin.due_date, true)}.`;
+            body = `A conta "${fin.description}" vence ${formatTimeRemaining(fin.date, true)}.`;
             url = `/#/finance/transactions?open=${item.reference_id}`;
           }
         } else if (item.notification_type === 'quote_expiration') {
