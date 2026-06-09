@@ -24,8 +24,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'Contazze';
   const options = {
     body: payload.body || '',
-    icon: '/pwa-192x192.png',
-    badge: '/icon.svg',
+    icon: self.location.origin + '/pwa-192x192.png',
+    // badge omitted because SVGs fail on Android, and we want it to fallback to the PWA default icon
     tag: payload.data?.tag || 'contazze-notification',
     renotify: true,
     data: {
