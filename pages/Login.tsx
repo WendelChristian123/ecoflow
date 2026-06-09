@@ -20,7 +20,10 @@ export const LoginPage: React.FC = () => {
   // Watch for successful auth state to redirect
   useEffect(() => {
     if (user && !authLoading) {
-      const from = location.state?.from?.pathname + (location.state?.from?.search || '') + (location.state?.from?.hash || '') || '/dashboard';
+      let from = '/dashboard';
+      if (location.state?.from) {
+        from = (location.state.from.pathname || '') + (location.state.from.search || '') + (location.state.from.hash || '');
+      }
       navigate(from, { replace: true });
     }
   }, [user, authLoading, navigate, location]);
