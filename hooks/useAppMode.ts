@@ -1,48 +1,61 @@
 import { useState, useEffect, useMemo } from 'react';
 
 /**
- * Detects if the app is running in "App mode" (mobile PWA) vs "Web mode".
+ * Detects if the app is running in "App mode" (mobile PWA / Mobile Web) vs "Web mode".
  * 
- * Detection triggers (any one = App mode):
- * 1. display-mode: standalone (PWA installed)
- * 2. URL hash contains /app/ prefix
- * 3. URL search params contain ?mode=app
+ * Rules:
+ * - Desktop/Notebook: Always Web mode (even if installed as PWA).
+ * - Mobile (Phones): Always App mode.
+ * - Tablet: App mode.
  */
 
 function checkIsApp(): boolean {
     if (typeof window === 'undefined') return false;
 
-    // 1. PWA standalone mode
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-        || (window.navigator as any).standalone === true; // iOS Safari
-
-    // 2. Hash-based /app/ prefix (HashRouter uses hash for routing)
+    // 1. Allow manual override for testing purposes via URL
     const hash = window.location.hash || '';
     const hasAppPrefix = hash.includes('/app/') || hash === '#/app';
-
-    // 3. Query parameter ?mode=app
     const params = new URLSearchParams(window.location.search);
     const hasAppParam = params.get('mode') === 'app';
+    const hasWebParam = params.get('mode') === 'web';
 
-    return isStandalone || hasAppPrefix || hasAppParam;
+    if (hasAppPrefix || hasAppParam) return true;
+    if (hasWebParam) return false;
+
+    // 2. Detect if device is Mobile or Tablet
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
+    // iPadOS 13+ spoofs desktop macOS but has touch capabilities
+    const isIPadOS = (navigator.platform === 'MacIntel' || userAgent.includes('mac')) && navigator.maxTouchPoints > 1;
+
+    const isMobileOrTablet = isMobileUA || isIPadOS;
+
+    // If it's a Desktop device (not mobile and not iPad), force Web Layout
+    if (!isMobileOrTablet) {
+        return false;
+    }
+
+    // If it's Mobile/Tablet, use the App Layout
+    return true;
 }
 
 export function useAppMode() {
     const [isApp, setIsApp] = useState<boolean>(() => checkIsApp());
 
     useEffect(() => {
-        // Listen for display-mode changes (e.g., user installs PWA while browsing)
-        const mediaQuery = window.matchMedia('(display-mode: standalone)');
         const handler = () => setIsApp(checkIsApp());
 
-        mediaQuery.addEventListener('change', handler);
-
-        // Also check on hash changes
+        // Check on hash changes (for our manual override logic)
         window.addEventListener('hashchange', handler);
+        // We can listen to resize to update layout dynamically if screen gets very small/large, 
+        // but user requested Desktop = Web and Mobile = Mobile, mostly unaffected by resize. 
+        // We will keep resize event listener in case orientation changes affect any checks in the future.
+        window.addEventListener('resize', handler);
 
         return () => {
-            mediaQuery.removeEventListener('change', handler);
             window.removeEventListener('hashchange', handler);
+            window.removeEventListener('resize', handler);
         };
     }, []);
 
