@@ -198,132 +198,139 @@ export const AuditLogsTab: React.FC = () => {
 
                 {/* Filters Bar */}
                 {(!isApp || showFiltersMobile) && (
-                    <div className="bg-secondary/30 dark:bg-slate-800/50 p-4 rounded-xl border border-border dark:border-slate-700/50 flex flex-col lg:flex-row gap-4 items-center justify-between">
-
-                    {/* Search */}
-                    <div className="bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 flex items-center gap-2 focus-within:ring-1 focus-within:ring-indigo-500 w-full lg:w-64">
-                        <Search size={14} className="text-muted-foreground dark:text-slate-500" />
-                        <input
-                            type="text"
-                            placeholder="Buscar logs, ref..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="bg-transparent border-none outline-none text-sm text-foreground dark:text-white placeholder-muted-foreground dark:placeholder-slate-500 w-full"
-                        />
-                    </div>
-
-                    {/* Filter Controls Group */}
-                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-
-                        {/* Improved Date Filter */}
-                        <div className="flex items-center bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 gap-3 group focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
-                            <Calendar size={14} className="text-muted-foreground dark:text-slate-500 group-focus-within:text-indigo-500" />
-                            <div className="flex items-center gap-2">
+                    <div className="bg-card dark:bg-slate-800/50 p-4 rounded-xl border border-border dark:border-slate-700/50 flex flex-col gap-4 shadow-sm">
+                        
+                        {/* Top Row: Search and Date */}
+                        <div className="flex flex-col xl:flex-row items-center gap-4 w-full">
+                            {/* Search */}
+                            <div className="flex-1 w-full bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 flex items-center gap-2 focus-within:ring-1 focus-within:ring-indigo-500 transition-shadow">
+                                <Search size={16} className="text-muted-foreground dark:text-slate-500 shrink-0" />
                                 <input
-                                    type="date"
-                                    value={dateFrom}
-                                    onChange={e => setDateFrom(e.target.value)}
-                                    className="bg-transparent text-xs text-foreground dark:text-white outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert-0 w-24 cursor-pointer"
-                                    placeholder="Início"
+                                    type="text"
+                                    placeholder="Buscar por ID, descrição ou nome..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    className="bg-transparent border-none outline-none text-sm text-foreground dark:text-white placeholder-muted-foreground dark:placeholder-slate-500 w-full"
                                 />
-                                <span className="text-muted-foreground dark:text-slate-600 text-[10px] uppercase font-bold">Até</span>
-                                <input
-                                    type="date"
-                                    value={dateTo}
-                                    onChange={e => setDateTo(e.target.value)}
-                                    className="bg-transparent text-xs text-foreground dark:text-white outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert-0 w-24 cursor-pointer"
-                                    placeholder="Fim"
-                                />
+                            </div>
+
+                            {/* Date Filter */}
+                            <div className="w-full xl:w-auto flex items-center bg-background dark:bg-slate-900 border border-border dark:border-slate-700 rounded-lg px-3 py-2 gap-3 group focus-within:ring-1 focus-within:ring-indigo-500 transition-shadow shrink-0">
+                                <Calendar size={16} className="text-muted-foreground dark:text-slate-500 group-focus-within:text-indigo-500" />
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={dateFrom}
+                                        onChange={e => setDateFrom(e.target.value)}
+                                        className="bg-transparent text-sm text-foreground dark:text-white outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert-0 w-28 cursor-pointer"
+                                        title="Data Inicial"
+                                    />
+                                    <span className="text-muted-foreground dark:text-slate-600 text-xs uppercase font-bold">Até</span>
+                                    <input
+                                        type="date"
+                                        value={dateTo}
+                                        onChange={e => setDateTo(e.target.value)}
+                                        className="bg-transparent text-sm text-foreground dark:text-white outline-none [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert-0 w-28 cursor-pointer"
+                                        title="Data Final"
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        {/* User Select */}
-                        <div className="min-w-[150px]">
-                            <FilterSelect
-                                value={selectedUser}
-                                onChange={(val) => setSelectedUser(val)}
-                                options={[
-                                    { value: 'ALL', label: 'Todos Usuários' },
-                                    ...uniqueUsers.map(u => ({ value: u, label: u }))
-                                ]}
-                                placeholder="Todos Usuários"
-                                className="w-full"
-                                searchable
-                            />
-                        </div>
+                        {/* Bottom Row: Selects & Clear */}
+                        <div className="flex flex-col xl:flex-row items-center gap-4 w-full">
+                            <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {/* User Select */}
+                                <div className="w-full">
+                                    <FilterSelect
+                                        value={selectedUser}
+                                        onChange={(val) => setSelectedUser(val)}
+                                        options={[
+                                            { value: 'ALL', label: 'Todos Usuários' },
+                                            ...uniqueUsers.map(u => ({ value: u, label: u }))
+                                        ]}
+                                        placeholder="Todos Usuários"
+                                        className="w-full"
+                                        searchable
+                                    />
+                                </div>
 
-                        {/* Module Select */}
-                        <div className="min-w-[150px]">
-                            <FilterSelect
-                                value={selectedModule}
-                                onChange={(val) => setSelectedModule(val)}
-                                options={[
-                                    { value: 'ALL', label: 'Todos Módulos' },
-                                    ...uniqueModules.map(m => ({ value: m, label: m }))
-                                ]}
-                                placeholder="Todos Módulos"
-                                className="w-full"
-                            />
-                        </div>
+                                {/* Module Select */}
+                                <div className="w-full">
+                                    <FilterSelect
+                                        value={selectedModule}
+                                        onChange={(val) => setSelectedModule(val)}
+                                        options={[
+                                            { value: 'ALL', label: 'Todos Módulos' },
+                                            ...uniqueModules.map(m => ({ value: m, label: m }))
+                                        ]}
+                                        placeholder="Todos Módulos"
+                                        className="w-full"
+                                    />
+                                </div>
 
-                        {/* Action Select */}
-                        <div className="min-w-[150px]">
-                            <FilterSelect
-                                value={actionFilter}
-                                onChange={(val) => setActionFilter(val as any)}
-                                options={[
-                                    { value: 'ALL', label: 'Todas as Ações' },
-                                    { value: 'CRITICAL', label: '⚠️ Críticas' },
-                                    { value: 'LOGIN', label: 'Acessos' },
-                                    { value: 'INSERT', label: 'Criação' },
-                                    { value: 'UPDATE', label: 'Edição' },
-                                    { value: 'DELETE', label: 'Exclusão' }
-                                ]}
-                                placeholder="Todas as Ações"
-                                className="w-full"
-                            />
-                        </div>
+                                {/* Action Select */}
+                                <div className="w-full">
+                                    <FilterSelect
+                                        value={actionFilter}
+                                        onChange={(val) => setActionFilter(val as any)}
+                                        options={[
+                                            { value: 'ALL', label: 'Todas as Ações' },
+                                            { value: 'CRITICAL', label: '⚠️ Críticas' },
+                                            { value: 'LOGIN', label: 'Acessos' },
+                                            { value: 'INSERT', label: 'Criação' },
+                                            { value: 'UPDATE', label: 'Edição' },
+                                            { value: 'DELETE', label: 'Exclusão' }
+                                        ]}
+                                        placeholder="Todas as Ações"
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
 
-                        {/* Clear Filters Button */}
-                        {(search || dateFrom || dateTo || selectedUser !== 'ALL' || selectedModule !== 'ALL' || actionFilter !== 'ALL') && (
-                            <button
-                                onClick={() => {
-                                    setSearch('');
-                                    setDateFrom('');
-                                    setDateTo('');
-                                    setSelectedUser('ALL');
-                                    setSelectedModule('ALL');
-                                    setActionFilter('ALL');
-                                }}
-                                className="p-2 hover:bg-secondary dark:hover:bg-slate-700 rounded-lg text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors"
-                                title="Limpar Filtros"
-                            >
-                                <X size={16} />
-                            </button>
-                        )}
+                            {/* Clear Filters Button */}
+                            <div className="w-full xl:w-auto flex justify-end shrink-0">
+                                {(search || dateFrom || dateTo || selectedUser !== 'ALL' || selectedModule !== 'ALL' || actionFilter !== 'ALL') ? (
+                                    <button
+                                        onClick={() => {
+                                            setSearch('');
+                                            setDateFrom('');
+                                            setDateTo('');
+                                            setSelectedUser('ALL');
+                                            setSelectedModule('ALL');
+                                            setActionFilter('ALL');
+                                        }}
+                                        className="flex items-center justify-center gap-2 px-4 py-2 hover:bg-secondary dark:hover:bg-slate-700 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors border border-transparent hover:border-border w-full xl:w-auto"
+                                    >
+                                        <X size={16} /> Limpar Filtros
+                                    </button>
+                                ) : (
+                                    <div className="w-[120px] hidden xl:block"></div>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                        </div>
                 )}
             </div>
 
             {!isApp ? (
-            <div className="bg-secondary/30 dark:bg-slate-800/50 rounded-xl border border-border dark:border-slate-700/50 overflow-hidden shadow-lg">
+            <div className="bg-card dark:bg-slate-800/50 rounded-xl border border-border dark:border-slate-700/50 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto min-h-[400px]">
                     <table className="w-full text-left text-sm text-muted-foreground dark:text-slate-400">
-                        <thead className="bg-secondary dark:bg-slate-900/50 text-foreground dark:text-slate-200 uppercase text-xs font-semibold sticky top-0 z-10 backdrop-blur-sm">
+                        <thead className="bg-secondary/50 dark:bg-slate-900/50 text-foreground dark:text-slate-200 uppercase text-[11px] font-bold tracking-wider sticky top-0 z-10 backdrop-blur-md border-b border-border dark:border-slate-700">
                             <tr>
-                                <th className="px-4 py-3">Data / ID</th>
-                                <th className="px-4 py-3">Usuário</th>
-                                <th className="px-4 py-3">Módulo</th>
-                                <th className="px-4 py-3">Ação</th>
-                                <th className="px-4 py-3">Descrição Detalhada</th>
+                                <th className="px-6 py-4">Data / ID</th>
+                                <th className="px-6 py-4">Usuário</th>
+                                <th className="px-6 py-4">Módulo</th>
+                                <th className="px-6 py-4">Ação</th>
+                                <th className="px-6 py-4 w-full">Descrição Detalhada</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border dark:divide-slate-700/50">
+                        <tbody className="divide-y divide-border/50 dark:divide-slate-700/50">
                             {filteredLogs.map(log => (
                                 <tr
                                     key={log.id}
-                                    className="hover:bg-secondary/50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group"
+                                    className="hover:bg-secondary/30 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group"
                                     onClick={() => {
                                         if (log.recordId) {
                                             setSelectedRecordId(log.recordId);
@@ -331,48 +338,50 @@ export const AuditLogsTab: React.FC = () => {
                                         }
                                     }}
                                 >
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        <div className="flex flex-col">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-2 text-foreground dark:text-slate-300 font-medium group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                                 {format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm')}
                                             </div>
-                                            <div className="text-[9px] font-mono text-muted-foreground dark:text-slate-600 mt-0.5" title="ID Imutável">
+                                            <div className="text-[10px] font-mono text-muted-foreground dark:text-slate-500 bg-secondary/50 dark:bg-slate-800 px-1.5 py-0.5 rounded w-fit" title="ID Imutável">
                                                 {log.id.split('-')[0]}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-2">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
                                             <Avatar src={log.user?.avatarUrl} name={log.user?.name || '?'} size="sm" />
-                                            <div>
-                                                <div className="font-medium text-foreground dark:text-white text-xs whitespace-nowrap">{log.user?.name || 'Sistema'}</div>
-                                                <div className="text-[10px] text-muted-foreground dark:text-slate-500">{log.user?.role === 'admin' ? 'Administrador' : 'Usuário'}</div>
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-foreground dark:text-white text-sm whitespace-nowrap">{log.user?.name || 'Sistema'}</span>
+                                                <span className="text-[11px] text-muted-foreground dark:text-slate-500">{log.user?.role === 'admin' ? 'Administrador' : 'Usuário Padrão'}</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <span className="text-[10px] font-bold tracking-wider text-muted-foreground dark:text-slate-400 bg-secondary dark:bg-slate-900/50 px-2 py-1 rounded border border-border dark:border-slate-800 uppercase whitespace-nowrap">
+                                    <td className="px-6 py-4">
+                                        <span className="text-[11px] font-bold tracking-widest text-muted-foreground dark:text-slate-400 uppercase whitespace-nowrap">
                                             {getModule(log.tableName)}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-6 py-4">
                                         <Badge variant={getActionColor(log.action)}>
                                             {getActionLabel(log.action)}
                                         </Badge>
                                     </td>
-                                    <td className="px-4 py-3 w-full">
-                                        <div className="text-sm text-foreground dark:text-slate-200 leading-relaxed break-words">
-                                            {log.description || '-'}
-                                        </div>
-                                        {/* Friendly Ref Name displayed here */}
-                                        {log.recordId && (
-                                            <div className="text-[10px] text-muted-foreground dark:text-slate-600 mt-1 font-mono flex items-center gap-1 group-hover:opacity-100 transition-opacity">
-                                                <span className='opacity-70'>Ref:</span>
-                                                <span className='text-muted-foreground dark:text-slate-500'>{getFriendlyTableName(log.tableName)}</span>
-                                                <span className='opacity-50'>#{log.recordId.split('-')[0]}</span>
-                                                <ChevronRight size={10} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 dark:text-indigo-400" />
+                                    <td className="px-6 py-4 w-full">
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="text-sm text-foreground dark:text-slate-200 leading-relaxed break-words line-clamp-2 group-hover:line-clamp-none transition-all">
+                                                {log.description || '-'}
                                             </div>
-                                        )}
+                                            {log.recordId && (
+                                                <div className="text-[11px] font-mono flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                    <span className="text-muted-foreground">Ref:</span>
+                                                    <span className="bg-secondary dark:bg-slate-800 px-1.5 py-0.5 rounded text-foreground dark:text-slate-300">
+                                                        {getFriendlyTableName(log.tableName)} #{log.recordId.split('-')[0]}
+                                                    </span>
+                                                    <ChevronRight size={12} className="ml-1 text-indigo-500 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

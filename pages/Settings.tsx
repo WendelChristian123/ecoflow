@@ -195,12 +195,14 @@ export const SettingsPage: React.FC = () => {
     }, {} as Record<string, { user: User, delegations: Delegation[], isOwner: boolean }>);
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar space-y-3 pb-6 pr-2 bg-background text-foreground">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+        <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-8 pr-2 bg-background text-foreground">
+            {/* Header Area */}
+            <div className="flex flex-col gap-2">
                 <div>
-                    <h1 className="text-base font-bold text-foreground">Configurações & Acesso</h1>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Gerencie equipe, acessos e regras do sistema</p>
+                    <h1 className="text-xl font-bold text-foreground">Configurações & Acesso</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Gerencie equipe, acessos e regras do sistema.</p>
                 </div>
+            </div>
             {isApp ? (
                 <div className="mb-6 animate-in fade-in slide-in-from-top-2">
                     <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-3 ml-1">Acessos</h2>
@@ -271,7 +273,7 @@ export const SettingsPage: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="flex items-center gap-6 border-b border-border pb-1 overflow-x-auto custom-scrollbar">
+                <div className="flex items-center gap-6 border-b border-border mb-6 overflow-x-auto custom-scrollbar no-scrollbar">
                     <button
                         onClick={() => setActiveTab('delegation')}
                         className={`pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'delegation' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}
@@ -324,7 +326,7 @@ export const SettingsPage: React.FC = () => {
                         </button>
                     )}
                 </div>
-            )}            </div>
+            )}
 
             {/* TAB: DELEGATION (SHARED ACCESS) */}
             {activeTab === 'delegation' && (
