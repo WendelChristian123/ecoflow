@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
+import { useRBAC } from '../context/RBACContext';
 import { isToday, isPast, parseISO, isValid, startOfDay, addDays, isBefore, isSameDay, addMinutes } from 'date-fns';
 
 export type NotificationType = 'task' | 'finance' | 'agenda' | 'system';
@@ -21,6 +21,7 @@ export interface NotificationItem {
 export const useNotifications = () => {
     const { user } = useAuth();
     const { currentCompany } = useCompany();
+    const { can } = useRBAC();
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -36,7 +37,7 @@ export const useNotifications = () => {
             const [tasks, events, transactions, sysNotifsData] = await Promise.all([
                 api.getTasks(currentCompany?.id),
                 api.getEvents(currentCompany?.id),
-                api.getFinancialTransactions(currentCompany?.id),
+                can('finance', 'view') ? api.getFinancialTransactions(currentCompany?.id) : Promise.resolve([]),
                 api.getSystemBellNotifications()
             ]);
 
