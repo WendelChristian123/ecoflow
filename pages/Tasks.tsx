@@ -139,19 +139,39 @@ export const TasksPage: React.FC = () => {
     }
   }, [currentCompany]);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    if (!loading && tasks.length > 0) {
-      const targetId = searchParams.get('openModal') || location.state?.taskId;
+    if (!loading) {
+      const targetId = searchParams.get('open') || searchParams.get('openModal') || location.state?.taskId;
       if (targetId) {
-        const targetTask = tasks.find(t => t.id === targetId);
-        if (targetTask) {
-          setSelectedTask(targetTask);
+        if (tasks.length > 0) {
+          const targetTask = tasks.find(t => t.id === targetId);
+          if (targetTask) {
+            setSelectedTask(targetTask);
+          } else {
+            alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
+          }
+          // Remove param so it doesn't reopen on reload
+          if (searchParams.get('open') || searchParams.get('openModal')) {
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('open');
+            newParams.delete('openModal');
+            setSearchParams(newParams, { replace: true });
+          }
+        } else if (tasks.length === 0) {
+           // If we loaded and there are no tasks, the item doesn't exist either
+           alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
+           if (searchParams.get('open') || searchParams.get('openModal')) {
+             const newParams = new URLSearchParams(searchParams);
+             newParams.delete('open');
+             newParams.delete('openModal');
+             setSearchParams(newParams, { replace: true });
+           }
         }
       }
     }
-  }, [loading, tasks, location.state, searchParams]);
+  }, [loading, tasks, location.state, searchParams, setSearchParams]);
 
   const loadData = async (showLoading = true) => {
     if (!currentCompany) return;

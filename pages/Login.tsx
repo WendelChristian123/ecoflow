@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input } from '../components/Shared';
 import { LayoutDashboard, AlertTriangle } from 'lucide-react';
@@ -14,14 +14,16 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, user, loading: authLoading } = useAuth();
 
   // Watch for successful auth state to redirect
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/dashboard');
+      const from = location.state?.from?.pathname + (location.state?.from?.search || '') + (location.state?.from?.hash || '') || '/dashboard';
+      navigate(from, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

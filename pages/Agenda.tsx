@@ -60,15 +60,37 @@ export const AgendaPage: React.FC = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    const eventId = searchParams.get('openModal');
-    if (eventId && events.length > 0) {
-      const targetEvent = events.find(e => e.id === eventId);
-      if (targetEvent) setSelectedEvent(targetEvent);
+    if (!loading) {
+      const eventId = searchParams.get('open') || searchParams.get('openModal');
+      if (eventId) {
+        if (events.length > 0) {
+          const targetEvent = events.find(e => e.id === eventId);
+          if (targetEvent) {
+            setSelectedEvent(targetEvent);
+          } else {
+            alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
+          }
+          if (searchParams.get('open') || searchParams.get('openModal')) {
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('open');
+            newParams.delete('openModal');
+            setSearchParams(newParams, { replace: true });
+          }
+        } else if (events.length === 0) {
+           alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
+           if (searchParams.get('open') || searchParams.get('openModal')) {
+             const newParams = new URLSearchParams(searchParams);
+             newParams.delete('open');
+             newParams.delete('openModal');
+             setSearchParams(newParams, { replace: true });
+           }
+        }
+      }
     }
-  }, [events, searchParams]);
+  }, [loading, events, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (currentCompany) {

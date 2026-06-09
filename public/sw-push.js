@@ -52,17 +52,18 @@ self.addEventListener('notificationclick', (event) => {
   // Build deep link based on type
   if (notifData.type && notifData.id) {
     switch (notifData.type) {
-      case 'task_created':
-      case 'task_overdue':
-      case 'task_due_today':
+      case 'task_deadline':
         targetUrl = `/#/tasks?open=${notifData.id}`;
         break;
-      case 'event_created':
-      case 'event_today':
+      case 'event_start':
         targetUrl = `/#/agenda?open=${notifData.id}`;
         break;
-      case 'finance_due_today':
+      case 'payable_due':
+      case 'receivable_due':
         targetUrl = `/#/finance/transactions?open=${notifData.id}`;
+        break;
+      case 'quote_expiration':
+        targetUrl = `/#/commercial/quotes?open=${notifData.id}`;
         break;
       default:
         targetUrl = notifData.url || '/#/dashboard';
@@ -77,13 +78,8 @@ self.addEventListener('notificationclick', (event) => {
       // If app is already open, navigate to the deep link
       for (const client of windowClients) {
         if (client.url.startsWith(self.location.origin)) {
+          client.navigate(urlToOpen);
           client.focus();
-          client.postMessage({
-            type: 'PUSH_NOTIFICATION_CLICK',
-            url: targetUrl,
-            notificationType: notifData.type,
-            itemId: notifData.id
-          });
           return;
         }
       }

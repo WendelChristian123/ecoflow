@@ -73,19 +73,37 @@ export const QuotesPage: React.FC = () => {
         finally { setLoading(false); }
     };
 
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     useEffect(() => {
-        if (!loading && quotes.length > 0) {
-            const targetId = searchParams.get('openModal');
+        if (!loading) {
+            const targetId = searchParams.get('open') || searchParams.get('openModal');
             if (targetId) {
-                const target = quotes.find(q => q.id === targetId);
-                if (target) {
-                    setEditingQuote(target);
-                    setIsModalOpen(true);
+                if (quotes.length > 0) {
+                    const target = quotes.find(q => q.id === targetId);
+                    if (target) {
+                        setEditingQuote(target);
+                        setIsModalOpen(true);
+                    } else {
+                        alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
+                    }
+                    if (searchParams.get('open') || searchParams.get('openModal')) {
+                        const newParams = new URLSearchParams(searchParams);
+                        newParams.delete('open');
+                        newParams.delete('openModal');
+                        setSearchParams(newParams, { replace: true });
+                    }
+                } else if (quotes.length === 0) {
+                    alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
+                    if (searchParams.get('open') || searchParams.get('openModal')) {
+                        const newParams = new URLSearchParams(searchParams);
+                        newParams.delete('open');
+                        newParams.delete('openModal');
+                        setSearchParams(newParams, { replace: true });
+                    }
                 }
             }
         }
-    }, [loading, quotes, searchParams]);
+    }, [loading, quotes, searchParams, setSearchParams]);
 
     const handleDelete = async () => {
         if (confirmDeleteId) {

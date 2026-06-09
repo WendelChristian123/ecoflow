@@ -51,7 +51,7 @@ export const FinancialTransactions: React.FC = () => {
 
     const { currentCompany } = useCompany();
     const { isApp } = useAppEnvironment();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -110,13 +110,23 @@ export const FinancialTransactions: React.FC = () => {
             setContacts(cont);
             setSettings(s || {});
 
-            const transactionId = searchParams.get('transactionId') || searchParams.get('openModal');
+            const transactionId = searchParams.get('open') || searchParams.get('transactionId') || searchParams.get('openModal');
             if (transactionId) {
                 const target = t.find(tx => tx.id === transactionId);
                 if (target) {
                     setSelectedMonth(parseDateLocal(target.date));
                     setEditingTransaction(target);
                     setIsModalOpen(true);
+                } else {
+                    alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
+                }
+                
+                if (searchParams.get('open') || searchParams.get('transactionId') || searchParams.get('openModal')) {
+                  const newParams = new URLSearchParams(searchParams);
+                  newParams.delete('open');
+                  newParams.delete('transactionId');
+                  newParams.delete('openModal');
+                  setSearchParams(newParams, { replace: true });
                 }
             }
         } catch (error) {
