@@ -59,23 +59,37 @@ export const NotificationSettingsTab: React.FC<{ companySettings: any, onSaveCom
         return p ? p.notify_before_minutes : 0; // Default 0 (No momento exato)
     };
 
-    const renderSelect = (moduleId: string, eventType: string, label: string) => (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border/50 last:border-0 gap-2">
-            <span className="text-sm text-foreground">{label}</span>
-            <select 
-                className="bg-secondary/50 border border-border text-foreground text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary/50 outline-none w-full sm:w-48"
-                value={getPrefValue(moduleId, eventType)}
-                onChange={(e) => handlePrefChange(moduleId, eventType, parseInt(e.target.value))}
-            >
-                <option value={-1}>Não me avise</option>
-                <option value={0}>No momento exato</option>
-                <option value={5}>5 minutos antes</option>
-                <option value={15}>15 minutos antes</option>
-                <option value={60}>1 hora antes</option>
-                <option value={1440}>1 dia antes</option>
-            </select>
-        </div>
-    );
+    const renderSelect = (moduleId: string, eventType: string, label: string) => {
+        const isDateOnly = moduleId === 'finance' || moduleId === 'commercial';
+        return (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border/50 last:border-0 gap-2">
+                <span className="text-sm text-foreground">{label}</span>
+                <select 
+                    className="bg-secondary/50 border border-border text-foreground text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary/50 outline-none w-full sm:w-48"
+                    value={getPrefValue(moduleId, eventType)}
+                    onChange={(e) => handlePrefChange(moduleId, eventType, parseInt(e.target.value))}
+                >
+                    <option value={-1}>Não me avise</option>
+                    {isDateOnly ? (
+                        <>
+                            <option value={0}>No dia do Vencimento</option>
+                            <option value={1440}>1 dia antes</option>
+                            <option value={2880}>2 dias antes</option>
+                            <option value={4320}>3 dias antes</option>
+                        </>
+                    ) : (
+                        <>
+                            <option value={0}>No momento exato</option>
+                            <option value={5}>5 minutos antes</option>
+                            <option value={15}>15 minutos antes</option>
+                            <option value={60}>1 hora antes</option>
+                            <option value={1440}>1 dia antes</option>
+                        </>
+                    )}
+                </select>
+            </div>
+        );
+    };
 
     return (
         <div className="space-y-6 max-w-3xl">
