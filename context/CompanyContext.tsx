@@ -49,6 +49,21 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 // Assuming '00000000-0000-0000-0000-000000000001' is still the default company ID
                 if (!targetId && isSuperAdmin) targetId = '00000000-0000-0000-0000-000000000001';
 
+                // Carrega a lista de empresas do usuário
+                let allCompanies = [];
+                if (isSuperAdmin) {
+                    allCompanies = await api.adminListCompanies().catch(e => { console.warn(e); return []; });
+                } else {
+                    allCompanies = await api.getMyCompanies().catch(e => { console.warn(e); return []; });
+                }
+
+                if (mounted.current) setAvailableCompanies(allCompanies);
+
+                // Auto-select first company if targetId is still missing
+                if (!targetId && allCompanies.length > 0) {
+                    targetId = allCompanies[0].id;
+                }
+
                 // GARANTIA: Sincroniza o ID usado pela API
                 if (targetId) localStorage.setItem('ecoflow-company-id', targetId);
 
@@ -61,23 +76,10 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                 if (prev?.id === company.id && prev?.name === company.name) return prev;
                                 return company;
                             });
-                            // We'll load the full list asynchronously below
-                            // so we don't block the initial render.
                         }
                     } catch (e) {
                         console.warn("Company load failed", e);
                     }
-                }
-
-                // Super Admin carrega TODAS as empresas em background
-                if (isSuperAdmin) {
-                    api.adminListCompanies().then(all => {
-                        if (mounted.current) setAvailableCompanies(all);
-                    }).catch(console.warn);
-                } else {
-                    api.getMyCompanies().then(all => {
-                        if (mounted.current) setAvailableCompanies(all);
-                    }).catch(console.warn);
                 }
 
             } catch (err) {

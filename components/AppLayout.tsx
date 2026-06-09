@@ -10,8 +10,67 @@ import { TrialBanner } from './TrialBanner';
 import { Bell, ChevronLeft } from 'lucide-react';
 import { UserProfileModal } from './UserModals';
 import { User } from '../types';
-import { Avatar } from './Shared';
+import { Avatar, cn } from './Shared';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { Building2, ChevronDown } from 'lucide-react';
+
+// Mobile Company Selector
+const AppCompanySelector: React.FC = () => {
+    const { availableCompanies, currentCompany, switchCompany, isMultiCompany } = useCompany();
+    const [isOpen, setIsOpen] = React.useState(false);
+    const wrapperRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    if (!isMultiCompany) return null;
+
+    return (
+        <div className="relative ml-2" ref={wrapperRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-lg border border-primary/20 hover:bg-primary/20 transition-colors"
+            >
+                <Building2 size={12} />
+                <span className="text-[10px] font-semibold max-w-[80px] truncate">{currentCompany?.name || 'Empresa'}</span>
+                <ChevronDown size={10} className={cn("transition-transform", isOpen && "rotate-180")} />
+            </button>
+
+            {isOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-popover border border-border rounded-xl shadow-2xl z-[100] p-1 overflow-hidden animate-in fade-in zoom-in-95 origin-top-right">
+                    <div className="px-3 py-2 bg-secondary/50 border-b border-border mb-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Trocar Ambiente</p>
+                    </div>
+                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+                        {[...availableCompanies].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => { switchCompany(t.id); setIsOpen(false); }}
+                                className={cn(
+                                    "w-full text-left px-3 py-2 text-sm rounded-lg mb-1 flex items-center gap-2",
+                                    currentCompany?.id === t.id
+                                        ? "bg-primary/10 text-primary font-medium"
+                                        : "text-foreground hover:bg-secondary/50"
+                                )}
+                            >
+                                <Building2 size={14} className="shrink-0" />
+                                <span className="truncate">{t.name}</span>
+                                {currentCompany?.id === t.id && <div className="ml-auto w-2 h-2 rounded-full bg-primary shrink-0"></div>}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // Compact App Header for mobile
 interface AppHeaderProps {
@@ -78,6 +137,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                    <AppCompanySelector />
                     <NotificationPopover />
                     {/* Fixed alignment: flex items-center justify-center, and made it clickable */}
                     <button 
