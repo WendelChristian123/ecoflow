@@ -31,7 +31,7 @@ BEGIN
         FROM public.company_users cu
         LEFT JOIN public.user_permissions up 
           ON up.user_id = cu.user_id 
-          AND up.tenant_id = cu.company_id 
+          AND up.company_id = cu.company_id 
           AND up.feature_id LIKE p_module_id || '.%'
           AND (up.actions->>'view')::boolean = true
         WHERE cu.company_id = p_company_id
