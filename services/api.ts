@@ -933,7 +933,7 @@ export const api = {
             await api.addActivityLog({
                 entityId: referenceId,
                 entityType: referenceType,
-                action: 'acknowledge',
+                action: 'update',
                 details: `${userName} confirmou ciência/aceitou esta tarefa em ${dateStr} às ${timeStr}.`
             });
 
