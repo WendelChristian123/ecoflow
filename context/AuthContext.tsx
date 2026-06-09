@@ -58,9 +58,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Persist Source of Truth logic
-        // Use company_id from profile
+        // Use company_id from profile ONLY as fallback for new devices
         const cId = profile.company_id;
-        if (cId) localStorage.setItem('ecoflow-company-id', cId); // Updated key
+        const currentLocalId = localStorage.getItem('ecoflow-company-id');
+        if (!currentLocalId && cId) {
+          localStorage.setItem('ecoflow-company-id', cId);
+        }
 
         // Update User State with full profile
         setUser(prev => {
