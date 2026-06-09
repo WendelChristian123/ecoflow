@@ -920,40 +920,50 @@ export const api = {
 
         // Log to activity if reference is provided
         if (referenceId && referenceType) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR');
+            const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+            const origin = isPWA ? 'App/PWA' : 'Web';
+
+            const { data: userData } = await supabase.auth.getUser();
+            const userName = userData.user?.user_metadata?.name || 'Usuário';
+
             await api.addActivityLog({
                 entityId: referenceId,
                 entityType: referenceType,
                 action: 'acknowledge',
-                details: 'Confirmou o recebimento e ciência da atribuição.'
+                details: `${userName} confirmou ciência/aceitou esta tarefa em ${dateStr} às ${timeStr}.`
             });
 
-            // Log to Global Audit Log
-            const taskName = notificationTitle ? notificationTitle.replace('Nova Tarefa: ', '').replace('Novo Evento: ', '') : referenceId;
-            await supabase.rpc('log_auth_event', {
-                p_action: 'ACTION',
-                p_description: `[ACEITE ATRIBUIÇÃO] Usuário aceitou a tarefa/compromisso: ${taskName}`
-            });
-
-            // Notify the task/event owner
+            // Fetch extra info for Global Audit Log
             try {
+                const taskName = notificationTitle ? notificationTitle.replace('Nova Tarefa: ', '').replace('Novo Evento: ', '') : referenceId;
+                
                 const tableName = referenceType === 'task' ? 'tasks' : 'calendar_events';
                 const { data: itemData } = await supabase.from(tableName).select('owner_id').eq('id', referenceId).single();
-                const { data: userData } = await supabase.auth.getUser();
                 
-                if (itemData?.owner_id && itemData.owner_id !== userData.user?.id) {
-                    const userName = userData.user?.user_metadata?.name || 'O usuário';
-                    await supabase.from('system_notifications').insert({
-                        company_id: getCurrentCompanyId(),
-                        user_id: itemData.owner_id,
-                        title: `Atribuição Aceita`,
-                        message: `${userName} confirmou a ciência para: ${taskName}`,
-                        reference_id: referenceId,
-                        reference_type: referenceType,
-                        requires_acknowledgment: false
-                    });
+                let ownerName = 'Desconhecido';
+                if (itemData?.owner_id) {
+                    const { data: ownerProfile } = await supabase.from('profiles').select('name').eq('id', itemData.owner_id).single();
+                    if (ownerProfile) ownerName = ownerProfile.name;
                 }
+
+                const companyId = getCurrentCompanyId();
+                let companyName = 'Empresa Desconhecida';
+                if (companyId) {
+                    const { data: companyData } = await supabase.from('companies').select('name').eq('id', companyId).single();
+                    if (companyData) companyName = companyData.name;
+                }
+
+                await supabase.rpc('log_auth_event', {
+                    p_action: 'ACTION',
+                    p_description: `Usuário ${userName} confirmou ciência da tarefa '${taskName}', criada/designada por ${ownerName}, na empresa ${companyName}, em ${dateStr} às ${timeStr}, via ${origin}.`
+                });
+
             } catch (err) {
-                console.error("Failed to notify owner", err);
+                console.error("Failed to write detailed audit log", err);
             }
         }
     },
