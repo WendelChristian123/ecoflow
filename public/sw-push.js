@@ -24,8 +24,7 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'Contazze';
   const options = {
     body: payload.body || '',
-    icon: self.location.origin + '/pwa-192x192.png',
-    // badge omitted because SVGs fail on Android, and we want it to fallback to the PWA default icon
+    // icon omitted: Let Android Chrome use the native WebAPK/PWA icon to avoid Dark Mode aggressive color inversion
     tag: payload.data?.tag || 'contazze-notification',
     renotify: true,
     data: {
