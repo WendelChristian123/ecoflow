@@ -24,7 +24,17 @@ export const supabase = createClient(
       autoRefreshToken: true,
     },
     global: {
-      headers: { 'x-client-info': 'ecoflow-web' }
+      headers: { 'x-client-info': 'ecoflow-web' },
+      fetch: (url, options) => {
+        const companyId = localStorage.getItem('ecoflow-company-id');
+        if (companyId && options) {
+            options.headers = {
+                ...options.headers,
+                'x-company-id': companyId
+            };
+        }
+        return fetch(url, options);
+      }
     }
   }
 );

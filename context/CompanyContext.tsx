@@ -104,8 +104,7 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
             localStorage.setItem('ecoflow-mock-company-id', companyId);
             localStorage.setItem('ecoflow-company-id', companyId); // CRUCIAL para a API pegar a empresa certa
 
-            // 1.5. Sincroniza com o servidor (RLS Fix - update profile current_company if needed)
-            await api.switchActiveCompany(companyId);
+            // 1.5. Sincronização global removida para manter isolamento (Web vs App)
 
             // 2. Busca dados da nova empresa
             const company = await api.getCompanyById(companyId);
