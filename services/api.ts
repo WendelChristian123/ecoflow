@@ -218,13 +218,13 @@ export const api = {
         // Notificações de Atribuição de Tarefa
         try {
             if (firstData.assignee_id && firstData.assignee_id !== currentUserId) {
-                const { data: companyData } = await supabase.from('companies').select('settings').eq('id', companyId).single();
+                const { data: companyData } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
                 
                 // Puxamos a setting correta ou assumimos que o objeto JSON tem a flag
                 const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
                 
                 const creatorName = userData.user?.user_metadata?.name || 'Usuário';
-                const notificationTitle = `Nova Tarefa de ${creatorName}`;
+                const notificationTitle = `${companyData?.name || 'Contazze'} — 📋 Nova tarefa atribuída a você de ${creatorName}`;
 
                 if (isAckRequired) {
                     await supabase.from('system_notifications').insert({
@@ -247,7 +247,7 @@ export const api = {
                         data: {
                             type: 'task_created',
                             id: firstData.id,
-                            url: `/#/tasks?open=${firstData.id}`
+                            url: `/#/tasks?open=${firstData.id}&c=${companyId}`
                         }
                     }
                 });
@@ -1067,12 +1067,12 @@ export const api = {
             const currentUserId = userData.user?.id;
             
             const firstData = data[0];
-            if (firstData && firstData.participants && firstData.participants.length > 0) {
-                const { data: companyData } = await supabase.from('companies').select('settings').eq('id', companyId).single();
+             if (firstData.participants && firstData.participants.length > 0) {
+                const { data: companyData } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
                 const isAckRequired = companyData?.settings?.require_routines_acknowledgment || false;
                 
                 const creatorName = userData.user?.user_metadata?.name || 'Usuário';
-                const notificationTitle = `Novo Compromisso de ${creatorName}`;
+                const notificationTitle = `${companyData?.name || 'Contazze'} — Novo Compromisso de ${creatorName}`;
 
                 for (const participantId of firstData.participants) {
                     if (participantId !== currentUserId) {
@@ -1097,7 +1097,7 @@ export const api = {
                                 data: {
                                     type: 'event_created',
                                     id: firstData.id,
-                                    url: `/#/agenda?open=${firstData.id}`
+                                    url: `/#/agenda?open=${firstData.id}&c=${companyId}`
                                 }
                             }
                         });
