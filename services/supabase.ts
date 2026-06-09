@@ -28,10 +28,9 @@ export const supabase = createClient(
       fetch: (url, options) => {
         const companyId = localStorage.getItem('ecoflow-company-id');
         if (companyId && options) {
-            options.headers = {
-                ...options.headers,
-                'x-company-id': companyId
-            };
+            const headers = new Headers(options.headers);
+            headers.set('x-company-id', companyId);
+            options.headers = headers;
         }
         return fetch(url, options);
       }
