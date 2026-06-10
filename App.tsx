@@ -52,10 +52,15 @@ import { CommercialOverview } from './pages/commercial/Overview';
 // Routines Pages
 import { RoutinesOverview } from './pages/routines/Overview';
 
-// Landing page wrapper — shows Login in App mode, Landing in Web mode
+// Landing page wrapper — shows Login in App mode or Desktop PWA, Landing in Web mode
 const LandingOrLogin: React.FC = () => {
   const { isApp } = useAppEnvironment();
-  if (isApp) return <Navigate to="/login" replace />;
+  
+  // Detect if running as installed PWA (desktop)
+  const isStandalone = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isApp || isStandalone) return <Navigate to="/login" replace />;
+  
   return <LandingPage />;
 };
 
