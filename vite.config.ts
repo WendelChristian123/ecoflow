@@ -25,12 +25,12 @@ export default defineConfig(({ mode }) => {
           start_url: '/',
           icons: [
             {
-              src: '/icon.svg',
+              src: '/icon-app-mobile.svg',
               sizes: '192x192',
               type: 'image/svg+xml'
             },
             {
-              src: '/icon.svg',
+              src: '/icon-tela-carregamento.svg',
               sizes: '512x512',
               type: 'image/svg+xml',
               purpose: 'any maskable'
