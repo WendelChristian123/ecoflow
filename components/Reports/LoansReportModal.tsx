@@ -89,7 +89,7 @@ export const LoansReportModal: React.FC<LoansReportModalProps> = ({ isOpen, onCl
                 <div class="header">
                     <div>
                         <h1>Relatório de Dívidas e Empréstimos</h1>
-                        <div class="meta"><strong style="color: #10b981;">Contazze</strong></div>
+                        
                     </div>
                     <div class="meta text-right">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>

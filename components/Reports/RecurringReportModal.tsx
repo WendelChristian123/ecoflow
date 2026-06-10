@@ -99,7 +99,7 @@ export const RecurringReportModal: React.FC<RecurringReportModalProps> = ({ isOp
                     <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
                 </div>
                 <div class="header">
-                    <div><h1>Relatório de Contratos</h1><div class="meta"><strong style="color: #10b981;">Contazze</strong></div></div>
+                    <div><h1>Relatório de Contratos</h1></div>
                     <div class="meta" style="text-align: right;">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Filtro:</strong> ${statusFilter === 'all' ? 'Todos' : statusFilter === 'active' ? 'Ativos' : 'Inativos'}</div>

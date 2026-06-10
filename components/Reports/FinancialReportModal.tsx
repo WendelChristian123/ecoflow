@@ -341,7 +341,7 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 <div class="header">
                     <div>
                         <h1>Relatório Financeiro</h1>
-                        <div class="meta"><strong style="color: #10b981;">Contazze</strong></div>
+                        
                     </div>
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : '...'} a ${dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : '...'}</div>

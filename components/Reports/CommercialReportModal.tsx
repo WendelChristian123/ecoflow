@@ -139,7 +139,7 @@ export const CommercialReportModal: React.FC<CommercialReportModalProps> = ({ is
                 <div class="header">
                     <div>
                         <h1>Relatório Comercial</h1>
-                        <div class="meta"><strong style="color: #10b981;">Contazze</strong></div>
+                        
                     </div>
                     <div class="meta text-right">
                         <div><strong>Período:</strong> ${dateStr}</div>

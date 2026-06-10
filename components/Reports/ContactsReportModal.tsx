@@ -67,7 +67,7 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
                     <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
                 </div>
                 <div class="header">
-                    <div><h1>Relatório de Contatos</h1><div class="meta"><strong style="color: #10b981;">Contazze</strong></div></div>
+                    <div><h1>Relatório de Contatos</h1></div>
                     <div class="meta" style="text-align: right;">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
                         <div><strong>Perfil:</strong> ${typeFilter === 'all' ? 'Todos' : typeFilter === 'client' ? 'Clientes' : 'Fornecedores'} &nbsp;|&nbsp; <strong>Tipo:</strong> ${entityTypeFilter === 'all' ? 'Todos' : entityTypeFilter === 'pf' ? 'Pessoa Física' : 'Pessoa Jurídica'}</div>
