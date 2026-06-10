@@ -145,10 +145,7 @@ export const api = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return; // Should likely throw, but safe return for now
         
-        const companyId = getCurrentCompanyId();
-
         const { error } = await supabase.from('activity_logs').insert({
-            company_id: companyId,
             entity_id: entry.entityId,
             entity_type: entry.entityType,
             action: entry.action,
