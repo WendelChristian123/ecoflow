@@ -211,8 +211,7 @@ const UserDropdown: React.FC<{ onOpenProfile: () => void }> = ({ onOpenProfile }
     );
 }
 
-// ... CompanySelector and Layout Main Component ...
-const CompanySelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => {
+const HeaderCompanySelector: React.FC = () => {
     const { availableCompanies, currentCompany, switchCompany, isMultiCompany } = useCompany();
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -227,62 +226,69 @@ const CompanySelector: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) =>
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    if (!isMultiCompany) return null;
+    if (!isMultiCompany) {
+        return (
+            <div className="flex items-center gap-3 hidden sm:flex">
+                <div className="bg-primary/10 p-2 rounded-lg border border-primary/20">
+                    <Building2 size={20} className="text-primary" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">
+                    {currentCompany?.name || 'Contazze'}
+                </h1>
+            </div>
+        );
+    }
 
     return (
-        <div className={cn("mb-4 px-3", isCollapsed && "px-2")} ref={wrapperRef}>
-            <div className="mb-1 px-1">
-                {!isCollapsed && <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Ambiente Atual</span>}
-            </div>
-            <div className="relative">
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={cn(
-                        "w-full flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary rounded-lg transition-all hover:bg-primary/20",
-                        isCollapsed ? "justify-center p-2" : "px-3 py-2 justify-between"
-                    )}
-                >
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <Building2 size={18} className="shrink-0 text-primary" />
-                        {!isCollapsed && <span className="text-sm font-medium truncate">{currentCompany?.name || 'Selecione...'}</span>}
-                    </div>
-                    {!isCollapsed && <ChevronDown size={14} className="opacity-70" />}
-                </button>
+        <div className="relative hidden sm:block" ref={wrapperRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-3 bg-background hover:bg-secondary/50 border border-border px-3 py-1.5 rounded-xl transition-all"
+            >
+                <div className="bg-primary/10 p-1.5 rounded-lg border border-primary/20">
+                    <Building2 size={18} className="text-primary" />
+                </div>
+                <div className="flex flex-col text-left">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider leading-none mb-0.5">Ambiente Atual</span>
+                    <span className="text-sm font-bold text-foreground leading-none">{currentCompany?.name || 'Selecione...'}</span>
+                </div>
+                <ChevronDown size={16} className="text-muted-foreground ml-2" />
+            </button>
 
-                {isOpen && (
-                    <div className="absolute top-full left-0 w-64 bg-popover border border-border rounded-xl shadow-2xl z-50 mt-2 p-1 overflow-hidden animate-in fade-in zoom-in-95 origin-top-left">
-                        <div className="px-3 py-2 bg-secondary/50 border-b border-border mb-1">
-                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Alternar Empresa</p>
-                        </div>
-                        <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {[...availableCompanies].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(t => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => { switchCompany(t.id); setIsOpen(false); }}
-                                    className={cn(
-                                        "w-full text-left px-3 py-2 text-sm rounded-lg mb-1 flex items-center gap-2",
-                                        currentCompany?.id === t.id
-                                            ? "bg-primary/10 text-primary"
-                                            : "text-foreground hover:bg-secondary/50"
-                                    )}
-                                >
-                                    <Building2 size={14} />
-                                    <span className="truncate">{t.name}</span>
-                                    {currentCompany?.id === t.id && <div className="ml-auto w-2 h-2 rounded-full bg-primary"></div>}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="border-t border-border mt-1 pt-1">
-                            <NavLink to="/super-admin/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors">
-                                <Settings size={12} /> Gerenciar Empresas
-                            </NavLink>
-                        </div>
+            {isOpen && (
+                <div className="absolute top-full left-0 w-64 bg-popover border border-border rounded-xl shadow-2xl z-50 mt-2 p-1 overflow-hidden animate-in fade-in zoom-in-95 origin-top-left">
+                    <div className="px-3 py-2 bg-secondary/50 border-b border-border mb-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Alternar Empresa</p>
                     </div>
-                )}
-            </div>
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                        {[...availableCompanies].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => { switchCompany(t.id); setIsOpen(false); }}
+                                className={cn(
+                                    "w-full text-left px-3 py-2 text-sm rounded-lg mb-1 flex items-center gap-2",
+                                    currentCompany?.id === t.id
+                                        ? "bg-primary/10 text-primary"
+                                        : "text-foreground hover:bg-secondary/50"
+                                )}
+                            >
+                                <Building2 size={14} />
+                                <span className="truncate">{t.name}</span>
+                                {currentCompany?.id === t.id && <div className="ml-auto w-2 h-2 rounded-full bg-primary"></div>}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="border-t border-border mt-1 pt-1">
+                        <NavLink to="/super-admin/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors">
+                            <Settings size={12} /> Gerenciar Empresas
+                        </NavLink>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
+
 
 const MobileCompanySelector: React.FC = () => {
     const { availableCompanies, currentCompany, switchCompany, isMultiCompany } = useCompany();
@@ -467,8 +473,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
                     <div className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar overflow-x-hidden">
 
-                        {/* SUPER ADMIN COMPANY SELECTOR */}
-                        <CompanySelector isCollapsed={isCollapsed} />
+                        {/* COMPANY SELECTOR REMOVED FROM SIDEBAR */}
 
                         {/* SUPER ADMIN MENU */}
                         {isSuperAdminArea ? (
@@ -565,12 +570,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                             <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground"><Menu size={24} /></button>
                             <MobileCompanySelector />
                         </div>
-                        <div className="flex flex-col hidden sm:flex">
-                            <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">{getPageTitle()}</h1>
-                            {currentCompany && !isSuperAdminArea && (
-                                <span className="text-xs text-primary font-medium">{currentCompany.name}</span>
-                            )}
-                        </div>
+                        <HeaderCompanySelector />
                     </div>
                     <div className="flex items-center gap-4">
                         <NotificationPopover />
