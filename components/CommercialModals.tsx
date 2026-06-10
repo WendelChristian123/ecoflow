@@ -920,9 +920,9 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                                         onChange={(val) => {
                                             const pm = val;
                                             if (pm === 'credit_card') {
-                                                setFormData({ ...formData, paymentMethod: pm, bankAccountId: undefined });
+                                                setFormData({ ...formData, paymentMethod: pm, bankAccountId: '' });
                                             } else {
-                                                setFormData({ ...formData, paymentMethod: pm, creditCardId: undefined });
+                                                setFormData({ ...formData, paymentMethod: pm, creditCardId: '' });
                                             }
                                         }}
                                         options={[

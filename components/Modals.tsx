@@ -732,14 +732,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
             // Rule: Auto-select "Caixa" and disable
             const caixa = accounts.find(a => a.name === 'Caixa' || a.type === 'cash');
             if (caixa) {
-                setFormData(prev => ({ ...prev, accountId: caixa.id, creditCardId: undefined, isPaid: true }));
+                setFormData(prev => ({ ...prev, accountId: caixa.id, creditCardId: '', isPaid: true }));
             }
         } else if (formData.paymentMethod === 'credit_card') {
             // Rule: Only show cards, no bank accounts
-            setFormData(prev => ({ ...prev, accountId: undefined, isPaid: true }));
+            setFormData(prev => ({ ...prev, accountId: '', isPaid: true }));
         } else {
             // Rule: Only bank accounts, no cards
-            setFormData(prev => ({ ...prev, creditCardId: undefined }));
+            setFormData(prev => ({ ...prev, creditCardId: '' }));
         }
     }, [formData.paymentMethod, accounts]);
 
