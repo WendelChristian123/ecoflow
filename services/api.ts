@@ -35,6 +35,11 @@ export const api = {
         return null;
     },
 
+    switchWorkspace: async (companyId: string) => {
+        const { error } = await supabase.rpc('switch_workspace', { target_company_id: companyId });
+        if (error) throw error;
+    },
+
     registerCompany: async (data: any) => {
         const { data: response, error } = await supabase.functions.invoke('auth-signup', {
             body: data

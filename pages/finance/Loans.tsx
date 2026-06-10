@@ -34,7 +34,9 @@ export const Loans = () => {
     const [editingLoan, setEditingLoan] = useState<any>(null);
 
     useEffect(() => {
-        loadData();
+        if (currentCompany?.id) {
+            loadData();
+        }
     }, [currentCompany?.id]);
 
     const loadData = async () => {
