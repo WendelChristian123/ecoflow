@@ -204,7 +204,7 @@ export const Loans = () => {
                                 <th className="px-4 py-3 font-medium">Parte</th>
                                 <th className="px-4 py-3 font-medium">Parcelas</th>
                                 <th className="px-4 py-3 font-medium text-right">Valor Capital</th>
-                                <th className="px-4 py-3 font-medium text-right">Valor Total (c/ Juros e Desc.)</th>
+                                <th className="px-4 py-3 font-medium text-center">Parcelas Pagas</th>
                                 <th className="px-4 py-3 font-medium text-right">Resta Pagar</th>
                                 <th className="px-4 py-3 font-medium text-center">Início</th>
                             </tr>
@@ -249,16 +249,16 @@ export const Loans = () => {
                                             {loan.contact?.name || 'Não informado'}
                                         </td>
                                         <td className="px-4 py-4">
-                                            <div className="flex items-center gap-1 font-medium">
-                                                <FileText size={14} className="text-muted-foreground" />
-                                                {loan.installmentsCount}x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.installmentAmount)}
+                                            <div className="flex items-center gap-1.5 font-medium whitespace-nowrap">
+                                                <FileText size={14} className="text-muted-foreground shrink-0" />
+                                                <span>{loan.installmentsCount}x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.installmentAmount)}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 text-right font-medium">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.principalAmount)}
                                         </td>
-                                        <td className="px-4 py-4 text-right font-bold text-foreground">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.totalAmount)}
+                                        <td className="px-4 py-4 text-center font-bold text-foreground">
+                                            {loan.paidInstallmentsCount || 0}/{loan.installmentsCount}
                                         </td>
                                         <td className="px-4 py-4 text-right font-bold text-amber-500">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loan.remainingAmount)}
