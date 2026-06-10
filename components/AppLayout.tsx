@@ -128,7 +128,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenProfile }) => {
                             </>
                         ) : (
                             getTitle() === 'Contazze' ? (
-                                <img src="/logo-negativa.svg" alt="Contazze" className="h-6 w-auto object-contain" />
+                                <>
+                                    <img src="/modo-claro.svg" alt="Contazze" className="h-6 w-auto object-contain dark:hidden" />
+                                    <img src="/modo-escuro.svg" alt="Contazze" className="h-6 w-auto object-contain hidden dark:block" />
+                                </>
                             ) : (
                                 <h1 className="text-lg font-bold text-foreground truncate">{getTitle()}</h1>
                             )

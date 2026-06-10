@@ -54,7 +54,7 @@ export const LandingNavbar: React.FC = () => {
 
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-2 group" onClick={() => scrollToSection('hero')}>
-                    <img src="/logo-negativa.svg" alt="Contazze" className="h-8 w-auto group-hover:scale-105 transition-transform" />
+                    <img src="/modo-escuro.svg" alt="Contazze" className="h-8 w-auto group-hover:scale-105 transition-transform" />
                 </Link>
 
                 {/* Desktop Menu */}
