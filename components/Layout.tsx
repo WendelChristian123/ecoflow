@@ -278,11 +278,6 @@ const HeaderCompanySelector: React.FC = () => {
                             </button>
                         ))}
                     </div>
-                    <div className="border-t border-border mt-1 pt-1">
-                        <NavLink to="/super-admin/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors">
-                            <Settings size={12} /> Gerenciar Empresas
-                        </NavLink>
-                    </div>
                 </div>
             )}
         </div>
