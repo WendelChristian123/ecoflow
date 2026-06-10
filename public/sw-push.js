@@ -24,8 +24,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'Contazze';
   const options = {
     body: payload.body || '',
-    icon: self.location.origin + '/pwa-192x192.png',
-    // badge omitted to let Chrome automatically derive it from the icon
+    icon: self.location.origin + '/notif-icon.png',
+    badge: self.location.origin + '/notif-badge.png',
     tag: payload.data?.id || 'contazze-notif-' + Date.now() + '-' + Math.random(),
     renotify: true,
     data: {
