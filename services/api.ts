@@ -1813,7 +1813,9 @@ export const api = {
                     type: 'income',
                     date: data.setupEntryDate, // Strict date usage
                     categoryId: uuidOrNull(data.setupCategoryId),
-                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    accountId: uuidOrNull(data.paymentMethod === 'credit_card' ? null : data.bankAccountId), // Add Bank Account
+                    creditCardId: uuidOrNull(data.paymentMethod === 'credit_card' ? data.creditCardId : null),
+                    paymentMethod: data.paymentMethod || null,
                     contactId: uuidOrNull(data.contactId),
                     isPaid: false
                 });
@@ -1825,7 +1827,9 @@ export const api = {
                     type: 'income',
                     date: data.setupRemainingDate, // Strict date usage
                     categoryId: uuidOrNull(data.setupCategoryId),
-                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    accountId: uuidOrNull(data.paymentMethod === 'credit_card' ? null : data.bankAccountId), // Add Bank Account
+                    creditCardId: uuidOrNull(data.paymentMethod === 'credit_card' ? data.creditCardId : null),
+                    paymentMethod: data.paymentMethod || null,
                     contactId: uuidOrNull(data.contactId),
                     isPaid: false
                 });
@@ -1842,7 +1846,9 @@ export const api = {
                     type: 'income',
                     date: data.setupSpotDate, // Strict date usage
                     categoryId: uuidOrNull(data.setupCategoryId),
-                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    accountId: uuidOrNull(data.paymentMethod === 'credit_card' ? null : data.bankAccountId), // Add Bank Account
+                    creditCardId: uuidOrNull(data.paymentMethod === 'credit_card' ? data.creditCardId : null),
+                    paymentMethod: data.paymentMethod || null,
                     contactId: uuidOrNull(data.contactId),
                     isPaid: false
                 });
@@ -1871,7 +1877,9 @@ export const api = {
                     type: 'income',
                     date: nextDate.toISOString().split('T')[0],
                     categoryId: uuidOrNull(data.financialCategoryId),
-                    accountId: uuidOrNull(data.bankAccountId), // Add Bank Account
+                    accountId: uuidOrNull(data.paymentMethod === 'credit_card' ? null : data.bankAccountId), // Add Bank Account
+                    creditCardId: uuidOrNull(data.paymentMethod === 'credit_card' ? data.creditCardId : null),
+                    paymentMethod: data.paymentMethod || null,
                     contactId: uuidOrNull(data.contactId),
                     isPaid: false,
                     recurrenceId: contractId // Link to contract

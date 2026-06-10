@@ -429,6 +429,8 @@ export interface RecurringService {
   startDate: string;
   frequency: 'monthly' | 'yearly';
   bankAccountId?: string;
+  creditCardId?: string;
+  paymentMethod?: string;
   contractMonths?: number;
   active: boolean;
   contact?: Contact;

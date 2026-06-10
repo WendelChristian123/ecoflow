@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Button, Textarea, Badge, CurrencyInput } from './Shared';
 import { FilterSelect } from './FilterSelect';
-import { Contact, CatalogItem, RecurringService, Quote, FinancialCategory, FinancialAccount, ContactScope, PersonType, CatalogType, QuoteItem, Kanban, KanbanStage } from '../types';
+import { Contact, CatalogItem, RecurringService, Quote, FinancialCategory, FinancialAccount, ContactScope, PersonType, CatalogType, QuoteItem, Kanban, KanbanStage, CreditCard } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { kanbanService } from '../services/kanbanService';
 import { Plus, Trash2, ShoppingBag, User as UserIcon, Building, FileText, Check, AlertCircle, UserPlus, X, Box, Calendar, DollarSign, ArrowRight, ArrowLeft, RefreshCw, Printer } from 'lucide-react';
@@ -348,10 +348,15 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
     }, [isOpen, initialData, stages, formData.kanbanStageId]);
 
     useEffect(() => {
-        if (isOpen) {
+           if (isOpen) {
+            setStep(1);
             if (initialData) {
                 setFormData({
                     ...initialData,
+                    contactId: initialData.contactId || initialData.contact?.id || '',
+                    paymentMethod: initialData.paymentMethod || 'cash',
+                    creditCardId: initialData.creditCardId || '',
+                    setupEntryAmount: initialData.setupEntryAmount || 0,
                     date: initialData.date ? (initialData.date.includes('T') ? initialData.date.split('T')[0] : initialData.date) : '',
                     validUntil: initialData.validUntil ? (initialData.validUntil.includes('T') ? initialData.validUntil.split('T')[0] : initialData.validUntil) : ''
                 });
@@ -619,12 +624,13 @@ interface RecurringModalProps {
     onSave: () => void;
     contacts: Contact[];
     catalog: CatalogItem[];
-    financialCategories: FinancialCategory[]; // New Prop
+    financialCategories: FinancialCategory[]; 
     bankAccounts: FinancialAccount[];
+    creditCards: CreditCard[];
     initialData?: RecurringService;
 }
 
-export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose, onSave, contacts, catalog, financialCategories, bankAccounts, initialData }) => {
+export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose, onSave, contacts, catalog, financialCategories, bankAccounts, creditCards, initialData }) => {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState<Partial<RecurringService>>({
         contactId: '',
@@ -633,7 +639,9 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
         frequency: 'monthly',
         contractMonths: 12,
         active: true,
-        bankAccountId: '', // Include in init
+        paymentMethod: 'cash',
+        bankAccountId: '',
+        creditCardId: '',
         setupFee: 0,
         financialCategoryId: '',
         setupCategoryId: '',
@@ -670,6 +678,9 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                     frequency: 'monthly',
                     contractMonths: 12,
                     active: true,
+                    paymentMethod: 'cash',
+                    bankAccountId: '',
+                    creditCardId: '',
                     setupFee: 0,
                     financialCategoryId: '',
                     setupCategoryId: '',
@@ -907,19 +918,60 @@ export const RecurringModal: React.FC<RecurringModalProps> = ({ isOpen, onClose,
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-medium text-muted-foreground mb-2 block">Conta Bancária (Recebimento)</label>
+                                    <label className="text-xs font-medium text-muted-foreground mb-2 block">Forma de Pagto.</label>
                                     <FilterSelect
-                                        value={formData.bankAccountId}
-                                        onChange={(val) => setFormData({ ...formData, bankAccountId: val })}
+                                        value={formData.paymentMethod || 'cash'}
+                                        onChange={(val) => {
+                                            const pm = val;
+                                            if (pm === 'credit_card') {
+                                                setFormData({ ...formData, paymentMethod: pm, bankAccountId: undefined });
+                                            } else {
+                                                setFormData({ ...formData, paymentMethod: pm, creditCardId: undefined });
+                                            }
+                                        }}
                                         options={[
-                                            { value: '', label: 'Sem conta definida' },
-                                            ...(bankAccounts || []).map(a => ({ value: a.id, label: a.name }))
+                                            { value: 'cash', label: 'Dinheiro / Pix / Transferência' },
+                                            { value: 'credit_card', label: 'Cartão de Crédito' },
+                                            { value: 'debit_card', label: 'Cartão de Débito' },
+                                            { value: 'boleto', label: 'Boleto' }
                                         ]}
                                         className="w-full"
                                         triggerClassName="w-full justify-between"
-                                        placeholder="Sem conta definida"
+                                        placeholder="Selecione a forma..."
                                     />
                                 </div>
+
+                                {formData.paymentMethod === 'credit_card' ? (
+                                    <div>
+                                        <label className="text-xs font-medium text-muted-foreground mb-2 block">Cartão de Crédito</label>
+                                        <FilterSelect
+                                            value={formData.creditCardId || ''}
+                                            onChange={(val) => setFormData({ ...formData, creditCardId: val })}
+                                            options={[
+                                                { value: '', label: 'Sem cartão definido' },
+                                                ...(creditCards || []).map(c => ({ value: c.id, label: c.name }))
+                                            ]}
+                                            className="w-full"
+                                            triggerClassName="w-full justify-between"
+                                            placeholder="Sem cartão definido"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <label className="text-xs font-medium text-muted-foreground mb-2 block">Conta Bancária (Recebimento)</label>
+                                        <FilterSelect
+                                            value={formData.bankAccountId || ''}
+                                            onChange={(val) => setFormData({ ...formData, bankAccountId: val })}
+                                            options={[
+                                                { value: '', label: 'Sem conta definida' },
+                                                ...(bankAccounts || []).map(a => ({ value: a.id, label: a.name }))
+                                            ]}
+                                            className="w-full"
+                                            triggerClassName="w-full justify-between"
+                                            placeholder="Sem conta definida"
+                                        />
+                                    </div>
+                                )}
 
                                 <div>
                                     <Input

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
-import { RecurringService, Contact, CatalogItem, FinancialCategory, FinancialAccount } from '../../types';
+import { RecurringService, Contact, CatalogItem, FinancialCategory, FinancialAccount, CreditCard } from '../../types';
 import { Loader, Card, Button, Badge } from '../../components/Shared';
 import { RecurringModal, ContractDetailModal } from '../../components/CommercialModals';
 import { RecurringReportModal } from '../../components/Reports/RecurringReportModal';
@@ -22,6 +22,7 @@ export const RecurringPage: React.FC = () => {
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
     const [financialCategories, setFinancialCategories] = useState<FinancialCategory[]>([]);
     const [bankAccounts, setBankAccounts] = useState<FinancialAccount[]>([]);
+    const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     // State to hold the contract being edited/viewed
@@ -51,14 +52,15 @@ export const RecurringPage: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [r, c, cat, fc, fa] = await Promise.all([
+            const [r, c, cat, fc, fa, cards] = await Promise.all([
                 api.getRecurringServices(),
                 api.getContacts(),
                 api.getCatalogItems(),
                 api.getFinancialCategories(),
-                api.getFinancialAccounts()
+                api.getFinancialAccounts(),
+                api.getCreditCards()
             ]);
-            setServices(r); setContacts(c); setCatalog(cat); setFinancialCategories(fc); setBankAccounts(fa);
+            setServices(r); setContacts(c); setCatalog(cat); setFinancialCategories(fc); setBankAccounts(fa); setCreditCards(cards);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -189,8 +191,9 @@ export const RecurringPage: React.FC = () => {
                 contacts={contacts}
                 catalog={catalog}
                 financialCategories={financialCategories}
-                initialData={editingService}
                 bankAccounts={bankAccounts}
+                creditCards={creditCards}
+                initialData={editingService}
             />
 
             <RecurringReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} services={services} />
