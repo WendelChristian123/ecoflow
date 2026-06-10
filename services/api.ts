@@ -946,14 +946,30 @@ export const api = {
             const origin = isPWA ? 'App/PWA' : 'Web';
 
             const { data: userData } = await supabase.auth.getUser();
+            const userId = userData.user?.id;
             const userName = userData.user?.user_metadata?.name || 'Usuário';
 
-            await api.addActivityLog({
-                entityId: referenceId,
-                entityType: referenceType,
-                action: 'update',
-                details: `${userName} confirmou ciência/aceitou esta tarefa em ${dateStr} às ${timeStr}.`
-            });
+            // INSERÇÃO DIRETA no activity_logs (sem depender de addActivityLog)
+            // para evitar bugs em versões cacheadas da PWA
+            if (userId) {
+                try {
+                    const { error: logError } = await supabase.from('activity_logs').insert({
+                        entity_id: referenceId,
+                        entity_type: referenceType,
+                        action: 'acknowledgment',
+                        user_id: userId,
+                        details: `${userName} confirmou ciência/aceitou esta tarefa em ${dateStr} às ${timeStr}.`,
+                        metadata: { origin, acknowledged_at: now.toISOString() }
+                    });
+                    if (logError) {
+                        console.error('[acknowledgeNotification] Erro ao inserir activity_log:', logError);
+                    }
+                } catch (insertErr) {
+                    console.error('[acknowledgeNotification] Exceção ao inserir activity_log:', insertErr);
+                }
+            } else {
+                console.warn('[acknowledgeNotification] userId não encontrado, log de aceite não registrado.');
+            }
 
             // Fetch extra info for Global Audit Log
             try {

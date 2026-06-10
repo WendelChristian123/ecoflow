@@ -119,6 +119,7 @@ const getActionIcon = (action: string) => {
         case 'status_change': return <CheckCircle2 size={14} className="text-amber-400" />;
         case 'update': return <FileEdit size={14} className="text-slate-400" />;
         case 'completion': return <CheckCircle2 size={14} className="text-green-500" />;
+        case 'acknowledgment': return <CheckCircle2 size={14} className="text-emerald-500" />;
         default: return <Clock size={14} className="text-slate-400" />;
     }
 };
@@ -130,6 +131,7 @@ const getActionLabel = (action: string) => {
         case 'status_change': return "Alterou o status";
         case 'update': return "Atualizou detalhes";
         case 'completion': return "Concluiu o item";
+        case 'acknowledgment': return "Confirmou ciência";
         default: return "Realizou uma ação";
     }
 };
