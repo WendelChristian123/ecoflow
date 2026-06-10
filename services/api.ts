@@ -906,14 +906,23 @@ export const api = {
     },
 
     dismissSystemNotification: async (id: string) => {
-        const { error } = await supabase
-            .from('system_notifications')
-            .update({ 
-                is_acknowledged: true, 
-                acknowledged_at: new Date().toISOString() 
-            })
-            .eq('id', id);
-        if (error) throw error;
+        // Busca a notificação para ver se tem referência a alguma tarefa/evento
+        const { data: notif } = await supabase.from('system_notifications').select('*').eq('id', id).single();
+        
+        if (notif && notif.reference_id && notif.reference_type) {
+            // Se tiver referência, usamos a função completa que já faz o log no histórico
+            await api.acknowledgeNotification(id, notif.reference_id, notif.reference_type, notif.title);
+        } else {
+            // Caso contrário, apenas oculta a notificação simples
+            const { error } = await supabase
+                .from('system_notifications')
+                .update({ 
+                    is_acknowledged: true, 
+                    acknowledged_at: new Date().toISOString() 
+                })
+                .eq('id', id);
+            if (error) throw error;
+        }
     },
 
     acknowledgeNotification: async (id: string, referenceId?: string, referenceType?: string, notificationTitle?: string) => {
