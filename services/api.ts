@@ -87,7 +87,8 @@ export const api = {
     // --- TASKS ---
     getTasks: async (companyId?: string) => {
         let query = supabase.from('tasks').select('*').order('title', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((t: any) => ({
@@ -339,7 +340,8 @@ export const api = {
     // --- PROJECTS ---
     getProjects: async (companyId?: string) => {
         let query = supabase.from('projects').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((p: any) => ({
@@ -475,7 +477,8 @@ export const api = {
     // --- TEAMS ---
     getTeams: async (companyId?: string) => {
         let query = supabase.from('teams').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
 
@@ -823,7 +826,8 @@ export const api = {
             .order('created_at', { ascending: false })
             .limit(500); // Increased limit for better client-side search
 
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -1008,7 +1012,8 @@ export const api = {
 
     getEvents: async (companyId?: string) => {
         let query = supabase.from('calendar_events').select('*').order('title', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((e: any) => ({
@@ -1154,7 +1159,8 @@ export const api = {
     // --- FINANCE ---
     getFinancialTransactions: async (companyId?: string) => {
         let query = supabase.from('financial_transactions').select('*, category:financial_categories(*), contact:contacts(*)');
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((t: any) => ({
@@ -1409,7 +1415,8 @@ export const api = {
 
     getFinancialAccounts: async (companyId?: string) => {
         let query = supabase.from('financial_accounts').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((a: any) => ({ ...a, initialBalance: a.initial_balance, companyId: a.company_id })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as FinancialAccount[];
@@ -1439,7 +1446,8 @@ export const api = {
 
     getFinancialCategories: async (companyId?: string) => {
         let query = supabase.from('financial_categories').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({ ...c, companyId: c.company_id })).sort((a: any, b: any) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase())) as FinancialCategory[];
@@ -1462,7 +1470,8 @@ export const api = {
 
     getCreditCards: async (companyId?: string) => {
         let query = supabase.from('credit_cards').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({
@@ -1501,7 +1510,8 @@ export const api = {
     // --- COMMERCIAL ---
     getContacts: async (companyId?: string) => {
         let query = supabase.from('contacts').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((c: any) => ({
@@ -1559,7 +1569,8 @@ export const api = {
 
     getCatalogItems: async (companyId?: string) => {
         let query = supabase.from('catalog_items').select('*').order('name', { ascending: true });
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((i: any) => ({
@@ -1631,7 +1642,8 @@ export const api = {
 
     getQuotes: async (companyId?: string) => {
         let query = supabase.from('quotes').select('*, contacts(*), quote_items(*), kanban_stages(name)');
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((q: any) => ({
@@ -1724,7 +1736,8 @@ export const api = {
 
     getRecurringServices: async (companyId?: string) => {
         let query = supabase.from('recurring_services').select('*, contacts(*)');
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         const { data, error } = await query;
         if (error) throw error;
         return data.map((r: any) => ({
@@ -2635,7 +2648,8 @@ export const api = {
     // --- LOANS & DEBTS ---
     getLoans: async (companyId?: string) => {
         let query = supabase.from('loans').select('*, contact:contacts(*)');
-        if (companyId) query = query.eq('company_id', companyId);
+        const targetId = companyId || getCurrentCompanyId();
+        if (targetId) query = query.eq('company_id', targetId);
         
         const { data: loansData, error } = await query;
         if (error) throw error;
