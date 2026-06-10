@@ -348,15 +348,11 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, onSucce
     }, [isOpen, initialData, stages, formData.kanbanStageId]);
 
     useEffect(() => {
-           if (isOpen) {
-            setStep(1);
+        if (isOpen) {
             if (initialData) {
                 setFormData({
                     ...initialData,
                     contactId: initialData.contactId || initialData.contact?.id || '',
-                    paymentMethod: initialData.paymentMethod || 'cash',
-                    creditCardId: initialData.creditCardId || '',
-                    setupEntryAmount: initialData.setupEntryAmount || 0,
                     date: initialData.date ? (initialData.date.includes('T') ? initialData.date.split('T')[0] : initialData.date) : '',
                     validUntil: initialData.validUntil ? (initialData.validUntil.includes('T') ? initialData.validUntil.split('T')[0] : initialData.validUntil) : ''
                 });

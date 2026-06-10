@@ -430,7 +430,7 @@ export interface RecurringService {
   frequency: 'monthly' | 'yearly';
   bankAccountId?: string;
   creditCardId?: string;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod;
   contractMonths?: number;
   active: boolean;
   contact?: Contact;
