@@ -453,9 +453,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     <div className={cn("h-20 flex items-center transition-all px-6 shrink-0 bg-transparent", isCollapsed ? "justify-center px-4" : "justify-between")}>
                         {!isCollapsed ? (
                             <div className="flex items-center gap-2">
-                                <span className="text-xl font-black tracking-tight text-primary dark:text-white uppercase whitespace-nowrap overflow-hidden drop-shadow-sm">
-                                    {isSuperAdminArea ? 'Contazze Admin' : 'Contazze'}
-                                </span>
+                                {isSuperAdminArea ? (
+                                    <span className="text-xl font-black tracking-tight text-primary dark:text-white uppercase whitespace-nowrap overflow-hidden drop-shadow-sm">
+                                        Contazze Admin
+                                    </span>
+                                ) : (
+                                    <>
+                                        <img src="/modo-claro.svg" alt="Contazze" className="h-8 w-auto dark:hidden object-contain shrink-0" />
+                                        <img src="/modo-escuro.svg" alt="Contazze" className="h-8 w-auto hidden dark:block object-contain shrink-0" />
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <img src="/icon.svg" alt="Contazze" className="h-8 w-8 object-contain shrink-0" />
