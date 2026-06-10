@@ -335,9 +335,11 @@ export const FinancialReportModal: React.FC<FinancialReportModalProps> = ({ isOp
                 </style>
             </head>
             <body>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
+                </div>
                 <div class="header">
                     <div>
-                        <img src="/logo-principal.svg" alt="Contazze" style="height: 40px; margin-bottom: 10px;" />
                         <h1>Relatório Financeiro</h1>
                         <div class="meta"><strong style="color: #10b981;">Contazze</strong></div>
                     </div>

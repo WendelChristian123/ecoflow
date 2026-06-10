@@ -83,6 +83,9 @@ export const LoansReportModal: React.FC<LoansReportModalProps> = ({ isOpen, onCl
                 </style>
             </head>
             <body>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
+                </div>
                 <div class="header">
                     <div>
                         <h1>Relatório de Dívidas e Empréstimos</h1>

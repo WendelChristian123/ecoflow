@@ -59,7 +59,10 @@ export const CatalogReportModal: React.FC<CatalogReportModalProps> = ({ isOpen, 
                 </style>
             </head>
             <body>
-                 <div class="header">
+                 <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
+                </div>
+                <div class="header">
                     <div><h1>Relatório de Catálogo</h1><div class="meta"><strong style="color: #10b981;">Contazze</strong></div></div>
                     <div class="meta" style="text-align: right;">
                         <div><strong>Gerado em:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>

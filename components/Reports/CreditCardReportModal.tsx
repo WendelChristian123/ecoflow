@@ -150,7 +150,10 @@ export const CreditCardReportModal: React.FC<CreditCardReportModalProps> = ({ is
                 </style>
             </head>
             <body>
-                 <div class="header">
+                 <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
+                </div>
+                <div class="header">
                     <div>
                         <h1>Relatório de Fatura</h1>
                         <div class="meta"><strong>${card.name}</strong> • Cartão Final ****</div>

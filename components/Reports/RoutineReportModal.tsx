@@ -112,6 +112,9 @@ export const RoutineReportModal: React.FC<RoutineReportModalProps> = ({ isOpen, 
                 </style>
             </head>
             <body>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
+                </div>
                 <div class="header">
                     <h1>Relatório de Rotinas e Execução</h1>
                     <div class="meta"><strong>Período:</strong> ${dateStr}</div>

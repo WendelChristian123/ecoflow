@@ -63,6 +63,9 @@ export const ContactsReportModal: React.FC<ContactsReportModalProps> = ({ isOpen
                 </style>
             </head>
             <body>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="/modo-claro.svg" alt="Contazze" style="height: 50px;" />
+                </div>
                 <div class="header">
                     <div><h1>Relatório de Contatos</h1><div class="meta"><strong style="color: #10b981;">Contazze</strong></div></div>
                     <div class="meta" style="text-align: right;">
