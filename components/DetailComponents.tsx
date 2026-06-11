@@ -112,7 +112,8 @@ interface HistoryTimelineProps {
     users: User[];
 }
 
-const getActionIcon = (action: string) => {
+const getActionIcon = (action: string, metadata?: any) => {
+    if (metadata?.is_acknowledgment) return <CheckCircle2 size={14} className="text-emerald-500" />;
     switch (action) {
         case 'create': return <Clock size={14} className="text-blue-400" />;
         case 'transfer': return <ArrowRight size={14} className="text-emerald-400" />;
@@ -124,7 +125,8 @@ const getActionIcon = (action: string) => {
     }
 };
 
-const getActionLabel = (action: string) => {
+const getActionLabel = (action: string, metadata?: any) => {
+    if (metadata?.is_acknowledgment) return "Confirmou ciência";
     switch (action) {
         case 'create': return "Criou este item";
         case 'transfer': return "Transferiu a responsabilidade";
@@ -156,7 +158,7 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ logs, users })
                     <div key={log.id} className="relative flex gap-4 group">
                         {/* Timeline Dot */}
                         <div className="z-10 h-8 w-8 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 shadow-sm group-hover:border-primary/50 transition-colors">
-                            {getActionIcon(log.action)}
+                            {getActionIcon(log.action, log.metadata)}
                         </div>
 
                         {/* Content */}
@@ -164,7 +166,7 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ logs, users })
                             <div className="flex justify-between items-start gap-2 mb-1">
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-foreground">{user?.name || 'Usuário Desconhecido'}</span>
-                                    <span className="text-[10px] text-muted-foreground/80">• {getActionLabel(log.action)}</span>
+                                    <span className="text-[10px] text-muted-foreground/80">• {getActionLabel(log.action, log.metadata)}</span>
                                 </div>
                                 <span className="text-[10px] text-muted-foreground whitespace-nowrap" title={format(new Date(log.timestamp), "dd/MM/yyyy HH:mm:ss")}>
                                     {format(new Date(log.timestamp), "dd MMM, HH:mm", { locale: ptBR })}

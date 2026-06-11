@@ -956,10 +956,10 @@ export const api = {
                     const { error: logError } = await supabase.from('activity_logs').insert({
                         entity_id: referenceId,
                         entity_type: referenceType,
-                        action: 'acknowledgment',
+                        action: 'update',
                         user_id: userId,
                         details: `${userName} confirmou ciência/aceitou esta tarefa em ${dateStr} às ${timeStr}.`,
-                        metadata: { origin, acknowledged_at: now.toISOString() }
+                        metadata: { origin, acknowledged_at: now.toISOString(), is_acknowledgment: true }
                     });
                     if (logError) {
                         console.error('[acknowledgeNotification] Erro ao inserir activity_log:', logError);
