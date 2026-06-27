@@ -491,14 +491,22 @@ export const api = {
     },
 
     addTeam: async (team: Partial<Team>) => {
+        const companyId = getCurrentCompanyId();
+        const { data: userData } = await supabase.auth.getUser();
+
+        let memberIds = team.memberIds || [];
+        if (userData?.user?.id && !memberIds.includes(userData.user.id)) {
+            memberIds = [...memberIds, userData.user.id];
+        }
+
         const { error } = await supabase.from('teams').insert({
             name: team.name,
             description: team.description,
             lead_id: team.leaderId,
-            member_ids: team.memberIds,
+            member_ids: memberIds,
             links: team.links || [],
             logs: team.logs || [],
-            company_id: team.companyId
+            company_id: companyId
         });
         if (error) throw error;
     },
