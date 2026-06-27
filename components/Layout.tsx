@@ -447,7 +447,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 "bg-card dark:bg-background",
                 "lg:static",
                 isMobileMenuOpen ? "translate-x-0 w-64 shadow-2xl" : "-translate-x-full lg:translate-x-0",
-                (!isMobileMenuOpen && isCollapsed) ? "lg:w-20" : "lg:w-64"
+                (!isMobileMenuOpen && isCollapsed) ? "lg:w-20 3xl:w-24" : "lg:w-64 3xl:w-72 4xl:w-80"
             )}>
                 <div className="h-full flex flex-col">
                     <div className={cn("h-20 flex items-center transition-all px-6 shrink-0 bg-transparent", isCollapsed ? "justify-center px-4" : "justify-between")}>
@@ -583,7 +583,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </header>
 
                 {/* Main Content Area - Optimized for 100% Height */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pb-5 flex flex-col relative main-content-area">
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pb-5 3xl:px-8 3xl:pb-8 4xl:px-10 4xl:pb-10 flex flex-col relative main-content-area">
                     {children}
                 </div>
             </main>

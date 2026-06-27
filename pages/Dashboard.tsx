@@ -409,7 +409,7 @@ export const Dashboard: React.FC = () => {
             <section className="flex-1 flex flex-col min-h-0 pb-2">
                 <h2 className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase mb-2 pl-1 shrink-0">{title}</h2>
                 {hasItems ? (
-                    <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-3" style={{ gridAutoRows: '1fr' }}>
+                    <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 3xl:grid-cols-4 gap-3 3xl:gap-4" style={{ gridAutoRows: '1fr' }}>
                         {selectedModules.includes('tasks') && availableModules.includes('tasks') && <ZoneCard title="Tarefas" count={items.tasks.length} icon={List} type="task" variant={variant} onClick={() => openDrilldown('Tarefas', 'tasks', items.tasks, variant)} />}
                         {selectedModules.includes('events') && availableModules.includes('events') && <ZoneCard title="Compromissos" count={items.events.length} icon={CalendarIcon} type="event" variant={variant} onClick={() => openDrilldown('Compromissos', 'events', items.events, variant)} />}
                         {selectedModules.includes('finance') && availableModules.includes('finance') && <ZoneCard title="Financeiro" count={items.finance.length} icon={Wallet} type="finance" variant={variant} onClick={() => openDrilldown('Contas', 'finance', items.finance, variant)} />}
@@ -653,7 +653,7 @@ export const Dashboard: React.FC = () => {
                 {isAdmin && financeKPIs && (
                     <>
                         <div className="hidden lg:block w-px bg-border my-4 shrink-0" />
-                        <div className="w-full lg:w-[300px] shrink-0 flex flex-col overflow-y-auto custom-scrollbar pr-2">
+                        <div className="w-full lg:w-[300px] 3xl:w-[360px] 4xl:w-[420px] shrink-0 flex flex-col overflow-y-auto custom-scrollbar pr-2">
                             <FinancialPanel />
                         </div>
                     </>

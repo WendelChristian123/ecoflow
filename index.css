@@ -226,3 +226,52 @@ body {
 .main-content-area h2 { font-size: 1rem;     line-height: 1.4; }
 .main-content-area h3 { font-size: 0.9rem;   line-height: 1.4; }
 .main-content-area h4 { font-size: 0.8rem;   line-height: 1.4; }
+
+/* ============================================================
+   LARGE SCREEN OPTIMIZATIONS — TVs, Smart TVs, LED Displays (HDMI)
+   Scales up typography, spacing, and UI density for comfortable
+   viewing at TV distances (2-4 meters). Pure CSS, no layout changes.
+   ============================================================ */
+
+/* --- Full HD+ TVs (1920px and above) --- */
+@media (min-width: 1920px) {
+  /* Base font bump for content area */
+  .main-content-area {
+    font-size: 1rem; /* 16px instead of 14px */
+  }
+  .main-content-area h1 { font-size: 1.375rem; }
+  .main-content-area h2 { font-size: 1.2rem; }
+  .main-content-area h3 { font-size: 1.05rem; }
+  .main-content-area h4 { font-size: 0.95rem; }
+
+  /* Bigger scrollbar for easier touch/remote navigation */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* --- QHD / 4K TVs and LED panels (2560px and above) --- */
+@media (min-width: 2560px) {
+  /* Scale the entire UI proportionally via root font-size.
+     All rem-based values (padding, gap, border-radius, font-size)
+     will scale up automatically without breaking any layout. */
+  html {
+    font-size: 20px; /* 1.25x scale: 20px base instead of 16px */
+  }
+
+  /* Content area gets a larger base for readability at distance */
+  .main-content-area {
+    font-size: 1.125rem;
+  }
+  .main-content-area h1 { font-size: 1.5rem; }
+  .main-content-area h2 { font-size: 1.3rem; }
+  .main-content-area h3 { font-size: 1.15rem; }
+  .main-content-area h4 { font-size: 1.05rem; }
+
+  /* Even larger scrollbars for TV remotes / touch screens */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+}
