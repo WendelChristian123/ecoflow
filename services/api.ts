@@ -1176,6 +1176,9 @@ export const api = {
         const createdEvents: any[] = [];
         const baseRecurrenceId = recurrence ? crypto.randomUUID() : null;
 
+        const { data: userData } = await supabase.auth.getUser();
+        const currentUserId = userData.user?.id;
+
         const createDbEvt = (e: Partial<CalendarEvent>, start: string, end: string, recId: string | null) => ({
             title: e.title,
             description: e.description,
@@ -1190,7 +1193,7 @@ export const api = {
             project_id: uuidOrNull(e.projectId),
             team_id: uuidOrNull(e.teamId),
             recurrence_id: recId,
-            owner_id: uuidOrNull(e.ownerId),
+            owner_id: uuidOrNull(e.ownerId) || currentUserId,
             context_type: e.contextType || 'personal',
             context_id: uuidOrNull(e.contextId)
         });
