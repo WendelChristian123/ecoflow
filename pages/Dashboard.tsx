@@ -23,9 +23,9 @@ import {
     DollarSign
 } from 'lucide-react';
 import { Loader, cn, Button, StatCard, Card } from '../components/Shared';
-import { DrilldownModal } from '../components/Modals';
+import { DrilldownModal, TaskDetailModal, EventDetailModal } from '../components/Modals';
 import { api, getErrorMessage } from '../services/api';
-import { DashboardMetrics, Task, CalendarEvent, FinancialTransaction, FinancialAccount, Quote, User, CreditCard } from '../types';
+import { DashboardMetrics, Task, CalendarEvent, FinancialTransaction, FinancialAccount, Quote, User, CreditCard, Project, Team } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { processTransactions, ProcessedTransaction } from '../services/financeLogic';
 import { parseDateLocal } from '../utils/formatters';
@@ -62,6 +62,12 @@ export const Dashboard: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
     const [cards, setCards] = useState<CreditCard[]>([]);
+
+    // Mobile Detail States
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
 
@@ -129,13 +135,15 @@ export const Dashboard: React.FC = () => {
             const m = await api.getDashboardMetrics(currentCompany.id);
             setMetrics(m);
 
-            const [t, e, tr, q, c, acc] = await Promise.all([
+            const [t, e, tr, q, c, acc, p, tm] = await Promise.all([
                 api.getTasks(currentCompany.id).catch(() => []),
                 api.getEvents(currentCompany.id).catch(() => []),
                 api.getFinancialTransactions(currentCompany.id).catch(() => []),
                 api.getQuotes(currentCompany.id).catch(() => []),
                 api.getCreditCards(currentCompany.id).catch(() => []),
-                api.getFinancialAccounts(currentCompany.id).catch(() => [])
+                api.getFinancialAccounts(currentCompany.id).catch(() => []),
+                isApp ? api.getProjects(currentCompany.id).catch(() => []) : Promise.resolve([]),
+                isApp ? api.getTeams(currentCompany.id).catch(() => []) : Promise.resolve([])
             ]);
             setTasks(t);
             setEvents(e);
@@ -143,6 +151,10 @@ export const Dashboard: React.FC = () => {
             setQuotes(q);
             setCards(c);
             setAccounts(acc);
+            if (isApp) {
+                setProjects(p as Project[]);
+                setTeams(tm as Team[]);
+            }
         } catch (error: any) {
             console.error("Erro ao carregar dashboard:", error);
             setError(getErrorMessage(error));
@@ -674,7 +686,40 @@ export const Dashboard: React.FC = () => {
                     setTransactions(prev => prev.map(t => t.id === item.id ? { ...t, isPaid } : t));
                 }}
                 indicatorColor={modalState.indicatorColor as any}
+                onItemClick={isApp ? (item) => {
+                    if (modalState.type === 'tasks') {
+                        setSelectedTask(item);
+                    } else if (modalState.type === 'events') {
+                        setSelectedEvent(item);
+                    } else if (modalState.type === 'finance') {
+                        navigate(`/finance/transactions?openModal=${item.id}`);
+                    } else if (modalState.type === 'quotes') {
+                        navigate(`/commercial/quotes?openModal=${item.id}`);
+                    }
+                } : undefined}
             />
+
+            {isApp && selectedTask && (
+                <TaskDetailModal
+                    isOpen={!!selectedTask}
+                    onClose={() => setSelectedTask(null)}
+                    onSuccess={loadDashboard}
+                    task={selectedTask}
+                    users={users}
+                    projects={projects}
+                    teams={teams}
+                />
+            )}
+            
+            {isApp && selectedEvent && (
+                <EventDetailModal
+                    isOpen={!!selectedEvent}
+                    onClose={() => setSelectedEvent(null)}
+                    onSuccess={loadDashboard}
+                    event={selectedEvent}
+                    users={users}
+                />
+            )}
         </div>
     );
 };
