@@ -65,6 +65,12 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
                 };
             }
 
+            // Prevent horizontal overflow on mobile
+            const popupWidth = 320; // Estimated width
+            if (newPos.left + popupWidth > window.innerWidth) {
+                newPos.left = Math.max(16, window.innerWidth - popupWidth - 16);
+            }
+
             setPosition(newPos);
         }
     };

@@ -2443,6 +2443,14 @@ export const EventModal: React.FC<EventModalProps> = ({
                 }
             } else {
                 // Event Mode
+                if (formData.startDate && formData.endDate) {
+                    if (new Date(formData.endDate).getTime() < new Date(formData.startDate).getTime()) {
+                        alert("O horário de fim não pode ser anterior ao horário de início.");
+                        setLoading(false);
+                        return;
+                    }
+                }
+
                 const eventData: Partial<CalendarEvent> = {
                     title: formData.title,
                     description: formData.description,
@@ -2540,7 +2548,14 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Início</label>
-                                        <DateTimePicker value={formData.startDate} onChange={val => setFormData({ ...formData, startDate: val || '' })} />
+                                        <DateTimePicker value={formData.startDate} onChange={val => {
+                                            const newStart = val || '';
+                                            let newEnd = formData.endDate;
+                                            if (newStart && newEnd && new Date(newStart).getTime() > new Date(newEnd).getTime()) {
+                                                newEnd = newStart;
+                                            }
+                                            setFormData({ ...formData, startDate: newStart, endDate: newEnd });
+                                        }} />
                                     </div>
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1.5 block ml-1">Fim</label>
