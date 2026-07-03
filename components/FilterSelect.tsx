@@ -234,7 +234,10 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
                             </span>
                         </div>
                     ) : (
-                        <span className="text-muted-foreground">{placeholder}</span>
+                        <span className="truncate text-muted-foreground">
+                            {inlineLabel && <span className="font-semibold">{inlineLabel} </span>}
+                            {placeholder}
+                        </span>
                     )}
                 </div>
                 <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />

@@ -1396,7 +1396,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FilterSelect
-                        inlineLabel="Fase:"
+                        inlineLabel="Etapa:"
+                        placeholder="Selecionar etapa"
                         value={
                             stages.length > 0 
                                 ? (stages.some(s => s.id === formData.kanbanStageId) 
@@ -2075,7 +2076,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                             <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
                                     <FilterSelect
-                                        inlineLabel="Status:"
+                                        inlineLabel="Etapa:"
+                                        placeholder="Selecionar etapa"
                                         value={formData.status}
                                         onChange={(val) => setFormData({ ...formData, status: val as any })}
                                         options={[
@@ -2594,7 +2596,8 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <FilterSelect
-                                            inlineLabel="Fase:"
+                                            inlineLabel="Etapa:"
+                                            placeholder="Selecionar etapa"
                                             value={formData.status}
                                             onChange={(val) => setFormData({ ...formData, status: val })}
                                             options={[

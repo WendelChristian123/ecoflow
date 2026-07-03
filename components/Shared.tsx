@@ -596,6 +596,8 @@ export const TaskTableView: React.FC<{
                         }
                         return (
                             <FilterSelect
+                              inlineLabel="Etapa:"
+                              placeholder="Selecionar etapa"
                               value={selectedValue}
                               onChange={(val) => handleStageChange(task.id, val)}
                               options={stages.length > 0 ? stages.map(s => ({ value: s.id, label: s.name })) : [
