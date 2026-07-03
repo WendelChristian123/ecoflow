@@ -59,12 +59,14 @@ const TaskKanbanWithContext: React.FC<{
       return false;
     });
 
-    // Se for a etapa de conclusão, ordena dos mais recentes para os mais antigos (Data decrescente)
+    // Se for a etapa de conclusão, ordena dos mais recentes para os mais antigos (Data de conclusão/atualização)
     if (stage?.systemStatus === 'done') {
       filtered.sort((a, b) => {
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+        const aDate = (a as any).completed_at || (a as any).updated_at || (a as any).created_at || a.dueDate;
+        const bDate = (b as any).completed_at || (b as any).updated_at || (b as any).created_at || b.dueDate;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
       });
     }
 
@@ -126,7 +128,7 @@ export const TasksPage: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const location = useLocation();
@@ -310,15 +312,20 @@ export const TasksPage: React.FC = () => {
     );
   }
 
-  // 6. Sorting (Date Ascending)
-  filteredTasks.sort((a, b) => {
+  // 6. Split and Sort
+  const activeTasks = filteredTasks.filter(t => t.status !== 'done').sort((a, b) => {
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
     return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
   });
 
-  const activeTasks = filteredTasks.filter(t => t.status !== 'done');
-  const completedTasks = filteredTasks.filter(t => t.status === 'done');
+  const completedTasks = filteredTasks.filter(t => t.status === 'done').sort((a, b) => {
+    const aDate = (a as any).completed_at || (a as any).updated_at || (a as any).created_at || a.dueDate;
+    const bDate = (b as any).completed_at || (b as any).updated_at || (b as any).created_at || b.dueDate;
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return new Date(bDate).getTime() - new Date(aDate).getTime(); // Mais recente primeiro
+  });
 
   if (loading) return <Loader />;
 
