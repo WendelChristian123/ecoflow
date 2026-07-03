@@ -23,6 +23,51 @@ const uuidOrNull = (val: any) => val === undefined ? undefined : (val === '' ? n
 // Helper: Ensure date is valid string or null (sanitizes empty strings)
 const sanitizeDate = (val: any) => val === undefined ? undefined : (val === '' ? null : val);
 
+// Helper: Dispara notificação push respeitando as preferências do usuário
+const sendTaskPushNotification = async (
+    targetUserId: string,
+    companyId: string,
+    notificationType: string,
+    title: string,
+    body: string,
+    taskId: string
+) => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || user.id === targetUserId) return; // Não notificar a si mesmo
+
+        // Checar preferências do usuário
+        const { data: prefs } = await supabase
+            .from('user_notification_preferences')
+            .select('notify_before_minutes')
+            .eq('user_id', targetUserId)
+            .eq('company_id', companyId)
+            .eq('module_id', 'routines')
+            .eq('event_type', 'task_updated') // Agrupando edição, mov., conc. e transf. como 'task_updated'
+            .single();
+
+        // Se configurou como -1, desativou a notificação
+        if (prefs && prefs.notify_before_minutes < 0) {
+            return;
+        }
+
+        await supabase.functions.invoke('push-notify', {
+            body: {
+                user_id: targetUserId,
+                title,
+                body,
+                data: {
+                    type: notificationType,
+                    id: taskId,
+                    url: `/#/tasks?open=${taskId}&c=${companyId}`
+                }
+            }
+        });
+    } catch (e) {
+        console.error('[API] Failed to send push notification', e);
+    }
+};
+
 // ==========================================
 // REAL SUPABASE API IMPLEMENTATION
 // ==========================================
@@ -284,6 +329,9 @@ export const api = {
         const pId = task.projectId === 'none' ? null : uuidOrNull(task.projectId);
         const tId = task.teamId === 'none' ? null : uuidOrNull(task.teamId);
         
+        // Fetch previous state for notification logic
+        const { data: oldTask } = await supabase.from('tasks').select('status, assignee_id, kanban_stage_id, title, company_id').eq('id', task.id).single();
+
         const dbTask = {
             title: task.title,
             description: task.description,
@@ -307,11 +355,57 @@ export const api = {
             .update(dbTask)
             .eq('id', task.id);
         if (error) throw error;
+
+        // Disparar Push Notification
+        if (oldTask) {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            const currentUserName = currentUser?.user_metadata?.name || 'Usuário';
+            
+            let companyName = 'Contazze';
+            const { data: comp } = await supabase.from('companies').select('name').eq('id', oldTask.company_id).single();
+            if (comp) companyName = comp.name;
+
+            const notifyUser = (type: string, title: string, msg: string, targetUser: string) => {
+                sendTaskPushNotification(targetUser, oldTask.company_id, type, `${companyName} - ${title}`, msg, task.id!);
+            };
+
+            const isDone = task.status === 'done';
+            const wasDone = oldTask.status === 'done';
+            const newAssignee = dbTask.assignee_id;
+            const oldAssignee = oldTask.assignee_id;
+
+            if (isDone && !wasDone) {
+                // Tarefa Concluída
+                notifyUser('task_completed', 'Tarefa Concluída', `A tarefa "${task.title}" foi concluída por ${currentUserName}.`, newAssignee || oldAssignee || '');
+            } else if (newAssignee && newAssignee !== oldAssignee) {
+                // Tarefa Transferida
+                // Buscar nome do antigo responsável
+                let oldUserName = 'Não atribuído';
+                if (oldAssignee) {
+                    const { data: oldU } = await supabase.from('profiles').select('name').eq('id', oldAssignee).single();
+                    if (oldU) oldUserName = oldU.name || 'Usuário';
+                }
+                const { data: newU } = await supabase.from('profiles').select('name').eq('id', newAssignee).single();
+                const newUserName = newU?.name || 'Usuário';
+                
+                notifyUser('task_transferred', 'Tarefa Transferida', `A tarefa "${task.title}" foi transferida de ${oldUserName} para ${newUserName} por ${currentUserName}.`, newAssignee);
+            } else if (!isDone && (task.kanbanStageId !== oldTask.kanban_stage_id || task.status !== oldTask.status)) {
+                // Tarefa Movida
+                let stageName = task.status;
+                if (task.kanbanStageId && task.kanbanStageId !== 'none') {
+                    const { data: stage } = await supabase.from('kanban_stages').select('name').eq('id', task.kanbanStageId).single();
+                    if (stage) stageName = stage.name;
+                }
+                notifyUser('task_moved', 'Atualização de Tarefa', `A tarefa "${task.title}" foi movida para a etapa "${stageName}" por ${currentUserName}.`, newAssignee || '');
+            } else if (!isDone) {
+                // Tarefa Editada
+                notifyUser('task_edited', 'Tarefa Editada', `A tarefa "${task.title}" foi editada por ${currentUserName}.`, newAssignee || '');
+            }
+        }
     },
     updateTaskStatus: async (id: string, status: string) => {
-        // This is a status change, we should log it!
-        // Wait, the caller is often "drag and drop". It's better if the logging happens explicitly or via this method.
-        // Let's add the log here manually as it's a specific "Business Action" method.
+        // Fetch previous state for notification logic
+        const { data: oldTask } = await supabase.from('tasks').select('status, assignee_id, title, company_id').eq('id', id).single();
 
         const { error } = await supabase.from('tasks').update({ status }).eq('id', id);
         if (error) throw error;
@@ -327,6 +421,24 @@ export const api = {
                 details: `Alterou status para ${status}`,
                 metadata: { to: status }
             });
+        }
+
+        // Disparar Push Notification
+        if (oldTask && oldTask.status !== status) {
+            const currentUserName = user?.user_metadata?.name || 'Usuário';
+            
+            let companyName = 'Contazze';
+            const { data: comp } = await supabase.from('companies').select('name').eq('id', oldTask.company_id).single();
+            if (comp) companyName = comp.name;
+
+            const targetUser = oldTask.assignee_id;
+            if (targetUser) {
+                if (status === 'done') {
+                    sendTaskPushNotification(targetUser, oldTask.company_id, 'task_completed', `${companyName} - Tarefa Concluída`, `A tarefa "${oldTask.title}" foi concluída por ${currentUserName}.`, id);
+                } else {
+                    sendTaskPushNotification(targetUser, oldTask.company_id, 'task_moved', `${companyName} - Atualização de Tarefa`, `A tarefa "${oldTask.title}" teve seu status alterado para "${status}" por ${currentUserName}.`, id);
+                }
+            }
         }
     },
     deleteTask: async (id: string) => {
