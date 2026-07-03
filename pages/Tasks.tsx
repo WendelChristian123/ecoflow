@@ -230,7 +230,7 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleCreateSuccess = (newTask?: Task) => {
-    loadData();
+    loadData(false);
   };
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {

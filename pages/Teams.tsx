@@ -112,9 +112,11 @@ const TeamTasksKanban: React.FC<{
     // Se for a etapa de conclusão, ordena dos mais recentes para os mais antigos (Data decrescente)
     if (stage?.systemStatus === 'done') {
       filtered.sort((a, b) => {
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+        const dateA = (a as any).updated_at || (a as any).created_at || a.dueDate;
+        const dateB = (b as any).updated_at || (b as any).created_at || b.dueDate;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
       });
     }
 
@@ -177,6 +179,7 @@ export const TeamsPage: React.FC = () => {
   const [showDetailMonthFilter, setShowDetailMonthFilter] = useState(true);
   const [detailFilterAssignee, setDetailFilterAssignee] = useState<string>('all');
   const [detailFilterPriority, setDetailFilterPriority] = useState<string>('all');
+  const [showDetailCompletedTasks, setShowDetailCompletedTasks] = useState(false);
   const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
   // Separate stage manager state for Tasks in Team Detail View
   const [isTaskStageManagerOpen, setIsTaskStageManagerOpen] = useState(false);
@@ -315,11 +318,22 @@ export const TeamsPage: React.FC = () => {
       teamTasks = teamTasks.filter(t => t.title.toLowerCase().includes(detailSearch.toLowerCase()));
     }
 
-    // 6. Sort by Due Date
-    teamTasks.sort((a, b) => {
+    // 6. Separação entre ativos e concluídos, e ordenação correta para concluídos
+    const activeTasks = teamTasks.filter(t => t.status !== 'done');
+    const completedTasks = teamTasks.filter(t => t.status === 'done');
+
+    activeTasks.sort((a, b) => {
       if (!a.dueDate) return 1;
       if (!b.dueDate) return -1;
       return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+
+    completedTasks.sort((a, b) => {
+      const dateA = (a as any).updated_at || (a as any).created_at || a.dueDate;
+      const dateB = (b as any).updated_at || (b as any).created_at || b.dueDate;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
     });
 
     return (
@@ -463,15 +477,41 @@ export const TeamsPage: React.FC = () => {
               />
             </KanbanProvider>
           ) : (
-            <div className="overflow-y-auto h-full custom-scrollbar pr-2">
-              <TaskTableView
-                tasks={teamTasks}
-                users={users}
-                onDelete={handleDeleteTask}
-                onTaskClick={setSelectedTask}
-                onStatusChange={handleStatusChange}
-                boardStages={boardStages}
-              />
+            <div className="overflow-y-auto h-full custom-scrollbar pr-2 space-y-5 pb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-3">Tarefas Ativas ({activeTasks.length})</h3>
+                <TaskTableView
+                  tasks={activeTasks}
+                  users={users}
+                  onDelete={handleDeleteTask}
+                  onTaskClick={setSelectedTask}
+                  onStatusChange={handleStatusChange}
+                  boardStages={boardStages}
+                />
+              </div>
+
+              <div>
+                <button
+                  onClick={() => setShowDetailCompletedTasks(!showDetailCompletedTasks)}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors font-medium"
+                >
+                  {showDetailCompletedTasks ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  Tarefas Concluídas ({completedTasks.length})
+                </button>
+
+                {showDetailCompletedTasks && (
+                  <div className="opacity-75">
+                    <TaskTableView
+                      tasks={completedTasks}
+                      users={users}
+                      onDelete={handleDeleteTask}
+                      onTaskClick={setSelectedTask}
+                      onStatusChange={handleStatusChange}
+                      boardStages={boardStages}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -479,7 +519,7 @@ export const TeamsPage: React.FC = () => {
         <TaskModal
           isOpen={isTaskModalOpen}
           onClose={() => setIsTaskModalOpen(false)}
-          onSuccess={loadData}
+          onSuccess={() => loadData(false)}
           projects={projects}
           teams={teams}
           users={users}
@@ -490,7 +530,7 @@ export const TeamsPage: React.FC = () => {
         <TaskDetailModal
           isOpen={!!selectedTask}
           onClose={() => setSelectedTask(null)}
-          onSuccess={loadData}
+          onSuccess={() => loadData(false)}
           task={selectedTask}
           users={users}
           projects={projects}
@@ -501,7 +541,7 @@ export const TeamsPage: React.FC = () => {
         <TeamModal
           isOpen={isTeamModalOpen}
           onClose={() => setIsTeamModalOpen(false)}
-          onSuccess={loadData}
+          onSuccess={() => loadData(false)}
           users={users}
           initialData={editingTeam}
         />
@@ -659,7 +699,7 @@ export const TeamsPage: React.FC = () => {
         <TeamModal
           isOpen={isTeamModalOpen}
           onClose={() => setIsTeamModalOpen(false)}
-          onSuccess={loadData}
+          onSuccess={() => loadData(false)}
           users={users}
           initialData={editingTeam}
           onDuplicate={(team) => {
