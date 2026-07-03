@@ -164,6 +164,11 @@ export const TasksPage: React.FC = () => {
             newParams.delete('openModal');
             setSearchParams(newParams, { replace: true });
           }
+          if (location.state?.taskId) {
+            const newState = { ...location.state };
+            delete newState.taskId;
+            navigate(location.pathname + location.search, { replace: true, state: newState });
+          }
         } else if (tasks.length === 0) {
            // If we loaded and there are no tasks, the item doesn't exist either
            alert('Este item não está mais disponível ou você não possui permissão para acessá-lo.');
@@ -173,10 +178,15 @@ export const TasksPage: React.FC = () => {
              newParams.delete('openModal');
              setSearchParams(newParams, { replace: true });
            }
+           if (location.state?.taskId) {
+             const newState = { ...location.state };
+             delete newState.taskId;
+             navigate(location.pathname + location.search, { replace: true, state: newState });
+           }
         }
       }
     }
-  }, [loading, tasks, location.state, searchParams, setSearchParams]);
+  }, [loading, tasks, location.state, searchParams, setSearchParams, navigate, location.pathname, location.search]);
 
   const loadData = async (showLoading = true) => {
     if (!currentCompany) return;
@@ -219,9 +229,6 @@ export const TasksPage: React.FC = () => {
 
   const handleCreateSuccess = (newTask?: Task) => {
     loadData();
-    if (newTask) {
-      setSelectedTask(newTask);
-    }
   };
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {

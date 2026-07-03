@@ -207,8 +207,11 @@ export const ProjectsPage: React.FC = () => {
       if (found) {
         setSelectedProject(found);
       }
+      const newState = { ...location.state };
+      delete newState.projectId;
+      navigate(location.pathname + location.search, { replace: true, state: newState });
     }
-  }, [projects, location.state]);
+  }, [projects, location.state, navigate, location.pathname, location.search]);
 
   const loadData = async (showLoading = true) => {
     if (!currentCompany) return;

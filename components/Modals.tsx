@@ -1636,6 +1636,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
     const handleEditSuccess = () => {
         setIsEditing(false);
         onSuccess();
+        onClose();
     }
 
     const handleDuplicateSuccess = () => {
