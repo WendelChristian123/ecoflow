@@ -4,7 +4,8 @@ import {
     FinancialTransaction, FinancialAccount, FinancialCategory, CreditCard,
     Contact, Quote, CatalogItem, RecurringService, RecurrenceConfig,
     Company, SaasPlan, Delegation, SharedAccess,
-    DashboardMetrics, GlobalStats, UserPermission, LegacyUserPermissions, AuditLog
+    DashboardMetrics, GlobalStats, UserPermission, LegacyUserPermissions, AuditLog,
+    Microtask
 } from '../types';
 import { supabase } from './supabase';
 import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
@@ -491,8 +492,20 @@ export const api = {
             member_ids: members,
             links: project.links
         };
-        const { error } = await supabase.from('projects').insert([dbProject]);
+        const { data, error } = await supabase.from('projects').insert([dbProject]).select().single();
         if (error) throw error;
+        return {
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            status: data.status,
+            progress: data.progress,
+            dueDate: data.due_date,
+            companyId: data.company_id,
+            teamIds: data.team_ids,
+            members: data.member_ids,
+            links: data.links
+        } as Project;
     },
     updateProject: async (project: Project) => {
         const dbProject = {
@@ -611,7 +624,7 @@ export const api = {
             memberIds = [...memberIds, userData.user.id];
         }
 
-        const { error } = await supabase.from('teams').insert({
+        const { data, error } = await supabase.from('teams').insert({
             name: team.name,
             description: team.description,
             lead_id: team.leaderId,
@@ -619,8 +632,18 @@ export const api = {
             links: team.links || [],
             logs: team.logs || [],
             company_id: companyId
-        });
+        }).select().single();
         if (error) throw error;
+        return {
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            leaderId: data.lead_id,
+            memberIds: data.member_ids,
+            links: data.links,
+            logs: data.logs,
+            companyId: data.company_id
+        } as Team;
     },
 
     updateTeam: async (team: Team) => {
@@ -3188,5 +3211,55 @@ export const api = {
         }
 
         return data;
+    },
+
+    // ==========================================
+    // MICROTASKS
+    // ==========================================
+    getMicrotasks: async (parentId: string): Promise<Microtask[]> => {
+        const { data, error } = await supabase
+            .from('item_microtasks')
+            .select('*')
+            .eq('parent_id', parentId)
+            .order('sort_order', { ascending: true });
+            
+        if (error) throw error;
+        return data as Microtask[];
+    },
+    
+    syncMicrotasks: async (parentId: string, parentType: 'task' | 'project' | 'team' | 'agenda_task', microtasks: Microtask[]) => {
+        const companyId = getCurrentCompanyId();
+        if (!companyId) throw new Error("Company ID is required");
+
+        // First delete all existing microtasks for this parent
+        const { error: deleteError } = await supabase
+            .from('item_microtasks')
+            .delete()
+            .eq('parent_id', parentId);
+            
+        if (deleteError) throw deleteError;
+
+        // Then insert the new ones, if any
+        if (microtasks.length > 0) {
+            const microtasksToInsert = microtasks.map((m, index) => {
+                const isTemp = m.id.startsWith('temp-');
+                return {
+                    ...(isTemp ? {} : { id: m.id }),
+                    tenant_id: companyId,
+                    parent_type: parentType,
+                    parent_id: parentId,
+                    title: m.title,
+                    is_completed: m.is_completed,
+                    sort_order: index,
+                    created_by: undefined
+                };
+            });
+
+            const { error: insertError } = await supabase
+                .from('item_microtasks')
+                .insert(microtasksToInsert);
+                
+            if (insertError) throw insertError;
+        }
     }
 };

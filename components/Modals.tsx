@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Select, Textarea, Modal, UserMultiSelect, Badge, Avatar, cn, LinkInput, CurrencyInput } from './Shared';
 import { FilterSelect } from './FilterSelect';
 import { DateTimePicker } from './DateTimePicker';
-import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem, PaymentMethod } from '../types';
+import { Task, CalendarEvent, Project, Team, User, Priority, Status, FinancialAccount, FinancialCategory, CreditCard, TransactionType, FinancialTransaction, RecurrenceOptions, Contact, Quote, QuoteItem, PaymentMethod, Microtask } from '../types';
 import { api, getErrorMessage } from '../services/api';
 import { supabase } from '../services/supabase';
 import {
@@ -14,6 +14,7 @@ import {
     Users, MapPin, ThumbsUp, ThumbsDown, AlertTriangle, ExternalLink, RefreshCw, FileText, RotateCcw, PlayCircle, CheckSquare, Link as LinkIcon, XCircle, Tag
 } from 'lucide-react';
 import { TransferModal, HistoryTimeline } from './DetailComponents';
+import { Microtasks } from './Microtasks';
 import { useAuth } from '../context/AuthContext';
 import { LogEntry } from '../types';
 import { format, parseISO, isBefore, startOfToday } from 'date-fns';
@@ -1171,6 +1172,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
     const [recurrence, setRecurrence] = useState<RecurrenceOptions>({ isRecurring: false, frequency: 'weekly', repeatCount: 12 });
     const [isIndefinite, setIsIndefinite] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [microtasks, setMicrotasks] = useState<Microtask[]>([]);
 
     useEffect(() => {
         if (isOpen) {
@@ -1199,6 +1201,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
             setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 12 });
             setIsIndefinite(false);
+
+            if (initialData?.id) {
+                api.getMicrotasks(initialData.id).then(setMicrotasks).catch(console.error);
+            } else {
+                setMicrotasks([]);
+            }
         }
     }, [isOpen, initialData, currentUser?.id]);
 
@@ -1327,6 +1335,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
             if (initialData?.id) {
                 await api.updateTask(taskPayload);
+                await api.syncMicrotasks(initialData.id, 'task', microtasks);
                 onSuccess();
             } else {
                 const recurrenceConfig = recurrence.isRecurring ? {
@@ -1335,6 +1344,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                 } : undefined;
 
                 const newTask = await api.addTask(finalFormData, recurrenceConfig);
+                if (newTask?.id) {
+                    await api.syncMicrotasks(newTask.id, 'task', microtasks);
+                }
                 onSuccess(newTask);
             }
             onClose();
@@ -1465,6 +1477,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
                     />
                 </div>
 
+                <Microtasks microtasks={microtasks} onChange={setMicrotasks} darkMode={false} />
+
                 <div className="space-y-4 pt-2">
                     <LinkInput links={formData.links || []} onChange={(links) => setFormData({ ...formData, links })} />
 
@@ -1570,6 +1584,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
 
     const { user: currentUser } = useAuth();
     const [fetchedLogs, setFetchedLogs] = useState<LogEntry[]>([]);
+    const [microtasks, setMicrotasks] = useState<Microtask[]>([]);
 
     // Fetch logs separately now that they aren't on the Task object
     const refreshLogs = useCallback(async () => {
@@ -1585,7 +1600,21 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
 
     useEffect(() => {
         refreshLogs();
-    }, [refreshLogs]);
+        if (task?.id) {
+            api.getMicrotasks(task.id).then(setMicrotasks).catch(console.error);
+        }
+    }, [refreshLogs, task?.id]);
+
+    const handleMicrotasksChange = async (newMicrotasks: Microtask[]) => {
+        setMicrotasks(newMicrotasks);
+        if (task?.id) {
+            try {
+                await api.syncMicrotasks(task.id, 'task', newMicrotasks);
+            } catch (error) {
+                console.error("Error syncing microtasks:", error);
+            }
+        }
+    };
 
     const handleAction = async (status: Status) => {
         try {
@@ -1731,6 +1760,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                         <div className="bg-card p-4 rounded-lg text-foreground text-sm whitespace-pre-wrap border border-border min-h-[100px]">
                             {task.description || "Sem descrição."}
                         </div>
+
+                        <Microtasks microtasks={microtasks} onChange={handleMicrotasksChange} darkMode={false} />
 
                         <KanbanStageMover
                             module="tasks"
@@ -1943,6 +1974,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
     });
     const [loading, setLoading] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [microtasks, setMicrotasks] = useState<Microtask[]>([]);
     const { user: currentUser } = useAuth();
     const isEditing = !!initialData?.id; // Use id check for editing mode safely
 
@@ -1992,6 +2024,12 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                 members: [],
                 links: []
             });
+
+            if (initialData?.id) {
+                api.getMicrotasks(initialData.id).then(setMicrotasks).catch(console.error);
+            } else {
+                setMicrotasks([]);
+            }
         }
     }, [isOpen, initialData]);
 
@@ -2001,8 +2039,12 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
         try {
             if (initialData?.id) {
                 await api.updateProject({ ...initialData, ...formData } as Project);
+                await api.syncMicrotasks(initialData.id, 'project', microtasks);
             } else {
-                await api.addProject(formData as Project);
+                const newProject = await api.addProject(formData as Project);
+                if (newProject?.id) {
+                    await api.syncMicrotasks(newProject.id, 'project', microtasks);
+                }
             }
             onSuccess();
             onClose();
@@ -2072,6 +2114,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onS
                                     <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
                                     <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-40" />
                                 </div>
+                                <Microtasks microtasks={microtasks} onChange={setMicrotasks} darkMode={false} />
                             </div>
                             <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
@@ -2147,6 +2190,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
     const [formData, setFormData] = useState<Partial<Team>>({ name: '', description: '', memberIds: [], links: [] });
     const [loading, setLoading] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [microtasks, setMicrotasks] = useState<Microtask[]>([]);
     const { user: currentUser } = useAuth();
     const isEditing = !!initialData?.id;
 
@@ -2184,7 +2228,14 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
     };
 
     useEffect(() => {
-        if (isOpen) setFormData(initialData || { name: '', description: '', memberIds: [], links: [] });
+        if (isOpen) {
+            setFormData(initialData || { name: '', description: '', memberIds: [], links: [] });
+            if (initialData?.id) {
+                api.getMicrotasks(initialData.id).then(setMicrotasks).catch(console.error);
+            } else {
+                setMicrotasks([]);
+            }
+        }
     }, [isOpen, initialData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -2193,8 +2244,12 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
         try {
             if (initialData?.id) {
                 await api.updateTeam({ ...initialData, ...formData } as Team);
+                await api.syncMicrotasks(initialData.id, 'team', microtasks);
             } else {
-                await api.addTeam(formData as Team);
+                const newTeam = await api.addTeam(formData as Team);
+                if (newTeam?.id) {
+                    await api.syncMicrotasks(newTeam.id, 'team', microtasks);
+                }
             }
             onSuccess();
             onClose();
@@ -2262,6 +2317,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, onSuccess
                                 <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
                                 <Textarea placeholder="Responsabilidades e objetivos da equipe..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="h-32" />
                             </div>
+                            <Microtasks microtasks={microtasks} onChange={setMicrotasks} darkMode={false} />
                             <div>
                                 <label className="text-xs text-muted-foreground mb-2 block ml-1">Membros</label>
                                 <UserMultiSelect users={users} selectedIds={formData.memberIds || []} onChange={ids => setFormData({ ...formData, memberIds: ids })} />
@@ -2337,6 +2393,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     const [isIndefinite, setIsIndefinite] = useState(false);
 
     const [loading, setLoading] = useState(false);
+    const [microtasks, setMicrotasks] = useState<Microtask[]>([]);
 
     useEffect(() => {
         if (isOpen) {
@@ -2378,6 +2435,12 @@ export const EventModal: React.FC<EventModalProps> = ({
             } else {
                 setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 0 });
                 setIsIndefinite(false);
+            }
+
+            if (isTask && initialData?.id) {
+                api.getMicrotasks(initialData.id).then(setMicrotasks).catch(console.error);
+            } else {
+                setMicrotasks([]);
             }
         }
     }, [isOpen, initialData]);
@@ -2434,6 +2497,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 
                 if (initialData?.id && initialData.origin === 'task') {
                     await api.updateTask({ ...taskData, id: initialData.id } as Task);
+                    await api.syncMicrotasks(initialData.id, 'task', microtasks);
                 } else {
                     const finalRecurrence = recurrence.isRecurring ? {
                         frequency: recurrence.frequency,
@@ -2441,7 +2505,10 @@ export const EventModal: React.FC<EventModalProps> = ({
                         occurrences: isIndefinite ? 12 : (recurrence.repeatCount > 0 ? recurrence.repeatCount : undefined),
                         endDate: undefined // Simplified for now, can be added later
                     } : undefined;
-                    await api.addTask(taskData as Task, finalRecurrence);
+                    const newTask = await api.addTask(taskData as Task, finalRecurrence);
+                    if (newTask?.id) {
+                        await api.syncMicrotasks(newTask.id, 'task', microtasks);
+                    }
                 }
             } else {
                 // Event Mode
@@ -2531,6 +2598,9 @@ export const EventModal: React.FC<EventModalProps> = ({
                                     className="flex-1 resize-none p-4"
                                 />
                             </div>
+                            {mode === 'task' && (
+                                <Microtasks microtasks={microtasks} onChange={setMicrotasks} darkMode={false} />
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-5">
@@ -2539,6 +2609,9 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 <label className="block text-xs text-muted-foreground mb-1.5 font-medium ml-1">Descrição</label>
                                 <Textarea placeholder="Detalhes..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="flex-1 min-h-[120px]" />
                             </div>
+                            {mode === 'task' && (
+                                <Microtasks microtasks={microtasks} onChange={setMicrotasks} darkMode={false} />
+                            )}
                         </div>
                     )}
 

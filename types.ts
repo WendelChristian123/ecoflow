@@ -201,6 +201,20 @@ export interface LogEntry {
   };
 }
 
+export interface Microtask {
+    id: string;
+    tenant_id?: string;
+    parent_type: 'task' | 'project' | 'team' | 'agenda_task';
+    parent_id: string;
+    title: string;
+    is_completed: boolean;
+    sort_order: number;
+    created_by?: string;
+    created_at?: string;
+    updated_at?: string;
+    completed_at?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
