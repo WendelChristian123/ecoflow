@@ -12,6 +12,7 @@ import { formatDate } from '../../utils/formatters';
 import { startOfMonth, endOfMonth, isSameMonth, addMonths, subMonths, format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Select } from '../../components/Shared';
+import { useCompany } from '../../context/CompanyContext';
 import { QuoteKanban } from '../../components/Commercial/QuoteKanban';
 import { FilterSelect } from '../../components/FilterSelect';
 import { kanbanService } from '../../services/kanbanService';
@@ -20,6 +21,7 @@ import { translateQuoteStatus } from '../../utils/i18n';
 import { LayoutGrid, List } from 'lucide-react';
 
 export const QuotesPage: React.FC = () => {
+    const { currentCompany } = useCompany();
     const [loading, setLoading] = useState(true);
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);

@@ -15,23 +15,27 @@ interface DateTimePickerProps {
 }
 
 import { createPortal } from 'react-dom';
+import { toZonedTime } from 'date-fns-tz';
+import { createDateTimeInSystemTimezone, formatDateTimeForDisplay, formatTimeForDisplay, SYSTEM_TIMEZONE } from '../utils/timezone';
 
 export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, className, inlineLabel, placeholder = "Selecione a data" }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(value ? new Date(value) : undefined);
+    
+    // Parse the UTC ISO string to a Date object that "looks" like the local Cuiaba time
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(value ? toZonedTime(new Date(value), SYSTEM_TIMEZONE) : undefined);
     const [position, setPosition] = useState<{ top?: number, bottom?: number, left: number, width: number } | null>(null);
 
     // Time state
-    const [timeValue, setTimeValue] = useState<string>(value ? format(new Date(value), 'HH:mm') : '09:00');
+    const [timeValue, setTimeValue] = useState<string>(value ? formatTimeForDisplay(value) : '09:00');
 
     // Sync internal state if external value changes
     useEffect(() => {
         if (value) {
             const d = new Date(value);
             if (isValid(d)) {
-                setSelectedDate(d);
-                setTimeValue(format(d, 'HH:mm'));
+                setSelectedDate(toZonedTime(d, SYSTEM_TIMEZONE));
+                setTimeValue(formatTimeForDisplay(value));
             }
         } else {
             setSelectedDate(undefined);
@@ -127,14 +131,8 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
             return;
         }
 
-        // Merge Date + Time
-        const [hours, minutes] = timeValue.split(':').map(Number);
-        const newDate = new Date(date);
-        newDate.setHours(hours || 0);
-        newDate.setMinutes(minutes || 0);
-
-        setSelectedDate(newDate);
-        onChange(newDate.toISOString()); // Or whatever format expected, commonly ISO
+        setSelectedDate(date);
+        onChange(createDateTimeInSystemTimezone(date, timeValue));
     };
 
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,13 +140,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
         setTimeValue(time);
 
         if (selectedDate) {
-            const [hours, minutes] = time.split(':').map(Number);
-            const newDate = new Date(selectedDate);
-            newDate.setHours(hours || 0);
-            newDate.setMinutes(minutes || 0);
-
-            setSelectedDate(newDate);
-            onChange(newDate.toISOString());
+            onChange(createDateTimeInSystemTimezone(selectedDate, time));
         }
     };
 
@@ -200,8 +192,8 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
     `;
 
     const formatDisplay = () => {
-        if (!selectedDate) return placeholder;
-        return format(selectedDate, "dd/MM/yyyy HH:mm");
+        if (!selectedDate || !value) return placeholder;
+        return formatDateTimeForDisplay(value, "dd/MM/yyyy HH:mm");
     };
 
     return (

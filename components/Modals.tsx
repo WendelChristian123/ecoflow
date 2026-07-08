@@ -1176,19 +1176,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
 
     useEffect(() => {
         if (isOpen) {
-            const toLocalInputValue = (isoStr?: string) => {
-                const d = isoStr ? new Date(isoStr) : new Date();
-                const offset = d.getTimezoneOffset() * 60000;
-                const localDate = new Date(d.getTime() - offset);
-                return localDate.toISOString().slice(0, 16);
-            };
-
             setFormData(initialData || {
                 title: '',
                 description: '',
                 status: 'todo',
                 priority: 'medium',
-                dueDate: toLocalInputValue(new Date().toISOString()),
+                dueDate: new Date().toISOString(), // Fallback (we'll replace it with proper UTC soon if needed, or leave it since DateTimePicker handles ISO now)
                 tags: [],
                 links: [],
                 contextType: 'personal',
@@ -1196,7 +1189,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSuccess
             });
 
             if (initialData?.dueDate) {
-                setFormData(prev => ({ ...prev, dueDate: toLocalInputValue(initialData.dueDate) }));
+                setFormData(prev => ({ ...prev, dueDate: initialData.dueDate }));
             }
 
             setRecurrence({ isRecurring: false, frequency: 'weekly', repeatCount: 12 });
@@ -2400,16 +2393,8 @@ export const EventModal: React.FC<EventModalProps> = ({
             const isTask = initialData?.origin === 'task';
             setMode(isTask ? 'task' : 'event');
 
-            // Helper to get local string for input
-            const toLocalString = (isoStr?: string) => {
-                const d = isoStr ? new Date(isoStr) : new Date();
-                // Return YYYY-MM-DDTHH:mm in local time
-                const pad = (n: number) => n.toString().padStart(2, '0');
-                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-            };
-
-            const start = toLocalString(initialData?.startDate); // Initialize with Local Time
-            const end = toLocalString(initialData?.endDate || (initialData?.startDate ? undefined : new Date(Date.now() + 3600000).toISOString())); // Add 1h for default end
+            const start = initialData?.startDate || new Date().toISOString(); 
+            const end = initialData?.endDate || (initialData?.startDate ? undefined : new Date(Date.now() + 3600000).toISOString());
 
             setFormData(initialData ? {
                 ...initialData,

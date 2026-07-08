@@ -9,6 +9,8 @@ import {
 } from '../types';
 import { supabase } from './supabase';
 import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
+import { getSystemNow, getZonedDate, SYSTEM_TIMEZONE } from '../utils/timezone';
+import { fromZonedTime } from 'date-fns-tz';
 
 export const getErrorMessage = (error: any): string => {
     return error?.message || error?.error_description || String(error);
@@ -238,20 +240,20 @@ export const api = {
         if (recurrence) {
             const count = recurrence.occurrences || (recurrence.endDate ? 0 : 12);
             const actualCount = count > 0 ? count : 12;
-            const startDate = new Date(task.dueDate || new Date());
+            const startZoned = getZonedDate(task.dueDate || new Date().toISOString());
 
             for (let i = 0; i < actualCount; i++) {
-                let nextDate = new Date(startDate);
+                let nextZoned = new Date(startZoned);
                 const interval = recurrence.interval || 1;
-                if (recurrence.frequency === 'daily') nextDate = addDays(startDate, i * interval);
-                if (recurrence.frequency === 'weekly') nextDate = addWeeks(startDate, i * interval);
-                if (recurrence.frequency === 'monthly') nextDate = addMonths(startDate, i * interval);
-                if (recurrence.frequency === 'yearly') nextDate = addYears(startDate, i * interval);
+                if (recurrence.frequency === 'daily') nextZoned = addDays(startZoned, i * interval);
+                if (recurrence.frequency === 'weekly') nextZoned = addWeeks(startZoned, i * interval);
+                if (recurrence.frequency === 'monthly') nextZoned = addMonths(startZoned, i * interval);
+                if (recurrence.frequency === 'yearly') nextZoned = addYears(startZoned, i * interval);
 
-                if (recurrence.endDate && nextDate > new Date(recurrence.endDate)) break;
+                if (recurrence.endDate && nextZoned > getZonedDate(recurrence.endDate)) break;
 
-                // Pass full ISO string to preserve time (DB will store as TIMESTAMPTZ)
-                const isoStr = nextDate.toISOString();
+                // Convert back to UTC to store in database
+                const isoStr = fromZonedTime(nextZoned, SYSTEM_TIMEZONE).toISOString();
                 createdTasks.push(createDbTask(task, isoStr, baseRecurrenceId));
             }
         } else {
@@ -1274,25 +1276,27 @@ export const api = {
             const count = recurrence.occurrences || (recurrence.endDate ? 0 : 12);
             const actualCount = count > 0 ? count : 12;
 
-            const startDateObj = new Date(evt.startDate || new Date());
-            const endDateObj = new Date(evt.endDate || new Date());
-            const duration = endDateObj.getTime() - startDateObj.getTime();
+            const startZoned = getZonedDate(evt.startDate || new Date().toISOString());
+            const endZoned = getZonedDate(evt.endDate || new Date().toISOString());
+            const duration = endZoned.getTime() - startZoned.getTime();
 
             for (let i = 0; i < actualCount; i++) {
-                let nextStart = new Date(startDateObj);
+                let nextStartZoned = new Date(startZoned);
                 const interval = recurrence.interval || 1;
 
-                if (recurrence.frequency === 'daily') nextStart = addDays(startDateObj, i * interval);
-                if (recurrence.frequency === 'weekly') nextStart = addWeeks(startDateObj, i * interval);
-                if (recurrence.frequency === 'monthly') nextStart = addMonths(startDateObj, i * interval);
-                if (recurrence.frequency === 'yearly') nextStart = addYears(startDateObj, i * interval);
+                if (recurrence.frequency === 'daily') nextStartZoned = addDays(startZoned, i * interval);
+                if (recurrence.frequency === 'weekly') nextStartZoned = addWeeks(startZoned, i * interval);
+                if (recurrence.frequency === 'monthly') nextStartZoned = addMonths(startZoned, i * interval);
+                if (recurrence.frequency === 'yearly') nextStartZoned = addYears(startZoned, i * interval);
 
-                // Stop if endDate is exceeded (if provided strictly)
-                if (recurrence.endDate && nextStart > new Date(recurrence.endDate)) break;
+                if (recurrence.endDate && nextStartZoned > getZonedDate(recurrence.endDate)) break;
 
-                const nextEnd = new Date(nextStart.getTime() + duration);
+                const nextEndZoned = new Date(nextStartZoned.getTime() + duration);
 
-                createdEvents.push(createDbEvt(evt, nextStart.toISOString(), nextEnd.toISOString(), baseRecurrenceId));
+                const nextStartUtc = fromZonedTime(nextStartZoned, SYSTEM_TIMEZONE).toISOString();
+                const nextEndUtc = fromZonedTime(nextEndZoned, SYSTEM_TIMEZONE).toISOString();
+
+                createdEvents.push(createDbEvt(evt, nextStartUtc, nextEndUtc, baseRecurrenceId));
             }
         } else {
             createdEvents.push(createDbEvt(evt, evt.startDate || '', evt.endDate || '', null));
@@ -1432,17 +1436,18 @@ export const api = {
 
         if (recurrence && recurrence.isRecurring) {
             const count = recurrence.repeatCount || 1;
-            const startDate = new Date(t.date || new Date());
+            const startZoned = getZonedDate(t.date || new Date().toISOString());
             const isIndefinite = recurrence.isIndefinite;
 
             for (let i = 0; i < count; i++) {
-                let nextDate = new Date(startDate);
-                if (recurrence.frequency === 'daily') nextDate = addDays(startDate, i);
-                if (recurrence.frequency === 'weekly') nextDate = addWeeks(startDate, i);
-                if (recurrence.frequency === 'monthly') nextDate = addMonths(startDate, i);
-                if (recurrence.frequency === 'yearly') nextDate = addYears(startDate, i);
+                let nextZoned = new Date(startZoned);
+                if (recurrence.frequency === 'daily') nextZoned = addDays(startZoned, i);
+                if (recurrence.frequency === 'weekly') nextZoned = addWeeks(startZoned, i);
+                if (recurrence.frequency === 'monthly') nextZoned = addMonths(startZoned, i);
+                if (recurrence.frequency === 'yearly') nextZoned = addYears(startZoned, i);
 
-                const dateStr = nextDate.toISOString().split('T')[0];
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                const dateStr = `${nextZoned.getFullYear()}-${pad(nextZoned.getMonth() + 1)}-${pad(nextZoned.getDate())}`;
                 // Only the first installment (i === 0) keeps the user's isPaid value;
                 // all subsequent installments are created as unpaid
                 const installmentData = i === 0 ? t : { ...t, isPaid: false };
@@ -1453,7 +1458,10 @@ export const api = {
             }
         } else {
             // Single transaction
-            transactionsToInsert.push(createDbObj(t, t.date || new Date().toISOString().split('T')[0], null, t.installmentIndex, t.totalInstallments));
+            const nowZoned = getSystemNow();
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            const fallbackDate = `${nowZoned.getFullYear()}-${pad(nowZoned.getMonth() + 1)}-${pad(nowZoned.getDate())}`;
+            transactionsToInsert.push(createDbObj(t, t.date || fallbackDate, null, t.installmentIndex, t.totalInstallments));
         }
 
         const { data, error } = await supabase.from('financial_transactions').insert(transactionsToInsert).select();

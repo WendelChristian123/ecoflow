@@ -3,6 +3,7 @@ import { Task, User } from '../../types';
 import { KanbanCard } from '../Kanban/KanbanCard';
 import { Card, Avatar, cn } from '../Shared';
 import { Calendar, Trash2, User as UserIcon } from 'lucide-react';
+import { getSystemNow, getZonedDate, formatDateOnlyForDisplay } from '../../utils/timezone';
 
 interface TaskCardProps {
     task: Task;
@@ -13,17 +14,16 @@ interface TaskCardProps {
     isReference?: boolean;
 }
 
-// ... imports
-export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDelete, canMove, isReference }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDelete, isReference = false, canMove = true }) => {
     const assignee = users.find(u => u.id === task.assigneeId);
 
     const translatePriority = (p: string) => {
         switch (p) {
-            case 'low': return 'Baixa';
-            case 'medium': return 'Média';
-            case 'high': return 'Alta';
             case 'urgent': return 'Urgente';
-            default: return p;
+            case 'high': return 'Alta';
+            case 'medium': return 'Média';
+            case 'low': return 'Baixa';
+            default: return 'Normal';
         }
     };
 
@@ -38,19 +38,25 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
     };
 
     // Check if Overdue
-    const isOverdue = task.status !== 'done' && task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
+    const getTaskStylesAndStatus = (t: Task) => {
+        if (!t.dueDate) return { styles: '', isOverdue: false };
+        const today = getSystemNow();
+        today.setHours(0, 0, 0, 0);
+        const due = getZonedDate(t.dueDate);
+        due.setHours(0, 0, 0, 0);
+        
+        const diff = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const overdue = t.status !== 'done' && diff < 0;
 
-    const getTaskStyles = (task: Task) => {
-        if (!task.dueDate) return '';
-        const today = new Date().setHours(0, 0, 0, 0);
-        const due = new Date(task.dueDate).setHours(0, 0, 0, 0);
-        const diff = Math.floor((due - today) / (1000 * 60 * 60 * 24));
+        let styles = 'border-l-2 border-l-emerald-500'; // Futuro
+        if (overdue) styles = 'border-l-4 border-l-rose-500 bg-rose-500/10 dark:bg-rose-950/20'; // Vencido
+        else if (diff === 0) styles = 'border-l-4 border-l-amber-500'; // Hoje
+        else if (diff === 1) styles = 'border-l-4 border-l-amber-500'; // Amanhã - Mantendo amber para "atenção"
 
-        if (isOverdue) return 'border-l-4 border-l-rose-500 bg-rose-500/10 dark:bg-rose-950/20'; // Vencido
-        if (diff === 0) return 'border-l-4 border-l-amber-500'; // Hoje
-        if (diff === 1) return 'border-l-4 border-l-amber-500'; // Amanhã - Mantendo amber para "atenção"
-        return 'border-l-2 border-l-emerald-500'; // Futuro
+        return { styles, isOverdue: overdue };
     };
+
+    const { styles, isOverdue } = getTaskStylesAndStatus(task);
 
     return (
         <KanbanCard id={task.id} onClick={() => onClick(task)} isDraggable={canMove}>
@@ -59,7 +65,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
                 className={cn(
                     "p-2.5 hover:border-border/80 cursor-pointer group bg-card shadow-sm hover:shadow-md transition-all border-border",
                     canMove ? "active:cursor-grabbing hover:-translate-y-0.5" : "cursor-default",
-                    getTaskStyles(task)
+                    styles
                 )}
             >
                 <div className="flex justify-between items-start mb-1.5">
@@ -84,7 +90,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, users, onClick, onDele
                     <div className="flex flex-col gap-1">
                         <div className={cn("flex items-center gap-1.5 text-xs", isOverdue ? "text-rose-600 font-bold" : "text-muted-foreground")}>
                             <Calendar size={12} />
-                            <span>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }) : 'S/ Data'}</span>
+                            <span>{task.dueDate ? formatDateOnlyForDisplay(task.dueDate, "d 'de' MMM") : 'S/ Data'}</span>
                             {isOverdue && <span className="text-[9px] bg-rose-500 text-white px-1 py-0.5 rounded ml-1 uppercase">Vencido</span>}
                         </div>
                     </div>

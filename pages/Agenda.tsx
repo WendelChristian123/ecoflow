@@ -12,6 +12,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
 import { useAppEnvironment } from '../context/AppEnvironmentContext';
+import { getSystemNow, getZonedDate, formatTimeForDisplay } from '../utils/timezone';
 
 type ViewMode = 'month' | 'week' | 'day';
 type FilterType = 'all' | 'agenda' | 'task' | 'finance';
@@ -41,8 +42,8 @@ export const AgendaPage: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
 
   // State for Navigation vs Selection
-  const [viewDate, setViewDate] = useState(new Date()); // Controls the Month displayed
-  const [selectedDate, setSelectedDate] = useState(new Date()); // Controls the sidebar
+  const [viewDate, setViewDate] = useState<Date>(getSystemNow()); // Controls the Month displayed
+  const [selectedDate, setSelectedDate] = useState<Date>(getSystemNow()); // Controls the sidebar
 
   // UI State
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -375,10 +376,10 @@ export const AgendaPage: React.FC = () => {
 
     // Filter Status (New)
     if (statusFilter !== 'all') {
-      const now = new Date();
+      const now = getSystemNow();
       filtered = filtered.filter(e => {
         const isCompleted = e.status === 'completed' || e.status === 'done' || e.metadata?.isPaid === true;
-        const eventDate = parseISO(e.startDate); // Ensure Date object
+        const eventDate = getZonedDate(e.startDate); // Ensure Zoned Date object
 
         if (statusFilter === 'completed') return isCompleted;
         if (statusFilter === 'overdue') return !isCompleted && eventDate < now;
@@ -392,19 +393,20 @@ export const AgendaPage: React.FC = () => {
 
   const filteredEvents = getFilteredEvents();
   const selectedDayEvents = filteredEvents
-    .filter(e => isSameDay(parseISO(e.startDate), selectedDate))
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    .filter(e => isSameDay(getZonedDate(e.startDate), selectedDate))
+    .sort((a, b) => getZonedDate(a.startDate).getTime() - getZonedDate(b.startDate).getTime());
 
   // App mode: group ALL filteredEvents by date, sorted closest first
   const groupedByDate = React.useMemo(() => {
     if (!isApp) return [];
-    const now = new Date();
     const upcoming = filteredEvents
       .filter(e => activeFilter === 'all' ? e.origin === 'agenda' || e.origin === 'task' : true)
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+      .sort((a, b) => getZonedDate(a.startDate).getTime() - getZonedDate(b.startDate).getTime());
     const groups: Record<string, UnifiedEvent[]> = {};
     upcoming.forEach(e => {
-      const key = e.startDate.split('T')[0];
+      const zoned = getZonedDate(e.startDate);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const key = `${zoned.getFullYear()}-${pad(zoned.getMonth() + 1)}-${pad(zoned.getDate())}`;
       if (!groups[key]) groups[key] = [];
       groups[key].push(e);
     });
@@ -529,7 +531,7 @@ export const AgendaPage: React.FC = () => {
                               )}
                             </div>
                             <span className="text-[10px] text-muted-foreground flex-shrink-0 mt-0.5">
-                              {format(parseISO(event.startDate), 'HH:mm')}
+                              {formatTimeForDisplay(event.startDate)}
                             </span>
                           </div>
                         );
@@ -761,7 +763,7 @@ export const AgendaPage: React.FC = () => {
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-1.5 text-[10px] font-bold opacity-80 text-foreground">
                         {event.icon}
-                        {format(parseISO(event.startDate), 'HH:mm')}
+                        {formatTimeForDisplay(event.startDate)}
                       </div>
 
                       {/* Assignees / Participants */}

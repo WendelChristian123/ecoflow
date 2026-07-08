@@ -37,27 +37,39 @@ Deno.serve(async (req: Request) => {
 
     const results = { sent: 0, failed: 0, skipped: 0 };
 
+    function getCuiabaTime(date: Date = new Date()): Date {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Cuiaba',
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
+      });
+      const parts = formatter.formatToParts(date);
+      const getP = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0', 10);
+      return new Date(getP('year'), getP('month') - 1, getP('day'), getP('hour') === 24 ? 0 : getP('hour'), getP('minute'), getP('second'));
+    }
+
     function formatTimeRemaining(targetDateStr: string | null, isDateOnly: boolean = false) {
       if (!targetDateStr) return "em breve";
       
+      const nowCuiaba = getCuiabaTime(new Date());
+      
       if (isDateOnly) {
-        const now = new Date();
-        const target = new Date(targetDateStr);
-        // Normalize to ignore time components for date-only comparisons
-        now.setUTCHours(0, 0, 0, 0);
+        // Parse date-only string (YYYY-MM-DD or ISO) as Cuiaba Midnight
+        const raw = targetDateStr.includes('T') ? targetDateStr.split('T')[0] : targetDateStr;
+        const [y, m, d] = raw.split('-').map(Number);
+        const targetCuiaba = new Date(y, m - 1, d);
         
-        // Sometimes date-only fields from DB come as YYYY-MM-DDT03:00:00Z (Brazil midnight).
-        // Setting UTC hours to 0 normalizes it to the same day.
-        target.setUTCHours(0, 0, 0, 0);
+        nowCuiaba.setHours(0, 0, 0, 0);
+        targetCuiaba.setHours(0, 0, 0, 0);
         
-        const diffDays = Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.round((targetCuiaba.getTime() - nowCuiaba.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays === 1) return "amanhã";
         if (diffDays === 0) return "hoje";
         if (diffDays < 0) return "agora";
         return `em ${diffDays} dias`;
       }
 
-      const diffMs = new Date(targetDateStr).getTime() - new Date().getTime();
+      const diffMs = new Date(targetDateStr).getTime() - new Date().getTime(); // Absolute UTC diff is mathematically safe for hours/mins
       if (diffMs <= 0) return "agora";
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       if (diffDays >= 1) return `em ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
