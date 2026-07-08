@@ -59,7 +59,7 @@ const TaskKanbanWithContext: React.FC<{
       return false;
     });
 
-    // Se for a etapa de conclusão, ordena dos mais recentes para os mais antigos (Data de conclusão/atualização)
+    // Ordenação: Concluído → por data de conclusão decrescente; demais → por dueDate crescente
     if (stage?.systemStatus === 'done') {
       filtered.sort((a, b) => {
         const aDate = (a as any).completed_at || (a as any).updated_at || (a as any).created_at || a.dueDate;
@@ -67,6 +67,15 @@ const TaskKanbanWithContext: React.FC<{
         if (!aDate) return 1;
         if (!bDate) return -1;
         return new Date(bDate).getTime() - new Date(aDate).getTime();
+      });
+    } else {
+      filtered.sort((a, b) => {
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : null;
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : null;
+        if (dateA === null && dateB === null) return 0;
+        if (dateA === null) return 1;
+        if (dateB === null) return -1;
+        return dateA - dateB;
       });
     }
 

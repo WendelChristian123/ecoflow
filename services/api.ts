@@ -405,10 +405,59 @@ export const api = {
         }
     },
     updateTaskStatus: async (id: string, status: string) => {
-        // Fetch previous state for notification logic
-        const { data: oldTask } = await supabase.from('tasks').select('status, assignee_id, title, company_id').eq('id', id).single();
+        // Fetch previous state for notification logic AND kanban sync
+        const { data: oldTask } = await supabase.from('tasks').select('status, assignee_id, title, company_id, kanban_id, kanban_stage_id, team_id, project_id').eq('id', id).single();
 
-        const { error } = await supabase.from('tasks').update({ status }).eq('id', id);
+        const updates: any = { status };
+
+        // --- Sincronizar kanban_stage_id com o novo status ---
+        // Busca o Kanban vinculado à tarefa e encontra a etapa com system_status correspondente
+        try {
+            let kanbanId = oldTask?.kanban_id;
+
+            // Se a tarefa não tem kanban_id, tentar encontrar pelo contexto (referenceId)
+            if (!kanbanId) {
+                const referenceId = oldTask?.team_id || oldTask?.project_id || null;
+                let kanbanQuery = supabase
+                    .from('kanbans')
+                    .select('id')
+                    .eq('module', 'tasks')
+                    .eq('is_default', true)
+                    .limit(1);
+
+                if (referenceId) {
+                    kanbanQuery = kanbanQuery.eq('reference_id', referenceId);
+                } else {
+                    kanbanQuery = kanbanQuery.is('reference_id', null);
+                }
+
+                const { data: kanbanData } = await kanbanQuery.single();
+                if (kanbanData) {
+                    kanbanId = kanbanData.id;
+                }
+            }
+
+            if (kanbanId) {
+                // Buscar a etapa com system_status correspondente ao novo status
+                const { data: targetStage } = await supabase
+                    .from('kanban_stages')
+                    .select('id')
+                    .eq('kanban_id', kanbanId)
+                    .eq('system_status', status)
+                    .limit(1)
+                    .single();
+
+                if (targetStage) {
+                    updates.kanban_stage_id = targetStage.id;
+                    updates.kanban_id = kanbanId;
+                }
+            }
+        } catch (syncError) {
+            // Não bloquear a atualização de status se a sincronização do kanban falhar
+            console.warn('Kanban stage sync failed (non-blocking):', syncError);
+        }
+
+        const { error } = await supabase.from('tasks').update(updates).eq('id', id);
         if (error) throw error;
 
         // Log it
@@ -420,7 +469,7 @@ export const api = {
                 action: 'status_change',
                 user_id: user.id,
                 details: `Alterou status para ${status}`,
-                metadata: { to: status }
+                metadata: { to: status, kanban_stage_id: updates.kanban_stage_id || null }
             });
         }
 

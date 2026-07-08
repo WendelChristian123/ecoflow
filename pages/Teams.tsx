@@ -118,6 +118,15 @@ const TeamTasksKanban: React.FC<{
         if (!dateB) return -1;
         return new Date(dateB).getTime() - new Date(dateA).getTime();
       });
+    } else {
+      filtered.sort((a, b) => {
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : null;
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : null;
+        if (dateA === null && dateB === null) return 0;
+        if (dateA === null) return 1;
+        if (dateB === null) return -1;
+        return dateA - dateB;
+      });
     }
 
     return filtered;
