@@ -91,6 +91,24 @@ export const FinancialTransactions: React.FC = () => {
         }
     }, [currentCompany]);
 
+    // Handle openModal search param changes (e.g. deep links from other pages)
+    useEffect(() => {
+        const transactionId = searchParams.get('open') || searchParams.get('transactionId') || searchParams.get('openModal');
+        if (transactionId && transactions.length > 0) {
+            const target = transactions.find(tx => tx.id === transactionId);
+            if (target) {
+                setSelectedMonth(parseDateLocal(target.date));
+                setEditingTransaction(target);
+                setIsModalOpen(true);
+            }
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('open');
+            newParams.delete('transactionId');
+            newParams.delete('openModal');
+            setSearchParams(newParams, { replace: true });
+        }
+    }, [searchParams]);
+
     const loadData = async () => {
         if (!currentCompany) return;
         setLoading(true);
@@ -531,7 +549,7 @@ export const FinancialTransactions: React.FC = () => {
                 )}
 
                 <TransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} accounts={accounts} categories={categories} cards={cards} contacts={contacts} initialData={editingTransaction} initialType={modalInitialType} />
-                <DrilldownModal isOpen={drilldownState.isOpen} onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })} title={drilldownState.title} data={drilldownState.data} type="finance" users={[]} onPayAction={(item) => navigate(`/finance/cards?payInvoice=${item.id}`)} indicatorColor={drilldownState.indicatorColor as any} />
+                <DrilldownModal isOpen={drilldownState.isOpen} onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })} title={drilldownState.title} data={drilldownState.data} type="finance" users={[]} onPayAction={(item) => navigate(`/finance/cards?payInvoice=${item.id}`)} onItemClick={(item) => { setDrilldownState(s => ({ ...s, isOpen: false })); const target = transactions.find(tx => tx.id === item.id); if (target) { handleEdit(target); } }} indicatorColor={drilldownState.indicatorColor as any} />
                 <ConfirmationModal isOpen={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} onConfirm={deleteTransaction} title="Excluir" description="Excluir?" confirmText="Excluir" cancelText="Cancelar" variant="danger" />
                 <RecurrenceActionModal isOpen={!!recurrenceDeleteTarget} onClose={() => setRecurrenceDeleteTarget(null)} onConfirm={executeRecurrenceDelete} action="delete" />
                 {ConfirmationModalComponent}
@@ -768,6 +786,11 @@ export const FinancialTransactions: React.FC = () => {
                 users={[]}
                 onPayAction={(item) => {
                     navigate(`/finance/cards?payInvoice=${item.id}`);
+                }}
+                onItemClick={(item) => {
+                    setDrilldownState(s => ({ ...s, isOpen: false }));
+                    const target = transactions.find(tx => tx.id === item.id);
+                    if (target) { handleEdit(target); }
                 }}
                 indicatorColor={drilldownState.indicatorColor as any}
             />
